@@ -148,7 +148,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 Container(
                   width: 200,
                   child: FutureBuilder(
-                    future: check_bl_cookie(),
+                    // future: check_bl_cookie(),
+                    future: bilibili.check_bl_cookie(),
                     builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return CircularProgressIndicator();
