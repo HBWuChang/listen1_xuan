@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
 import 'settings.dart';
+import 'loweb.dart';
 
 void main() {
   runApp(MyApp());
@@ -160,7 +161,7 @@ class _MyHomePageState extends State<MyHomePage>
                 labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
                 selectedIndex: _selectedIndex,
                 destinations: [
-                  NavigationDestination(icon: Center(child: Text('Playlist 1')), label: ''),
+                  NavigationDestination(icon: Center(child: Text('BiliBili')), label: ''),
                   NavigationDestination(icon: Center(child: Text('Playlist 2')), label: ''),
                   NavigationDestination(icon: Center(child: Text('Playlist 3')), label: ''),
                 ],
@@ -182,8 +183,7 @@ class _MyHomePageState extends State<MyHomePage>
                 });
               },
               children: <Widget>[
-                // bl_album_list(),
-                Center(child: Text('Song List 1')),
+                BilibiliPlaylist(),
                 Center(child: Text('Song List 2')),
                 Center(child: Text('Song List 3')),
               ],

@@ -18,6 +18,9 @@ dependencies:
   url_launcher: ^6.0.9
   dio: ^4.0.0
   flutter_svg: ^1.0.0
+  crypto: ^3.0.1
+  html: ^0.15.0
+  marquee: ^2.3.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

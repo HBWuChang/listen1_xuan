@@ -129,13 +129,17 @@ dynamic getProviderByItemId(String itemId) {
   String prefix = itemId.substring(0, 2);
   return providers.firstWhere((i) => i.id == prefix).instance;
 }
-
+// function queryStringify(options) {
+//   const query = JSON.parse(JSON.stringify(options));
+//   return new URLSearchParams(query).toString();
+// }
 String queryStringify(Map<String, dynamic> options) {
   // 移除值为 null 的键值对
   options.removeWhere((key, value) => value == null);
-
+  print('options: $options');
   // 使用 Uri 来生成查询字符串
-  return Uri(queryParameters: options).query;
+  // return Uri(queryParameters: options).query;
+  return options.entries.map((e) => '${e.key}=${e.value}').join('&');
 }
 
 class MediaService {
