@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
 import 'settings.dart';
 import 'loweb.dart';
+import 'bodys.dart';
+import 'play.dart';
 
 void main() {
   runApp(MyApp());
@@ -45,6 +47,8 @@ class _MyHomePageState extends State<MyHomePage>
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
   late AnimationController _animationController;
+  bool _Mainpage = true;
+  String _playlist_id = "bilibili";
 
   @override
   void initState() {
@@ -54,6 +58,7 @@ class _MyHomePageState extends State<MyHomePage>
         setState(() {
           _isSearchActive = true;
           _animationController.forward(from: 0);
+          
         });
       }
     });
@@ -94,6 +99,19 @@ class _MyHomePageState extends State<MyHomePage>
         duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
 
+  void change_main_status(String id) {
+    if (id != "") {
+      setState(() {
+        _Mainpage = false;
+        _playlist_id = id;
+      });
+    } else {
+      setState(() {
+        _Mainpage = true;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _focusNode.dispose();
@@ -105,111 +123,108 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return SizeTransition(
-              sizeFactor: _animationController,
-              axis: Axis.horizontal,
-              axisAlignment: -1,
-              child: Row(
-                children: [
-                  if (!_isSearchActive) Text('Listen1'),
-                  if (!_isSearchActive) SizedBox(width: 10),
-                  if (_isSearchActive)
-                    IconButton(
-                      icon: Icon(Icons.arrow_back),
-                      onPressed: _onSearchBackTapped,
-                    ),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: '请输入歌曲名，歌手或专辑',
-                        border: InputBorder.none,
+        appBar: _Mainpage?
+        AppBar(
+          title: AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              return SizeTransition(
+                sizeFactor: _animationController,
+                axis: Axis.horizontal,
+                axisAlignment: -1,
+                child: Row(
+                  children: [
+                    if (!_isSearchActive) Text('Listen1'),
+                    if (!_isSearchActive) SizedBox(width: 10),
+                    if (_isSearchActive)
+                      IconButton(
+                        icon: Icon(Icons.arrow_back),
+                        onPressed: _onSearchBackTapped,
                       ),
-                      controller: input_text_Controller,
-                      autofocus: _isSearchActive,
-                      focusNode: _isSearchActive ? _focusNode2 : _focusNode,
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: '请输入歌曲名，歌手或专辑',
+                          border: InputBorder.none,
+                        ),
+                        controller: input_text_Controller,
+                        autofocus: _isSearchActive,
+                        focusNode: _isSearchActive ? _focusNode2 : _focusNode,
+                      ),
+                    ),
+                    if (!_isSearchActive)
+                      IconButton(
+                        icon: Icon(Icons.settings),
+                        onPressed: () {
+                          // Navigate to settings
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) {
+                              return SettingsPage();
+                            }),
+                          );
+                        },
+                      ),
+                  ],
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ),
+              );
+            },
+          ),
+        ):null,
+        body: _Mainpage
+            ? Column(
+                children: [
+                  Container(
+                      height: 45,
+                      child: NavigationBar(
+                        labelBehavior:
+                            NavigationDestinationLabelBehavior.alwaysHide,
+                        selectedIndex: _selectedIndex,
+                        destinations: [
+                          NavigationDestination(
+                              icon: Center(child: Text('BiliBili')), label: ''),
+                          NavigationDestination(
+                              icon: Center(child: Text('Playlist 2')),
+                              label: ''),
+                          NavigationDestination(
+                              icon: Center(child: Text('Playlist 3')),
+                              label: ''),
+                        ],
+                        onDestinationSelected: (index) {
+                          _onItemTapped(index);
+                        },
+                      )),
+                  // 长灰色细分割线
+                  Divider(
+                    height: 1,
+                    color: Colors.grey[300],
+                  ),
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _selectedIndex = index;
+                        });
+                      },
+                      children: <Widget>[
+                        Playlist(
+                            source: "bilibili",
+                            offset: 0,
+                            filter: "",
+                            onPlaylistTap: change_main_status),
+                        Center(child: Text('Song List 2')),
+                        Center(child: Text('Song List 3')),
+                      ],
                     ),
                   ),
-                  if (!_isSearchActive)
-                    IconButton(
-                      icon: Icon(Icons.settings),
-                      onPressed: () {
-                        // Navigate to settings
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) {
-                            return SettingsPage();
-                          }),
-                        );
-                      },
-                    ),
                 ],
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              )
+            : PlaylistInfo(
+                listId: _playlist_id,
+                onPlaylistTap: change_main_status,
               ),
-            );
-          },
-        ),
-      ),
-      body: Column(
-        children: [
-          Container(
-              height: 45,
-              child: NavigationBar(
-                labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-                selectedIndex: _selectedIndex,
-                destinations: [
-                  NavigationDestination(icon: Center(child: Text('BiliBili')), label: ''),
-                  NavigationDestination(icon: Center(child: Text('Playlist 2')), label: ''),
-                  NavigationDestination(icon: Center(child: Text('Playlist 3')), label: ''),
-                ],
-                onDestinationSelected: (index) {
-                  _onItemTapped(index);
-                },
-              )),
-          // 长灰色细分割线
-          Divider(
-            height: 1,
-            color: Colors.grey[300],
-          ),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-              children: <Widget>[
-                BilibiliPlaylist(),
-                Center(child: Text('Song List 2')),
-                Center(child: Text('Song List 3')),
-              ],
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.business),
-            label: 'Business',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school),
-            label: 'School',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
-        onTap: _onItemTapped,
-      ),
-    );
+        bottomNavigationBar: play);
   }
 }

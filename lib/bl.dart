@@ -442,7 +442,7 @@ class Bilibili {
     return result ?? {};
   }
 
-  static Future<void> bootstrapTrack(
+  Future<void> bootstrapTrack(
       Map<String, dynamic> track, Function success, Function failure) async {
     final trackId = track['id'];
     if (trackId.startsWith('bitrack_v_')) {
@@ -545,7 +545,7 @@ class Bilibili {
     };
   }
 
-  static Future<Map<String, dynamic>> getPlaylist(String url) async {
+  Future<Map<String, dynamic>> getPlaylist(String url) async {
     final listId = getParameterByName('list_id', url)?.split('_')[0];
     switch (listId) {
       case 'biplaylist':
@@ -574,94 +574,4 @@ class Bilibili {
   }
 
   static void logout() {}
-}
-
-class BilibiliPlaylist extends StatefulWidget {
-  @override
-  _BilibiliPlaylistState createState() => _BilibiliPlaylistState();
-}
-
-class _BilibiliPlaylistState extends State<BilibiliPlaylist> {
-  List<Map<String, dynamic>> _playlists = [];
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    // _loadData();
-  }
-
-  void _loadData() async {
-    Map<String, dynamic> result =
-        await MediaService.showPlaylistArray("bilibili", 0, "");
-    print(result);
-    setState(() {
-      _playlists = result['result'];
-      _loading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        body: Center(
-      child: FutureBuilder(
-        future: MediaService.showPlaylistArray("bilibili", 0, ""),
-        builder: (BuildContext context, AsyncSnapshot snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return CircularProgressIndicator();
-          } else {
-            return GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3, // 每行显示的列数
-                crossAxisSpacing: 10.0, // 列间距
-                mainAxisSpacing: 10.0, // 行间距
-                childAspectRatio: 0.8, // 子项宽高比
-              ),
-              itemCount: snapshot.data['result'].length,
-              itemBuilder: (BuildContext context, int index) {
-                final playlist = snapshot.data['result'][index];
-                return GestureDetector(
-                  onTap: () {
-                    // 处理点击事件
-                  },
-                  child: Column(
-                      children: [
-                        Container(
-                          width: 110, // 设置图片宽度
-                          height: 110, // 设置图片高度
-                          child: Image.network(
-                            playlist['cover_img_url'],
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Container(
-                            height: 30, // 设置文字容器高度
-                            child: Marquee(
-                              text: playlist['title'],
-                              style: TextStyle(fontSize: 14),
-                              scrollAxis: Axis.horizontal,
-                              blankSpace: 20.0,
-                              velocity: 50.0,
-                              pauseAfterRound: Duration(seconds: 1),
-                              startPadding: 10.0,
-                              accelerationDuration: Duration(seconds: 1),
-                              accelerationCurve: Curves.linear,
-                              decelerationDuration: Duration(milliseconds: 500),
-                              decelerationCurve: Curves.easeOut,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                );
-              },
-            );
-          }
-        },
-      ),
-    ));
-  }
 }

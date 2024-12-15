@@ -240,7 +240,10 @@ class MediaService {
     //     });
     //   },
     // };
-    return provider.getPlaylist(url);
+    dynamic playlist = await provider.getPlaylist(url);
+    print('playlist: $playlist');
+    return playlist;
+    // return provider.getPlaylist(url);
   }
 
   static Future<dynamic> clonePlaylist(String id, String type) {
@@ -352,10 +355,10 @@ class MediaService {
     void failureCallback() async {
       final prefs = await SharedPreferences.getInstance();
       // if (await localStorage.getObject('enable_auto_choose_source') == false) {
-      if (prefs.getBool('enable_auto_choose_source') == false) {
-        playerFailCallback();
-        return;
-      }
+      // if (prefs.getBool('enable_auto_choose_source') == false) {
+      //   playerFailCallback();
+      //   return;
+      // }
       final trackPlatform = getProviderNameByItemId(track['id']);
       // final failoverSourceList = (await getLocalStorageValue('auto_choose_source_list', ['kuwo', 'qq', 'migu'])).where((i) => i != trackPlatform).toList();
       final failoverSourceList = prefs.getStringList('auto_choose_source_list')!.where((i) => i != trackPlatform).toList();
