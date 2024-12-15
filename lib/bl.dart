@@ -468,7 +468,7 @@ class Bilibili {
           final url = response2.data['data']['dash']['audio'][0]['baseUrl'];
           sound['url'] = url;
           sound['platform'] = 'bilibili';
-          success(sound);
+          success(sound, track);
         } else {
           failure(sound);
         }
@@ -486,12 +486,12 @@ class Bilibili {
         if (data['code'] == 0) {
           sound['url'] = data['data']['cdns'][0];
           sound['platform'] = 'bilibili';
-          success(sound);
+          success(sound, track);
         } else {
           failure(sound);
         }
       } catch (e) {
-        failure({});
+        failure();
       }
     }
   }

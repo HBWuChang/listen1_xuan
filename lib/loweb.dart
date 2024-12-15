@@ -388,7 +388,7 @@ class MediaService {
         await Future.wait(getUrlPromises);
         playerFailCallback();
       } catch (response) {
-        playerSuccessCallback(response);
+        playerSuccessCallback(response, track);
       }
     }
 

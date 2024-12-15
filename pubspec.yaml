@@ -25,6 +25,8 @@ dependencies:
   audioplayers: ^6.1.0
   path_provider: ^2.0.1
   flutter_local_notifications: ^18.0.1
+  audio_service: ^0.18.16
+  just_audio: ^0.9.42
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -250,8 +250,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                             // 歌曲点击事件
                             // bootstrapTrack(track);
                             // MediaService.bootstrapTrack(track, playerSuccessCallback, playerFailCallback);
-                            MediaService.bootstrapTrack(track,
-                                playerSuccessCallback, playerFailCallback);
+                            MediaService.bootstrapTrack(track,playerSuccessCallback, playerFailCallback);
                           },
                         );
                       },
