@@ -185,15 +185,14 @@ class _PlayState extends State<Play> {
                                   width: 60,
                                   height: 60,
                                   child: CachedNetworkImage(
-                                    imageUrl:
-                                        mediaItem.artUri.toString(),
+                                    imageUrl: mediaItem.artUri.toString(),
                                     fit: BoxFit.cover,
                                   ),
                                 );
                               },
                             ),
                             Container(
-                                width: 200,
+                                width: 260,
                                 height: 80,
                                 child: Column(
                                   children: [
@@ -204,9 +203,11 @@ class _PlayState extends State<Play> {
                                         builder: (context, snapshot) {
                                           final mediaItem = snapshot.data;
                                           return Marquee(
-                                            text: mediaItem?.title ?? 'null',
+                                            text: (mediaItem?.title ?? 'null') +
+                                                '  -  ' +
+                                                (mediaItem?.artist ?? 'null'),
                                             style: TextStyle(
-                                              fontSize: 10,
+                                              fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                             ),
                                             blankSpace: 20.0,
@@ -250,6 +251,7 @@ class _PlayState extends State<Play> {
                                                   ?.inMilliseconds
                                                   .toDouble() ??
                                               1.0,
+                                              
                                           onChanged: (value) {
                                             _audioHandler.seek(Duration(
                                                 milliseconds: value.toInt()));
@@ -263,11 +265,16 @@ class _PlayState extends State<Play> {
                                     ),
                                   ],
                                 )),
-
-                            if (playing)
-                              _button(Icons.pause, _audioHandler.pause)
-                            else
-                              _button(Icons.play_arrow, _audioHandler.play),
+                            Container(
+                              width: 60,
+                              height: 60,
+                              child: Center(
+                                child: playing
+                                    ? _button(Icons.pause, _audioHandler.pause)
+                                    : _button(
+                                        Icons.play_arrow, _audioHandler.play),
+                              ),
+                            )
                           ],
                         );
                       },
@@ -302,7 +309,8 @@ class _PlayState extends State<Play> {
 
   IconButton _button(IconData iconData, VoidCallback onPressed) => IconButton(
         icon: Icon(iconData),
-        iconSize: 64.0,
+        iconSize: 50.0,
+        alignment: Alignment.center,
         onPressed: onPressed,
       );
 }
