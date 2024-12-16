@@ -8,6 +8,8 @@ import 'package:audio_service/audio_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:marquee/marquee.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 final play = Play();
 final _player = AudioPlayer();
@@ -53,6 +55,23 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
       }
       // 设置本地文件路径为音频源
     }
+// 设置本地文件路径为音频源
+    await _player.setFilePath(filePath);
+    // 使用 Completer 来等待 _duration 被赋值
+    final Completer<void> completer = Completer<void>();
+    _player.durationStream.listen((duration) {
+      if (duration != null && !completer.isCompleted) {
+        print('音频文件时长: ${duration.inSeconds}秒');
+        completer.complete();
+      }
+    });
+
+    // 等待 _duration 被赋值
+    await completer.future;
+
+    // 获取音频文件的时长
+    final _duration = await _player.duration;
+    print(_duration);
     dynamic _item;
     _item = MediaItem(
       id: filePath,
@@ -60,12 +79,9 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
       title: track['title'],
       artist: track['artist'],
       artUri: Uri.parse(track['img_url']),
+      duration: _duration,
     );
-
-    _audioHandler.updateMediaItem(_item);
-    _player
-        // .setAudioSource(AudioSource.uri(Uri.parse(_item.id),));
-        .setAudioSource(AudioSource.uri(Uri.parse(_item.id)));
+    (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
     _player.play();
 
     return;
@@ -137,36 +153,165 @@ class _PlayState extends State<Play> {
         } else if (snapshot.hasError) {
           return Center(child: Text('Error initializing audio handler'));
         } else {
-          return StreamBuilder<bool>(
-            stream: _audioHandler.playbackState
-                .map((state) => state.playing)
-                .distinct(),
-            builder: (context, snapshot) {
-              final playing = snapshot.data ?? false;
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _button(Icons.fast_rewind, _audioHandler.rewind),
-                  if (playing)
-                    _button(Icons.pause, _audioHandler.pause)
-                  else
-                    _button(Icons.play_arrow, _audioHandler.play),
-                  _button(Icons.stop, _audioHandler.stop),
-                  _button(Icons.fast_forward, _audioHandler.fastForward),
-                ],
-              );
-            },
-          );
+          return Container(
+              height: 80,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Play/pause/stop buttons.
+                    StreamBuilder<bool>(
+                      stream: _audioHandler.playbackState
+                          .map((state) => state.playing)
+                          .distinct(),
+                      builder: (context, snapshot) {
+                        final playing = snapshot.data ?? false;
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Show media item title
+                            StreamBuilder<MediaItem?>(
+                              stream: _audioHandler.mediaItem,
+                              builder: (context, snapshot) {
+                                final mediaItem = snapshot.data;
+                                // return Text(mediaItem?.title ?? '');
+                                if (mediaItem == null) {
+                                  return Container(
+                                    width: 60,
+                                    height: 60,
+                                  );
+                                }
+                                return Container(
+                                  width: 60,
+                                  height: 60,
+                                  child: CachedNetworkImage(
+                                    imageUrl:
+                                        mediaItem.artUri.toString(),
+                                    fit: BoxFit.cover,
+                                  ),
+                                );
+                              },
+                            ),
+                            Container(
+                                width: 200,
+                                height: 80,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      height: 20,
+                                      child: StreamBuilder<MediaItem?>(
+                                        stream: _audioHandler.mediaItem,
+                                        builder: (context, snapshot) {
+                                          final mediaItem = snapshot.data;
+                                          return Marquee(
+                                            text: mediaItem?.title ?? 'null',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            blankSpace: 20.0,
+                                            velocity: 50.0,
+                                            pauseAfterRound:
+                                                Duration(seconds: 1),
+                                            startPadding: 10.0,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    StreamBuilder<MediaState>(
+                                      stream: _mediaStateStream,
+                                      builder: (context, snapshot) {
+                                        final mediaState = snapshot.data;
+                                        // print(mediaState?.position.inMilliseconds
+                                        //     .toDouble());
+                                        // print(mediaState
+                                        //     ?.mediaItem?.duration?.inMilliseconds
+                                        // .toDouble());
+                                        return Slider(
+                                          value: (mediaState?.position
+                                                          .inMilliseconds
+                                                          .toDouble() ??
+                                                      0.0) >
+                                                  (mediaState
+                                                          ?.mediaItem
+                                                          ?.duration
+                                                          ?.inMilliseconds
+                                                          .toDouble() ??
+                                                      1.0)
+                                              ? (mediaState?.mediaItem?.duration
+                                                      ?.inMilliseconds
+                                                      .toDouble() ??
+                                                  1.0)
+                                              : (mediaState
+                                                      ?.position.inMilliseconds
+                                                      .toDouble() ??
+                                                  0.0),
+                                          max: mediaState?.mediaItem?.duration
+                                                  ?.inMilliseconds
+                                                  .toDouble() ??
+                                              1.0,
+                                          onChanged: (value) {
+                                            _audioHandler.seek(Duration(
+                                                milliseconds: value.toInt()));
+                                          },
+                                        );
+
+                                        // return Text(
+                                        //   '${mediaState?.position.inSeconds} / ${mediaState?.mediaItem?.duration?.inSeconds}',
+                                        // );
+                                      },
+                                    ),
+                                  ],
+                                )),
+
+                            if (playing)
+                              _button(Icons.pause, _audioHandler.pause)
+                            else
+                              _button(Icons.play_arrow, _audioHandler.play),
+                          ],
+                        );
+                      },
+                    ),
+
+                    // Display the processing state.
+                    // StreamBuilder<AudioProcessingState>(
+                    //   stream: _audioHandler.playbackState
+                    //       .map((state) => state.processingState)
+                    //       .distinct(),
+                    //   builder: (context, snapshot) {
+                    //     final processingState =
+                    //         snapshot.data ?? AudioProcessingState.idle;
+                    //     return Text(
+                    //         // ignore: deprecated_member_use
+                    //         "Processing state: ${describeEnum(processingState)}");
+                    //   },
+                    // ),
+                  ],
+                ),
+              ));
         }
       },
     );
   }
+
+  Stream<MediaState> get _mediaStateStream =>
+      Rx.combineLatest2<MediaItem?, Duration, MediaState>(
+          _audioHandler.mediaItem,
+          AudioService.position,
+          (mediaItem, position) => MediaState(mediaItem, position));
 
   IconButton _button(IconData iconData, VoidCallback onPressed) => IconButton(
         icon: Icon(iconData),
         iconSize: 64.0,
         onPressed: onPressed,
       );
+}
+
+class MediaState {
+  final MediaItem? mediaItem;
+  final Duration position;
+
+  MediaState(this.mediaItem, this.position);
 }
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
@@ -176,7 +321,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // album: "Science Friday",
     title: "test",
     // artist: "Science Friday and WNYC Studios",
-    // duration: const Duration(milliseconds: 5739820),
+    duration: Duration(milliseconds: 5739820),
     artUri: Uri.parse(
         'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
   );
@@ -191,7 +336,12 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // Load the player.
     _player.setAudioSource(AudioSource.uri(Uri.parse(_item.id)));
   }
-
+  // void change_playbackstate(PlaybackState _playbackState) {
+  void change_playbackstate(MediaItem _item) {
+    // All options shown:
+    // playbackState.add(_playbackState);
+    mediaItem.add(_item);
+  }
   // In this simple example, we handle only 4 actions: play, pause, seek and
   // stop. Any button press from the Flutter UI, notification, lock screen or
   // headset will be routed through to these 4 methods so that you can handle
