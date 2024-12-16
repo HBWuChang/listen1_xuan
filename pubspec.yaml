@@ -27,6 +27,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   audio_service: ^0.18.16
   just_audio: ^0.9.42
+  encrypt: ^5.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
