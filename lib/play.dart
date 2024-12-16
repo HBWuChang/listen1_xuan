@@ -128,6 +128,15 @@ class _PlayState extends State<Play> {
   //       await player.setSource(UrlSource(res['url']));
   //       await player.resume();
   //     };
+  String formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+    return hours > 0
+        ? '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}'
+        : '${twoDigits(minutes)}:${twoDigits(seconds)}';
+  }
 
   @override
   void initState() {
@@ -196,38 +205,69 @@ class _PlayState extends State<Play> {
                                 height: 80,
                                 child: Column(
                                   children: [
-                                    Container(
-                                      height: 20,
-                                      child: StreamBuilder<MediaItem?>(
-                                        stream: _audioHandler.mediaItem,
-                                        builder: (context, snapshot) {
-                                          final mediaItem = snapshot.data;
-                                          return Marquee(
-                                            text: (mediaItem?.title ?? 'null') +
-                                                '  -  ' +
-                                                (mediaItem?.artist ?? 'null'),
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            blankSpace: 20.0,
-                                            velocity: 50.0,
-                                            pauseAfterRound:
-                                                Duration(seconds: 1),
-                                            startPadding: 10.0,
-                                          );
-                                        },
+                                    Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                      children: [
+                                      Container(
+                                        height: 20,
+                                        width: 160,
+                                        child: StreamBuilder<MediaItem?>(
+                                          stream: _audioHandler.mediaItem,
+                                          builder: (context, snapshot) {
+                                            final mediaItem = snapshot.data;
+                                            return Marquee(
+                                              text: (mediaItem?.title ??
+                                                      'null') +
+                                                  '  -  ' +
+                                                  (mediaItem?.artist ?? 'null'),
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              blankSpace: 20.0,
+                                              velocity: 50.0,
+                                              pauseAfterRound:
+                                                  Duration(seconds: 1),
+                                              startPadding: 10.0,
+                                            );
+                                          },
+                                        ),
                                       ),
-                                    ),
+                                      Container(
+                                        height: 20,
+                                        child: StreamBuilder<MediaState>(
+                                          stream: _mediaStateStream,
+                                          builder: (context, snapshot) {
+                                            final mediaItem = snapshot.data;
+                                            return Text(
+                                              (formatDuration(
+                                                      mediaItem?.position ??
+                                                          Duration.zero) +
+                                                  ' / ' +
+                                                  formatDuration(mediaItem
+                                                          ?.mediaItem
+                                                          ?.duration ??
+                                                      Duration.zero)),
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              // print(mediaState?.position.inMilliseconds
+                                              //     .toDouble());
+                                              // print(mediaState
+                                              //     ?.mediaItem?.duration?.inMilliseconds
+                                              // .toDouble());
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ]),
                                     StreamBuilder<MediaState>(
                                       stream: _mediaStateStream,
                                       builder: (context, snapshot) {
                                         final mediaState = snapshot.data;
-                                        // print(mediaState?.position.inMilliseconds
-                                        //     .toDouble());
-                                        // print(mediaState
-                                        //     ?.mediaItem?.duration?.inMilliseconds
-                                        // .toDouble());
+
                                         return Slider(
                                           value: (mediaState?.position
                                                           .inMilliseconds
@@ -251,7 +291,6 @@ class _PlayState extends State<Play> {
                                                   ?.inMilliseconds
                                                   .toDouble() ??
                                               1.0,
-                                              
                                           onChanged: (value) {
                                             _audioHandler.seek(Duration(
                                                 milliseconds: value.toInt()));
