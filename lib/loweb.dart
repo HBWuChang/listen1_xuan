@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
+import 'netease.dart';
 import 'myplaylist.dart';
 
 class Provider {
@@ -26,8 +27,8 @@ class Provider {
 final List<Provider> providers = [
   Provider(
     name: 'netease',
-    // instance: netease,
-    instance: null,
+    instance: netease,
+    // instance: null,
     searchable: true,
     supportLogin: true,
     id: 'ne',
