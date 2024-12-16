@@ -28,6 +28,7 @@ dependencies:
   audio_service: ^0.18.16
   just_audio: ^0.9.42
   encrypt: ^5.0.0
+  webview_flutter: ^4.10.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
