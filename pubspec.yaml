@@ -16,8 +16,8 @@ dependencies:
     sdk: flutter
   shared_preferences: ^2.0.0 
   url_launcher: ^6.0.9
-  dio: ^4.0.0
-  flutter_svg: ^1.0.0
+  dio: 5.7.0
+  flutter_svg: ^2.0.16
   crypto: ^3.0.1
   html: ^0.15.0
   marquee: ^2.3.0
@@ -29,11 +29,13 @@ dependencies:
   just_audio: ^0.9.42
   encrypt: ^5.0.0
   webview_flutter: ^4.10.0
+  webview_cookie_manager: ^2.0.6
+  dio_cookie_manager: ^3.1.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true

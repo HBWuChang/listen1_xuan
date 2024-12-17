@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,6 +8,24 @@ import 'bl.dart';
 import 'netease.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:marquee/marquee.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:webview_cookie_manager/webview_cookie_manager.dart';
+
+Future<void> setSaveCookie({
+  required String url,
+  required List<Cookie> cookies,
+}) async {
+  //Save cookies
+  final tempDir = await getTemporaryDirectory();
+  final tempPath = tempDir.path;
+  await PersistCookieJar(
+    ignoreExpires: true,
+    // storage: FileStorage(appDocPath + "/.cookies/"),
+    storage: FileStorage(tempPath + "/.cookies/"),
+  ).saveFromResponse(Uri.parse(url), cookies);
+}
 
 Future<bool> saveToken(String name, String token) async {
   final prefs = await SharedPreferences.getInstance();
@@ -39,6 +58,25 @@ Future<void> _saveToken(String platform, String token) async {
   // String jsonString = jsonEncode(tokenData);
   // await prefs.setString('$platform_token', jsonString);
   await prefs.setString('settings', jsonEncode(settings));
+  switch (platform) {
+    // case 'bl':
+    //   await bilibili.set_bl_cookie(token);
+    //   break;
+    case 'ne':
+      List<Cookie> cookies = [];
+      for (var item in token.split(';')) {
+        // var cookie = item.split('=');
+        // 除去两端空格
+        var cookie = item.trim().split('=');
+        // cookies.add(Cookie(cookie[0], cookie[1]));
+        var cookieName = cookie[0].trim();
+        var cookieValue = Uri.encodeComponent(cookie[1].trim());
+        cookies.add(Cookie(cookieName, cookieValue));
+      }
+      await setSaveCookie(url: 'https://music.163.com', cookies: cookies);
+      break;
+    default:
+  }
 }
 
 class SettingsPage extends StatefulWidget {
@@ -57,9 +95,17 @@ class netease_login_webview extends StatefulWidget {
 
 class _netease_login_webviewState extends State<netease_login_webview> {
   void get_ne_cookie() async {
-    String cookies = await widget.controller
-        .runJavaScriptReturningResult('document.cookie') as String;
-    print(cookies);
+    final cookieManager = WebviewCookieManager();
+    
+    final gotCookies = await cookieManager.getCookies('https://music.163.com');
+    for (var item in gotCookies) {
+      print(item);
+    }
+    String cookies= "";
+    for (var item in gotCookies) {
+      cookies += "${item.name}=${Uri.decodeComponent(item.value)};";
+    }
+    cookies = cookies.substring(0, cookies.length - 1);
     await _saveToken('ne', cookies);
     _msg('设置成功$cookies', 3.0);
     // _msg('设置成功', 1.0);
@@ -283,7 +329,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 SvgPicture.string(
                     '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" class="zhuzhan-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.73252 2.67094C3.33229 2.28484 3.33229 1.64373 3.73252 1.25764C4.11291 0.890684 4.71552 0.890684 5.09591 1.25764L7.21723 3.30403C7.27749 3.36218 7.32869 3.4261 7.37081 3.49407H10.5789C10.6211 3.4261 10.6723 3.36218 10.7325 3.30403L12.8538 1.25764C13.2342 0.890684 13.8368 0.890684 14.2172 1.25764C14.6175 1.64373 14.6175 2.28484 14.2172 2.67094L13.364 3.49407H14C16.2091 3.49407 18 5.28493 18 7.49407V12.9996C18 15.2087 16.2091 16.9996 14 16.9996H4C1.79086 16.9996 0 15.2087 0 12.9996V7.49406C0 5.28492 1.79086 3.49407 4 3.49407H4.58579L3.73252 2.67094ZM4 5.42343C2.89543 5.42343 2 6.31886 2 7.42343V13.0702C2 14.1748 2.89543 15.0702 4 15.0702H14C15.1046 15.0702 16 14.1748 16 13.0702V7.42343C16 6.31886 15.1046 5.42343 14 5.42343H4ZM5 9.31747C5 8.76519 5.44772 8.31747 6 8.31747C6.55228 8.31747 7 8.76519 7 9.31747V10.2115C7 10.7638 6.55228 11.2115 6 11.2115C5.44772 11.2115 5 10.7638 5 10.2115V9.31747ZM12 8.31747C11.4477 8.31747 11 8.76519 11 9.31747V10.2115C11 10.7638 11.4477 11.2115 12 11.2115C12.5523 11.2115 13 10.7638 13 10.2115V9.31747C13 8.76519 12.5523 8.31747 12 8.31747Z" fill="currentColor"></path></svg>'),
                 SizedBox(
-                  width: 200,
+                  width: 180,
                   child: FutureBuilder(
                     // future: check_bl_cookie(),
                     future: bilibili.check_bl_cookie(),
@@ -317,7 +363,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   width: 200,
                   child: FutureBuilder(
                     // future: check_bl_cookie(),
-                    future: Netease.getUser(),
+                    future: Netease().getUser(),
                     builder: (BuildContext context,
                         AsyncSnapshot<Map<String, dynamic>> snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
