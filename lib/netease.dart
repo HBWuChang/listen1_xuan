@@ -9,17 +9,65 @@ import 'settings.dart';
 
 final netease = Netease();
 
-Future <String> get_csrf () async {
-  final tokens=await settings_getsettings();
+Future<String> get_csrf() async {
+  final tokens = await settings_getsettings();
   try {
-    final _cookies=tokens['ne'];
-    return _cookies.split(';').firstWhere((element) => element.contains('__csrf')).split('=').last;
+    final _cookies = tokens['ne'];
+    return _cookies
+        .split(';')
+        .firstWhere((element) => element.contains('__csrf'))
+        .split('=')
+        .last;
   } catch (e) {
     return '';
   }
 }
 
 class Netease {
+  Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
+    final tokens = await settings_getsettings();
+    try {
+      final _cookies = tokens['ne'];
+      final _csrf = _cookies
+          .split(';')
+          .firstWhere((element) => element.contains('__csrf'))
+          .split('=')
+          .last;
+      if (url.contains('?')) {
+        url = url + '&csrf_token=$_csrf';
+      } else {
+        url = url + '?csrf_token=$_csrf';
+      }
+      return await Dio()
+          .get(url, options: Options(headers: {'cookie': _cookies}));
+    } catch (e) {
+      return await Dio().get(url);
+    }
+  }
+
+  Future<dynamic> dio_post_with_cookie_and_csrf(
+      String url, dynamic data) async {
+    final tokens = await settings_getsettings();
+    try {
+      final _cookies = tokens['ne'];
+      final _csrf = _cookies
+          .split(';')
+          .firstWhere((element) => element.contains('__csrf'))
+          .split('=')
+          .last;
+      if (url.contains('?')) {
+        url = url + '&csrf_token=$_csrf';
+      } else {
+        url = url + '?csrf_token=$_csrf';
+      }
+      return await Dio().post(url,
+          data: FormData.fromMap(data),
+          options: Options(headers: {'cookie': _cookies}));
+    } catch (e) {
+      return await Dio().post(url, data: FormData.fromMap(data));
+    }
+  }
+
   static String _createSecretKey(int size) {
     const choice = '012345679abcdef';
     final result = List.generate(size, (index) {
@@ -87,7 +135,7 @@ class Netease {
     };
   }
 
-  static Future<void> neShowToplist(
+  Future<void> neShowToplist(
       int? offset, Function(Map<String, dynamic>) callback) async {
     if (offset != null && offset > 0) {
       callback({'result': []});
@@ -95,8 +143,7 @@ class Netease {
     }
     const url = 'https://music.163.com/weapi/toplist/detail';
     final data = await weapi({});
-    // final response = await Dio().post(url, data: FormData.fromMap(data));
-    final response = await Dio().post(url+'?csrf_token=${await get_csrf()}', data: FormData.fromMap(data));
+    final response = await dio_post_with_cookie_and_csrf(url, data);
     final result = response.data['list'].map((item) {
       return {
         'cover_img_url': item['coverImgUrl'],
@@ -108,7 +155,7 @@ class Netease {
     callback({'result': result});
   }
 
-  static Future<void> showPlaylist(
+  Future<void> showPlaylist(
       String url, Function(Map<String, dynamic>) callback) async {
     const order = 'hot';
     final offset = getParameterByName('offset', url);
@@ -133,7 +180,7 @@ class Netease {
           'https://music.163.com/discover/playlist/?order=$order$filter';
     }
 
-    final response = await Dio().get(targetUrl+'&csrf_token=${await get_csrf()}');
+    final response = await dio_get_with_cookie_and_csrf(targetUrl);
     final document = parse(response.data);
     final listElements =
         document.getElementsByClassName('m-cvrlst')[0].children;
@@ -182,7 +229,6 @@ class Netease {
     }
   }
 
-
   Future<void> asyncProcessList(
       List<dynamic> dataList,
       Future<dynamic> Function(int, dynamic, List<dynamic>) handler,
@@ -202,7 +248,7 @@ class Netease {
     }
   }
 
-  static Future<void> ngRenderPlaylistResultItem(
+  Future<void> ngRenderPlaylistResultItem(
       int index, dynamic item, Function callback) async {
     const targetUrl = 'https://music.163.com/weapi/v3/song/detail';
     final queryIds = [item['id']];
@@ -211,7 +257,7 @@ class Netease {
       'ids': '[${queryIds.join(',')}]',
     };
     final data = await weapi(d);
-    final response = await Dio().post(targetUrl+'?csrf_token=${await get_csrf()}', data: FormData.fromMap(data));
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
     final trackJson = response.data['songs'][0];
     final track = {
       'id': 'netrack_${trackJson['id']}',
@@ -229,7 +275,7 @@ class Netease {
   }
 
   // static Future<void> neGetPlaylist(String url, Function fn) async {
-  static Future<Map<String, dynamic>> neGetPlaylist(String url) async {
+  Future<Map<String, dynamic>> neGetPlaylist(String url) async {
     final listId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
     const targetUrl = 'https://music.163.com/weapi/v3/playlist/detail';
     final data = weapi({
@@ -241,8 +287,7 @@ class Netease {
       'csrf_token': '',
     });
     await neEnsureCookie((_) async {
-      final response =
-          await Dio().post(targetUrl+'?csrf_token=${await get_csrf()}', data: FormData.fromMap(data));
+      final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
       final resData = response.data;
       final info = {
         'id': 'neplaylist_$listId',
@@ -273,14 +318,14 @@ class Netease {
     return result;
   }
 
-  static Future<List<Map<String, dynamic>>> _ngParsePlaylistTracks(
+  Future<List<Map<String, dynamic>>> _ngParsePlaylistTracks(
       List<dynamic> trackIds) async {
     const targetUrl = 'https://music.163.com/weapi/v3/song/detail';
     final data = weapi({
       'c': '[${trackIds.map((id) => '{"id":$id}').join(',')}]',
       'ids': '[${trackIds.join(',')}]',
     });
-    final response = await Dio().post(targetUrl+'?csrf_token=${await get_csrf()}', data: FormData.fromMap(data));
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
     final tracks = (response.data['songs'] as List).map((trackJson) {
       return {
         'id': 'netrack_${trackJson['id']}',
@@ -297,7 +342,7 @@ class Netease {
     return tracks;
   }
 
-  static Future<void> bootstrapTrack(
+  Future<void> bootstrapTrack(
       Map<String, dynamic> track, Function success, Function failure) async {
     final sound = <String, dynamic>{};
     const targetUrl =
@@ -313,19 +358,23 @@ class Netease {
             1e3 * 60 * 60 * 24 * 365 * 100) /
         1000;
 
-    await Dio().post(targetUrl+'?csrf_token=${await get_csrf()}', data: FormData.fromMap(data)).then((response) {
-      final resData = response.data['data'][0];
-      final url = resData['url'];
-      final br = resData['br'];
-      if (url != null) {
-        sound['url'] = url;
-        sound['bitrate'] = '${(br / 1000).toStringAsFixed(0)}kbps';
-        sound['platform'] = 'netease';
-        success(sound);
-      } else {
-        failure(sound);
-      }
-    });
+    // await Dio()
+    //     .post(targetUrl + '?csrf_token=${await get_csrf()}',
+    //         data: FormData.fromMap(data))
+    //     .then((response) {
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+    final resData = response.data['data'][0];
+    final url = resData['url'];
+    final br = resData['br'];
+    if (url != null) {
+      sound['url'] = url;
+      sound['bitrate'] = '${(br / 1000).toStringAsFixed(0)}kbps';
+      sound['platform'] = 'netease';
+      success(sound);
+    } else {
+      failure(sound);
+    }
+    ;
   }
 
   static bool isPlayable(Map<String, dynamic> song) {
@@ -333,7 +382,7 @@ class Netease {
   }
 
   // static Future<void> search(String url, Function fn) async {
-  static Future<Map<String, dynamic>> search(String url) async {
+  Future<Map<String, dynamic>> search(String url) async {
     const targetUrl = 'https://music.163.com/api/search/pc';
     final keyword = Uri.parse(url).queryParameters['keywords'];
     final curpage = Uri.parse(url).queryParameters['curpage'];
@@ -348,8 +397,7 @@ class Netease {
       'limit': 20,
       'type': neSearchType,
     };
-    final response =
-        await Dio().post(targetUrl+'?csrf_token=${await get_csrf()}', data: FormData.fromMap(reqData));
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
     final data = response.data;
     var result = <Map<String, dynamic>>[];
     var total = 0;
@@ -388,10 +436,11 @@ class Netease {
   }
 
   // static Future<void> neAlbum(String url, Function fn) async {
-  static Future<Map<String, dynamic>> neAlbum(String url) async {
+  Future<Map<String, dynamic>> neAlbum(String url) async {
     final albumId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
     final targetUrl = 'https://music.163.com/api/album/$albumId';
-    final response = await Dio().get(targetUrl+'?csrf_token=${await get_csrf()}');
+    final response =
+        await dio_get_with_cookie_and_csrf(targetUrl);
     final data = response.data;
     final info = {
       'cover_img_url': data['album']['picUrl'],
@@ -417,10 +466,12 @@ class Netease {
   }
 
   // static Future<void> neArtist(String url, Function fn) async {
-  static Future<Map<String, dynamic>> neArtist(String url) async {
+  Future<Map<String, dynamic>> neArtist(String url) async {
     final artistId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
     final targetUrl = 'https://music.163.com/api/artist/$artistId';
-    final response = await Dio().get(targetUrl+'?csrf_token=${await get_csrf()}');
+    // final response =
+    //     await Dio().get(targetUrl + '?csrf_token=${await get_csrf()}');
+    final response = await dio_get_with_cookie_and_csrf(targetUrl);
     final data = response.data;
     final info = {
       'cover_img_url': data['artist']['picUrl'],
@@ -447,7 +498,7 @@ class Netease {
   }
 
   // static Future<void> lyric(String url, Function fn) async {
-  static Future<Map<String, dynamic>> lyric(String url) async {
+  Future<Map<String, dynamic>> lyric(String url) async {
     final trackId = Uri.parse(url).queryParameters['track_id']!.split('_').last;
     const targetUrl = 'https://music.163.com/weapi/song/lyric';
     final data = weapi({
@@ -456,7 +507,10 @@ class Netease {
       'tv': -1,
       'csrf_token': await get_csrf(),
     });
-    final response = await Dio().post(targetUrl+'?csrf_token=${await get_csrf()}', data: FormData.fromMap(data));
+    // final response = await Dio().post(
+    //     targetUrl + '?csrf_token=${await get_csrf()}',
+    //     data: FormData.fromMap(data));
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
     final resData = response.data;
     var lrc = '';
     var tlrc = '';
@@ -512,7 +566,7 @@ class Netease {
   }
 
   // static Future<void> getPlaylist(String url, Function fn) async {
-  static Future<Map<String, dynamic>> getPlaylist(String url) async {
+  Future<Map<String, dynamic>> getPlaylist(String url) async {
     final listId = Uri.parse(url).queryParameters['list_id']!.split('_')[0];
     switch (listId) {
       case 'neplaylist':
@@ -531,7 +585,6 @@ class Netease {
         return {};
     }
   }
-
 
   Future<Map<String, dynamic>> getplaylistfilters() {
     final recommend = [
@@ -651,7 +704,7 @@ class Netease {
 
   // static Future<void> getUserPlaylist(
   //     String url, String playlistType, Function fn) async {
-  static Future<Map<String, dynamic>> getUserPlaylist(
+  Future<Map<String, dynamic>> getUserPlaylist(
       String url, String playlistType) async {
     final userId = Uri.parse(url).queryParameters['user_id'];
     const targetUrl = 'https://music.163.com/api/user/playlist';
@@ -663,8 +716,10 @@ class Netease {
       'includeVideo': true,
     };
 
-    final response =
-        await Dio().post(targetUrl+'?csrf_token=${await get_csrf()}', data: FormData.fromMap(reqData));
+    // final response = await Dio().post(
+    //     targetUrl + '?csrf_token=${await get_csrf()}',
+    //     data: FormData.fromMap(reqData));
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
     final playlists = (response.data['playlist'] as List).where((item) {
       if (playlistType == 'created' && item['subscribed'] != false) {
         return false;
@@ -692,7 +747,7 @@ class Netease {
   }
 
   // static Future<void> getUserCreatedPlaylist(String url, Function fn) async {
-  static Future<Map<String, dynamic>> getUserCreatedPlaylist(String url) async {
+  Future<Map<String, dynamic>> getUserCreatedPlaylist(String url) async {
     // await getUserPlaylist(url, 'created', fn);
     return await getUserPlaylist(url, 'created');
   }
@@ -700,7 +755,7 @@ class Netease {
   // static Future<void> getUserFavoritePlaylist(String url, Function fn) async {
   //   await getUserPlaylist(url, 'favorite', fn);
   // }
-  static Future<Map<String, dynamic>> getUserFavoritePlaylist(
+  Future<Map<String, dynamic>> getUserFavoritePlaylist(
       String url) async {
     return await getUserPlaylist(url, 'favorite');
   }
@@ -717,8 +772,10 @@ class Netease {
 
     final encryptReqData = weapi(reqData);
 
-    final response =
-        await Dio().post(targetUrl+'?csrf_token=${await get_csrf()}', data: FormData.fromMap(encryptReqData));
+    // final response = await Dio().post(
+    //     targetUrl + '?csrf_token=${await get_csrf()}',
+    //     data: FormData.fromMap(encryptReqData));
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, encryptReqData);
     final playlists = (response.data['result'] as List).map((item) {
       return {
         'cover_img_url': item['picUrl'],
@@ -738,12 +795,13 @@ class Netease {
   }
 
   // static Future<void> getUser(Function fn) async {
-  static Future<Map<String, dynamic>> getUser() async {
+  Future<Map<String, dynamic>> getUser() async {
     const url = 'https://music.163.com/api/nuser/account/get';
 
     final encryptReqData = weapi({});
-    final response =
-        await Dio().post(url+'?csrf_token=${await get_csrf()}', data: FormData.fromMap(encryptReqData));
+    // final response = await Dio().post(url + '?csrf_token=${await get_csrf()}',
+    //     data: FormData.fromMap(encryptReqData));
+    final response = await dio_post_with_cookie_and_csrf(url, encryptReqData);
     dynamic result = {'is_login': false};
     var status = 'fail';
     if (response.data['account'] != null) {
