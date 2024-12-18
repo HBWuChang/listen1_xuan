@@ -248,11 +248,11 @@ Map<String, String> weapi(Map<String, dynamic> text) {
     };
   }
 
-  Future<void> neShowToplist(
-      int? offset, Function(Map<String, dynamic>) callback) async {
+  // Future<void> neShowToplist( int? offset) async {
+  Future<Map<String, dynamic>> neShowToplist(int? offset) async {
     if (offset != null && offset > 0) {
-      callback({'result': []});
-      return;
+      // callback({'result': []});
+      return {"result": []};
     }
     const url = 'https://music.163.com/weapi/toplist/detail';
     final data = await weapi({});
@@ -265,19 +265,19 @@ Map<String, String> weapi(Map<String, dynamic> text) {
         'title': item['name'],
       };
     }).toList();
-    callback({'result': result});
+    // callback({'result': result});
+    return {"result": result};
   }
 
-  Future<void> showPlaylist(
-      String url, Function(Map<String, dynamic>) callback) async {
+  Future<Map<String, dynamic>> showPlaylist(String url) async {
     const order = 'hot';
     final offset = getParameterByName('offset', url);
     final filterId = getParameterByName('filter_id', url);
 
     if (filterId == 'toplist') {
-      await neShowToplist(
-          offset != null ? int.tryParse(offset) : null, callback);
-      return;
+      // await neShowToplist(
+      //     offset != null ? int.tryParse(offset) : null, callback);
+      return neShowToplist(offset);
     }
 
     String filter = '';
@@ -318,7 +318,8 @@ Map<String, String> weapi(Map<String, dynamic> text) {
             'https://music.163.com/#/playlist?id=${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
       };
     }).toList();
-    callback({'result': result});
+    // callback({'result': result});
+    return {"result": result};
   }
 
   static Future<void> neEnsureCookie(Function callback) async {
@@ -698,7 +699,7 @@ Map<String, String> weapi(Map<String, dynamic> text) {
     }
   }
 
-  Future<Map<String, dynamic>> getplaylistfilters() {
+  Future<Map<String, dynamic>> getPlaylistFilters() {
     final recommend = [
       {'id': '', 'name': '全部'},
       {'id': 'toplist', 'name': '排行榜'},

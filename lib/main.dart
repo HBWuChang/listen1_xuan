@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:listen1_xuan/netease.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
 import 'settings.dart';
@@ -88,14 +89,44 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   int _selectedIndex = 0;
+  int offset = 0;
+  String source = 'bilibili';
+  Map<String, dynamic> filter = {'id': '', 'name': '全部'};
   PageController _pageController = PageController();
-
-  void _onItemTapped(int index) {
+  bool show_filter = false;
+  Map<String, dynamic> filter_detail = {};
+  void _onItemTapped(int index) async {
+    switch (index) {
+      case 0:
+        offset = 0;
+        filter = {'id': '', 'name': '全部'};
+        show_filter = false;
+        source = 'bilibili';
+        break;
+      case 1:
+        offset = 0;
+        filter = {'id': '', 'name': '全部'};
+        show_filter = true;
+        source = 'netease';
+        break;
+      case 2:
+        offset = 0;
+        filter = {'id': '', 'name': '全部'};
+        show_filter = false;
+        break;
+    }
+    filter_detail = await MediaService.getPlaylistFilters(source);
     setState(() {
       _selectedIndex = index;
     });
     _pageController.animateToPage(index,
         duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
+  }
+
+  void change_fliter(String id, String name) {
+    setState(() {
+      filter = {'id': id, 'name': name};
+    });
   }
 
   void change_main_status(String id) {
@@ -195,30 +226,47 @@ class _MyHomePageState extends State<MyHomePage>
                     children: [
                       Container(
                           height: 45,
-                          child: NavigationBar(
-                            labelBehavior:
-                                NavigationDestinationLabelBehavior.alwaysHide,
-                            selectedIndex: _selectedIndex,
-                            destinations: [
-                              NavigationDestination(
-                                  icon: Center(child: Text('BiliBili')),
-                                  label: ''),
-                              NavigationDestination(
-                                  icon: Center(child: Text('Playlist 2')),
-                                  label: ''),
-                              NavigationDestination(
-                                  icon: Center(child: Text('Playlist 3')),
-                                  label: ''),
-                            ],
-                            onDestinationSelected: (index) {
-                              _onItemTapped(index);
-                            },
-                          )),
+                          child: Row(children: [
+                            Expanded(
+                                child: NavigationBar(
+                              labelBehavior:
+                                  NavigationDestinationLabelBehavior.alwaysHide,
+                              selectedIndex: _selectedIndex,
+                              destinations: [
+                                NavigationDestination(
+                                    icon: Center(child: Text('BiliBili')),
+                                    label: ''),
+                                NavigationDestination(
+                                    icon: Center(child: Text('网易云')),
+                                    label: ''),
+                                NavigationDestination(
+                                    icon: Center(child: Text('Playlist 3')),
+                                    label: ''),
+                              ],
+                              onDestinationSelected: (index) {
+                                _onItemTapped(index);
+                              },
+                            )),
+                            if (show_filter)
+                              TextButton(
+                                child: Text(filter['name']),
+                                onPressed: () {
+                                  Map<String, dynamic> tfilter = {};
+                                  tfilter["推荐"] = filter_detail["recommend"];
+                                  for (var item in filter_detail["all"]) {
+                                    tfilter[item["category"]] = item["filters"];
+                                  }
+                                  _showFilterSelection(
+                                      context, tfilter, filter['id'],change_fliter);
+                                },
+                              ),
+                          ])),
                       // 长灰色细分割线
                       Divider(
                         height: 1,
                         color: Colors.grey[300],
                       ),
+
                       Expanded(
                         child: PageView(
                           controller: _pageController,
@@ -229,11 +277,15 @@ class _MyHomePageState extends State<MyHomePage>
                           },
                           children: <Widget>[
                             Playlist(
-                                source: "bilibili",
-                                offset: 0,
-                                filter: "",
+                                source: source,
+                                offset: offset,
+                                filter: filter['id'],
                                 onPlaylistTap: change_main_status),
-                            Center(child: Text('Song List 2')),
+                            Playlist(
+                                source: source,
+                                offset: offset,
+                                filter: filter['id'],
+                                onPlaylistTap: change_main_status),
                             Center(child: Text('Song List 3')),
                           ],
                         ),
@@ -246,4 +298,57 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
             bottomNavigationBar: play));
   }
+}
+
+void _showFilterSelection(BuildContext context, Map<String, dynamic> filter,
+    String now_id, Function change_fliter) {
+  showModalBottomSheet(
+    context: context,
+    builder: (BuildContext context) {
+      return Container(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '选择过滤器',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Divider(),
+            Expanded(
+              child: ListView(
+                children: filter.entries.map<Widget>((entry) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      Wrap(
+                        spacing: 8.0,
+                        runSpacing: 4.0,
+                        children: entry.value.map<Widget>((filterItem) {
+                          return FilterChip(
+                            label: Text(filterItem['name']),
+                            onSelected: (bool selected) {
+                              // 处理过滤器选择逻辑
+                              change_fliter(filterItem['id'], filterItem['name']);
+                              Navigator.pop(context);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      SizedBox(height: 16.0),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }

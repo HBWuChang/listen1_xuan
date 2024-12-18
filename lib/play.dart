@@ -186,13 +186,13 @@ class _PlayState extends State<Play> {
                                 // return Text(mediaItem?.title ?? '');
                                 if (mediaItem == null) {
                                   return Container(
-                                    width: 60,
-                                    height: 60,
+                                    width: 50,
+                                    height: 50,
                                   );
                                 }
                                 return Container(
-                                  width: 60,
-                                  height: 60,
+                                  width: 50,
+                                  height: 50,
                                   child: CachedNetworkImage(
                                     imageUrl: mediaItem.artUri.toString(),
                                     fit: BoxFit.cover,
@@ -201,101 +201,113 @@ class _PlayState extends State<Play> {
                               },
                             ),
                             Container(
-                                width: 260,
-                                height: 80,
+                                width: 250,
+                                height: 50,
                                 child: Column(
                                   children: [
-                                    Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                      children: [
-                                      Container(
-                                        height: 20,
-                                        width: 160,
-                                        child: StreamBuilder<MediaItem?>(
-                                          stream: _audioHandler.mediaItem,
-                                          builder: (context, snapshot) {
-                                            final mediaItem = snapshot.data;
-                                            return Marquee(
-                                              text: (mediaItem?.title ??
-                                                      'null') +
-                                                  '  -  ' +
-                                                  (mediaItem?.artist ?? 'null'),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
+                                    Container(
+                                      height: 20,
+                                      child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              flex: 1,
+                                              child: StreamBuilder<MediaItem?>(
+                                                stream: _audioHandler.mediaItem,
+                                                builder: (context, snapshot) {
+                                                  final mediaItem =
+                                                      snapshot.data;
+                                                  return Marquee(
+                                                    text: (mediaItem?.title ??
+                                                            'null') +
+                                                        '  -  ' +
+                                                        (mediaItem?.artist ??
+                                                            'null'),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    blankSpace: 20.0,
+                                                    velocity: 50.0,
+                                                    pauseAfterRound:
+                                                        Duration(seconds: 1),
+                                                    startPadding: 10.0,
+                                                  );
+                                                },
                                               ),
-                                              blankSpace: 20.0,
-                                              velocity: 50.0,
-                                              pauseAfterRound:
-                                                  Duration(seconds: 1),
-                                              startPadding: 10.0,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      Container(
-                                        height: 20,
-                                        child: StreamBuilder<MediaState>(
-                                          stream: _mediaStateStream,
-                                          builder: (context, snapshot) {
-                                            final mediaItem = snapshot.data;
-                                            return Text(
-                                              (formatDuration(
-                                                      mediaItem?.position ??
-                                                          Duration.zero) +
-                                                  ' / ' +
-                                                  formatDuration(mediaItem
-                                                          ?.mediaItem
-                                                          ?.duration ??
-                                                      Duration.zero)),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
+                                            ),
+                                            Expanded(
+                                              flex: 1,
+                                              child: StreamBuilder<MediaState>(
+                                                stream: _mediaStateStream,
+                                                builder: (context, snapshot) {
+                                                  final mediaItem =
+                                                      snapshot.data;
+                                                  return Text(
+                                                    (formatDuration(mediaItem
+                                                                ?.position ??
+                                                            Duration.zero) +
+                                                        ' / ' +
+                                                        formatDuration(mediaItem
+                                                                ?.mediaItem
+                                                                ?.duration ??
+                                                            Duration.zero)),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    // print(mediaState?.position.inMilliseconds
+                                                    //     .toDouble());
+                                                    // print(mediaState
+                                                    //     ?.mediaItem?.duration?.inMilliseconds
+                                                    // .toDouble());
+                                                  );
+                                                },
                                               ),
-                                              // print(mediaState?.position.inMilliseconds
-                                              //     .toDouble());
-                                              // print(mediaState
-                                              //     ?.mediaItem?.duration?.inMilliseconds
-                                              // .toDouble());
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ]),
+                                            ),
+                                          ]),
+                                    ),
                                     StreamBuilder<MediaState>(
                                       stream: _mediaStateStream,
                                       builder: (context, snapshot) {
                                         final mediaState = snapshot.data;
 
-                                        return Slider(
-                                          value: (mediaState?.position
-                                                          .inMilliseconds
-                                                          .toDouble() ??
-                                                      0.0) >
-                                                  (mediaState
+                                        return Container(
+                                            height: 20,
+                                            child: Slider(
+                                              value: (mediaState?.position
+                                                              .inMilliseconds
+                                                              .toDouble() ??
+                                                          0.0) >
+                                                      (mediaState
+                                                              ?.mediaItem
+                                                              ?.duration
+                                                              ?.inMilliseconds
+                                                              .toDouble() ??
+                                                          1.0)
+                                                  ? (mediaState
                                                           ?.mediaItem
                                                           ?.duration
                                                           ?.inMilliseconds
                                                           .toDouble() ??
                                                       1.0)
-                                              ? (mediaState?.mediaItem?.duration
-                                                      ?.inMilliseconds
+                                                  : (mediaState?.position
+                                                          .inMilliseconds
+                                                          .toDouble() ??
+                                                      0.0),
+                                              max: mediaState?.mediaItem
+                                                      ?.duration?.inMilliseconds
                                                       .toDouble() ??
-                                                  1.0)
-                                              : (mediaState
-                                                      ?.position.inMilliseconds
-                                                      .toDouble() ??
-                                                  0.0),
-                                          max: mediaState?.mediaItem?.duration
-                                                  ?.inMilliseconds
-                                                  .toDouble() ??
-                                              1.0,
-                                          onChanged: (value) {
-                                            _audioHandler.seek(Duration(
-                                                milliseconds: value.toInt()));
-                                          },
-                                        );
+                                                  1.0,
+                                              onChanged: (value) {
+                                                _audioHandler.seek(Duration(
+                                                    milliseconds:
+                                                        value.toInt()));
+                                              },
+                                            ));
 
                                         // return Text(
                                         //   '${mediaState?.position.inSeconds} / ${mediaState?.mediaItem?.duration?.inSeconds}',
@@ -305,8 +317,8 @@ class _PlayState extends State<Play> {
                                   ],
                                 )),
                             Container(
-                              width: 60,
-                              height: 60,
+                              width: 50,
+                              height: 50,
                               child: Center(
                                 child: playing
                                     ? _button(Icons.pause, _audioHandler.pause)
@@ -348,7 +360,7 @@ class _PlayState extends State<Play> {
 
   IconButton _button(IconData iconData, VoidCallback onPressed) => IconButton(
         icon: Icon(iconData),
-        iconSize: 50.0,
+        iconSize: 34.0,
         alignment: Alignment.center,
         onPressed: onPressed,
       );
@@ -368,7 +380,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // album: "Science Friday",
     title: "test",
     // artist: "Science Friday and WNYC Studios",
-    duration: Duration(milliseconds: 5739820),
+    // duration: Duration(milliseconds: 5739820),
     artUri: Uri.parse(
         'https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg'),
   );
