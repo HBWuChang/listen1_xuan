@@ -16,11 +16,6 @@ import 'package:crypto/crypto.dart';
 import 'package:pointycastle/export.dart';
 import 'package:convert/convert.dart';
 
-Uint8List _pad(Uint8List data, int blockSize) {
-  int padLength = blockSize - (data.length % blockSize);
-  return Uint8List.fromList(data + List.filled(padLength, padLength));
-}
-
 String _createSecretKey(int size) {
   // return '1234567890123456';
   const choice = '012345679abcdef';
@@ -34,12 +29,11 @@ String _createSecretKey(int size) {
   return result.join('');
 }
 
-Uint8List _aesEncrypt(String text, String secKey, String algo) {
+Uint8List _aesEncrypt2(String text, String secKey, String algo) {
   final key = utf8.encode(secKey);
-  final iv = utf8.encode('0102030405060708');
-  final encrypter = CBCBlockCipher(AESEngine())
-    ..init(true, ParametersWithIV(KeyParameter(Uint8List.fromList(key)), Uint8List.fromList(iv)));
-  final paddedText = _pad(utf8.encode(text), encrypter.blockSize);
+  final encrypter = ECBBlockCipher(AESEngine())
+    ..init(true, KeyParameter(Uint8List.fromList(key)));
+  final paddedText = _pad2(utf8.encode(text), encrypter.blockSize);
   final encrypted = Uint8List(paddedText.length);
   var offset = 0;
   while (offset < paddedText.length) {
@@ -48,46 +42,44 @@ Uint8List _aesEncrypt(String text, String secKey, String algo) {
   return encrypted;
 }
 
-String _rsaEncrypt(String text, String pubKey, String modulus) {
-  final reversedText = text.split('').reversed.join('');
-  final n = BigInt.parse(modulus, radix: 16);
-  final e = BigInt.parse(pubKey, radix: 16);
-  final b = BigInt.parse(hex.encode(utf8.encode(reversedText)), radix: 16);
-  final enc = b.modPow(e, n).toRadixString(16).padLeft(256, '0');
-  return enc;
+Uint8List _pad2(Uint8List data, int blockSize) {
+  final padLength = blockSize - (data.length % blockSize);
+  return Uint8List.fromList(data + List.filled(padLength, padLength));
 }
 
-Map<String, String> weapi(Map<String, dynamic> text) {
-  final modulus =
-      '00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b72'
-      '5152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbd'
-      'a92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe48'
-      '75d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7';
-  final nonce = '0CoJUm6Qyw8W8jud';
-  final pubKey = '010001';
-  final jsonText = jsonEncode(text);
-  print(jsonText);
-  final secKey = _createSecretKey(16);
-  final t1 = _aesEncrypt(jsonText, nonce, 'AES-CBC');
-  final t2 = base64.encode(t1);
-  print(t2);
-  final t3 = _aesEncrypt(t2, secKey, 'AES-CBC');
-  final t4 = base64.encode(t3);
-  print(t4);
-  final encText = t4;
-  final encSecKey = _rsaEncrypt(secKey, pubKey, modulus);
+
+
+String _bytesToHex(Uint8List bytes) {
+  final buffer = StringBuffer();
+  for (var byte in bytes) {
+    buffer.write(byte.toRadixString(16).padLeft(2, '0'));
+  }
+  return buffer.toString();
+}
+
+Map<String, dynamic> eapi(String url, dynamic object) {
+  const eapiKey = 'e82ckenh8dichen8';
+  final text = object is Map ? jsonEncode(object) : object;
+  final message = 'nobody' + url + 'use' + text + 'md5forencrypt';
+  final digest = md5.convert(utf8.encode(message)).toString();
+  final data = '$url-36cd479b6b5-$text-36cd479b6b5-$digest';
+  final encrypted = _aesEncrypt2(data, eapiKey, 'AES-ECB');
+  final hexString = _bytesToHex(encrypted).toUpperCase();
   return {
-    'params': encText,
-    'encSecKey': encSecKey,
+    'params': hexString,
   };
 }
+
 void main() async {
-  dynamic encryptReqData = {
-      // 'csrf_token': await get_csrf(),
-      'csrf_token': "af3c2b3649aac37f7dd3a32ce1818ffc",
-    };
-    print(encryptReqData);
-    print(jsonEncode(encryptReqData));
-    encryptReqData = weapi(encryptReqData);
-    print(encryptReqData);
+  const eapiUrl = '/api/song/enhance/player/url';
+  dynamic d = {
+    // 'csrf_token': await get_csrf(),
+    'ids': "[1906277944]",
+    'br': 999000,
+  };
+  final result = eapi(eapiUrl, d);
+  print(result);
+  // "FA90B329E9614F79E79598F37DC2EDB430F8378D2A2796338F0BFDEAEF824A22975CDA9D96D79E6DC4A59218CDB8199FBB90671B126E519ED511D196BD71EAB84959DDD5294E9C48DBF5C8992F45F3D55033E9565E01F668772DB24D1C29651D30793194BECF1D21FD945543406D63561D090DE1154B7CBCBEB27BCDE2058500"
+  //     FA90B329E9614F79E79598F37DC2EDB430F8378D2A2796338F0BFDEAEF824A22975CDA9D96D79E6DC4A59218CDB8199FB49E3889B82954F188A5D34B1CCA702EEF76993CE719CB12D323CEEC3778C9550EB2CD1084446E47AFD36CB89938294A410AAE9363B1FB64330E5458AED260591ABE01640FBEDD24E35DCB6EA9840207
+  // NQPZTZFVEUM7F+9AS+GDJKG9ILGR+5BGPP9IW1ZYGVGS+DP8HBVQKKETTR+BIX2NPCQ/4WLPMK5O2XATREK0JIBARXFIWYKWXRO87YHXK4U6V16WVFMS3LE84ZLW/U2WXEW61A8Q0S4MHJPI3MNASZYXHU3F4J7HTE7WMNUDD3I=
 }

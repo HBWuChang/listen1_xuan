@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:marquee/marquee.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 final play = Play();
 final _player = AudioPlayer();
@@ -52,6 +53,11 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
               "range": "bytes=0-",
             }),
           );
+        case "netease":
+          final dio = Dio();
+          await dio.download(res['url'], filePath);
+        default:
+          await Dio().download(res['url'], filePath);
       }
       // 设置本地文件路径为音频源
     }
@@ -92,6 +98,15 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
 
 Future<void> playerFailCallback() async {
   print('playerFailCallback');
+  Fluttertoast.showToast(
+    msg: 'Error downloading audio',
+    // toastLength: Toast.LENGTH_SHORT,
+    // gravity: ToastGravity.BOTTOM,
+    // timeInSecForIosWeb: 1,
+    // backgroundColor: Colors.red,
+    // textColor: Colors.white,
+    // fontSize: 16.0,
+  );
 }
 
 Future<void> setNotification() async {

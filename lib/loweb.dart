@@ -362,31 +362,31 @@ class MediaService {
       // }
       final trackPlatform = getProviderNameByItemId(track['id']);
       // final failoverSourceList = (await getLocalStorageValue('auto_choose_source_list', ['kuwo', 'qq', 'migu'])).where((i) => i != trackPlatform).toList();
-      final failoverSourceList = prefs.getStringList('auto_choose_source_list')!.where((i) => i != trackPlatform).toList();
-      final getUrlPromises = failoverSourceList.map((source) {
-        return Future(() async {
-          if (track['source'] == source) {
-            return;
-          }
-          final keyword = '${track['title']} ${track['artist']}';
-          final curpage = 1;
-          final url = '/search?keywords=$keyword&curpage=$curpage&type=0';
-          final provider = getProviderByName(source);
-          final data = await provider.search(url);
-          for (var searchTrack in data['result']) {
-            if (!searchTrack['disable'] && searchTrack['title'] == track['title'] && searchTrack['artist'] == track['artist']) {
-              final response = await provider.bootstrapTrack(searchTrack);
-              sound['url'] = response['url'];
-              sound['bitrate'] = response['bitrate'];
-              sound['platform'] = response['platform'];
-              throw sound;
-            }
-          }
-        });
-      }).toList();
+      // final failoverSourceList = prefs.getStringList('auto_choose_source_list')!.where((i) => i != trackPlatform).toList();
+      // final getUrlPromises = failoverSourceList.map((source) {
+      //   return Future(() async {
+      //     if (track['source'] == source) {
+      //       return;
+      //     }
+      //     final keyword = '${track['title']} ${track['artist']}';
+      //     final curpage = 1;
+      //     final url = '/search?keywords=$keyword&curpage=$curpage&type=0';
+      //     final provider = getProviderByName(source);
+      //     final data = await provider.search(url);
+      //     for (var searchTrack in data['result']) {
+      //       if (!searchTrack['disable'] && searchTrack['title'] == track['title'] && searchTrack['artist'] == track['artist']) {
+      //         final response = await provider.bootstrapTrack(searchTrack);
+      //         sound['url'] = response['url'];
+      //         sound['bitrate'] = response['bitrate'];
+      //         sound['platform'] = response['platform'];
+      //         throw sound;
+      //       }
+      //     }
+      //   });
+      // }).toList();
 
       try {
-        await Future.wait(getUrlPromises);
+        // await Future.wait(getUrlPromises);
         playerFailCallback();
       } catch (response) {
         playerSuccessCallback(response, track);

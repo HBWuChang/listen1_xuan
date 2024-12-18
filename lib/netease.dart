@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -54,24 +56,24 @@ class CookieInterceptors extends InterceptorsWrapper {
 
 class Netease {
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
-    final tokens = await settings_getsettings();
-    try {
-      final _cookies = tokens['ne'];
-      final _csrf = _cookies
-          .split(';')
-          .firstWhere((element) => element.contains('__csrf'))
-          .split('=')
-          .last;
-      if (url.contains('?')) {
-        url = url + '&csrf_token=$_csrf';
-      } else {
-        url = url + '?csrf_token=$_csrf';
-      }
-      return await Dio()
-          .get(url, options: Options(headers: {'cookie': _cookies}));
-    } catch (e) {
-      return await Dio().get(url);
-    }
+    // final tokens = await settings_getsettings();
+    // try {
+    //   final _cookies = tokens['ne'];
+    //   final _csrf = _cookies
+    //       .split(';')
+    //       .firstWhere((element) => element.contains('__csrf'))
+    //       .split('=')
+    //       .last;
+    //   if (url.contains('?')) {
+    //     url = url + '&csrf_token=$_csrf';
+    //   } else {
+    //     url = url + '?csrf_token=$_csrf';
+    //   }
+    //   return await Dio()
+    //       .get(url, options: Options(headers: {'cookie': _cookies}));
+    // } catch (e) {
+    return await Dio().get(url);
+    // }
   }
 
   Future<dynamic> dio_post_with_cookie_and_csrf(
@@ -91,43 +93,6 @@ class Netease {
       } else {
         url = url + '?csrf_token=$_csrf';
       }
-//       POST /weapi/w/nuser/account/get?csrf_token=6222ecf59551d5b83f4a36ab3563d972 h2
-// accept: */*
-// accept-encoding: gzip, deflate
-// accept-language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
-// content-length: 404
-// content-type: application/x-www-form-urlencoded
-// cookie: gdxidpyhxdE=SCiVhDjWn%2F5zNgTzcVXhv8lDMRu8tRuVqnXOhRf92tiwJfI4TlgJADUMlZeOgBJ4o4w7g%2FzpI2UC4R8JAhTsKBJdnEO%2F%2BitVgxg4cTHkB2nKDP6PQJrRMRBO4RsiPGtsf119HHiIg0izVIS4%2FoE49lT%2FiOCfJ%5CisS%5CpX%2BHh6eVUcAu65%3A1734404599576
-// cookie: NTES_YD_SESS=gjVxlD2x79desp9.5roWPKdn0dM0_cjz9iB3JMsAJlfLj0mKjiCG5_gqInCtUT1dm1dzAUz6yEcMePmIT33uB1Gc.iEpUNmpvPyv8aTauG_rgImPBVaX0pcLdEXi.x4P3cqMcX65rLU8LQWSykK8AlXZEP7hoLu.BtdJc3mpSNAUbJBCJwPrV45ejPCpvRlzDtlTiMp6OB4Uld8qxrP3sjwcQikKCb6HIoAF7SWQr9Xc8
-// cookie: S_INFO=1734403723|0|0&60##|17603844622
-// cookie: P_INFO=17603844622|1734403723|1|music|00&99|null&null&null#hlj&230600#10#0|&0|null|17603844622
-// cookie: __remember_me=true
-// cookie: MUSIC_U=00B14EBBA7E692E2DB61E83EE89B5179C095F92C0AF0EAC1E3E2159B705A9AA197DEBA8E0A0841A5F9C445370FE3E5AEFB02F7B4FB8C5F777AB6F750A4730627A4088D8B8E3C819E7C6C47684A7EF442E4FE3E336C91C46178D7B75011071CAE950EDCFECF32023D713D0653B5D3E261920826C0968EF340EE77F567FD6D439C202A8624087A7CCE5E66605F1625AE9AC557156323EBC6037F6993320F748F268FFE25DBDBB05EA60D15CB292B322FAA06A846424E9274B188AA08C69886C6052BC7EF97C7E2E07022E173C2ADCBB3AE654456BD277D2A38F6E23D754CBB891102613C2002589F03F88CB0A22C1C16AA578ACAFE6D9AECE1E5A51ABBB622805547266631C203359DD04D477C03BBDA0DA70260CC73231169B83E7617465A24F01718F685EE53C07B839AC62A12870D3C0552B2CA2D8213A5382944A7C1ADE5CBBBF2A6B12CEC9538D9CEFA8EF4E5C09F8F68FD71CD4ED76D433B5394FEA4D41B6D
-// cookie: __csrf=6222ecf59551d5b83f4a36ab3563d972
-// cookie: NMTID=00OZ8rfwfK1HEUJDEf2nyynS1ViR2IAAAGT0nNVoQ
-// cookie: JSESSIONID-WYYY=ka7%5C%2B9ohU0Y1WVX2xMWPxTRXvyAdBcC7EKJcQ16EYA7WhmjdbXR1WR66yuNQJxINUtbHRIH9eticZf8fR7HhHUfHMR8e2OcBeFZ71W3DHcktj1eD5UplQT%2B6KFyDhCoOtK%2F%5C%5ClWzsRAkAZokMuXDB7RzqYxBorB7rHWiTh8%2BZ3NN0TQ%5C%3A1734404392840
-// cookie: _iuqxldmzr_=32
-// cookie: _ntes_nnid=e93fe46d9047dae6f6160e9c20a56d44,1734402592875
-// cookie: _ntes_nuid=e93fe46d9047dae6f6160e9c20a56d44
-// cookie: WEVNSM=1.0.0
-// cookie: WNMCID=gfuwpp.1734402596092.01.0
-// cookie: __snaker__id=0ELRkztiQBOOyirg
-// cookie: WM_NI=P7ZaiwmgneW4uLserxCXC9YVPEMXzJxea74IJxUxsDRQEHFpBbChHWpizzPnIXqUXPLL3dvgKPRaqFnUCPZF4Gu8bvwIcqKdPjUOqhGdaTlAn64gtsMMJjgZU%2Bd86694ZlM%3D
-// cookie: WM_NIKE=9ca17ae2e6ffcda170e2e6eea2e95e8be8a6cce96db4968bb3d44f968b9f83c254b2979682b37cb4f5f785d92af0fea7c3b92a94e99682ec7dafb9a286d640b794bd86f17481888ddadc5e949b83b9f942bcbbafd8b7438aa89b99f250928f8ba9c57c82be8d89cb5db4b7b69bd3668b88bfb6db5c9094fd85f56d89909e82f44eae8b8db1d94ef899bbd9e17eb597ad92ca7094b69bb0f46485bcafb5ef4baeeafc88f7798f93868be65297f5acd9b53efbec968dd037e2a3
-// cookie: WM_TID=X9jTpnPHmjxAFAREAELDTvIcag8ou5dJ
-// cookie: ntes_utid=tid._.7a9AmrRm5Q5AVhFVBQKSCvcMbk9866Nc._.0
-// cookie: sDeviceId=YD-GR21%2F6rGitpARlEUFQaSSvMYf1t8u%2FJd
-// cookie: ntes_kaola_ad=1
-// host: music.163.com
-// origin: https://music.163.com
-// referer: https://music.163.com/
-// sec-fetch-dest: empty
-// sec-fetch-mode: cors
-// sec-fetch-site: same-origin
-// user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3
-// x-requested-with: com.xiebian.listen1_xuan
-
-// params=zWWF7HWAh7%2Ffd2XqZ8CkGRDGAdoral5CdKbBcpH6U7vGvPa2IbjP7PpespoyGcZrSYqbuGjFYdRu2M0iEqjw8XVyk5yWNx8EpxmuskpWX2H1Uiq52T1POyzsZq1H9wvH&encSecKey=2bc374c7a1dd4e86ec4c05319f827e438079a5a19a9083fd175369d3c826bb81296293f2cb8b312ab2c54c56d712d65de55c08899c7210f1d90ef5a3d90c39a14d39c8709d80230c7870029c21783b13362fd885d05cb008d6d519f14e4ffafe9f4d5d3be893a0316c722a725f6e4baa1472fb0e067915f4ab8615d1e21b0f15
       final dio = Dio();
       final tempDir = await getTemporaryDirectory();
       final tempPath = tempDir.path;
@@ -188,63 +153,93 @@ class Netease {
     return result.join('');
   }
 
- 
-Uint8List _aesEncrypt(String text, String secKey, String algo) {
-  final key = utf8.encode(secKey);
-  final iv = utf8.encode('0102030405060708');
-  final encrypter = CBCBlockCipher(AESEngine())
-    ..init(true, ParametersWithIV(KeyParameter(Uint8List.fromList(key)), Uint8List.fromList(iv)));
-  final paddedText = _pad(utf8.encode(text), encrypter.blockSize);
-  final encrypted = Uint8List(paddedText.length);
-  var offset = 0;
-  while (offset < paddedText.length) {
-    offset += encrypter.processBlock(paddedText, offset, encrypted, offset);
+  Uint8List _aesEncrypt(String text, String secKey, String algo) {
+    final key = utf8.encode(secKey);
+    final iv = utf8.encode('0102030405060708');
+    final encrypter = CBCBlockCipher(AESEngine())
+      ..init(
+          true,
+          ParametersWithIV(
+              KeyParameter(Uint8List.fromList(key)), Uint8List.fromList(iv)));
+    final paddedText = _pad(utf8.encode(text), encrypter.blockSize);
+    final encrypted = Uint8List(paddedText.length);
+    var offset = 0;
+    while (offset < paddedText.length) {
+      offset += encrypter.processBlock(paddedText, offset, encrypted, offset);
+    }
+    return encrypted;
   }
-  return encrypted;
-}
 
-String _rsaEncrypt(String text, String pubKey, String modulus) {
-  final reversedText = text.split('').reversed.join('');
-  final n = BigInt.parse(modulus, radix: 16);
-  final e = BigInt.parse(pubKey, radix: 16);
-  final b = BigInt.parse(hex.encode(utf8.encode(reversedText)), radix: 16);
-  final enc = b.modPow(e, n).toRadixString(16).padLeft(256, '0');
-  return enc;
-}
+  String _rsaEncrypt(String text, String pubKey, String modulus) {
+    final reversedText = text.split('').reversed.join('');
+    final n = BigInt.parse(modulus, radix: 16);
+    final e = BigInt.parse(pubKey, radix: 16);
+    final b = BigInt.parse(hex.encode(utf8.encode(reversedText)), radix: 16);
+    final enc = b.modPow(e, n).toRadixString(16).padLeft(256, '0');
+    return enc;
+  }
 
-Map<String, String> weapi(Map<String, dynamic> text) {
-  final modulus =
-      '00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b72'
-      '5152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbd'
-      'a92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe48'
-      '75d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7';
-  final nonce = '0CoJUm6Qyw8W8jud';
-  final pubKey = '010001';
-  final jsonText = jsonEncode(text);
-  // print(jsonText);
-  final secKey = _createSecretKey(16);
-  final t1 = _aesEncrypt(jsonText, nonce, 'AES-CBC');
-  final t2 = base64.encode(t1);
-  // print(t2);
-  final t3 = _aesEncrypt(t2, secKey, 'AES-CBC');
-  final t4 = base64.encode(t3);
-  // print(t4);
-  final encText = t4;
-  final encSecKey = _rsaEncrypt(secKey, pubKey, modulus);
-  return {
-    'params': encText,
-    'encSecKey': encSecKey,
-  };
-}
+  Map<String, String> weapi(Map<String, dynamic> text) {
+    final modulus =
+        '00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b72'
+        '5152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbd'
+        'a92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe48'
+        '75d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7';
+    final nonce = '0CoJUm6Qyw8W8jud';
+    final pubKey = '010001';
+    final jsonText = jsonEncode(text);
+    // print(jsonText);
+    final secKey = _createSecretKey(16);
+    final t1 = _aesEncrypt(jsonText, nonce, 'AES-CBC');
+    final t2 = base64.encode(t1);
+    // print(t2);
+    final t3 = _aesEncrypt(t2, secKey, 'AES-CBC');
+    final t4 = base64.encode(t3);
+    // print(t4);
+    final encText = t4;
+    final encSecKey = _rsaEncrypt(secKey, pubKey, modulus);
+    return {
+      'params': encText,
+      'encSecKey': encSecKey,
+    };
+  }
+
+  Uint8List _aesEncrypt2(String text, String secKey, String algo) {
+    final key = utf8.encode(secKey);
+    final encrypter = ECBBlockCipher(AESEngine())
+      ..init(true, KeyParameter(Uint8List.fromList(key)));
+    final paddedText = _pad2(utf8.encode(text), encrypter.blockSize);
+    final encrypted = Uint8List(paddedText.length);
+    var offset = 0;
+    while (offset < paddedText.length) {
+      offset += encrypter.processBlock(paddedText, offset, encrypted, offset);
+    }
+    return encrypted;
+  }
+
+  Uint8List _pad2(Uint8List data, int blockSize) {
+    final padLength = blockSize - (data.length % blockSize);
+    return Uint8List.fromList(data + List.filled(padLength, padLength));
+  }
+
+  String _bytesToHex(Uint8List bytes) {
+    final buffer = StringBuffer();
+    for (var byte in bytes) {
+      buffer.write(byte.toRadixString(16).padLeft(2, '0'));
+    }
+    return buffer.toString();
+  }
+
   Map<String, dynamic> eapi(String url, dynamic object) {
     const eapiKey = 'e82ckenh8dichen8';
     final text = object is Map ? jsonEncode(object) : object;
     final message = 'nobody' + url + 'use' + text + 'md5forencrypt';
     final digest = md5.convert(utf8.encode(message)).toString();
     final data = '$url-36cd479b6b5-$text-36cd479b6b5-$digest';
+    final encrypted = _aesEncrypt2(data, eapiKey, 'AES-ECB');
+    final hexString = _bytesToHex(encrypted).toUpperCase();
     return {
-      // 'params': _aesEncrypt(data, eapiKey, 'AES-ECB').toUpperCase(),
-      'params': base64.encode(_aesEncrypt(data, eapiKey, 'AES-ECB')).toUpperCase(),
+      'params': hexString,
     };
   }
 
@@ -271,7 +266,7 @@ Map<String, String> weapi(Map<String, dynamic> text) {
 
   Future<Map<String, dynamic>> showPlaylist(String url) async {
     const order = 'hot';
-    final offset = getParameterByName('offset', url);
+    final offset = int.parse(getParameterByName('offset', url));
     final filterId = getParameterByName('filter_id', url);
 
     if (filterId == 'toplist') {
@@ -318,8 +313,19 @@ Map<String, String> weapi(Map<String, dynamic> text) {
             'https://music.163.com/#/playlist?id=${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
       };
     }).toList();
-    // callback({'result': result});
-    return {"result": result};
+    int total = 1;
+    final t = document.getElementsByClassName('u-page')[0].children;
+    for (var i = 0; i < t.length; i++) {
+      try {
+        if (t[i].className == 'zpgi') {
+          total = max(total, int.parse(t[i].text));
+        }
+      } catch (e) {
+        // print(e);
+      }
+    }
+
+    return {"result": result, "total": total, "per_page": 35};
   }
 
   static Future<void> neEnsureCookie(Function callback) async {
@@ -400,34 +406,37 @@ Map<String, String> weapi(Map<String, dynamic> text) {
       'n': 1000,
       'csrf_token': '',
     });
-    await neEnsureCookie((_) async {
-      final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
-      final resData = response.data;
-      final info = {
-        'id': 'neplaylist_$listId',
-        'cover_img_url': resData['playlist']['coverImgUrl'],
-        'title': resData['playlist']['name'],
-        'source_url': 'https://music.163.com/#/playlist?id=$listId',
-      };
-      final maxAllowSize = 1000;
-      final trackIdsArray =
-          _splitArray(resData['playlist']['trackIds'], maxAllowSize);
+    // await neEnsureCookie((_) async {
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+    // final resData = response.data;
+    final resData = jsonDecode(response.data);
+    final info = {
+      'id': 'neplaylist_$listId',
+      'cover_img_url': resData['playlist']['coverImgUrl'],
+      'title': resData['playlist']['name'],
+      'source_url': 'https://music.163.com/#/playlist?id=$listId',
+    };
+    final maxAllowSize = 1000;
+    final trackIdsArray =
+        _splitArray(resData['playlist']['trackIds'], maxAllowSize);
 
-      final tracks = <Map<String, dynamic>>[];
-      for (final trackIds in trackIdsArray) {
-        final trackData = await _ngParsePlaylistTracks(trackIds);
-        tracks.addAll(trackData);
-      }
-      return {'tracks': tracks, 'info': info};
-    });
-    return {};
+    final tracks = <Map<String, dynamic>>[];
+    for (final trackIds in trackIdsArray) {
+      final trackData = await _ngParsePlaylistTracks(trackIds);
+      tracks.addAll(trackData);
+    }
+    return {'tracks': tracks, 'info': info};
+    // });
+    // return {'info': {}, 'tracks': []};
   }
 
   static List<List<dynamic>> _splitArray(List<dynamic> array, int size) {
     final count = (array.length / size).ceil();
     final result = <List<dynamic>>[];
     for (var i = 0; i < count; i++) {
-      result.add(array.sublist(i * size, (i + 1) * size));
+      final start = i * size;
+      final end = (i + 1) * size;
+      result.add(array.sublist(start, end > array.length ? array.length : end));
     }
     return result;
   }
@@ -435,12 +444,20 @@ Map<String, String> weapi(Map<String, dynamic> text) {
   Future<List<Map<String, dynamic>>> _ngParsePlaylistTracks(
       List<dynamic> trackIds) async {
     const targetUrl = 'https://music.163.com/weapi/v3/song/detail';
-    final data = weapi({
-      'c': '[${trackIds.map((id) => '{"id":$id}').join(',')}]',
-      'ids': '[${trackIds.join(',')}]',
+    Map<String, dynamic> t = {'c': "", 'ids': ""};
+    trackIds.forEach((element) {
+      t['c'] = t['c'] + '{"id":${element['id']}},';
+      t['ids'] = t['ids'] + '${element['id']},';
     });
-    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
-    final tracks = (response.data['songs'] as List).map((trackJson) {
+    t['c'] = '[' + t['c'].substring(0, t['c'].length - 1) + ']';
+    t['ids'] = '[' + t['ids'].substring(0, t['ids'].length - 1) + ']';
+    final data = weapi(t);
+    final datastr = FormData.fromMap(data);
+    final response = await Dio().post(targetUrl,
+        data: data,
+        options: Options(contentType: 'application/x-www-form-urlencoded'));
+    final tracks =
+        (jsonDecode(response.data)['songs'] as List).map((trackJson) {
       return {
         'id': 'netrack_${trackJson['id']}',
         'title': trackJson['name'],
@@ -472,23 +489,19 @@ Map<String, String> weapi(Map<String, dynamic> text) {
             1e3 * 60 * 60 * 24 * 365 * 100) /
         1000;
 
-    // await Dio()
-    //     .post(targetUrl + '?csrf_token=${await get_csrf()}',
-    //         data: FormData.fromMap(data))
-    //     .then((response) {
     final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
-    final resData = response.data['data'][0];
+    final resData = jsonDecode(response.data)['data'][0];
     final url = resData['url'];
     final br = resData['br'];
     if (url != null) {
       sound['url'] = url;
       sound['bitrate'] = '${(br / 1000).toStringAsFixed(0)}kbps';
       sound['platform'] = 'netease';
-      success(sound);
+      success(sound,track);
     } else {
-      failure(sound);
+      failure();
     }
-    ;
+    
   }
 
   static bool isPlayable(Map<String, dynamic> song) {
@@ -684,15 +697,15 @@ Map<String, String> weapi(Map<String, dynamic> text) {
     switch (listId) {
       case 'neplaylist':
         // await neGetPlaylist(url, fn);
-        return await neGetPlaylist(url);
+        return neGetPlaylist(url);
         break;
       case 'nealbum':
         // await neAlbum(url, fn);
-        return await neAlbum(url);
+        return neAlbum(url);
         break;
       case 'neartist':
         // await neArtist(url, fn);
-        return await neArtist(url);
+        return neArtist(url);
         break;
       default:
         return {};
@@ -913,8 +926,8 @@ Map<String, String> weapi(Map<String, dynamic> text) {
       // 'csrf_token': await get_csrf(),
       'csrf_token': "af3c2b3649aac37f7dd3a32ce1818ffc",
     };
-    print(encryptReqData);
-    print(jsonEncode(encryptReqData));
+    // print(encryptReqData);
+    // print(jsonEncode(encryptReqData));
     encryptReqData = weapi(encryptReqData);
     print(encryptReqData);
     final response = await dio_post_with_cookie_and_csrf(url, encryptReqData);

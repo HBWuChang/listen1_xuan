@@ -7,6 +7,7 @@ dynamic getParameterByName(String name, String url) {
   // if (url == null) {
   //   url = html.window.location.href;
   // }
+  url = Uri.encodeFull(url);
   name = name.replaceAll(RegExp(r'[\[\]]'), r'\\$&');
   final regex = RegExp('[?&]' + name + '(=([^&#]*)|&|#|\$)');
   final results = regex.firstMatch(url);

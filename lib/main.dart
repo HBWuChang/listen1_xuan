@@ -92,8 +92,8 @@ class _MyHomePageState extends State<MyHomePage>
   int offset = 0;
   String source = 'bilibili';
   Map<String, dynamic> filter = {'id': '', 'name': '全部'};
-  PageController _pageController = PageController();
   bool show_filter = false;
+  // bool show_more = false;
   Map<String, dynamic> filter_detail = {};
   void _onItemTapped(int index) async {
     switch (index) {
@@ -115,15 +115,19 @@ class _MyHomePageState extends State<MyHomePage>
         show_filter = false;
         break;
     }
+    // 检查 mounted 属性
+    if (!mounted) return;
     filter_detail = await MediaService.getPlaylistFilters(source);
-    setState(() {
-      _selectedIndex = index;
-    });
-    _pageController.animateToPage(index,
-        duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
+    // 再次检查 mounted 属性
+    if (mounted) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   void change_fliter(String id, String name) {
+    print('change_fliter{id: $id, name: $name}');
     setState(() {
       filter = {'id': id, 'name': name};
     });
@@ -146,7 +150,11 @@ class _MyHomePageState extends State<MyHomePage>
   void dispose() {
     _focusNode.dispose();
     _focusNode2.dispose();
-    _animationController.dispose();
+    try {
+      _animationController.dispose();
+    } catch (e) {
+      // print(e);
+    }
     super.dispose();
   }
 
@@ -256,8 +264,8 @@ class _MyHomePageState extends State<MyHomePage>
                                   for (var item in filter_detail["all"]) {
                                     tfilter[item["category"]] = item["filters"];
                                   }
-                                  _showFilterSelection(
-                                      context, tfilter, filter['id'],change_fliter);
+                                  _showFilterSelection(context, tfilter,
+                                      filter['id'], change_fliter);
                                 },
                               ),
                           ])),
@@ -268,27 +276,12 @@ class _MyHomePageState extends State<MyHomePage>
                       ),
 
                       Expanded(
-                        child: PageView(
-                          controller: _pageController,
-                          onPageChanged: (index) {
-                            setState(() {
-                              _selectedIndex = index;
-                            });
-                          },
-                          children: <Widget>[
-                            Playlist(
-                                source: source,
-                                offset: offset,
-                                filter: filter['id'],
-                                onPlaylistTap: change_main_status),
-                            Playlist(
-                                source: source,
-                                offset: offset,
-                                filter: filter['id'],
-                                onPlaylistTap: change_main_status),
-                            Center(child: Text('Song List 3')),
-                          ],
-                        ),
+                        child: Playlist(
+                            key: ValueKey(filter),
+                            source: source,
+                            offset: offset,
+                            filter: filter,
+                            onPlaylistTap: change_main_status),
                       ),
                     ],
                   )
@@ -334,7 +327,8 @@ void _showFilterSelection(BuildContext context, Map<String, dynamic> filter,
                             label: Text(filterItem['name']),
                             onSelected: (bool selected) {
                               // 处理过滤器选择逻辑
-                              change_fliter(filterItem['id'], filterItem['name']);
+                              change_fliter(
+                                  filterItem['id'], filterItem['name']);
                               Navigator.pop(context);
                             },
                           );
