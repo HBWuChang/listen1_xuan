@@ -13,14 +13,47 @@ import 'package:marquee/marquee.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'loweb.dart';
 final play = Play();
 final _player = AudioPlayer();
 late AudioHandler _audioHandler;
+int playmode = 0;
+List<Map<String, dynamic>> randommodetemplist = [];
 
 class Play extends StatefulWidget {
   @override
   _PlayState createState() => _PlayState();
+}
+
+Future<void> onPlaybackCompleted() async {
+  final current_playing = await get_current_playing();
+  final nowplaying_track = await getnowplayingsong();
+  if (nowplaying_track['index'] != -1) {
+    final index = nowplaying_track['index'];
+    switch (playmode) {
+      case 0:
+        index + 1 < current_playing.length
+            ? await playsong(current_playing[index + 1])
+            : await playsong(current_playing[0]);
+        break;
+      case 1:
+        final randomIndex = (current_playing.length *
+                (DateTime.now().millisecondsSinceEpoch % 1000) /
+                1000)
+            .floor();
+        if (randommodetemplist.contains(current_playing[index])) {
+          randommodetemplist.remove(current_playing[index]);
+        }
+        randommodetemplist.add(current_playing[index]);
+        await playsong(current_playing[randomIndex]);
+        break;
+      case 2:
+        await _player.seek(Duration.zero);
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 Future<String> get_local_cache(String id) async {
@@ -52,19 +85,6 @@ Future<void> set_local_cache(String id, String path) async {
   }
 }
 
-Future<dynamic> get_player_settings(String key) async {
-  final prefs = await SharedPreferences.getInstance();
-  final player_settings = await prefs.getString('player-settings');
-  if (player_settings != null) {
-    try {
-      final player_settings_json = jsonDecode(player_settings);
-      return player_settings_json[key];
-    } catch (e) {
-      return null;
-    }
-  }
-  return null;
-}
 Future<void> add_current_playing(List<Map<String, dynamic>> tracks) async {
   List<Map<String, dynamic>> current_playing = await get_current_playing();
   for (var track in tracks) {
@@ -86,8 +106,8 @@ Future<List<Map<String, dynamic>>> get_current_playing() async {
   final current_playing = await prefs.getString('current-playing');
   if (current_playing != null) {
     try {
-      final current_playing_json = jsonDecode(current_playing);
-      return current_playing_json;
+      final List<dynamic> current_playing_json = jsonDecode(current_playing);
+      return current_playing_json.cast<Map<String, dynamic>>();
     } catch (e) {
       return [];
     }
@@ -95,7 +115,42 @@ Future<List<Map<String, dynamic>>> get_current_playing() async {
   return [];
 }
 
+Future<dynamic> get_player_settings(String key) async {
+  final prefs = await SharedPreferences.getInstance();
+  final player_settings = await prefs.getString('player-settings');
+  if (player_settings != null) {
+    try {
+      final player_settings_json = jsonDecode(player_settings);
+      return player_settings_json[key];
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+}
+
 Future<void> set_player_settings(String key, dynamic value) async {
+  if (key == 'playmode') {
+    switch (value) {
+      case 0:
+        Fluttertoast.showToast(
+          msg: '循环',
+        );
+        break;
+      case 1:
+        Fluttertoast.showToast(
+          msg: '随机',
+        );
+        break;
+      case 2:
+        Fluttertoast.showToast(
+          msg: '单曲',
+        );
+        break;
+      default:
+        break;
+    }
+  }
   final prefs = await SharedPreferences.getInstance();
   final player_settings = await prefs.getString('player-settings');
   if (player_settings != null) {
@@ -109,7 +164,53 @@ Future<void> set_player_settings(String key, dynamic value) async {
   }
 }
 
+// Future<Map<String, dynamic>,int> getnowplayingsong() async {
+Future<Map<String, dynamic>> getnowplayingsong() async {
+  final nowplaying_track_id = await get_player_settings("nowplaying_track_id");
+  final current_playing = await get_current_playing();
+  for (var track in current_playing) {
+    if (track['id'] == nowplaying_track_id) {
+      return {'track': track, 'index': current_playing.indexOf(track)};
+    }
+  }
+  return {'track': {}, 'index': -1};
+}
 
+Future<void> playsong(Map<String, dynamic> track) async {
+  final tdir=await get_local_cache(track['id']);
+  if (tdir==""){
+    MediaService.bootstrapTrack(track, playerSuccessCallback, playerFailCallback);
+    return;
+  }
+  await _player.setFilePath(tdir);
+
+  // 使用 Completer 来等待 _duration 被赋值
+  final Completer<void> completer = Completer<void>();
+  _player.durationStream.listen((duration) {
+    if (duration != null && !completer.isCompleted) {
+      // print('音频文件时长: ${duration.inSeconds}秒');
+      completer.complete();
+    }
+  });
+
+  // 等待 _duration 被赋值
+  await completer.future;
+  await set_player_settings("nowplaying_track_id", track['id']);
+  await add_current_playing([track]);
+  // 获取音频文件的时长
+  final _duration = await _player.duration;
+  print(_duration);
+  dynamic _item;
+  _item = MediaItem(
+    id: track['id'],
+    title: track['title'],
+    artist: track['artist'],
+    artUri: Uri.parse(track['img_url']),
+    duration: _duration,
+  );
+  (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
+  _player.play();
+}
 
 Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
   print('playerSuccessCallback');
@@ -152,37 +253,7 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
       }
       await set_local_cache(track['id'], fileName);
     }
-    if (_local_cache == '') {
-      await _player.setFilePath(await get_local_cache(track['id']));
-    } else {
-      await _player.setFilePath(_local_cache);
-    }
-    // 使用 Completer 来等待 _duration 被赋值
-    final Completer<void> completer = Completer<void>();
-    _player.durationStream.listen((duration) {
-      if (duration != null && !completer.isCompleted) {
-        // print('音频文件时长: ${duration.inSeconds}秒');
-        completer.complete();
-      }
-    });
-
-    // 等待 _duration 被赋值
-    await completer.future;
-
-    // 获取音频文件的时长
-    final _duration = await _player.duration;
-    print(_duration);
-    dynamic _item;
-    _item = MediaItem(
-      id: track['id'],
-      title: track['title'],
-      artist: track['artist'],
-      artUri: Uri.parse(track['img_url']),
-      duration: _duration,
-    );
-    (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
-    _player.play();
-
+    playsong(track);
     return;
   } catch (e) {
     print('Error downloading or playing audio: $e');
@@ -194,6 +265,7 @@ Future<void> playerFailCallback() async {
   Fluttertoast.showToast(
     msg: 'Error downloading audio',
   );
+  onPlaybackCompleted();
 }
 
 Future<void> setNotification() async {
@@ -496,6 +568,11 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
     // Load the player.
     _player.setAudioSource(AudioSource.uri(Uri.parse(_item.id)));
+    _player.playerStateStream.listen((playerState) {
+      if (playerState.processingState == ProcessingState.completed) {
+        onPlaybackCompleted();
+      }
+    });
   }
   // void change_playbackstate(PlaybackState _playbackState) {
   void change_playbackstate(MediaItem _item) {
@@ -508,8 +585,37 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   // headset will be routed through to these 4 methods so that you can handle
   // your audio playback logic in one place.
 
+  // @override
+  // Future<void> play() => _player.play();
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    final currentMediaItem = mediaItem.value;
+    if (currentMediaItem != null) {
+      final title = currentMediaItem.title;
+      print('Playing: $title');
+      // 在这里添加你需要的逻辑
+      if (title == 'test') {
+        try {
+          playmode = await get_player_settings("playmode");
+        } catch (e) {
+          playmode = 0;
+        }
+
+        await set_player_settings("playmode", playmode);
+
+        final track = await getnowplayingsong();
+        if (track['index'] != -1) {
+          await playsong(track['track']);
+        } else {
+          _player.play();
+        }
+      } else {
+        _player.play();
+      }
+    } else {
+      _player.play();
+    }
+  }
 
   @override
   Future<void> pause() => _player.pause();
@@ -518,20 +624,96 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   Future<void> seek(Duration position) => _player.seek(position);
 
   @override
-  Future<void> stop() => _player.stop();
+  Future<void> skipToPrevious() async {
+    final current_playing = await get_current_playing();
+    final nowplaying_track = await getnowplayingsong();
+    if (nowplaying_track['index'] != -1) {
+      final index = nowplaying_track['index'];
+      switch (playmode) {
+        case 0:
+          index - 1 >= 0
+              ? await playsong(current_playing[index - 1])
+              : await playsong(current_playing[current_playing.length - 1]);
+          break;
+        case 1:
+          if (randommodetemplist.contains(current_playing[index])) {
+            randommodetemplist.remove(current_playing[index]);
+            for (var i = randommodetemplist.length - 1; i >= 0; i--) {
+              if (current_playing.contains(randommodetemplist[i])) {
+                await playsong(randommodetemplist[i]);
+                return;
+              }
+            }
+          }
+          final randomIndex = (current_playing.length *
+                  (DateTime.now().millisecondsSinceEpoch % 1000) /
+                  1000)
+              .floor();
+          await playsong(current_playing[randomIndex]);
+          break;
+        case 2:
+          await playsong(current_playing[index]);
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  @override
+  Future<void> skipToNext() async {
+    final current_playing = await get_current_playing();
+    final nowplaying_track = await getnowplayingsong();
+    if (nowplaying_track['index'] != -1) {
+      final index = nowplaying_track['index'];
+      switch (playmode) {
+        case 0:
+          index + 1 < current_playing.length
+              ? await playsong(current_playing[index + 1])
+              : await playsong(current_playing[0]);
+          break;
+        case 1:
+          final randomIndex = (current_playing.length *
+                  (DateTime.now().millisecondsSinceEpoch % 1000) /
+                  1000)
+              .floor();
+          await playsong(current_playing[randomIndex]);
+          break;
+        case 2:
+          index + 1 < current_playing.length
+              ? await playsong(current_playing[index + 1])
+              : await playsong(current_playing[0]);
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  @override
+  Future<void> stop() async {
+    try {
+      playmode = await get_player_settings("playmode");
+    } catch (e) {
+      playmode = 0;
+    }
+    playmode = (playmode + 1) % 3;
+    await set_player_settings("playmode", playmode);
+  }
 
   /// Transform a just_audio event into an audio_service state.
   ///
   /// This method is used from the constructor. Every event received from the
   /// just_audio player will be transformed into an audio_service state so that
   /// it can be broadcast to audio_service clients.
+
   PlaybackState _transformEvent(PlaybackEvent event) {
     return PlaybackState(
       controls: [
-        MediaControl.rewind,
         if (_player.playing) MediaControl.pause else MediaControl.play,
+        MediaControl.skipToNext,
+        MediaControl.skipToPrevious,
         MediaControl.stop,
-        MediaControl.fastForward,
       ],
       systemActions: const {
         MediaAction.seek,

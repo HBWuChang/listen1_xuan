@@ -357,8 +357,11 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             ElevatedButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 // 播放全部按钮点击事件
+                                List<Map<String, dynamic>> trackList = List<Map<String, dynamic>>.from(tracks);
+                                await set_current_playing(trackList);
+                                await playsong(tracks[0]);
                               },
                               child: Text('播放全部（共${tracks.length}首）'),
                             ),
