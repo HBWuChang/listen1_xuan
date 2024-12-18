@@ -3,6 +3,9 @@ import 'package:marquee/marquee.dart';
 import 'loweb.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'play.dart';
+import 'myplaylist.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Playlist extends StatefulWidget {
   final String source;
@@ -94,15 +97,6 @@ class _PlaylistState extends State<Playlist> {
                   final playlist = _playlists[index];
                   return GestureDetector(
                     onTap: () {
-                      // 处理点击事件
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (context) => PlaylistInfo(
-                      //       listId: playlist['id'],
-                      //     ),
-                      //   ),
-                      // );
                       widget.onPlaylistTap(playlist['id']);
                     },
                     child: Column(
@@ -144,12 +138,130 @@ class _PlaylistState extends State<Playlist> {
   }
 }
 
-// bi_get_playlist
+class MyPlaylist extends StatefulWidget {
+  final Function(String, [bool]) onPlaylistTap;
+  MyPlaylist({
+    required this.onPlaylistTap,
+  });
+  @override
+  _MyPlaylistState createState() => _MyPlaylistState();
+}
+
+class _MyPlaylistState extends State<MyPlaylist> {
+  List<dynamic> _playlists_my = [];
+  List<dynamic> _playlists_fav = [];
+  bool _isExpandedMy = true;
+  bool _isExpandedFav = true;
+  bool _loading = true;
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  void _loadData() async {
+    Map<String, dynamic> result_my = await myplaylist.showMyPlaylist('my');
+    Map<String, dynamic> result_fav =
+        await myplaylist.showMyPlaylist('favorite');
+    setState(() {
+      _playlists_my = result_my['result'];
+      _playlists_fav = result_fav['result'];
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(children: [
+        _loading
+            ? CircularProgressIndicator()
+            : SingleChildScrollView(
+                child: ExpansionPanelList(
+                  expansionCallback: (int index, bool isExpanded) {
+                    setState(() {
+                      if (index == 0) {
+                        _isExpandedMy = !_isExpandedMy;
+                      } else if (index == 1) {
+                        _isExpandedFav = !_isExpandedFav;
+                      }
+                    });
+                  },
+                  children: [
+                    ExpansionPanel(
+                      headerBuilder: (BuildContext context, bool isExpanded) {
+                        return ListTile(
+                          leading: Icon(Icons.library_music),
+                          title: Text('我创建的歌单'),
+                          onTap: () {
+                            setState(() {
+                              _isExpandedMy = !_isExpandedMy;
+                            });
+                          },
+                        );
+                      },
+                      body: Column(
+                        children: _playlists_my.map((playlist) {
+                          return ListTile(
+                            leading: CachedNetworkImage(
+                              imageUrl: playlist['info']['cover_img_url'],
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                            ),
+                            title: Text(playlist['info']['title']),
+                            onTap: () {
+                              widget.onPlaylistTap(playlist['info']['id'], true);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      isExpanded: _isExpandedMy,
+                    ),
+                    ExpansionPanel(
+                      headerBuilder: (BuildContext context, bool isExpanded) {
+                        return ListTile(
+                          leading: Icon(Icons.star),
+                          title: Text('我收藏的歌单'),
+                          onTap: () {
+                            setState(() {
+                              _isExpandedFav = !_isExpandedFav;
+                            });
+                          },
+                        );
+                      },
+                      body: Column(
+                        children: _playlists_fav.map((playlist) {
+                          return ListTile(
+                            leading: CachedNetworkImage(
+                              imageUrl: playlist['info']['cover_img_url'],
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                            ),
+                            title: Text(playlist['info']['title']),
+                            onTap: () {
+                              widget.onPlaylistTap(playlist['info']['id']);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      isExpanded: _isExpandedFav,
+                    ),
+                  ],
+                ),
+              ),
+      ]),
+    );
+  }
+}
+
 class PlaylistInfo extends StatefulWidget {
   final String listId;
   final Function(String) onPlaylistTap;
-
-  PlaylistInfo({required this.listId, required this.onPlaylistTap});
+  bool is_my = false;
+  PlaylistInfo(
+      {required this.listId, required this.onPlaylistTap, this.is_my = false});
 
   @override
   _PlaylistInfoState createState() => _PlaylistInfoState();
@@ -158,10 +270,19 @@ class PlaylistInfo extends StatefulWidget {
 class _PlaylistInfoState extends State<PlaylistInfo> {
   Map<String, dynamic> _playlist = {};
   bool _loading = true;
+  bool _is_fav = false;
 
   @override
   void initState() {
     super.initState();
+    check_fav();
+  }
+
+  void check_fav() async {
+    final result = await myplaylist.isMyfavPlaylist(widget.listId);
+    setState(() {
+      _is_fav = result;
+    });
   }
 
   @override
@@ -175,12 +296,12 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
               return CircularProgressIndicator();
             }
             // try {
-              if (snapshot.hasError) {
-                return Text('Error: ${snapshot.error}');
-              }
-              if (!snapshot.hasData || snapshot.data['tracks'].isEmpty) {
-                return Text('No data available');
-              }
+            if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            }
+            if (!snapshot.hasData || snapshot.data['tracks'].isEmpty) {
+              return Text('No data available');
+            }
             // } catch (e) {
             //   return Text('Error: ${e}');
             // }
@@ -254,23 +375,151 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                   ),
                   actions: [
                     IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: () {
-                        // 添加按钮点击事件
-                      },
-                    ),
+                        icon: Icon(Icons.add),
+                        onPressed: () async {
+                          // 添加按钮点击事件
+                          try {
+                            await myplaylist.saveMyPlaylist(
+                              'my',
+                              snapshot.data,
+                            );
+                            Fluttertoast.showToast(
+                              msg: '已添加到我的歌单',
+                            );
+                          } catch (e) {
+                            // print(e);
+                            Fluttertoast.showToast(
+                              msg: '添加失败${e}',
+                            );
+                          }
+                        }),
+                    widget.is_my
+                        ? IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () {
+                              // 删除按钮点击事件
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Text('删除歌单'),
+                                    content: Text('确定要删除这个歌单吗？'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text('取消'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () async {
+                                          await myplaylist.removeMyPlaylist(
+                                              'my', widget.listId);
+                                          Navigator.of(context).pop();
+                                          widget.onPlaylistTap('');
+                                        },
+                                        child: Text('确定'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          )
+                        : IconButton(
+                            icon: Icon(Icons.link),
+                            onPressed: () {
+                              // 链接按钮点击事件
+                              // launchUrl(playlistInfo['source_url']);
+                              launchUrl(Uri.parse(playlistInfo['source_url']));
+                            },
+                          ),
+                    widget.is_my
+                        ? IconButton(
+                            icon: Icon(Icons.edit),
+                            onPressed: () {
+                              // 编辑按钮点击事件
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  final TextEditingController _titleController =
+                                      TextEditingController();
+                                  final TextEditingController _coverImgUrlController =
+                                      TextEditingController();
+                                  _titleController.text = playlistInfo['title'];
+                                  _coverImgUrlController.text =
+                                      playlistInfo['cover_img_url'];
+                                  return AlertDialog(
+                                    title: Text('编辑歌单'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        TextField(
+                                          controller: _titleController,
+                                          decoration: InputDecoration(
+                                            labelText: '歌单标题',
+                                          ),
+                                        ),
+                                        TextField(
+                                          controller: _coverImgUrlController,
+                                          decoration: InputDecoration(
+                                            labelText: '封面图片链接',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text('取消'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () async {
+                                          await myplaylist.editMyPlaylist(
+                                            widget.listId,
+                                            _titleController.text,
+                                            _coverImgUrlController.text,
+                                          );
+                                          Fluttertoast.showToast(
+                                            msg: '编辑成功',
+                                          );
+                                          Navigator.of(context).pop();
+                                          widget.onPlaylistTap('');
+                                        },
+                                        child: Text('确定'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          )
+                        :
                     IconButton(
-                      icon: Icon(Icons.link),
-                      onPressed: () {
-                        // 链接按钮点击事件
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.favorite_border),
-                      onPressed: () {
-                        // 收藏按钮点击事件
-                      },
-                    ),
+                        // icon: Icon(Icons.star_border),
+                        icon: _is_fav
+                            ? Icon(Icons.star)
+                            : Icon(Icons.star_border),
+                        onPressed: () async {
+                          // 添加按钮点击事件
+                          try {
+                            await myplaylist.saveMyPlaylist(
+                              'favorite',
+                              snapshot.data,
+                            );
+                            check_fav();
+                            Fluttertoast.showToast(
+                              msg: '已添加到我的收藏',
+                            );
+                          } catch (e) {
+                            // print(e);
+                            Fluttertoast.showToast(
+                              msg: '添加失败${e}',
+                            );
+                          }
+                        }),
                   ],
                 ),
                 SliverToBoxAdapter(
@@ -294,6 +543,9 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                           // 歌曲点击事件
                           // bootstrapTrack(track);
                           // MediaService.bootstrapTrack(track, playerSuccessCallback, playerFailCallback);
+                          Fluttertoast.showToast(
+                            msg: '尝试播放：${track['title']}',
+                          );
                           MediaService.bootstrapTrack(
                               track, playerSuccessCallback, playerFailCallback);
                         },

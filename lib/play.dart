@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'dart:io';
+import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:rxdart/rxdart.dart';
@@ -11,6 +12,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:marquee/marquee.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final play = Play();
 final _player = AudioPlayer();
@@ -21,19 +23,108 @@ class Play extends StatefulWidget {
   _PlayState createState() => _PlayState();
 }
 
+Future<String> get_local_cache(String id) async {
+  final prefs = await SharedPreferences.getInstance();
+  final local_cache_list_json = prefs.getString('local-cache-list');
+  if (local_cache_list_json != null) {
+    final local_cache_list = jsonDecode(local_cache_list_json);
+    if (local_cache_list[id] != null) {
+      final tempDir = await getTemporaryDirectory();
+      final tempPath = tempDir.path;
+      final filePath = '$tempPath/${local_cache_list[id]}';
+      if (await File(filePath).exists()) return filePath;
+    }
+  }
+  return '';
+}
+
+Future<void> set_local_cache(String id, String path) async {
+  final prefs = await SharedPreferences.getInstance();
+  final local_cache_list_json = prefs.getString('local-cache-list');
+  if (local_cache_list_json != null) {
+    final local_cache_list = jsonDecode(local_cache_list_json);
+    local_cache_list[id] = path;
+    await prefs.setString('local-cache-list', jsonEncode(local_cache_list));
+  } else {
+    final local_cache_list = {};
+    local_cache_list[id] = path;
+    await prefs.setString('local-cache-list', jsonEncode(local_cache_list));
+  }
+}
+
+Future<dynamic> get_player_settings(String key) async {
+  final prefs = await SharedPreferences.getInstance();
+  final player_settings = await prefs.getString('player-settings');
+  if (player_settings != null) {
+    try {
+      final player_settings_json = jsonDecode(player_settings);
+      return player_settings_json[key];
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+}
+Future<void> add_current_playing(List<Map<String, dynamic>> tracks) async {
+  List<Map<String, dynamic>> current_playing = await get_current_playing();
+  for (var track in tracks) {
+    if (!current_playing.any((element) => element['id'] == track['id'])) {
+      current_playing.add(track);
+    }
+  }
+  await set_current_playing(current_playing);
+}
+
+Future<void> set_current_playing(List<Map<String, dynamic>> tracks) async {
+  final prefs = await SharedPreferences.getInstance();
+  final current_playing = jsonEncode(tracks);
+  await prefs.setString('current-playing', current_playing);
+}
+
+Future<List<Map<String, dynamic>>> get_current_playing() async {
+  final prefs = await SharedPreferences.getInstance();
+  final current_playing = await prefs.getString('current-playing');
+  if (current_playing != null) {
+    try {
+      final current_playing_json = jsonDecode(current_playing);
+      return current_playing_json;
+    } catch (e) {
+      return [];
+    }
+  }
+  return [];
+}
+
+Future<void> set_player_settings(String key, dynamic value) async {
+  final prefs = await SharedPreferences.getInstance();
+  final player_settings = await prefs.getString('player-settings');
+  if (player_settings != null) {
+    final player_settings_json = jsonDecode(player_settings);
+    player_settings_json[key] = value;
+    await prefs.setString('player-settings', jsonEncode(player_settings_json));
+  } else {
+    final player_settings_json = {};
+    player_settings_json[key] = value;
+    await prefs.setString('player-settings', jsonEncode(player_settings_json));
+  }
+}
+
+
+
 Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
   print('playerSuccessCallback');
   print(res);
   print(track);
 
   try {
-    // 获取应用程序的临时目录
     final tempDir = await getTemporaryDirectory();
     final tempPath = tempDir.path;
-    final fileName = res['url'].split('/').last.split('?').first;
-    final filePath = '$tempPath/$fileName';
-    // 若本地已经存在该文件，则直接播放
-    if (!await File(filePath).exists()) {
+    final _local_cache = await get_local_cache(track['id']);
+    if (_local_cache == '') {
+      // 获取应用程序的临时目录
+      final fileName = res['url'].split('/').last.split('?').first;
+      final filePath = '$tempPath/$fileName';
+      // 若本地已经存在该文件，则直接播放
       switch (res["platform"]) {
         case "bilibili":
           final dio = Dio();
@@ -59,15 +150,18 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
         default:
           await Dio().download(res['url'], filePath);
       }
-      // 设置本地文件路径为音频源
+      await set_local_cache(track['id'], fileName);
     }
-// 设置本地文件路径为音频源
-    await _player.setFilePath(filePath);
+    if (_local_cache == '') {
+      await _player.setFilePath(await get_local_cache(track['id']));
+    } else {
+      await _player.setFilePath(_local_cache);
+    }
     // 使用 Completer 来等待 _duration 被赋值
     final Completer<void> completer = Completer<void>();
     _player.durationStream.listen((duration) {
       if (duration != null && !completer.isCompleted) {
-        print('音频文件时长: ${duration.inSeconds}秒');
+        // print('音频文件时长: ${duration.inSeconds}秒');
         completer.complete();
       }
     });
@@ -80,8 +174,7 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
     print(_duration);
     dynamic _item;
     _item = MediaItem(
-      id: filePath,
-      // id: "https://s.040905.xyz/d/v/temp/%E5%91%A8%E6%9D%B0%E4%BC%A6%20-%20%E6%9C%80%E4%BC%9F%E5%A4%A7%E7%9A%84%E4%BD%9C%E5%93%81%20%5Bmqms2%5D.mp3?sign=fNa5fJ-EtPzcIs_UlZYKYrjNgKhbYy7pKAgpcLEKC6M=:0",
+      id: track['id'],
       title: track['title'],
       artist: track['artist'],
       artUri: Uri.parse(track['img_url']),
@@ -100,12 +193,6 @@ Future<void> playerFailCallback() async {
   print('playerFailCallback');
   Fluttertoast.showToast(
     msg: 'Error downloading audio',
-    // toastLength: Toast.LENGTH_SHORT,
-    // gravity: ToastGravity.BOTTOM,
-    // timeInSecForIosWeb: 1,
-    // backgroundColor: Colors.red,
-    // textColor: Colors.white,
-    // fontSize: 16.0,
   );
 }
 
@@ -224,7 +311,7 @@ class _PlayState extends State<Play> {
                                       height: 20,
                                       child: Row(
                                           mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                              MainAxisAlignment.spaceEvenly,
                                           children: [
                                             Expanded(
                                               flex: 1,

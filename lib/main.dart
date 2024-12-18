@@ -90,7 +90,8 @@ class _MyHomePageState extends State<MyHomePage>
 
   int _selectedIndex = 0;
   int offset = 0;
-  String source = 'bilibili';
+  bool main_is_my = false;
+  String source = 'myplaylist';
   Map<String, dynamic> filter = {'id': '', 'name': '全部'};
   bool show_filter = false;
   // bool show_more = false;
@@ -98,22 +99,29 @@ class _MyHomePageState extends State<MyHomePage>
   void _onItemTapped(int index) async {
     switch (index) {
       case 0:
+        source = 'myplaylist';
+        offset = 0;
+        filter = {'id': '', 'name': '全部'};
+        show_filter = false;
+        break;
+      case 1:
         offset = 0;
         filter = {'id': '', 'name': '全部'};
         show_filter = false;
         source = 'bilibili';
         break;
-      case 1:
+      case 2:
         offset = 0;
         filter = {'id': '', 'name': '全部'};
         show_filter = true;
         source = 'netease';
         break;
-      case 2:
-        offset = 0;
-        filter = {'id': '', 'name': '全部'};
-        show_filter = false;
-        break;
+    }
+    if (source == 'myplaylist') {
+      setState(() {
+        _selectedIndex = index;
+      });
+      return;
     }
     // 检查 mounted 属性
     if (!mounted) return;
@@ -133,7 +141,8 @@ class _MyHomePageState extends State<MyHomePage>
     });
   }
 
-  void change_main_status(String id) {
+  void change_main_status(String id, [bool is_my = false]) {
+    main_is_my = is_my;
     if (id != "") {
       setState(() {
         _Mainpage = false;
@@ -242,13 +251,12 @@ class _MyHomePageState extends State<MyHomePage>
                               selectedIndex: _selectedIndex,
                               destinations: [
                                 NavigationDestination(
+                                    icon: Center(child: Text('我的')), label: ''),
+                                NavigationDestination(
                                     icon: Center(child: Text('BiliBili')),
                                     label: ''),
                                 NavigationDestination(
                                     icon: Center(child: Text('网易云')),
-                                    label: ''),
-                                NavigationDestination(
-                                    icon: Center(child: Text('Playlist 3')),
                                     label: ''),
                               ],
                               onDestinationSelected: (index) {
@@ -276,18 +284,20 @@ class _MyHomePageState extends State<MyHomePage>
                       ),
 
                       Expanded(
-                        child: Playlist(
-                            key: ValueKey(filter),
-                            source: source,
-                            offset: offset,
-                            filter: filter,
-                            onPlaylistTap: change_main_status),
-                      ),
+                          child: source != "myplaylist"
+                              ? Playlist(
+                                  key: ValueKey(filter),
+                                  source: source,
+                                  offset: offset,
+                                  filter: filter,
+                                  onPlaylistTap: change_main_status)
+                              : MyPlaylist(onPlaylistTap: change_main_status))
                     ],
                   )
                 : PlaylistInfo(
                     listId: _playlist_id,
                     onPlaylistTap: change_main_status,
+                    is_my: main_is_my,
                   ),
             bottomNavigationBar: play));
   }

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
 import 'netease.dart';
 import 'myplaylist.dart';
+import 'play.dart';
 
 class Provider {
   final String name;
@@ -100,8 +101,8 @@ final List<Provider> providers = [
   ),
   Provider(
     name: 'myplaylist',
-    // instance: myplaylist,
-    instance: null,
+    instance: myplaylist,
+    // instance: null,
     searchable: false,
     supportLogin: false,
     id: 'my',
@@ -114,7 +115,10 @@ dynamic getProviderByName(String sourceName) {
 }
 
 List<dynamic> getAllProviders() {
-  return providers.where((i) => i.hidden != true).map((i) => i.instance).toList();
+  return providers
+      .where((i) => i.hidden != true)
+      .map((i) => i.instance)
+      .toList();
 }
 
 List<dynamic> getAllSearchProviders() {
@@ -130,6 +134,7 @@ dynamic getProviderByItemId(String itemId) {
   String prefix = itemId.substring(0, 2);
   return providers.firstWhere((i) => i.id == prefix).instance;
 }
+
 // function queryStringify(options) {
 //   const query = JSON.parse(JSON.stringify(options));
 //   return new URLSearchParams(query).toString();
@@ -148,7 +153,8 @@ class MediaService {
     return providers.where((i) => i.hidden != true && i.supportLogin).toList();
   }
 
-  static Future<dynamic> search(String source, Map<String, dynamic> options) async {
+  static Future<dynamic> search(
+      String source, Map<String, dynamic> options) async {
     final url = '/search?${queryStringify(options)}';
     // if (source == 'allmusic') {
     //   final callbackArray = getAllSearchProviders().map((p) {
@@ -189,9 +195,13 @@ class MediaService {
     return myplaylist.showMyPlaylist('my');
   }
 
-  static Future<dynamic> showPlaylistArray(String source, int offset, String filterId) {
+  static Future<dynamic> showPlaylistArray(
+      String source, int offset, String filterId) {
     final provider = getProviderByName(source);
-    final url = '/show_playlist?${queryStringify({'offset': offset, 'filter_id': filterId})}';
+    final url = '/show_playlist?${queryStringify({
+          'offset': offset,
+          'filter_id': filterId
+        })}';
     return provider.showPlaylist(url);
   }
 
@@ -200,14 +210,15 @@ class MediaService {
     return provider.getPlaylistFilters();
   }
 
-  static Future<dynamic> getLyric(String trackId, String albumId, String lyricUrl, String tlyricUrl) {
+  static Future<dynamic> getLyric(
+      String trackId, String albumId, String lyricUrl, String tlyricUrl) {
     final provider = getProviderByItemId(trackId);
     final url = '/lyric?${queryStringify({
-      'track_id': trackId,
-      'album_id': albumId,
-      'lyric_url': lyricUrl,
-      'tlyric_url': tlyricUrl,
-    })}';
+          'track_id': trackId,
+          'album_id': albumId,
+          'lyric_url': lyricUrl,
+          'tlyric_url': tlyricUrl,
+        })}';
     return provider.getLyric(url);
   }
 
@@ -220,7 +231,8 @@ class MediaService {
     return result;
   }
 
-  static Future<dynamic> getPlaylist(String listId, {bool useCache = true}) async {
+  static Future<dynamic> getPlaylist(String listId,
+      {bool useCache = true}) async {
     final provider = getProviderByItemId(listId);
     final url = '/playlist?list_id=$listId';
     var hit;
@@ -269,7 +281,8 @@ class MediaService {
     return myplaylist.addTrackToMyPlaylist(id, track);
   }
 
-  static Future<dynamic> insertTrackToMyPlaylist(String id, dynamic track, dynamic toTrack, String direction) {
+  static Future<dynamic> insertTrackToMyPlaylist(
+      String id, dynamic track, dynamic toTrack, String direction) {
     return myplaylist.insertTrackToMyPlaylist(id, track, toTrack, direction);
   }
 
@@ -291,12 +304,14 @@ class MediaService {
     return myplaylist.createMyPlaylist(title, track);
   }
 
-  static Future<dynamic> insertMyplaylistToMyplaylists(String playlistType, String playlistId, String toPlaylistId, String direction) {
-    return myplaylist.insertMyPlaylistToMyPlaylists(playlistType, playlistId, toPlaylistId, direction);
+  static Future<dynamic> insertMyplaylistToMyplaylists(String playlistType,
+      String playlistId, String toPlaylistId, String direction) {
+    return myplaylist.insertMyPlaylistToMyPlaylists(
+        playlistType, playlistId, toPlaylistId, direction);
   }
 
-  static Future<dynamic> editMyPlaylist(String id, String title, String coverImgUrl) {
-    
+  static Future<dynamic> editMyPlaylist(
+      String id, String title, String coverImgUrl) {
     return myplaylist.editMyPlaylist(id, title, coverImgUrl);
   }
 
@@ -339,7 +354,7 @@ class MediaService {
     // return {
     //   'success': (Function fn) => fn(),
     // };
-      // shared_preferences
+    // shared_preferences
     final prefs = await SharedPreferences.getInstance();
     final tarData = jsonDecode(prefs.getString(target)!)['tracks'];
     final srcData = jsonDecode(prefs.getString(source)!)['tracks'];
@@ -350,7 +365,8 @@ class MediaService {
     }
   }
 
-  static Future<dynamic> bootstrapTrack(dynamic track, Function playerSuccessCallback, Function playerFailCallback) async {
+  static Future<dynamic> bootstrapTrack(dynamic track,
+      Function playerSuccessCallback, Function playerFailCallback) async {
     final successCallback = playerSuccessCallback;
     final sound = {};
     void failureCallback() async {
@@ -393,8 +409,12 @@ class MediaService {
       }
     }
 
-    final provider = getProviderByName(track['source']);
-    provider.bootstrapTrack(track, successCallback, failureCallback);
+    if (await get_local_cache(track['id']) != '') {
+      playerSuccessCallback(get_local_cache(track['id']), track);
+    } else {
+      final provider = getProviderByName(track['source']);
+      provider.bootstrapTrack(track, successCallback, failureCallback);
+    }
   }
 
   static Future<dynamic> login(String source, Map<String, dynamic> options) {
@@ -413,13 +433,15 @@ class MediaService {
     return provider.getLoginUrl();
   }
 
-  static Future<dynamic> getUserCreatedPlaylist(String source, Map<String, dynamic> options) {
+  static Future<dynamic> getUserCreatedPlaylist(
+      String source, Map<String, dynamic> options) {
     final provider = getProviderByName(source);
     final url = '/get_user_create_playlist?${queryStringify(options)}';
     return provider.getUserCreatedPlaylist(url);
   }
 
-  static Future<dynamic> getUserFavoritePlaylist(String source, Map<String, dynamic> options) {
+  static Future<dynamic> getUserFavoritePlaylist(
+      String source, Map<String, dynamic> options) {
     final provider = getProviderByName(source);
     final url = '/get_user_favorite_playlist?${queryStringify(options)}';
     return provider.getUserFavoritePlaylist(url);

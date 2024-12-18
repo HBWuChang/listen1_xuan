@@ -22,7 +22,6 @@ class MyPlaylist {
     return '';
   }
 
-  // Future<void> show_myplaylist(String playlistType) async {
   Future<Map<String, dynamic>> showMyPlaylist(String playlistType) async {
     final key = getPlaylistObjectKey(playlistType);
     if (key == '') {
@@ -47,11 +46,10 @@ class MyPlaylist {
       }
       return null;
     }).where((playlist) => playlist != null).toList();
-    // fn({'result': result});
     return {'result': result};
   }
 
-  Future<void> getMyPlaylist(String url, Function fn) async {
+  Future<Map<String, dynamic>?> getPlaylist(String url) async {
     final listId = getParameterByName('list_id', url);
     final prefs = await SharedPreferences.getInstance();
     final playlistJson = listId != null ? prefs.getString(listId) : null;
@@ -63,9 +61,11 @@ class MyPlaylist {
           track['disabled'] = false;
         }
       }
-      fn(playlist);
+      // fn(playlist);
+      return playlist;
     } else {
-      fn(null);
+      // fn(null);
+      return null;
     }
   }
 
@@ -127,7 +127,14 @@ class MyPlaylist {
     prefs.setStringList(key, playlists);
     prefs.setString(playlistId, jsonEncode(playlistObj));
   }
-
+  Future<bool> isMyfavPlaylist(String playlistId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final playlistJson = prefs.getStringList('favoriteplayerlists');
+    if (playlistJson == null) {
+      return false;
+    }
+    return playlistJson.contains(playlistId);
+  }
   Future<void> removeMyPlaylist(String playlistType, String playlistId) async {
     final key = getPlaylistObjectKey(playlistType);
     if (key == '') {
