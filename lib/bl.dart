@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/loweb.dart';
+import 'package:listen1_xuan/settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -11,6 +13,183 @@ import 'package:marquee/marquee.dart';
 final bilibili = Bilibili();
 
 class Bilibili {
+  Future<List<Map<String, dynamic>>> Xuan_get_bl_playlist() async {
+    bool b1 = false;
+    var bilibiliData = {};
+    var bilibiliData2 = [];
+    b1 = false;
+    String url = 'https://api.bilibili.com/x/v3/fav/folder/list4navigate';
+    final settings = await settings_getsettings();
+    final cookie = settings['bl'];
+
+    var headers = {
+      'content-type': 'application/json',
+      'cookie': cookie,
+    };
+    final dio = Dio();
+    try {
+      print(headers);
+      final response = await Dio().get(url, options: Options(headers: headers));
+      print(response.statusCode);
+      print(response.data);
+      bilibiliData = response.data;
+      url = 'https://api.bilibili.com/x/v3/fav/folder/collected/list';
+      String upMid = cookie.split('DedeUserID=')[1].split(';')[0];
+      String turl = url + '?pn=1&ps=20&up_mid=' + upMid + '&platform=web';
+      var response2 = await Dio().get(turl, options: Options(headers: headers));
+      var res2 = response2.data;
+      bilibiliData2.clear();
+      res2['data']['list'].forEach((element) {
+        bilibiliData2.add(element);
+      });
+      if (res2['data']['has_more']) {
+        var pn = 2;
+        do {
+          turl = url + '?pn=$pn&ps=20&up_mid=' + upMid + '&platform=web';
+          response2 = await dio.get(turl, options: Options(headers: headers));
+          res2 = response2.data;
+          res2['data']['list'].forEach((element) {
+            bilibiliData2.add(element);
+          });
+          pn++;
+        } while (res2['data']['has_more']);
+      }
+      var retdata = [];
+      bilibiliData["data"].forEach((item) {
+        if (item["mediaListResponse"]["list"] != null)
+          item["mediaListResponse"]["list"].forEach((element) {
+            retdata.add({
+              'info': {
+                'cover_img_url': element['cover'],
+                'title': element['title'],
+                'id': 'biplaylistxuan_my${element['id']}',
+                'source_url':
+                    'https://api.bilibili.com/x/v3/fav/resource/list?ps=20&keyword&order=mtime&type=0&tid=0&platform=web&pn=1&media_id=${element['id']}',
+              },
+            });
+          });
+      });
+      for (var i = 0; i < bilibiliData2.length; i++) {
+        var item = bilibiliData2[i];
+        retdata.add({
+          'info': {
+            'cover_img_url': item['cover'],
+            'title': item['title'],
+            'id': 'biplaylistxuan_${item['id']}',
+            'source_url':
+                'https://api.bilibili.com/x/space/fav/season/list?pn=1&ps=20&season_id=${item['mid']}',
+          },
+        });
+      }
+      return retdata.cast<Map<String, dynamic>>();
+    } on DioException catch (e) {
+      print('请求失败: ${e.message}');
+      if (e.response != null) {
+        print('响应数据: ${e.response?.data}');
+        print('响应头: ${e.response?.headers}');
+        print('请求信息: ${e.response?.requestOptions}');
+      } else {
+        print('请求未发送: ${e.requestOptions}');
+        print('错误信息: ${e.message}');
+      }
+      return [];
+    } catch (e) {
+      print('未知错误: $e');
+      Fluttertoast.showToast(msg: '未知错误: $e');
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> biGetPlaylistxuan(String url) async {
+    final selectmid = getParameterByName('list_id', url)?.split('_').last;
+    if (selectmid == null) {
+      return {'info': {}, 'tracks': []};
+    }
+    try {
+      if (selectmid.substring(0, 2) == 'my') {
+        final settings = await settings_getsettings();
+        final cookie = settings['bl'];
+        var url = '';
+        url =
+            'https://api.bilibili.com/x/v3/fav/resource/list?ps=20&keyword&order=mtime&type=0&tid=0&platform=web&';
+        var turl = '${url}pn=1&media_id=${selectmid.substring(2)}';
+        final headers = {
+          'content-type': 'application/json',
+          'cookie': cookie,
+        };
+        var medias = [];
+        var response =
+            await Dio().get(turl, options: Options(headers: headers));
+        var res = response.data;
+        final data = response.data['data'];
+        final info = {
+          'cover_img_url': data['info']['cover'],
+          'title': data['info']['title'],
+          'id': 'biplaylistxuan_$selectmid',
+          'source_url':
+              'https://api.bilibili.com/x/v3/fav/resource/list?ps=20&keyword&order=mtime&type=0&tid=0&platform=web&pn=1&media_id=${selectmid.substring(2)}',
+        };
+        res["data"]['medias'].forEach((element) {
+          medias.add(element);
+        });
+        if (res["data"]['has_more']) {
+          var pn = 2;
+          do {
+            turl = '${url}pn=$pn&media_id=${selectmid.substring(2)}';
+            response =
+                await Dio().get(turl, options: Options(headers: headers));
+            res = response.data;
+            res["data"]['medias'].forEach((element) {
+              medias.add(element);
+            });
+            pn++;
+          } while (res["data"]['has_more']);
+        }
+        final tracks = medias.map((item) {
+          return biConvertSongxuan(item);
+        }).toList();
+
+        return {'info': info, 'tracks': tracks};
+      } else {
+        final settings = await settings_getsettings();
+        final cookie = settings['bl'];
+        var url = '';
+        url =
+            'https://api.bilibili.com/x/space/fav/season/list?pn=1&ps=20&season_id=';
+        var turl = url + selectmid.toString();
+        final headers = {
+          'content-type': 'application/json',
+          'cookie': cookie,
+        };
+        var medias = [];
+        var response =
+            await Dio().get(turl, options: Options(headers: headers));
+        var res = response.data;
+        final data = response.data['data'];
+        final info = {
+          'cover_img_url': data['info']['cover'],
+          'title': data['info']['title'],
+          'id': 'biplaylistxuan_$selectmid',
+          'source_url':
+              'https://api.bilibili.com/x/space/fav/season/list?pn=1&ps=20&season_id=${selectmid}',
+        };
+        res["data"]['medias'].forEach((element) {
+          medias.add(element);
+        });
+
+        final tracks = medias.map((item) {
+          return biConvertSongxuan(item);
+        }).toList();
+
+        // return {'info': {}, 'tracks': []};
+        return {'info': info, 'tracks': tracks};
+      }
+    } catch (e) {
+      print(e);
+      return {'info': {}, 'tracks': []};
+    }
+  }
+
   Future<Map<String, dynamic>> _getsettings() async {
     final prefs = await SharedPreferences.getInstance();
     String? jsonString = prefs.getString('settings');
@@ -247,6 +426,18 @@ class Bilibili {
       'source': 'bilibili',
       'source_url': 'https://www.bilibili.com/${songInfo['bvid']}',
       'img_url': imgUrl,
+    };
+  }
+
+  static Map<String, dynamic> biConvertSongxuan(Map<String, dynamic> songInfo) {
+    return {
+      'id': 'bitrack_v_${songInfo['bvid']}',
+      'title': htmlDecode(songInfo['title']),
+      'artist': htmlDecode(songInfo['upper']['name']),
+      'artist_id': 'biartist_v_${songInfo['upper']['mid']}',
+      'source': 'bilibili',
+      'source_url': 'https://www.bilibili.com/${songInfo['bvid']}',
+      'img_url': songInfo['cover'],
     };
   }
 
@@ -550,6 +741,8 @@ class Bilibili {
     switch (listId) {
       case 'biplaylist':
         return biGetPlaylist(url);
+      case 'biplaylistxuan':
+        return biGetPlaylistxuan(url);
       case 'bialbum':
         return biAlbum(url);
       case 'biartist':
