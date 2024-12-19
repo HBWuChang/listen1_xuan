@@ -525,7 +525,8 @@ class Netease {
       'type': neSearchType,
     };
     final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
-    final data = response.data;
+    // final data = response.data;
+    final data = jsonDecode(response.data);
     var result = <Map<String, dynamic>>[];
     var total = 0;
     if (searchType == '0') {

@@ -14,6 +14,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'loweb.dart';
+
 final play = Play();
 final _player = AudioPlayer();
 late AudioHandler _audioHandler;
@@ -25,7 +26,7 @@ class Play extends StatefulWidget {
   _PlayState createState() => _PlayState();
 }
 
-Future<void> onPlaybackCompleted() async {
+Future<void> onPlaybackCompleted([bool force_next = false]) async {
   final current_playing = await get_current_playing();
   final nowplaying_track = await getnowplayingsong();
   if (nowplaying_track['index'] != -1) {
@@ -48,6 +49,12 @@ Future<void> onPlaybackCompleted() async {
         await playsong(current_playing[randomIndex]);
         break;
       case 2:
+        if (force_next) {
+          index + 1 < current_playing.length
+              ? await playsong(current_playing[index + 1])
+              : await playsong(current_playing[0]);
+          break;
+        }
         await _player.seek(Duration.zero);
         break;
       default:
@@ -177,9 +184,10 @@ Future<Map<String, dynamic>> getnowplayingsong() async {
 }
 
 Future<void> playsong(Map<String, dynamic> track) async {
-  final tdir=await get_local_cache(track['id']);
-  if (tdir==""){
-    MediaService.bootstrapTrack(track, playerSuccessCallback, playerFailCallback);
+  final tdir = await get_local_cache(track['id']);
+  if (tdir == "") {
+    MediaService.bootstrapTrack(
+        track, playerSuccessCallback, playerFailCallback);
     return;
   }
   await _player.setFilePath(tdir);
@@ -265,7 +273,7 @@ Future<void> playerFailCallback() async {
   Fluttertoast.showToast(
     msg: 'Error downloading audio',
   );
-  onPlaybackCompleted();
+  onPlaybackCompleted(true);
 }
 
 Future<void> setNotification() async {
