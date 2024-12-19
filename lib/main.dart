@@ -50,7 +50,9 @@ class _MyHomePageState extends State<MyHomePage>
   late AnimationController _animationController;
   bool _Mainpage = true;
   String _playlist_id = "bilibili";
-
+  String selectedOption = '网易云';
+  final List<String> _options = ['BiliBili', '网易云'];
+  final ValueNotifier<String> selectedOptionNotifier = ValueNotifier<String>('Option 1');
   @override
   void initState() {
     super.initState();
@@ -230,6 +232,24 @@ class _MyHomePageState extends State<MyHomePage>
                                     );
                                   },
                                 ),
+                              if (_isSearchActive)
+                                DropdownButton<String>(
+                                  value: selectedOption,
+                                  icon: Icon(Icons.arrow_downward),
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      selectedOption = newValue!;
+                                      selectedOptionNotifier.value = newValue;
+                                    });
+                                  },
+                                  items: _options.map<DropdownMenuItem<String>>(
+                                      (String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                ),
                             ],
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           ),
@@ -238,67 +258,74 @@ class _MyHomePageState extends State<MyHomePage>
                     ),
                   )
                 : null,
-            body: _Mainpage
-                ? Column(
-                    children: [
-                      Container(
-                          height: 45,
-                          child: Row(children: [
-                            Expanded(
-                                child: NavigationBar(
-                              labelBehavior:
-                                  NavigationDestinationLabelBehavior.alwaysHide,
-                              selectedIndex: _selectedIndex,
-                              destinations: [
-                                NavigationDestination(
-                                    icon: Center(child: Text('我的')), label: ''),
-                                NavigationDestination(
-                                    icon: Center(child: Text('BiliBili')),
-                                    label: ''),
-                                NavigationDestination(
-                                    icon: Center(child: Text('网易云')),
-                                    label: ''),
-                              ],
-                              onDestinationSelected: (index) {
-                                _onItemTapped(index);
-                              },
-                            )),
-                            if (show_filter)
-                              TextButton(
-                                child: Text(filter['name']),
-                                onPressed: () {
-                                  Map<String, dynamic> tfilter = {};
-                                  tfilter["推荐"] = filter_detail["recommend"];
-                                  for (var item in filter_detail["all"]) {
-                                    tfilter[item["category"]] = item["filters"];
-                                  }
-                                  _showFilterSelection(context, tfilter,
-                                      filter['id'], change_fliter);
-                                },
-                              ),
-                          ])),
-                      // 长灰色细分割线
-                      Divider(
-                        height: 1,
-                        color: Colors.grey[300],
-                      ),
+            body: _isSearchActive
+                ? Searchlistinfo(input_text_Controller: input_text_Controller,  selectedOptionNotifier: selectedOptionNotifier)
+                : _Mainpage
+                    ? Column(
+                        children: [
+                          Container(
+                              height: 45,
+                              child: Row(children: [
+                                Expanded(
+                                    child: NavigationBar(
+                                  labelBehavior:
+                                      NavigationDestinationLabelBehavior
+                                          .alwaysHide,
+                                  selectedIndex: _selectedIndex,
+                                  destinations: [
+                                    NavigationDestination(
+                                        icon: Center(child: Text('我的')),
+                                        label: ''),
+                                    NavigationDestination(
+                                        icon: Center(child: Text('BiliBili')),
+                                        label: ''),
+                                    NavigationDestination(
+                                        icon: Center(child: Text('网易云')),
+                                        label: ''),
+                                  ],
+                                  onDestinationSelected: (index) {
+                                    _onItemTapped(index);
+                                  },
+                                )),
+                                if (show_filter)
+                                  TextButton(
+                                    child: Text(filter['name']),
+                                    onPressed: () {
+                                      Map<String, dynamic> tfilter = {};
+                                      tfilter["推荐"] =
+                                          filter_detail["recommend"];
+                                      for (var item in filter_detail["all"]) {
+                                        tfilter[item["category"]] =
+                                            item["filters"];
+                                      }
+                                      _showFilterSelection(context, tfilter,
+                                          filter['id'], change_fliter);
+                                    },
+                                  ),
+                              ])),
+                          // 长灰色细分割线
+                          Divider(
+                            height: 1,
+                            color: Colors.grey[300],
+                          ),
 
-                      Expanded(
-                          child: source != "myplaylist"
-                              ? Playlist(
-                                  key: ValueKey(filter),
-                                  source: source,
-                                  offset: offset,
-                                  filter: filter,
-                                  onPlaylistTap: change_main_status)
-                              : MyPlaylist(onPlaylistTap: change_main_status))
-                    ],
-                  )
-                : PlaylistInfo(
-                    listId: _playlist_id,
-                    onPlaylistTap: change_main_status,
-                    is_my: main_is_my,
-                  ),
+                          Expanded(
+                              child: source != "myplaylist"
+                                  ? Playlist(
+                                      key: ValueKey(filter),
+                                      source: source,
+                                      offset: offset,
+                                      filter: filter,
+                                      onPlaylistTap: change_main_status)
+                                  : MyPlaylist(
+                                      onPlaylistTap: change_main_status))
+                        ],
+                      )
+                    : PlaylistInfo(
+                        listId: _playlist_id,
+                        onPlaylistTap: change_main_status,
+                        is_my: main_is_my,
+                      ),
             bottomNavigationBar: play));
   }
 }
