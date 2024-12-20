@@ -4,7 +4,7 @@ description: "A new Flutter project."
 # Prevent accidental publishing to pub.dev.
 publish_to: 'none'
 
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ^3.5.4
@@ -34,6 +34,7 @@ dependencies:
   fluttertoast: ^8.2.10
   file_picker: ^8.1.6
   permission_handler: ^11.3.1
+  vibration: ^2.0.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

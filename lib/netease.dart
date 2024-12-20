@@ -497,11 +497,10 @@ class Netease {
       sound['url'] = url;
       sound['bitrate'] = '${(br / 1000).toStringAsFixed(0)}kbps';
       sound['platform'] = 'netease';
-      success(sound,track);
+      success(sound, track);
     } else {
       failure();
     }
-    
   }
 
   static bool isPlayable(Map<String, dynamic> song) {
@@ -599,7 +598,7 @@ class Netease {
     // final response =
     //     await Dio().get(targetUrl + '?csrf_token=${await get_csrf()}');
     final response = await dio_get_with_cookie_and_csrf(targetUrl);
-    final data = response.data;
+    final data = jsonDecode(response.data);
     final info = {
       'cover_img_url': data['artist']['picUrl'],
       'title': data['artist']['name'],

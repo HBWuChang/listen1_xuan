@@ -53,6 +53,7 @@ class _MyHomePageState extends State<MyHomePage>
   String selectedOption = '网易云';
   final List<String> _options = ['BiliBili', '网易云'];
   final ValueNotifier<String> selectedOptionNotifier = ValueNotifier<String>('Option 1');
+  Key _playlistInfoKey = UniqueKey();
   @override
   void initState() {
     super.initState();
@@ -145,6 +146,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   void change_main_status(String id, [bool is_my = false]) {
     main_is_my = is_my;
+    _playlistInfoKey = UniqueKey();
     if (id != "") {
       setState(() {
         _Mainpage = false;
@@ -259,7 +261,8 @@ class _MyHomePageState extends State<MyHomePage>
                   )
                 : null,
             body: _isSearchActive
-                ? Searchlistinfo(input_text_Controller: input_text_Controller,  selectedOptionNotifier: selectedOptionNotifier)
+                ? Searchlistinfo(input_text_Controller: input_text_Controller,  selectedOptionNotifier: selectedOptionNotifier,
+                onPlaylistTap:change_main_status)
                 : _Mainpage
                     ? Column(
                         children: [
@@ -322,11 +325,13 @@ class _MyHomePageState extends State<MyHomePage>
                         ],
                       )
                     : PlaylistInfo(
+                      key: _playlistInfoKey,
                         listId: _playlist_id,
                         onPlaylistTap: change_main_status,
                         is_my: main_is_my,
                       ),
-            bottomNavigationBar: play));
+            // bottomNavigationBar: play));
+            bottomNavigationBar: Play(onPlaylistTap: change_main_status)));
   }
 }
 

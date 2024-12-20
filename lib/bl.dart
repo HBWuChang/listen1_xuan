@@ -388,6 +388,7 @@ class Bilibili {
       final queryString = await encWbi(params);
       final targetUrl = '$url?$queryString';
       return await Dio().get(targetUrl);
+      // return await dio_get_with_cookie_and_csrf(targetUrl);
     } catch (e) {
       clearWbiKey();
       try {
