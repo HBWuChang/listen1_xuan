@@ -40,25 +40,29 @@ class MyPlaylist {
                 if (snapshot.connectionState == ConnectionState.done) {
                   if (snapshot.hasData) {
                     final playlists = snapshot.data['result'];
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: playlists.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        final playlist = playlists[index];
-                        return ListTile(
-                          title: Text(playlist['info']['title']),
-                          onTap: () async {
-                            final playlistId = playlist['info']['id'];
-                            for (var track in tracks) {
-                              await addTrackToMyPlaylist(playlistId, track);
-                            }
-                            Navigator.of(context).pop();
-                            Fluttertoast.showToast(
-                              msg: '添加成功',
-                            );
-                          },
-                        );
-                      },
+                    
+                    return Container(
+                      width: double.maxFinite,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: playlists.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final playlist = playlists[index];
+                          return ListTile(
+                            title: Text(playlist['info']['title']),
+                            onTap: () async {
+                              final playlistId = playlist['info']['id'];
+                              for (var track in tracks) {
+                                await addTrackToMyPlaylist(playlistId, track);
+                              }
+                              Navigator.of(context).pop();
+                              Fluttertoast.showToast(
+                                msg: '添加成功',
+                              );
+                            },
+                          );
+                        },
+                      ),
                     );
                   }
                 }

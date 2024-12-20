@@ -387,6 +387,24 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
     });
   }
 
+  void _onReorder(int oldIndex, int newIndex) {
+    if(!widget.is_my){
+      Fluttertoast.showToast(
+        msg: '只有自己创建的歌单才能排序',
+      );
+      return;
+    }
+    MediaService.insertTrackToMyPlaylist(
+        widget.listId, tracks[oldIndex], tracks[newIndex],'top');
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final item = tracks.removeAt(oldIndex);
+      tracks.insert(newIndex, item);
+    });
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -647,13 +665,13 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                     ],
                   ),
                   SliverToBoxAdapter(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      itemCount: tracks.length,
-                      itemBuilder: (context, index) {
-                        final track = tracks[index];
+                      child: Container(
+                    height: MediaQuery.of(context).size.height - 280,
+                    child: ReorderableListView(
+                      onReorder: _onReorder,
+                      children: tracks.map((track) {
                         return ListTile(
+                          key: ValueKey(track['id']),
                           title: Text(track['title']),
                           subtitle:
                               Text('${track['artist']} - ${track['album']}'),
@@ -682,11 +700,11 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                           title: Text('添加到歌单'),
                                           onTap: () {
                                             myplaylist.Add_to_my_playlist(
-                                                context,
-                                                [track],
-                                                result['info']['title'],
-                                                result['info']
-                                                    ['cover_img_url']);
+                                              context,
+                                              [track],
+                                              result['info']['title'],
+                                              result['info']['cover_img_url'],
+                                            );
                                           },
                                         ),
                                         if (widget.is_my)
@@ -717,7 +735,10 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                                                   track['id']);
                                                           Navigator.of(context)
                                                               .pop();
-                                                          _loadData();
+                                                          setState(() {
+                                                            tracks
+                                                                .remove(track);
+                                                          });
                                                         },
                                                         child: Text('确定'),
                                                       ),
@@ -735,19 +756,19 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                             },
                           ),
                           onTap: () {
-                            // 歌曲点击事件
-                            // bootstrapTrack(track);
-                            // MediaService.bootstrapTrack(track, playerSuccessCallback, playerFailCallback);
                             Fluttertoast.showToast(
                               msg: '尝试播放：${track['title']}',
                             );
-                            MediaService.bootstrapTrack(track,
-                                playerSuccessCallback, playerFailCallback);
+                            MediaService.bootstrapTrack(
+                              track,
+                              playerSuccessCallback,
+                              playerFailCallback,
+                            );
                           },
                         );
-                      },
+                      }).toList(),
                     ),
-                  ),
+                  )),
                 ],
               ),
       ),
@@ -876,7 +897,40 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                               Text('${track['artist']} - ${track['album']}'),
                           trailing: IconButton(
                             icon: Icon(Icons.more_vert),
-                            onPressed: () {},
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Text('歌曲操作'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ListTile(
+                                          title: Text('添加到当前播放列表'),
+                                          onTap: () {
+                                            add_current_playing([track]);
+                                            Fluttertoast.showToast(
+                                              msg: '已添加到当前播放列表',
+                                            );
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        ListTile(
+                                          title: Text('添加到歌单'),
+                                          onTap: () {
+                                            myplaylist.Add_to_my_playlist(
+                                              context,
+                                              [track],
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           ),
                           onTap: () {
                             Fluttertoast.showToast(
