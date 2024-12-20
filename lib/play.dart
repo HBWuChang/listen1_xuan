@@ -217,6 +217,7 @@ Future<void> playsong(Map<String, dynamic> track) async {
     duration: _duration,
   );
   (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
+  // (_audioHandler as AudioPlayerHandler).play();
   _player.play();
 }
 
@@ -224,7 +225,7 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
   print('playerSuccessCallback');
   print(res);
   print(track);
-
+  playmode = await get_player_settings("playmode");
   try {
     final tempDir = await getTemporaryDirectory();
     final tempPath = tempDir.path;

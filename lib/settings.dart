@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,6 +14,152 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webview_cookie_manager/webview_cookie_manager.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+Future<void> outputAllSettingsToFile() async {
+  // 申请所有文件访问权限
+  if (await Permission.storage.request().isGranted) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      Map<String, dynamic> settings = {};
+      final allkeys = prefs.getKeys();
+      for (var key in allkeys) {
+        switch (key) {
+          case 'playerlists':
+            settings[key] = prefs.getStringList(key);
+            break;
+          case 'auto_choose_source_list':
+            settings[key] = prefs.getStringList(key);
+            break;
+          case 'favoriteplayerlists':
+            settings[key] = prefs.getStringList(key);
+            break;
+          default:
+            settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
+        }
+      }
+
+      // 确保路径存在
+      final downloadDir = Directory('/storage/emulated/0/Download/Listen1');
+      if (!await downloadDir.exists()) {
+        await downloadDir.create(recursive: true);
+      }
+      final outputPath = '/storage/emulated/0/Download/Listen1/settings.json';
+      final file = File(outputPath);
+      // 将设置写入 JSON 文件
+      await file.writeAsString(jsonEncode(settings));
+      Fluttertoast.showToast(
+        msg: 'Settings saved to $outputPath',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.blue,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: '保存设置时出错: $e',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
+  } else {
+    Fluttertoast.showToast(
+      msg: '存储权限未授予',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+}
+
+Future<void> importSettingsFromFile() async {
+  // 申请所有文件访问权限
+  if (await Permission.storage.request().isGranted) {
+    try {
+      // 弹出系统文件选择器选择文件
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final content = await file.readAsString();
+        final settings = jsonDecode(content) as Map<String, dynamic>;
+
+        final prefs = await SharedPreferences.getInstance();
+        for (var key in settings.keys) {
+          switch (key) {
+            case 'playerlists':
+              // settings[key] = prefs.getStringList(key);
+              prefs.setStringList(key, settings[key].cast<String>());
+              break;
+            case 'auto_choose_source_list':
+              prefs.setStringList(key, settings[key].cast<String>());
+              break;
+            case 'favoriteplayerlists':
+              prefs.setStringList(key, settings[key].cast<String>());
+
+              break;
+            default:
+              // settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
+              prefs.setString(key, jsonEncode(settings[key]));
+          }
+        }
+
+        Fluttertoast.showToast(
+          msg: 'Settings imported successfully',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      } else {
+        Fluttertoast.showToast(
+          msg: '未选择文件',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: '导入设置时出错: $e',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
+  } else {
+    Fluttertoast.showToast(
+      msg: '存储权限未授予',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+}
 
 Future<void> setSaveCookie({
   required String url,
@@ -323,8 +470,11 @@ class _SettingsPageState extends State<SettingsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
-                CachedNetworkImage(imageUrl: "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png", width: 18, height: 18),
-
+                CachedNetworkImage(
+                    imageUrl:
+                        "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
+                    width: 18,
+                    height: 18),
                 SizedBox(
                   width: 200,
                   child: FutureBuilder(
@@ -340,7 +490,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         } else {
                           // return Text(const JsonEncoder.withIndent('  ')
                           //     .convert(snapshot.data));
-                          return Text((snapshot.data?['result']?['nickname'] ?? '未知用户'));
+                          return Text((snapshot.data?['result']?['nickname'] ??
+                              '未知用户'));
                         }
                       }
                     },
@@ -353,12 +504,12 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
             ElevatedButton(
-              onPressed: () => _loginPlatform('Platform3'),
-              child: const Text('Login to Platform 3'),
+              onPressed: () => outputAllSettingsToFile(),
+              child: const Text('保存配置到文件'),
             ),
             ElevatedButton(
-              onPressed: () => _loginPlatform('Platform4'),
-              child: const Text('Login to Platform 4'),
+              onPressed: () => importSettingsFromFile(),
+              child: const Text('从文件导入配置'),
             ),
           ],
         ),
@@ -380,4 +531,13 @@ void main() {
   runApp(MaterialApp(
     home: SettingsPage(),
   ));
+}
+
+void _msg(String msg, BuildContext context, [double showtime = 3.0]) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(msg),
+      duration: Duration(milliseconds: (showtime * 1000).toInt()),
+    ),
+  );
 }
