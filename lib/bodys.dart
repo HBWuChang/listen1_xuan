@@ -809,17 +809,19 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                           : Icon(Icons.star_border),
                                       onPressed: () async {
                                         // 添加按钮点击事件
-                                        try {
+                                        if (_is_fav) {
+                                          await myplaylist.removeMyPlaylist(
+                                              'favorite', widget.listId);
+                                          check_fav();
+                                          Fluttertoast.showToast(
+                                            msg: '已取消收藏',
+                                          );
+                                        } else {
                                           await myplaylist.saveMyPlaylist(
                                               'favorite', result);
                                           check_fav();
                                           Fluttertoast.showToast(
                                             msg: '已添加到我的收藏',
-                                          );
-                                        } catch (e) {
-                                          // print(e);
-                                          Fluttertoast.showToast(
-                                            msg: '添加失败${e}',
                                           );
                                         }
                                       }),
