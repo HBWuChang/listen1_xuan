@@ -103,8 +103,8 @@ class _PlaylistState extends State<Playlist> {
                     child: Column(
                       children: [
                         Container(
-                          width: 100, // 设置图片宽度
-                          height: 100, // 设置图片高度
+                          width: MediaQuery.of(context).size.width / 3 - 20,
+                          height: MediaQuery.of(context).size.width / 3 - 20,
                           child: CachedNetworkImage(
                             imageUrl: playlist['cover_img_url'],
                             fit: BoxFit.cover,
