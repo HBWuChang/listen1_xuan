@@ -27,6 +27,13 @@ class Play extends StatefulWidget {
 }
 
 Future<void> onPlaybackCompleted([bool force_next = false]) async {
+  try {
+    playmode = await get_player_settings("playmode");
+  } catch (e) {
+    playmode = 0;
+    await set_player_settings("playmode", playmode);
+  }
+
   final current_playing = await get_current_playing();
   final nowplaying_track = await getnowplayingsong();
   if (nowplaying_track['index'] != -1) {
@@ -42,8 +49,14 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
                 (DateTime.now().millisecondsSinceEpoch % 1000) /
                 1000)
             .floor();
-        if (randommodetemplist.contains(current_playing[index])) {
-          randommodetemplist.remove(current_playing[index]);
+        // if (randommodetemplist.contains(current_playing[index])) {
+        //   randommodetemplist.remove(current_playing[index]);
+        // }
+        for (var i = randommodetemplist.length - 1; i >= 0; i--) {
+          if (randommodetemplist[i]['id'] == current_playing[index]['id']) {
+            randommodetemplist.removeAt(i);
+            break;
+          }
         }
         randommodetemplist.add(current_playing[index]);
         await playsong(current_playing[randomIndex]);
@@ -225,7 +238,6 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
   print('playerSuccessCallback');
   print(res);
   print(track);
-  playmode = await get_player_settings("playmode");
   try {
     final tempDir = await getTemporaryDirectory();
     final tempPath = tempDir.path;
@@ -293,6 +305,15 @@ Future<void> setNotification() async {
       ),
       cacheManager: null,
     );
+  }
+}
+
+Future<void> fresh_playmode() async {
+  try {
+    playmode = await get_player_settings("playmode");
+  } catch (e) {
+    playmode = 0;
+    await set_player_settings("playmode", playmode);
   }
 }
 
@@ -604,13 +625,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       print('Playing: $title');
       // 在这里添加你需要的逻辑
       if (title == 'test') {
-        try {
-          playmode = await get_player_settings("playmode");
-        } catch (e) {
-          playmode = 0;
-        }
-
-        await set_player_settings("playmode", playmode);
+        await fresh_playmode();
 
         final track = await getnowplayingsong();
         if (track['index'] != -1) {
@@ -634,6 +649,8 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> skipToPrevious() async {
+    await fresh_playmode();
+
     final current_playing = await get_current_playing();
     final nowplaying_track = await getnowplayingsong();
     if (nowplaying_track['index'] != -1) {
@@ -645,15 +662,14 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
               : await playsong(current_playing[current_playing.length - 1]);
           break;
         case 1:
-          if (randommodetemplist.contains(current_playing[index])) {
-            randommodetemplist.remove(current_playing[index]);
-            for (var i = randommodetemplist.length - 1; i >= 0; i--) {
-              if (current_playing.contains(randommodetemplist[i])) {
-                await playsong(randommodetemplist[i]);
-                return;
-              }
-            }
+          try {
+            await playsong(randommodetemplist[randommodetemplist.length - 1]);
+            randommodetemplist.removeAt(randommodetemplist.length - 1);
+            return;
+          } catch (e) {
+            print(e);
           }
+
           final randomIndex = (current_playing.length *
                   (DateTime.now().millisecondsSinceEpoch % 1000) /
                   1000)
@@ -671,41 +687,12 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> skipToNext() async {
-    final current_playing = await get_current_playing();
-    final nowplaying_track = await getnowplayingsong();
-    if (nowplaying_track['index'] != -1) {
-      final index = nowplaying_track['index'];
-      switch (playmode) {
-        case 0:
-          index + 1 < current_playing.length
-              ? await playsong(current_playing[index + 1])
-              : await playsong(current_playing[0]);
-          break;
-        case 1:
-          final randomIndex = (current_playing.length *
-                  (DateTime.now().millisecondsSinceEpoch % 1000) /
-                  1000)
-              .floor();
-          await playsong(current_playing[randomIndex]);
-          break;
-        case 2:
-          index + 1 < current_playing.length
-              ? await playsong(current_playing[index + 1])
-              : await playsong(current_playing[0]);
-          break;
-        default:
-          break;
-      }
-    }
+    await onPlaybackCompleted(true);
   }
 
   @override
   Future<void> stop() async {
-    try {
-      playmode = await get_player_settings("playmode");
-    } catch (e) {
-      playmode = 0;
-    }
+    await fresh_playmode();
     playmode = (playmode + 1) % 3;
     await set_player_settings("playmode", playmode);
   }
