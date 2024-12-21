@@ -280,7 +280,6 @@ class _MyPlaylistState extends State<MyPlaylist> {
   void _loadData() async {
     Map<String, dynamic> result_my = await myplaylist.showMyPlaylist('my');
 
-    _playlists_bl = await bilibili.Xuan_get_bl_playlist();
     setState(() {
       _playlists_my = result_my['result'];
       _loading = false;

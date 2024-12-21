@@ -195,6 +195,8 @@ Future<Map<String, dynamic>> getnowplayingsong() async {
 }
 
 Future<void> playsong(Map<String, dynamic> track) async {
+  await set_player_settings("nowplaying_track_id", track['id']);
+  await add_current_playing([track]);
   final tdir = await get_local_cache(track['id']);
   if (tdir == "") {
     MediaService.bootstrapTrack(
@@ -214,8 +216,6 @@ Future<void> playsong(Map<String, dynamic> track) async {
 
   // 等待 _duration 被赋值
   await completer.future;
-  await set_player_settings("nowplaying_track_id", track['id']);
-  await add_current_playing([track]);
   // 获取音频文件的时长
   final _duration = await _player.duration;
   print(_duration);
