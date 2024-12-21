@@ -656,16 +656,27 @@ class Bilibili {
         final targetUrl2 =
             'http://api.bilibili.com/x/player/playurl?fnval=16&bvid=$bvid&cid=$cid';
         final response2 = await Dio().get(targetUrl2);
-        if (response2.data['data']['dash']['audio'].length > 0) {
-          final url = response2.data['data']['dash']['audio'][0]['baseUrl'];
-          sound['url'] = url;
-          sound['platform'] = 'bilibili';
-          success(sound, track);
-        } else {
-          failure(sound);
+        try {
+          if (response2.data['data']['dash']['audio'].length > 0) {
+            final url = response2.data['data']['dash']['audio'][0]['baseUrl'];
+            sound['url'] = url;
+            sound['platform'] = 'bilibili';
+            success(sound, track);
+          } else {
+            failure();
+          }
+        } catch (e) {
+          if (response2.data['data']['durl'].length > 0) {
+            final url = response2.data['data']['durl'][0]['url'];
+            sound['url'] = url;
+            sound['platform'] = 'bilibili';
+            success(sound, track);
+          } else {
+            failure();
+          }
         }
       } catch (e) {
-        failure({});
+        failure();
       }
     } else {
       final sound = {};
