@@ -846,7 +846,8 @@ class Netease {
     //     targetUrl + '?csrf_token=${await get_csrf()}',
     //     data: FormData.fromMap(reqData));
     final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
-    final playlists = (response.data['playlist'] as List).where((item) {
+    final playlists =
+        (jsonDecode(response.data)['playlist'] as List).where((item) {
       if (playlistType == 'created' && item['subscribed'] != false) {
         return false;
       }
