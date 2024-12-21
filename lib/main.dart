@@ -52,7 +52,8 @@ class _MyHomePageState extends State<MyHomePage>
   String _playlist_id = "bilibili";
   String selectedOption = '网易云';
   final List<String> _options = ['BiliBili', '网易云'];
-  final ValueNotifier<String> selectedOptionNotifier = ValueNotifier<String>('Option 1');
+  final ValueNotifier<String> selectedOptionNotifier =
+      ValueNotifier<String>('Option 1');
   Key _playlistInfoKey = UniqueKey();
   @override
   void initState() {
@@ -120,20 +121,24 @@ class _MyHomePageState extends State<MyHomePage>
         source = 'netease';
         break;
     }
-    if (source == 'myplaylist') {
-      setState(() {
-        _selectedIndex = index;
-      });
-      return;
-    }
-    // 检查 mounted 属性
-    if (!mounted) return;
-    filter_detail = await MediaService.getPlaylistFilters(source);
-    // 再次检查 mounted 属性
-    if (mounted) {
-      setState(() {
-        _selectedIndex = index;
-      });
+    try {
+      if (source == 'myplaylist') {
+        setState(() {
+          _selectedIndex = index;
+        });
+        return;
+      }
+      // 检查 mounted 属性
+      if (!mounted) return;
+      filter_detail = await MediaService.getPlaylistFilters(source);
+      // 再次检查 mounted 属性
+      if (mounted) {
+        setState(() {
+          _selectedIndex = index;
+        });
+      }
+    } catch (e) {
+      print(e);
     }
   }
 
@@ -261,8 +266,10 @@ class _MyHomePageState extends State<MyHomePage>
                   )
                 : null,
             body: _isSearchActive
-                ? Searchlistinfo(input_text_Controller: input_text_Controller,  selectedOptionNotifier: selectedOptionNotifier,
-                onPlaylistTap:change_main_status)
+                ? Searchlistinfo(
+                    input_text_Controller: input_text_Controller,
+                    selectedOptionNotifier: selectedOptionNotifier,
+                    onPlaylistTap: change_main_status)
                 : _Mainpage
                     ? Column(
                         children: [
@@ -311,21 +318,36 @@ class _MyHomePageState extends State<MyHomePage>
                             height: 1,
                             color: Colors.grey[300],
                           ),
-
                           Expanded(
-                              child: source != "myplaylist"
-                                  ? Playlist(
-                                      key: ValueKey(filter),
-                                      source: source,
-                                      offset: offset,
-                                      filter: filter,
-                                      onPlaylistTap: change_main_status)
-                                  : MyPlaylist(
-                                      onPlaylistTap: change_main_status))
+                              child: GestureDetector(
+                                  onHorizontalDragEnd: (details) {
+                                    if (details.primaryVelocity != null) {
+                                      if (details.primaryVelocity! > 0) {
+                                        if (_selectedIndex == 0) {
+                                          return;
+                                        }
+                                        _onItemTapped(_selectedIndex - 1);
+                                      } else if (details.primaryVelocity! < 0) {
+                                        if (_selectedIndex == 2) {
+                                          return;
+                                        }
+                                        _onItemTapped(_selectedIndex + 1);
+                                      }
+                                    }
+                                  },
+                                  child: source != "myplaylist"
+                                      ? Playlist(
+                                          key: ValueKey(filter),
+                                          source: source,
+                                          offset: offset,
+                                          filter: filter,
+                                          onPlaylistTap: change_main_status)
+                                      : MyPlaylist(
+                                          onPlaylistTap: change_main_status)))
                         ],
                       )
                     : PlaylistInfo(
-                      key: _playlistInfoKey,
+                        key: _playlistInfoKey,
                         listId: _playlist_id,
                         onPlaylistTap: change_main_status,
                         is_my: main_is_my,

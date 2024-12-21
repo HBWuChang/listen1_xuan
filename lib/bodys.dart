@@ -159,14 +159,18 @@ class _PlaylistState extends State<Playlist> {
     Map<String, dynamic> result = await MediaService.showPlaylistArray(
         widget.source, widget.offset, widget.filter['id']);
     print(result);
-    setState(() {
-      _playlists = result['result'];
-      if (result.containsKey('total')) {
-        total = result['total'];
-        per_page = result['per_page'];
-      }
-      _loading = false;
-    });
+    try {
+      setState(() {
+        _playlists = result['result'];
+        if (result.containsKey('total')) {
+          total = result['total'];
+          per_page = result['per_page'];
+        }
+        _loading = false;
+      });
+    } catch (e) {
+      print(e);
+    }
   }
 
   void _onScroll() {
@@ -180,16 +184,20 @@ class _PlaylistState extends State<Playlist> {
     if (_loadingMore) return;
     _currentOffset += per_page;
     if (_currentOffset >= total * per_page) return;
-    setState(() {
-      _loadingMore = true;
-    });
-    Map<String, dynamic> result = await MediaService.showPlaylistArray(
-        widget.source, _currentOffset, widget.filter['id']);
-    print(result);
-    setState(() {
-      _playlists.addAll(result['result']);
-      _loadingMore = false;
-    });
+    try {
+      setState(() {
+        _loadingMore = true;
+      });
+      Map<String, dynamic> result = await MediaService.showPlaylistArray(
+          widget.source, _currentOffset, widget.filter['id']);
+      print(result);
+      setState(() {
+        _playlists.addAll(result['result']);
+        _loadingMore = false;
+      });
+    } catch (e) {
+      print(e);
+    }
   }
 
   @override
@@ -279,28 +287,39 @@ class _MyPlaylistState extends State<MyPlaylist> {
 
   void _loadData() async {
     Map<String, dynamic> result_my = await myplaylist.showMyPlaylist('my');
-
-    setState(() {
-      _playlists_my = result_my['result'];
-      _loading = false;
-    });
+    try {
+      setState(() {
+        _playlists_my = result_my['result'];
+        _loading = false;
+      });
+    } catch (e) {
+      print(e);
+    }
   }
 
   void _loadFavData() async {
     Map<String, dynamic> result_fav =
         await myplaylist.showMyPlaylist('favorite');
-    setState(() {
-      _playlists_fav = result_fav['result'];
-      _isFavDataLoaded = true;
-    });
+    try {
+      setState(() {
+        _playlists_fav = result_fav['result'];
+        _isFavDataLoaded = true;
+      });
+    } catch (e) {
+      print(e);
+    }
   }
 
   void _loadBlData() async {
     var result_bl = await bilibili.Xuan_get_bl_playlist();
-    setState(() {
-      _playlists_bl = result_bl;
-      _isBlDataLoaded = true;
-    });
+    try {
+      setState(() {
+        _playlists_bl = result_bl;
+        _isBlDataLoaded = true;
+      });
+    } catch (e) {
+      print(e);
+    }
   }
 
   @override
