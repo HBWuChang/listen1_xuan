@@ -475,30 +475,34 @@ class Netease {
 
   Future<void> bootstrapTrack(
       Map<String, dynamic> track, Function success, Function failure) async {
-    final sound = <String, dynamic>{};
-    const targetUrl =
-        'https://interface3.music.163.com/eapi/song/enhance/player/url';
-    var songId = track['id'].toString().replaceFirst('netrack_', '');
-    const eapiUrl = '/api/song/enhance/player/url';
+    try {
+      final sound = <String, dynamic>{};
+      const targetUrl =
+          'https://interface3.music.163.com/eapi/song/enhance/player/url';
+      var songId = track['id'].toString().replaceFirst('netrack_', '');
+      const eapiUrl = '/api/song/enhance/player/url';
 
-    final data = eapi(eapiUrl, {
-      'ids': '[$songId]',
-      'br': 999000,
-    });
-    final expire = (DateTime.now().millisecondsSinceEpoch +
-            1e3 * 60 * 60 * 24 * 365 * 100) /
-        1000;
+      final data = eapi(eapiUrl, {
+        'ids': '[$songId]',
+        'br': 999000,
+      });
+      final expire = (DateTime.now().millisecondsSinceEpoch +
+              1e3 * 60 * 60 * 24 * 365 * 100) /
+          1000;
 
-    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
-    final resData = jsonDecode(response.data)['data'][0];
-    final url = resData['url'];
-    final br = resData['br'];
-    if (url != null) {
-      sound['url'] = url;
-      sound['bitrate'] = '${(br / 1000).toStringAsFixed(0)}kbps';
-      sound['platform'] = 'netease';
-      success(sound, track);
-    } else {
+      final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+      final resData = jsonDecode(response.data)['data'][0];
+      final url = resData['url'];
+      final br = resData['br'];
+      if (url != null) {
+        sound['url'] = url;
+        sound['bitrate'] = '${(br / 1000).toStringAsFixed(0)}kbps';
+        sound['platform'] = 'netease';
+        success(sound, track);
+      } else {
+        failure();
+      }
+    } catch (e) {
       failure();
     }
   }

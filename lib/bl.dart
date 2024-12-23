@@ -691,7 +691,7 @@ class Bilibili {
           sound['platform'] = 'bilibili';
           success(sound, track);
         } else {
-          failure(sound);
+          failure();
         }
       } catch (e) {
         failure();

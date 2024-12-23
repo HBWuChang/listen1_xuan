@@ -17,6 +17,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'loweb.dart';
 import 'myplaylist.dart';
 import 'package:vibration/vibration.dart';
+import 'package:logger/logger.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
+class FileLogOutput extends LogOutput {
+  final File file;
+
+  FileLogOutput(this.file);
+
+  @override
+  void output(OutputEvent event) {
+    for (var line in event.lines) {
+      file.writeAsStringSync('${DateTime.now()}: $line\n', mode: FileMode.append);
+    }
+  }
+}
+
+final Logger playlogger=Logger(
+  level: Level.debug,
+  output:FileLogOutput(File('/data/user/0/com.xiebian.listen1_xuan/cache/app.log'))
+);
 
 // final play = Play();
 final _player = AudioPlayer();
@@ -34,6 +54,9 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
 
   final current_playing = await get_current_playing();
   final nowplaying_track = await getnowplayingsong();
+  playlogger.d('onPlaybackCompleted');
+  playlogger.d(nowplaying_track);
+
   if (nowplaying_track['index'] != -1) {
     final index = nowplaying_track['index'];
     switch (playmode) {
@@ -198,6 +221,9 @@ Future<void> playsong(Map<String, dynamic> track) async {
   await set_player_settings("nowplaying_track_id", track['id']);
   await add_current_playing([track]);
   final tdir = await get_local_cache(track['id']);
+  playlogger.d('playsong');
+  playlogger.d(track);
+  playlogger.d(tdir);
   if (tdir == "") {
     MediaService.bootstrapTrack(
         track, playerSuccessCallback, playerFailCallback);
@@ -236,13 +262,18 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
   print('playerSuccessCallback');
   print(res);
   print(track);
+  playlogger.d('playerSuccessCallback');
+  playlogger.d(res);
+  playlogger.d(track);
   try {
     final tempDir = await getTemporaryDirectory();
     final tempPath = tempDir.path;
     final _local_cache = await get_local_cache(track['id']);
     if (_local_cache == '') {
       // 获取应用程序的临时目录
-      final fileName = res['url'].split('/').last.split('?').first;
+      // final fileName = res['url'].split('/').last.split('?').first;
+      // 根据.定位文件后缀名
+      final fileName = res['url'].split('.')[res['url'].split('.').length - 2].split('/').last+'.'+res['url'].split('.').last.split('?').first;
       final filePath = '$tempPath/$fileName';
       // 若本地已经存在该文件，则直接播放
       switch (res["platform"]) {
@@ -276,14 +307,30 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
     return;
   } catch (e) {
     print('Error downloading or playing audio: $e');
+    playlogger.e('Error downloading or playing audio: $e');
+    playerFailCallback();
   }
 }
 
 Future<void> playerFailCallback() async {
   print('playerFailCallback');
+  playlogger.e('playerFailCallback');
   Fluttertoast.showToast(
     msg: 'Error downloading audio',
   );
+  var connectivityResult = await (Connectivity().checkConnectivity());
+  playlogger.d(connectivityResult);
+  while (connectivityResult == ConnectivityResult.none) {
+    connectivityResult = await (Connectivity().checkConnectivity());
+    playlogger.d(connectivityResult);
+    // 等待三秒
+    await Future.delayed(Duration(seconds: 3));
+  }
+  if(playmode == 1){
+    playlogger.d(randommodetemplist);
+    randommodetemplist.removeAt(randommodetemplist.length - 1);
+  }
+
   onPlaybackCompleted(true);
 }
 
