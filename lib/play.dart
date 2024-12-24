@@ -28,15 +28,16 @@ class FileLogOutput extends LogOutput {
   @override
   void output(OutputEvent event) {
     for (var line in event.lines) {
-      file.writeAsStringSync('${DateTime.now()}: $line\n', mode: FileMode.append);
+      file.writeAsStringSync('${DateTime.now()}: $line\n',
+          mode: FileMode.append);
     }
   }
 }
 
-final Logger playlogger=Logger(
-  level: Level.debug,
-  output:FileLogOutput(File('/data/user/0/com.xiebian.listen1_xuan/cache/app.log'))
-);
+final Logger playlogger = Logger(
+    level: Level.debug,
+    output: FileLogOutput(
+        File('/data/user/0/com.xiebian.listen1_xuan/cache/app.log')));
 
 // final play = Play();
 final music_player = AudioPlayer();
@@ -255,8 +256,10 @@ Future<void> playsong(Map<String, dynamic> track) async {
   );
   (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
   // (_audioHandler as AudioPlayerHandler).play();
-  double t_volume = await get_player_settings("volume");
-  if (t_volume == null) {
+  double t_volume = 100;
+  try {
+    t_volume = await get_player_settings("volume");
+  } catch (e) {
     t_volume = 100;
     await set_player_settings("volume", t_volume);
   }
@@ -279,7 +282,12 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
       // 获取应用程序的临时目录
       // final fileName = res['url'].split('/').last.split('?').first;
       // 根据.定位文件后缀名
-      final fileName = res['url'].split('.')[res['url'].split('.').length - 2].split('/').last+'.'+res['url'].split('.').last.split('?').first;
+      final fileName = res['url']
+              .split('.')[res['url'].split('.').length - 2]
+              .split('/')
+              .last +
+          '.' +
+          res['url'].split('.').last.split('?').first;
       final filePath = '$tempPath/$fileName';
       // 若本地已经存在该文件，则直接播放
       switch (res["platform"]) {
@@ -332,7 +340,7 @@ Future<void> playerFailCallback() async {
     // 等待三秒
     await Future.delayed(Duration(seconds: 3));
   }
-  if(playmode == 1){
+  if (playmode == 1) {
     playlogger.d(randommodetemplist);
     randommodetemplist.removeAt(randommodetemplist.length - 1);
   }
