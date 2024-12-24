@@ -39,7 +39,7 @@ final Logger playlogger=Logger(
 );
 
 // final play = Play();
-final _player = AudioPlayer();
+final music_player = AudioPlayer();
 late AudioHandler _audioHandler;
 int playmode = 0;
 List<Map<String, dynamic>> randommodetemplist = [];
@@ -89,7 +89,7 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
               : await playsong(current_playing[0]);
           break;
         }
-        await _player.seek(Duration.zero);
+        await music_player.seek(Duration.zero);
         break;
       default:
         break;
@@ -229,11 +229,11 @@ Future<void> playsong(Map<String, dynamic> track) async {
         track, playerSuccessCallback, playerFailCallback);
     return;
   }
-  await _player.setFilePath(tdir);
+  await music_player.setFilePath(tdir);
 
   // 使用 Completer 来等待 _duration 被赋值
   final Completer<void> completer = Completer<void>();
-  _player.durationStream.listen((duration) {
+  music_player.durationStream.listen((duration) {
     if (duration != null && !completer.isCompleted) {
       // print('音频文件时长: ${duration.inSeconds}秒');
       completer.complete();
@@ -243,7 +243,7 @@ Future<void> playsong(Map<String, dynamic> track) async {
   // 等待 _duration 被赋值
   await completer.future;
   // 获取音频文件的时长
-  final _duration = await _player.duration;
+  final _duration = await music_player.duration;
   print(_duration);
   dynamic _item;
   _item = MediaItem(
@@ -255,7 +255,13 @@ Future<void> playsong(Map<String, dynamic> track) async {
   );
   (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
   // (_audioHandler as AudioPlayerHandler).play();
-  _player.play();
+  double t_volume = await get_player_settings("volume");
+  if (t_volume == null) {
+    t_volume = 100;
+    await set_player_settings("volume", t_volume);
+  }
+  music_player.setVolume(t_volume / 100);
+  music_player.play();
 }
 
 Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
@@ -414,7 +420,7 @@ class _PlayState extends State<Play> {
               onDoubleTap: () {
                 // if (_player.playing) MediaControl.pause else MediaControl.play,
                 Vibration.vibrate(duration: 100);
-                if (_player.playing) {
+                if (music_player.playing) {
                   (_audioHandler as AudioPlayerHandler).pause();
                 } else {
                   (_audioHandler as AudioPlayerHandler).play();
@@ -656,13 +662,13 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // So that our clients (the Flutter UI and the system notification) know
     // what state to display, here we set up our audio handler to broadcast all
     // playback state changes as they happen via playbackState...
-    _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+    music_player.playbackEventStream.map(_transformEvent).pipe(playbackState);
     // ... and also the current media item via mediaItem.
     mediaItem.add(_item);
 
     // Load the player.
-    _player.setAudioSource(AudioSource.uri(Uri.parse(_item.id)));
-    _player.playerStateStream.listen((playerState) {
+    music_player.setAudioSource(AudioSource.uri(Uri.parse(_item.id)));
+    music_player.playerStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
         onPlaybackCompleted();
       }
@@ -695,21 +701,21 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         if (track['index'] != -1) {
           await playsong(track['track']);
         } else {
-          _player.play();
+          music_player.play();
         }
       } else {
-        _player.play();
+        music_player.play();
       }
     } else {
-      _player.play();
+      music_player.play();
     }
   }
 
   @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() => music_player.pause();
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) => music_player.seek(position);
 
   @override
   Future<void> skipToPrevious() async {
@@ -770,7 +776,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   PlaybackState _transformEvent(PlaybackEvent event) {
     return PlaybackState(
       controls: [
-        if (_player.playing) MediaControl.pause else MediaControl.play,
+        if (music_player.playing) MediaControl.pause else MediaControl.play,
         MediaControl.skipToNext,
         MediaControl.skipToPrevious,
         MediaControl.stop,
@@ -787,11 +793,11 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         ProcessingState.buffering: AudioProcessingState.buffering,
         ProcessingState.ready: AudioProcessingState.ready,
         ProcessingState.completed: AudioProcessingState.completed,
-      }[_player.processingState]!,
-      playing: _player.playing,
-      updatePosition: _player.position,
-      bufferedPosition: _player.bufferedPosition,
-      speed: _player.speed,
+      }[music_player.processingState]!,
+      playing: music_player.playing,
+      updatePosition: music_player.position,
+      bufferedPosition: music_player.bufferedPosition,
+      speed: music_player.speed,
       queueIndex: event.currentIndex,
     );
   }

@@ -8,6 +8,7 @@ import 'settings.dart';
 import 'loweb.dart';
 import 'bodys.dart';
 import 'play.dart';
+import 'dart:async';
 
 void main() {
   runApp(MyApp());
@@ -55,6 +56,10 @@ class _MyHomePageState extends State<MyHomePage>
   final ValueNotifier<String> selectedOptionNotifier =
       ValueNotifier<String>('Option 1');
   Key _playlistInfoKey = UniqueKey();
+  OverlayEntry? _overlayEntry;
+  Timer? _timer;
+  double _currentVolume = 0.5;
+  bool volumeSliderVisible = false;
   @override
   void initState() {
     super.initState();
@@ -167,6 +172,7 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void dispose() {
     _focusNode.dispose();
+    _timer?.cancel();
     _focusNode2.dispose();
     try {
       _animationController.dispose();
@@ -195,165 +201,252 @@ class _MyHomePageState extends State<MyHomePage>
                 }
             },
         child: Scaffold(
-            appBar: _Mainpage
-                ? AppBar(
-                    title: AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return SizeTransition(
-                          sizeFactor: _animationController,
-                          axis: Axis.horizontal,
-                          axisAlignment: -1,
-                          child: Row(
-                            children: [
-                              if (!_isSearchActive) Text('Listen1'),
-                              if (!_isSearchActive) SizedBox(width: 10),
-                              if (_isSearchActive)
-                                IconButton(
-                                  icon: Icon(Icons.arrow_back),
-                                  onPressed: _onSearchBackTapped,
-                                ),
-                              Expanded(
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    hintText: '请输入歌曲名，歌手或专辑',
-                                    border: InputBorder.none,
-                                  ),
-                                  controller: input_text_Controller,
-                                  autofocus: _isSearchActive,
-                                  focusNode: _isSearchActive
-                                      ? _focusNode2
-                                      : _focusNode,
-                                ),
+          appBar: _Mainpage
+              ? AppBar(
+                  title: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      return SizeTransition(
+                        sizeFactor: _animationController,
+                        axis: Axis.horizontal,
+                        axisAlignment: -1,
+                        child: Row(
+                          children: [
+                            if (!_isSearchActive) Text('Listen1'),
+                            if (!_isSearchActive) SizedBox(width: 10),
+                            if (_isSearchActive)
+                              IconButton(
+                                icon: Icon(Icons.arrow_back),
+                                onPressed: _onSearchBackTapped,
                               ),
-                              if (!_isSearchActive)
-                                IconButton(
-                                  icon: Icon(Icons.settings),
+                            Expanded(
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  hintText: '请输入歌曲名，歌手或专辑',
+                                  border: InputBorder.none,
+                                ),
+                                controller: input_text_Controller,
+                                autofocus: _isSearchActive,
+                                focusNode:
+                                    _isSearchActive ? _focusNode2 : _focusNode,
+                              ),
+                            ),
+                            if (!_isSearchActive)
+                              IconButton(
+                                icon: Icon(Icons.settings),
+                                onPressed: () {
+                                  // Navigate to settings
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) {
+                                      return SettingsPage();
+                                    }),
+                                  );
+                                },
+                              ),
+                            if (_isSearchActive)
+                              DropdownButton<String>(
+                                value: selectedOption,
+                                icon: Icon(Icons.arrow_downward),
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    selectedOption = newValue!;
+                                    selectedOptionNotifier.value = newValue;
+                                  });
+                                },
+                                items: _options.map<DropdownMenuItem<String>>(
+                                    (String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(value),
+                                  );
+                                }).toList(),
+                              ),
+                          ],
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        ),
+                      );
+                    },
+                  ),
+                )
+              : null,
+          body: _isSearchActive
+              ? Searchlistinfo(
+                  input_text_Controller: input_text_Controller,
+                  selectedOptionNotifier: selectedOptionNotifier,
+                  onPlaylistTap: change_main_status)
+              : _Mainpage
+                  ? Column(
+                      children: [
+                        Container(
+                            height: 45,
+                            child: Row(children: [
+                              Expanded(
+                                  child: NavigationBar(
+                                labelBehavior:
+                                    NavigationDestinationLabelBehavior
+                                        .alwaysHide,
+                                selectedIndex: _selectedIndex,
+                                destinations: [
+                                  NavigationDestination(
+                                      icon: Center(child: Text('我的')),
+                                      label: ''),
+                                  NavigationDestination(
+                                      icon: Center(child: Text('BiliBili')),
+                                      label: ''),
+                                  NavigationDestination(
+                                      icon: Center(child: Text('网易云')),
+                                      label: ''),
+                                ],
+                                onDestinationSelected: (index) {
+                                  _onItemTapped(index);
+                                },
+                              )),
+                              if (show_filter)
+                                TextButton(
+                                  child: Text(filter['name']),
                                   onPressed: () {
-                                    // Navigate to settings
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) {
-                                        return SettingsPage();
-                                      }),
-                                    );
-                                  },
-                                ),
-                              if (_isSearchActive)
-                                DropdownButton<String>(
-                                  value: selectedOption,
-                                  icon: Icon(Icons.arrow_downward),
-                                  onChanged: (String? newValue) {
-                                    setState(() {
-                                      selectedOption = newValue!;
-                                      selectedOptionNotifier.value = newValue;
-                                    });
-                                  },
-                                  items: _options.map<DropdownMenuItem<String>>(
-                                      (String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                                ),
-                            ],
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          ),
-                        );
-                      },
-                    ),
-                  )
-                : null,
-            body: _isSearchActive
-                ? Searchlistinfo(
-                    input_text_Controller: input_text_Controller,
-                    selectedOptionNotifier: selectedOptionNotifier,
-                    onPlaylistTap: change_main_status)
-                : _Mainpage
-                    ? Column(
-                        children: [
-                          Container(
-                              height: 45,
-                              child: Row(children: [
-                                Expanded(
-                                    child: NavigationBar(
-                                  labelBehavior:
-                                      NavigationDestinationLabelBehavior
-                                          .alwaysHide,
-                                  selectedIndex: _selectedIndex,
-                                  destinations: [
-                                    NavigationDestination(
-                                        icon: Center(child: Text('我的')),
-                                        label: ''),
-                                    NavigationDestination(
-                                        icon: Center(child: Text('BiliBili')),
-                                        label: ''),
-                                    NavigationDestination(
-                                        icon: Center(child: Text('网易云')),
-                                        label: ''),
-                                  ],
-                                  onDestinationSelected: (index) {
-                                    _onItemTapped(index);
-                                  },
-                                )),
-                                if (show_filter)
-                                  TextButton(
-                                    child: Text(filter['name']),
-                                    onPressed: () {
-                                      Map<String, dynamic> tfilter = {};
-                                      tfilter["推荐"] =
-                                          filter_detail["recommend"];
-                                      for (var item in filter_detail["all"]) {
-                                        tfilter[item["category"]] =
-                                            item["filters"];
-                                      }
-                                      _showFilterSelection(context, tfilter,
-                                          filter['id'], change_fliter);
-                                    },
-                                  ),
-                              ])),
-                          // 长灰色细分割线
-                          Divider(
-                            height: 1,
-                            color: Colors.grey[300],
-                          ),
-                          Expanded(
-                              child: GestureDetector(
-                                  onHorizontalDragEnd: (details) {
-                                    if (details.primaryVelocity != null) {
-                                      if (details.primaryVelocity! > 0) {
-                                        if (_selectedIndex == 0) {
-                                          return;
-                                        }
-                                        _onItemTapped(_selectedIndex - 1);
-                                      } else if (details.primaryVelocity! < 0) {
-                                        if (_selectedIndex == 2) {
-                                          return;
-                                        }
-                                        _onItemTapped(_selectedIndex + 1);
-                                      }
+                                    Map<String, dynamic> tfilter = {};
+                                    tfilter["推荐"] = filter_detail["recommend"];
+                                    for (var item in filter_detail["all"]) {
+                                      tfilter[item["category"]] =
+                                          item["filters"];
                                     }
+                                    _showFilterSelection(context, tfilter,
+                                        filter['id'], change_fliter);
                                   },
-                                  child: source != "myplaylist"
-                                      ? Playlist(
-                                          key: ValueKey(filter),
-                                          source: source,
-                                          offset: offset,
-                                          filter: filter,
-                                          onPlaylistTap: change_main_status)
-                                      : MyPlaylist(
-                                          onPlaylistTap: change_main_status)))
-                        ],
-                      )
-                    : PlaylistInfo(
-                        key: _playlistInfoKey,
-                        listId: _playlist_id,
-                        onPlaylistTap: change_main_status,
-                        is_my: main_is_my,
-                      ),
-            // bottomNavigationBar: play));
-            bottomNavigationBar: Play(onPlaylistTap: change_main_status)));
+                                ),
+                            ])),
+                        // 长灰色细分割线
+                        Divider(
+                          height: 1,
+                          color: Colors.grey[300],
+                        ),
+                        Expanded(
+                            child: GestureDetector(
+                                onHorizontalDragEnd: (details) {
+                                  if (details.primaryVelocity != null) {
+                                    if (details.primaryVelocity! > 0) {
+                                      if (_selectedIndex == 0) {
+                                        return;
+                                      }
+                                      _onItemTapped(_selectedIndex - 1);
+                                    } else if (details.primaryVelocity! < 0) {
+                                      if (_selectedIndex == 2) {
+                                        return;
+                                      }
+                                      _onItemTapped(_selectedIndex + 1);
+                                    }
+                                  }
+                                },
+                                child: source != "myplaylist"
+                                    ? Playlist(
+                                        key: ValueKey(filter),
+                                        source: source,
+                                        offset: offset,
+                                        filter: filter,
+                                        onPlaylistTap: change_main_status)
+                                    : MyPlaylist(
+                                        onPlaylistTap: change_main_status)))
+                      ],
+                    )
+                  : PlaylistInfo(
+                      key: _playlistInfoKey,
+                      listId: _playlist_id,
+                      onPlaylistTap: change_main_status,
+                      is_my: main_is_my,
+                    ),
+          // bottomNavigationBar: play));
+          bottomNavigationBar: Play(onPlaylistTap: change_main_status),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              if (volumeSliderVisible) {
+                _overlayEntry?.remove();
+                _overlayEntry = null;
+                volumeSliderVisible = false;
+                return;
+              }
+              _showVolumeSlider(context);
+            },
+            child: Icon(Icons.volume_up),
+          ),
+        ));
+  }
+
+  void _showVolumeSlider(BuildContext context) async {
+    try {
+      _currentVolume = await get_player_settings("volume");
+    } catch (e) {
+      _currentVolume = 50;
+    }
+    _currentVolume = _currentVolume / 100;
+    volumeSliderVisible = true;
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context)!.insert(_overlayEntry!);
+    _startAutoCloseTimer();
+  }
+
+  void _startAutoCloseTimer() {
+    _timer?.cancel();
+    _timer = Timer(Duration(seconds: 3), () {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+      volumeSliderVisible = false;
+    });
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).size.height / 2 - 100,
+        right: 0,
+        child: Material(
+          color: Colors.transparent,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              _overlayEntry?.remove();
+              _overlayEntry = null;
+              volumeSliderVisible = false;
+            },
+            child: Container(
+              height: 200,
+              width: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: RotatedBox(
+                quarterTurns: -1,
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    return Slider(
+                      value: _currentVolume,
+                      onChanged: (value) {
+                        setState(() {
+                          _currentVolume = value;
+                        });
+                        // print(value);
+                        set_player_settings("volume", value * 100);
+                        music_player.setVolume(value);
+                        _startAutoCloseTimer(); // 重置计时器
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
