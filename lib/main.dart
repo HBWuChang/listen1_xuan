@@ -20,8 +20,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Listen1',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.indigo,
+        useMaterial3:true,
+        primaryColor: Colors.indigo,
       ),
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.system,
       localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
