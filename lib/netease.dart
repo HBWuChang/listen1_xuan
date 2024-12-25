@@ -244,7 +244,7 @@ class Netease {
   }
 
   // Future<void> neShowToplist( int? offset) async {
-  Future<Map<String, dynamic>> neShowToplist(int? offset) async {
+  Future<Map<String, dynamic>> ne_show_toplist(int? offset) async {
     if (offset != null && offset > 0) {
       // callback({'result': []});
       return {"result": []};
@@ -264,7 +264,7 @@ class Netease {
     return {"result": result};
   }
 
-  Future<Map<String, dynamic>> showPlaylist(String url) async {
+  Future<Map<String, dynamic>> show_playlist(String url) async {
     const order = 'hot';
     final offset = int.parse(getParameterByName('offset', url));
     final filterId = getParameterByName('filter_id', url);
@@ -272,7 +272,7 @@ class Netease {
     if (filterId == 'toplist') {
       // await neShowToplist(
       //     offset != null ? int.tryParse(offset) : null, callback);
-      return neShowToplist(offset);
+      return ne_show_toplist(offset);
     }
 
     String filter = '';
@@ -328,7 +328,7 @@ class Netease {
     return {"result": result, "total": total, "per_page": 35};
   }
 
-  static Future<void> neEnsureCookie(Function callback) async {
+  static Future<void> ne_ensure_cookie(Function callback) async {
     const domain = 'https://music.163.com';
     const nuidName = '_ntes_nuid';
     const nnidName = '_ntes_nnid';
@@ -349,7 +349,7 @@ class Netease {
     }
   }
 
-  Future<void> asyncProcessList(
+  Future<void> async_process_list(
       List<dynamic> dataList,
       Future<dynamic> Function(int, dynamic, List<dynamic>) handler,
       List<dynamic> handlerExtraParamList,
@@ -368,7 +368,7 @@ class Netease {
     }
   }
 
-  Future<void> ngRenderPlaylistResultItem(
+  Future<void> ng_render_playlist_result_item(
       int index, dynamic item, Function callback) async {
     const targetUrl = 'https://music.163.com/weapi/v3/song/detail';
     final queryIds = [item['id']];
@@ -395,7 +395,7 @@ class Netease {
   }
 
   // static Future<void> neGetPlaylist(String url, Function fn) async {
-  Future<Map<String, dynamic>> neGetPlaylist(String url) async {
+  Future<Map<String, dynamic>> ne_get_playlist(String url) async {
     final listId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
     const targetUrl = 'https://music.163.com/weapi/v3/playlist/detail';
     final data = weapi({
@@ -422,7 +422,7 @@ class Netease {
 
     final tracks = <Map<String, dynamic>>[];
     for (final trackIds in trackIdsArray) {
-      final trackData = await _ngParsePlaylistTracks(trackIds);
+      final trackData = await ng_parse_playlist_tracks(trackIds);
       tracks.addAll(trackData);
     }
     return {'tracks': tracks, 'info': info};
@@ -441,7 +441,7 @@ class Netease {
     return result;
   }
 
-  Future<List<Map<String, dynamic>>> _ngParsePlaylistTracks(
+  Future<List<Map<String, dynamic>>> ng_parse_playlist_tracks(
       List<dynamic> trackIds) async {
     const targetUrl = 'https://music.163.com/weapi/v3/song/detail';
     Map<String, dynamic> t = {'c': "", 'ids': ""};
@@ -473,7 +473,7 @@ class Netease {
     return tracks;
   }
 
-  Future<void> bootstrapTrack(
+  Future<void> bootstrap_track(
       Map<String, dynamic> track, Function success, Function failure) async {
     try {
       final sound = <String, dynamic>{};
@@ -507,7 +507,7 @@ class Netease {
     }
   }
 
-  static bool isPlayable(Map<String, dynamic> song) {
+  static bool is_playable(Map<String, dynamic> song) {
     return song['fee'] != 4 && song['fee'] != 1;
   }
 
@@ -544,7 +544,7 @@ class Netease {
           'source': 'netease',
           'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
           'img_url': songInfo['album']['picUrl'],
-          'url': !isPlayable(songInfo) ? '' : null,
+          'url': !is_playable(songInfo) ? '' : null,
         };
       }).toList();
       total = data['result']['songCount'];
@@ -567,7 +567,7 @@ class Netease {
   }
 
   // static Future<void> neAlbum(String url, Function fn) async {
-  Future<Map<String, dynamic>> neAlbum(String url) async {
+  Future<Map<String, dynamic>> ne_album(String url) async {
     final albumId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
     final targetUrl = 'https://music.163.com/api/album/$albumId';
     final response = await dio_get_with_cookie_and_csrf(targetUrl);
@@ -589,14 +589,14 @@ class Netease {
         'source': 'netease',
         'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
         'img_url': songInfo['album']['picUrl'],
-        'url': !isPlayable(songInfo) ? '' : null,
+        'url': !is_playable(songInfo) ? '' : null,
       };
     }).toList();
     return {'tracks': tracks, 'info': info};
   }
 
   // static Future<void> neArtist(String url, Function fn) async {
-  Future<Map<String, dynamic>> neArtist(String url) async {
+  Future<Map<String, dynamic>> ne_artist(String url) async {
     final artistId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
     final targetUrl = 'https://music.163.com/api/artist/$artistId';
     // final response =
@@ -620,7 +620,7 @@ class Netease {
         'source': 'netease',
         'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
         'img_url': songInfo['album']['picUrl'],
-        'url': !isPlayable(songInfo) ? '' : null,
+        'url': !is_playable(songInfo) ? '' : null,
       };
     }).toList();
     // fn({'tracks': tracks, 'info': info});
@@ -657,7 +657,7 @@ class Netease {
   }
 
   // static Future<void> parseUrl(String url, Function fn) async {
-  static Future<Map<String, dynamic>> parseUrl(String url) async {
+  static Future<Map<String, dynamic>> parse_url(String url) async {
     var result;
     var id = '';
     url = url.replaceAll(
@@ -696,27 +696,27 @@ class Netease {
   }
 
   // static Future<void> getPlaylist(String url, Function fn) async {
-  Future<Map<String, dynamic>> getPlaylist(String url) async {
+  Future<Map<String, dynamic>> get_playlist(String url) async {
     final listId = Uri.parse(url).queryParameters['list_id']!.split('_')[0];
     switch (listId) {
       case 'neplaylist':
         // await neGetPlaylist(url, fn);
-        return neGetPlaylist(url);
+        return ne_get_playlist(url);
         break;
       case 'nealbum':
         // await neAlbum(url, fn);
-        return neAlbum(url);
+        return ne_album(url);
         break;
       case 'neartist':
         // await neArtist(url, fn);
-        return neArtist(url);
+        return ne_artist(url);
         break;
       default:
         return {};
     }
   }
 
-  Future<Map<String, dynamic>> getPlaylistFilters() {
+  Future<Map<String, dynamic>> get_playlist_filters() {
     final recommend = [
       {'id': '', 'name': '全部'},
       {'id': 'toplist', 'name': '排行榜'},
@@ -834,7 +834,7 @@ class Netease {
 
   // static Future<void> getUserPlaylist(
   //     String url, String playlistType, Function fn) async {
-  Future<Map<String, dynamic>> getUserPlaylist(
+  Future<Map<String, dynamic>> get_user_playlist(
       String url, String playlistType) async {
     final userId = Uri.parse(url).queryParameters['user_id'];
     const targetUrl = 'https://music.163.com/api/user/playlist';
@@ -878,20 +878,20 @@ class Netease {
   }
 
   // static Future<void> getUserCreatedPlaylist(String url, Function fn) async {
-  Future<Map<String, dynamic>> getUserCreatedPlaylist(String url) async {
+  Future<Map<String, dynamic>> get_user_created_playlist(String url) async {
     // await getUserPlaylist(url, 'created', fn);
-    return await getUserPlaylist(url, 'created');
+    return await get_user_playlist(url, 'created');
   }
 
   // static Future<void> getUserFavoritePlaylist(String url, Function fn) async {
   //   await getUserPlaylist(url, 'favorite', fn);
   // }
-  Future<Map<String, dynamic>> getUserFavoritePlaylist(String url) async {
-    return await getUserPlaylist(url, 'favorite');
+  Future<Map<String, dynamic>> get_user_favorite_playlist(String url) async {
+    return await get_user_playlist(url, 'favorite');
   }
 
   // static Future<void> getRecommendPlaylist(Function fn) async {
-  Future<Map<String, dynamic>> getRecommendPlaylist() async {
+  Future<Map<String, dynamic>> get_recommend_playlist() async {
     const targetUrl = 'https://music.163.com/weapi/personalized/playlist';
 
     final reqData = {
@@ -923,7 +923,7 @@ class Netease {
   }
 
   // static Future<void> getUser(Function fn) async {
-  Future<Map<String, dynamic>> getUser() async {
+  Future<Map<String, dynamic>> get_user() async {
     const url = 'https://music.163.com/weapi/w/nuser/account/get';
 
     // final encryptReqData = weapi({});

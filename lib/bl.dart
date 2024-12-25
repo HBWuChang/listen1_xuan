@@ -261,7 +261,7 @@ class Bilibili {
     return document.body?.text ?? '';
   }
 
-  static Future<Map<String, String>> fetchWbiKey() async {
+  static Future<Map<String, String>> fetch_wbi_key() async {
     final response =
         await Dio().get('https://api.bilibili.com/x/web-interface/nav');
     final jsonContent = response.data;
@@ -283,7 +283,7 @@ class Bilibili {
     if (wbiKey != null) {
       return Future.value(wbiKey);
     }
-    final key = await fetchWbiKey();
+    final key = await fetch_wbi_key();
     wbiKey = key;
     return key;
   }
@@ -382,7 +382,7 @@ class Bilibili {
     return '$queryString&w_rid=$wbiSign';
   }
 
-  static Future<Response> wrapWbiRequest(
+  static Future<Response> wrap_wbi_request(
       String url, Map<String, dynamic> params) async {
     try {
       final queryString = await encWbi(params);
@@ -401,7 +401,7 @@ class Bilibili {
     }
   }
 
-  static Map<String, dynamic> biConvertSong(Map<String, dynamic> songInfo) {
+  static Map<String, dynamic> bi_convert_song(Map<String, dynamic> songInfo) {
     return {
       'id': 'bitrack_${songInfo['id']}',
       'title': songInfo['title'],
@@ -414,7 +414,7 @@ class Bilibili {
     };
   }
 
-  static Map<String, dynamic> biConvertSong2(Map<String, dynamic> songInfo) {
+  static Map<String, dynamic> bi_convert_song2(Map<String, dynamic> songInfo) {
     String imgUrl = songInfo['pic'];
     if (imgUrl.startsWith('//')) {
       imgUrl = 'https:$imgUrl';
@@ -442,7 +442,7 @@ class Bilibili {
     };
   }
 
-  Future<Map<String, dynamic>> showPlaylist(String url) async {
+  Future<Map<String, dynamic>> show_playlist(String url) async {
     int offset = int.parse(getParameterByName('offset', url) ?? '0');
     int page = (offset / 20).ceil() + 1;
     String targetUrl =
@@ -467,7 +467,7 @@ class Bilibili {
     }
   }
 
-  static Future<Map<String, dynamic>> biGetPlaylist(String url) async {
+  static Future<Map<String, dynamic>> bi_get_playlist(String url) async {
     final listId = getParameterByName('list_id', url)?.split('_').last;
     if (listId == null) {
       return {'info': {}, 'tracks': []};
@@ -489,7 +489,7 @@ class Bilibili {
           'https://www.bilibili.com/audio/music-service-c/web/song/of-menu?pn=1&ps=100&sid=$listId';
       Response res = await Dio().get(target);
       final tracks = res.data['data']['data'].map((item) {
-        return biConvertSong(item);
+        return bi_convert_song(item);
       }).toList();
 
       return {'info': info, 'tracks': tracks};
@@ -499,7 +499,7 @@ class Bilibili {
     }
   }
 
-  static Future<Map<String, dynamic>> biAlbum(String url) async {
+  static Future<Map<String, dynamic>> bi_album(String url) async {
     return {
       'tracks': [],
       'info': {},
@@ -526,7 +526,7 @@ class Bilibili {
     };
   }
 
-  static Future<Map<String, dynamic>> biTrack(String url) async {
+  static Future<Map<String, dynamic>> bi_track(String url) async {
     final trackId = getParameterByName('list_id', url)?.split('_').last;
     if (trackId == null) {
       return {'info': {}, 'tracks': []};
@@ -546,7 +546,7 @@ class Bilibili {
       final author = data['owner'];
       final defaultImg = data['pic'];
       final tracks = data['pages'].map((item) {
-        return biConvertSong3(item, trackId, author, defaultImg);
+        return bi_convert_song3(item, trackId, author, defaultImg);
       }).toList();
 
       return {'info': info, 'tracks': tracks};
@@ -556,7 +556,7 @@ class Bilibili {
     }
   }
 
-  static Map<String, dynamic> biConvertSong3(Map<String, dynamic> songInfo,
+  static Map<String, dynamic> bi_convert_song3(Map<String, dynamic> songInfo,
       String bvid, Map<String, dynamic> author, String defaultImg) {
     String imgUrl = songInfo['first_frame'] ?? defaultImg;
     if (imgUrl.startsWith('//')) {
@@ -573,14 +573,14 @@ class Bilibili {
     };
   }
 
-  static Future<Map<String, dynamic>> biArtist(String url) async {
+  static Future<Map<String, dynamic>> bi_artist(String url) async {
     final artistId = getParameterByName('list_id', url)?.split('_').last;
     if (artistId == null) {
       return {'info': {}, 'tracks': []};
     }
 
     try {
-      final response = await wrapWbiRequest(
+      final response = await wrap_wbi_request(
           'https://api.bilibili.com/x/space/wbi/acc/info', {'mid': artistId});
       final data = response.data['data'];
       final info = {
@@ -591,7 +591,7 @@ class Bilibili {
       };
 
       if (getParameterByName('list_id', url)?.split('_').length == 3) {
-        final res = await wrapWbiRequest(
+        final res = await wrap_wbi_request(
             'https://api.bilibili.com/x/space/wbi/arc/search', {
           'mid': artistId,
           'pn': 1,
@@ -600,7 +600,7 @@ class Bilibili {
           'index': 1,
         });
         final tracks = res.data['data']['list']['vlist'].map((item) {
-          return biConvertSong2(item);
+          return bi_convert_song2(item);
         }).toList();
 
         return {'info': info, 'tracks': tracks};
@@ -610,7 +610,7 @@ class Bilibili {
           'https://api.bilibili.com/audio/music-service-c/web/song/upper?pn=1&ps=0&order=2&uid=$artistId';
       final res = await Dio().get(targetUrl);
       final tracks = res.data['data']['data'].map((item) {
-        return biConvertSong(item);
+        return bi_convert_song(item);
       }).toList();
 
       return {'info': info, 'tracks': tracks};
@@ -620,7 +620,7 @@ class Bilibili {
     }
   }
 
-  static Future<Map<String, dynamic>> parseUrl(String url) async {
+  static Future<Map<String, dynamic>> parse_url(String url) async {
     final regex = RegExp(r'\/\/www.bilibili.com\/audio\/am([0-9]+)');
     final match = regex.firstMatch(url);
     Map<String, dynamic>? result;
@@ -634,7 +634,7 @@ class Bilibili {
     return result ?? {};
   }
 
-  Future<void> bootstrapTrack(
+  Future<void> bootstrap_track(
       Map<String, dynamic> track, Function success, Function failure) async {
     final trackId = track['id'];
     if (trackId.startsWith('bitrack_v_')) {
@@ -728,7 +728,7 @@ class Bilibili {
           'cookie': cookie,
         }));
     final result = response.data['data']['result'].map((song) {
-      return biConvertSong2(song);
+      return bi_convert_song2(song);
     }).toList();
     final total = response.data['data']['numResults'];
 
@@ -748,33 +748,33 @@ class Bilibili {
     };
   }
 
-  Future<Map<String, dynamic>> getPlaylist(String url) async {
+  Future<Map<String, dynamic>> get_playlist(String url) async {
     final listId = getParameterByName('list_id', url)?.split('_')[0];
     switch (listId) {
       case 'biplaylist':
-        return biGetPlaylist(url);
+        return bi_get_playlist(url);
       case 'biplaylistxuan':
         return biGetPlaylistxuan(url);
       case 'bialbum':
-        return biAlbum(url);
+        return bi_album(url);
       case 'biartist':
-        return biArtist(url);
+        return bi_artist(url);
       case 'bitrack':
-        return biTrack(url);
+        return bi_track(url);
       default:
         return Future.value(null);
     }
   }
 
-  Future<Map<String, dynamic>> getPlaylistFilters() async {
+  Future<Map<String, dynamic>> get_playlist_filters() async {
     return {'recommend': [], 'all': []};
   }
 
-  static Future<Map<String, dynamic>> getUser() async {
+  static Future<Map<String, dynamic>> get_user() async {
     return {'status': 'fail', 'data': {}};
   }
 
-  static String getLoginUrl() {
+  static String get_login_url() {
     return 'https://www.bilibili.com';
   }
 

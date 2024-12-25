@@ -202,12 +202,12 @@ class MediaService {
           'offset': offset,
           'filter_id': filterId
         })}';
-    return provider.showPlaylist(url);
+    return provider.show_playlist(url);
   }
 
   static Future<dynamic> getPlaylistFilters(String source) {
     final provider = getProviderByName(source);
-    return provider.getPlaylistFilters();
+    return provider.get_playlist_filters();
   }
 
   static Future<dynamic> getLyric(
@@ -253,7 +253,7 @@ class MediaService {
     //     });
     //   },
     // };
-    dynamic playlist = await provider.getPlaylist(url);
+    dynamic playlist = await provider.get_playlist(url);
     print('playlist: $playlist');
     return playlist;
     // return provider.getPlaylist(url);
@@ -270,7 +270,7 @@ class MediaService {
     //     });
     //   },
     // };
-    return myplaylist.saveMyPlaylist(type, provider.getPlaylist(url));
+    return myplaylist.saveMyPlaylist(type, provider.get_playlist(url));
   }
 
   static Future<dynamic> removeMyPlaylist(String id, String type) {
@@ -413,7 +413,7 @@ class MediaService {
       playerSuccessCallback(get_local_cache(track['id']), track);
     } else {
       final provider = getProviderByName(track['source']);
-      provider.bootstrapTrack(track, successCallback, failureCallback);
+      provider.bootstrap_track(track, successCallback, failureCallback);
     }
   }
 
@@ -425,7 +425,7 @@ class MediaService {
 
   static Future<dynamic> getUser(String source) {
     final provider = getProviderByName(source);
-    return provider.getUser();
+    return provider.get_user();
   }
 
   static Future<dynamic> getLoginUrl(String source) {
