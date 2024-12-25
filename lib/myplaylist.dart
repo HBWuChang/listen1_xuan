@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'lowebutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'dart:math';
 
 class MyPlaylist {
   Future<void> arrayMove(List<dynamic> arr, int oldIndex, int newIndex) async {
@@ -35,12 +36,12 @@ class MyPlaylist {
           return AlertDialog(
             title: Text('请选择要添加到的歌单'),
             content: FutureBuilder(
-              future: showMyPlaylist('my'),
+              future: show_myplaylist('my'),
               builder: (BuildContext context, AsyncSnapshot snapshot) {
                 if (snapshot.connectionState == ConnectionState.done) {
                   if (snapshot.hasData) {
                     final playlists = snapshot.data['result'];
-                    
+
                     return Container(
                       width: double.maxFinite,
                       child: ListView.builder(
@@ -149,7 +150,7 @@ class MyPlaylist {
     }
   }
 
-  Future<Map<String, dynamic>> showMyPlaylist(String playlistType) async {
+  Future<Map<String, dynamic>> show_myplaylist(String playlistType) async {
     final key = getPlaylistObjectKey(playlistType);
     if (key == '') {
       // fn({'result': []});
@@ -179,7 +180,7 @@ class MyPlaylist {
     return {'result': result};
   }
 
-  Future<Map<String, dynamic>?> getPlaylist(String url) async {
+  Future<Map<String, dynamic>?> get_playlist(String url) async {
     final listId = getParameterByName('list_id', url);
     final prefs = await SharedPreferences.getInstance();
     final playlistJson = listId != null ? prefs.getString(listId) : null;
@@ -201,11 +202,8 @@ class MyPlaylist {
 
   String guid() {
     String s4() {
-      return (10000 +
-              (10000 *
-                  (1 + (new DateTime.now().millisecondsSinceEpoch % 10000))))
-          .toString()
-          .substring(1);
+      final random = Random();
+      return (random.nextInt(9000) + 1000).toString(); // 生成 1000 到 9999 之间的随机数
     }
 
     return '${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}';

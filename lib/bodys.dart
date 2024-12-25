@@ -292,7 +292,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
   }
 
   void _loadData() async {
-    Map<String, dynamic> result_my = await myplaylist.showMyPlaylist('my');
+    Map<String, dynamic> result_my = await myplaylist.show_myplaylist('my');
     try {
       setState(() {
         _playlists_my = result_my['result'];
@@ -305,7 +305,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
 
   void _loadFavData() async {
     Map<String, dynamic> result_fav =
-        await myplaylist.showMyPlaylist('favorite');
+        await myplaylist.show_myplaylist('favorite');
     try {
       setState(() {
         _playlists_fav = result_fav['result'];

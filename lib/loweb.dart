@@ -192,7 +192,7 @@ class MediaService {
   }
 
   static Future<dynamic> showMyPlaylist() {
-    return myplaylist.showMyPlaylist('my');
+    return myplaylist.show_myplaylist('my');
   }
 
   static Future<dynamic> showPlaylistArray(
@@ -223,7 +223,7 @@ class MediaService {
   }
 
   static Future<dynamic> showFavPlaylist() {
-    return myplaylist.showMyPlaylist('favorite');
+    return myplaylist.show_myplaylist('favorite');
   }
 
   static Future<dynamic> queryPlaylist(String listId, String type) {
