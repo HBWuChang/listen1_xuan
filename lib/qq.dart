@@ -25,13 +25,38 @@ class QQ {
 
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
     final dio = Dio();
-    final tempDir = await getTemporaryDirectory();
-    final tempPath = tempDir.path;
-    dio.interceptors.add(CookieManager(PersistCookieJar(
-      ignoreExpires: true,
-      storage: FileStorage(tempPath + "/.cookies/"),
-    )));
-    return await dio.get(url);
+    // final tempDir = await getTemporaryDirectory();
+    // final tempPath = tempDir.path;
+    // dio.interceptors.add(CookieManager(PersistCookieJar(
+    //   ignoreExpires: true,
+    //   storage: FileStorage(tempPath + "/.cookies/"),
+    // )));
+    try {
+      final sets = await settings_getsettings();
+      final qq_cookie = sets['qq'];
+      return await dio.get(url,
+          // referer: https://y.qq.com/
+          // origin: https://y.qq.com
+          // priority: u=1, i
+          // sec-ch-ua-platform: "Windows"
+          // user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0
+          // accept: application/json, text/plain, */*
+          // sec-ch-ua: "Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"
+          options: Options(headers: {
+            'cookie': qq_cookie,
+            'referer': 'https://y.qq.com/',
+            'origin': 'https://y.qq.com',
+            'priority': 'u=1, i',
+            'sec-ch-ua-platform': '"Windows"',
+            'user-agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+            'accept': 'application/json, text/plain, */*',
+            'sec-ch-ua':
+                '"Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"'
+          }));
+    } catch (e) {
+      return await Dio().get(url);
+    }
   }
 
   Future<dynamic> dio_post_with_cookie_and_csrf(
@@ -51,24 +76,26 @@ class QQ {
         data: data,
         // options: Options(headers: {'cookie': _cookies}));
         // queryParameters: {'cookie': cookies},
-        // options: Options(headers: {
-        //   // 'cookie': cookies,
-        //   // ":authority": "music.163.com",
-        //   // ":method": "POST",
-        //   // ":path": url.substring(url.indexOf("music.163.com") + 13),
-        //   "user-agent":
-        //       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
-        //   "referer": "https://music.163.com/",
-        //   "origin": "https://music.163.com",
-        //   "host": "music.163.com",
-        //   "sec-fetch-site": "same-origin",
-        //   "sec-fetch-mode": "cors",
-        //   "sec-fetch-dest": "empty",
-        //   "accept-encoding": "gzip, deflate",
-        //   "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-        //   "accept": "*/*",
-        //   "sec-ch-ua-platform": "\"Windows\"",
-        // }, contentType: 'application/x-www-form-urlencoded'),
+        // options: Options(
+        //   headers: {
+        //     // 'cookie': cookies,
+        //     // ":authority": "music.163.com",
+        //     // ":method": "POST",
+        //     // ":path": url.substring(url.indexOf("music.163.com") + 13),
+        //     "user-agent":
+        //         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+        //     "Referer": "https://y.qq.com/",
+        //     "Origin": "https://y.qq.com",
+        //     "host": "y.qq.com",
+        //     "sec-fetch-site": "same-origin",
+        //     "sec-fetch-mode": "cors",
+        //     "sec-fetch-dest": "empty",
+        //     "accept-encoding": "gzip, deflate",
+        //     "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        //     "accept": "*/*",
+        //     "sec-ch-ua-platform": "\"Windows\"",
+        //   },
+        // )
       );
     } catch (e) {
       return await Dio().post(url, data: FormData.fromMap(data));
@@ -1084,6 +1111,7 @@ class QQ {
     }
     return result;
   }
+
   // static get_playlist(url) {
   //   const list_id = getParameterByName('list_id', url).split('_')[0];
   //   switch (list_id) {
@@ -1215,37 +1243,41 @@ class QQ {
   //   });
   // }
   Future<Map<String, dynamic>> get_user_by_uin(String uin) async {
-    try{
-    var infoUrl =
-        'https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&&loginUin=${uin}&hostUin=0inCharset=utf8&outCharset=utf-8&platform=yqq.json&needNewCode=0&data=${Uri.encodeComponent(jsonEncode({
-          'comm': {'ct': 24, 'cv': 0},
-          'vip': {
-            'module': 'userInfo.VipQueryServer',
-            'method': 'SRFVipQuery_V2',
-            'param': {'uin_list': [uin]},
-          },
-          'base': {
-            'module': 'userInfo.BaseUserInfoServer',
-            'method': 'get_user_baseinfo_v2',
-            'param': {'vec_uin': [uin]},
-          },
-        }))}';
-    var response = await dio_get_with_cookie_and_csrf(infoUrl);
-    // var data = response.data;
-    var data = jsonDecode(response.data);
-    var info = data['base']['data']['map_userinfo'][uin];
-    var result = {
-      'is_login': true,
-      'user_id': uin,
-      'user_name': uin,
-      'nickname': info['nick'],
-      'avatar': info['headurl'],
-      'platform': 'qq',
-      'data': data,
-    };
-    // callback({'status': 'success', 'data': result});
-    return  {'status': 'success', 'data': result};}
-    catch(e){
+    try {
+      var infoUrl =
+          'https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&&loginUin=${uin}&hostUin=0inCharset=utf8&outCharset=utf-8&platform=yqq.json&needNewCode=0&data=${Uri.encodeComponent(jsonEncode({
+            'comm': {'ct': 24, 'cv': 0},
+            'vip': {
+              'module': 'userInfo.VipQueryServer',
+              'method': 'SRFVipQuery_V2',
+              'param': {
+                'uin_list': [uin]
+              },
+            },
+            'base': {
+              'module': 'userInfo.BaseUserInfoServer',
+              'method': 'get_user_baseinfo_v2',
+              'param': {
+                'vec_uin': [uin]
+              },
+            },
+          }))}';
+      var response = await dio_get_with_cookie_and_csrf(infoUrl);
+      // var data = response.data;
+      var data = jsonDecode(response.data);
+      var info = data['base']['data']['map_userinfo'][uin];
+      var result = {
+        'is_login': true,
+        'user_id': uin,
+        'user_name': uin,
+        'nickname': info['nick'],
+        'avatar': info['headurl'],
+        'platform': 'qq',
+        'data': data,
+      };
+      // callback({'status': 'success', 'data': result});
+      return {'status': 'success', 'data': result};
+    } catch (e) {
       return {'status': 'fail', 'data': {}};
     }
   }
@@ -1299,10 +1331,11 @@ class QQ {
   Future<Map<String, dynamic>> get_user_created_playlist(String url) async {
     var user_id = getParameterByName('user_id', url);
     var size = 100;
-    var target_url = 'https://c.y.qq.com/rsc/fcgi-bin/fcg_user_created_diss?cv=4747474&ct=24&format=json&inCharset=utf-8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=1&uin=${user_id}&hostuin=${user_id}&sin=0&size=${size}';
+    var target_url =
+        'https://c.y.qq.com/rsc/fcgi-bin/fcg_user_created_diss?cv=4747474&ct=24&format=json&inCharset=utf-8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=1&uin=${user_id}&hostuin=${user_id}&sin=0&size=${size}';
     var response = await dio_get_with_cookie_and_csrf(target_url);
     var playlists = [];
-    response.data['data']['disslist'].forEach((item) {
+    jsonDecode(response.data)['data']['disslist'].forEach((item) {
       var playlist = {};
       if (item['dir_show'] == 0) {
         if (item['tid'] == 0) {
@@ -1310,7 +1343,8 @@ class QQ {
         }
         if (item['diss_name'] == '我喜欢') {
           playlist = {
-            'cover_img_url': 'https://y.gtimg.cn/mediastyle/y/img/cover_love_300.jpg',
+            'cover_img_url':
+                'https://y.gtimg.cn/mediastyle/y/img/cover_love_300.jpg',
             'id': 'qqplaylist_${item['tid']}',
             'source_url': 'https://y.qq.com/n/ryqq/playlist/${item['tid']}',
             'title': item['diss_name'],
@@ -1334,6 +1368,7 @@ class QQ {
       },
     };
   }
+
   // static get_user_favorite_playlist(url) {
   //   const user_id = getParameterByName('user_id', url);
   //   // TODO: load more than size
@@ -1378,7 +1413,8 @@ class QQ {
   Future<Map<String, dynamic>> get_user_favorite_playlist(String url) async {
     var user_id = getParameterByName('user_id', url);
     var size = 100;
-    var target_url = 'https://c.y.qq.com/fav/fcgi-bin/fcg_get_profile_order_asset.fcg';
+    var target_url =
+        'https://c.y.qq.com/fav/fcgi-bin/fcg_get_profile_order_asset.fcg';
     var data = {
       'ct': 20,
       'cid': 205360956,
@@ -1388,7 +1424,8 @@ class QQ {
       'ein': size,
     };
     // var response = await dio_get_with_cookie_and_csrf(target_url, queryParameters: data);
-    target_url += '?' + data.entries.map((e) => '${e.key}=${e.value}').join('&');
+    target_url +=
+        '?' + data.entries.map((e) => '${e.key}=${e.value}').join('&');
     var response = await dio_get_with_cookie_and_csrf(target_url);
     var playlists = [];
     response.data['data']['cdlist'].forEach((item) {
@@ -1452,7 +1489,8 @@ class QQ {
   //   };
   // }
   Future<Map<String, dynamic>> get_recommend_playlist() async {
-    var target_url = 'https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&&loginUin=0&hostUin=0inCharset=utf8&outCharset=utf-8&platform=yqq.json&needNewCode=0&data=${Uri.encodeComponent(jsonEncode({
+    var target_url =
+        'https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&&loginUin=0&hostUin=0inCharset=utf8&outCharset=utf-8&platform=yqq.json&needNewCode=0&data=${Uri.encodeComponent(jsonEncode({
           'comm': {
             'ct': 24,
           },
@@ -1483,6 +1521,7 @@ class QQ {
       },
     };
   }
+
   // static get_user() {
   //   return {
   //     success: (fn) => {
@@ -1530,7 +1569,7 @@ class QQ {
     // }
     // var uin = qqCookie['value'];
     // return get_user_by_uin(uin);
-    final settings=await settings_getsettings();
+    final settings = await settings_getsettings();
     if (settings['qq'] == null) {
       return {'status': 'fail', 'data': {}};
     }

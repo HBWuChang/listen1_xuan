@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:listen1_xuan/bl.dart';
+import 'package:listen1_xuan/qq.dart';
 import 'netease.dart';
 import 'package:listen1_xuan/settings.dart';
 import 'package:marquee/marquee.dart';
@@ -277,13 +278,16 @@ class _MyPlaylistState extends State<MyPlaylist> {
   List<dynamic> _playlists_fav = [];
   List<dynamic> _playlists_bl = [];
   List<dynamic> _playlists_ne = [];
+  List<dynamic> _playlists_qq = [];
   bool _isExpandedMy = true;
   bool _isExpandedFav = false;
   bool _isExpandedBl = false;
   bool _isExpandedNe = false;
+  bool _isExpandedQq = false;
   bool _isFavDataLoaded = false;
   bool _isBlDataLoaded = false;
   bool _isNeDataLoaded = false;
+  bool _isQqDataLoaded = false;
   bool _loading = true;
   @override
   void initState() {
@@ -360,6 +364,44 @@ class _MyPlaylistState extends State<MyPlaylist> {
           });
         }
         _isNeDataLoaded = true;
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  void _loadQqData() async {
+    var _neuserinfo = await QQ().get_user();
+    var uid = _neuserinfo['data']["user_id"];
+    var result_qq = await qq
+        .get_user_created_playlist("/get_user_favorite_playlist?user_id=$uid");
+    var result_qq2 = await qq
+        .get_user_favorite_playlist("/get_user_favorite_playlist?user_id=$uid");
+    try {
+      setState(() {
+        for (var i = 0; i < result_qq['data']["playlists"].length; i++) {
+          _playlists_qq.add({
+            "info": {
+              'cover_img_url': result_qq['data']["playlists"][i]
+                  ['cover_img_url'],
+              'title': result_qq['data']["playlists"][i]['title'],
+              'id': result_qq['data']["playlists"][i]['id'],
+              'source_url': result_qq['data']["playlists"][i]['source_url']
+            }
+          });
+        }
+        for (var i = 0; i < result_qq2['data']["playlists"].length; i++) {
+          _playlists_qq.add({
+            "info": {
+              'cover_img_url': result_qq2['data']["playlists"][i]
+                  ['cover_img_url'],
+              'title': result_qq2['data']["playlists"][i]['title'],
+              'id': result_qq2['data']["playlists"][i]['id'],
+              'source_url': result_qq2['data']["playlists"][i]['source_url']
+            }
+          });
+        }
+        _isQqDataLoaded = true;
       });
     } catch (e) {
       print(e);
@@ -538,6 +580,49 @@ class _MyPlaylistState extends State<MyPlaylist> {
                               )
                             : Center(child: CircularProgressIndicator()),
                         isExpanded: _isExpandedNe,
+                      ),
+                      ExpansionPanel(
+                        headerBuilder: (BuildContext context, bool isExpanded) {
+                          return ListTile(
+                            leading: CachedNetworkImage(
+                                imageUrl:
+                                    "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
+                                width: 18,
+                                height: 18),
+                            title: Text('我的QQ歌单'),
+                            onTap: () {
+                              setState(() {
+                                _isExpandedQq = !_isExpandedQq;
+                                if (_isExpandedQq && !_isQqDataLoaded) {
+                                  _loadQqData();
+                                }
+                              });
+                            },
+                          );
+                        },
+                        body: _isQqDataLoaded
+                            ? Column(
+                                children: _playlists_qq.map((playlist) {
+                                  return ListTile(
+                                    leading: CachedNetworkImage(
+                                      imageUrl: playlist['info']
+                                          ['cover_img_url'],
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (context, url, error) =>
+                                          Container(), // 如果加载出错则返回空的Container
+                                    ),
+                                    title: Text(playlist['info']['title']),
+                                    onTap: () {
+                                      widget.onPlaylistTap(
+                                          playlist['info']['id']);
+                                    },
+                                  );
+                                }).toList(),
+                              )
+                            : Center(child: CircularProgressIndicator()),
+                        isExpanded: _isExpandedQq,
                       ),
                     ],
                   ),

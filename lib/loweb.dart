@@ -6,6 +6,7 @@ import 'bl.dart';
 import 'netease.dart';
 import 'myplaylist.dart';
 import 'play.dart';
+import 'qq.dart';
 
 class Provider {
   final String name;
@@ -45,8 +46,8 @@ final List<Provider> providers = [
   ),
   Provider(
     name: 'qq',
-    // instance: qq,
-    instance: null,
+    instance: qq,
+    // instance: null,
     searchable: true,
     supportLogin: true,
     id: 'qq',
