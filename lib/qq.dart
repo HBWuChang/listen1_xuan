@@ -192,12 +192,14 @@ class QQ {
       filterId = '10000000';
     }
 
-    var target_url = '?picmid=1&rnd=${Random().nextDouble()}&g_tk=732560869' +
-        '&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8' +
-        '&notice=0&platform=yqq.json&needNewCode=0' +
-        '&categoryId=${filterId}&sortId=5&sin=${offset}&ein=${29 + offset}';
+    var target_url =
+        'https://c.y.qq.com/splcloud/fcgi-bin/fcg_get_diss_by_tag.fcg' +
+            '?picmid=1&rnd=${Random().nextDouble()}&g_tk=732560869' +
+            '&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8' +
+            '&notice=0&platform=yqq.json&needNewCode=0' +
+            '&categoryId=${filterId}&sortId=5&sin=${offset}&ein=${29 + offset}';
     var response = await dio_get_with_cookie_and_csrf(target_url);
-    var playlists = response.data['data']['list'].map((item) => ({
+    var playlists = jsonDecode(response.data)['data']['list'].map((item) => ({
           'cover_img_url': item['imgurl'],
           'title': htmlDecode(item['dissname']),
           'id': 'qqplaylist_${item['dissid']}',
@@ -547,8 +549,9 @@ class QQ {
       'id': 'qqplaylist_${list_id}',
       'source_url': 'https://y.qq.com/n/ryqq/playlist/${list_id}',
     };
-    var tracks =
-        data['cdlist'][0]['songlist'].map((item) => qq_convert_song(item)).toList();
+    var tracks = data['cdlist'][0]['songlist']
+        .map((item) => qq_convert_song(item))
+        .toList();
     // 去除重复track['id']
     var track_ids = [];
     var error_ids = [];
@@ -614,8 +617,9 @@ class QQ {
       'id': 'qqalbum_${album_id}',
       'source_url': 'https://y.qq.com/#type=album&mid=${album_id}',
     };
-    var tracks =
-        data['cdlist'][0]['songlist'].map((item) => qq_convert_song(item)).toList();
+    var tracks = data['cdlist'][0]['songlist']
+        .map((item) => qq_convert_song(item))
+        .toList();
     // 去除重复track['id']
     var track_ids = [];
     var error_ids = [];
@@ -1229,7 +1233,7 @@ class QQ {
             '&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8' +
             '&notice=0&platform=yqq.json&needNewCode=0';
     var response = await dio_get_with_cookie_and_csrf(target_url);
-    var data = response.data;
+    var data = jsonDecode(response.data);
     var all = [];
     data['data']['categories'].forEach((cate) {
       var result = {'category': cate['categoryGroupName'], 'filters': []};

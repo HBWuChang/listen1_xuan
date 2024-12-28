@@ -165,7 +165,7 @@ class _PlaylistState extends State<Playlist> {
     print(result);
     try {
       setState(() {
-        _playlists = result['result'];
+        _playlists = result['result'].toList();
         if (result.containsKey('total')) {
           total = result['total'];
           per_page = result['per_page'];

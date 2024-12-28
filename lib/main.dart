@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
       title: 'Listen1',
       theme: ThemeData(
         primarySwatch: Colors.indigo,
-        useMaterial3:true,
+        useMaterial3: true,
         primaryColor: Colors.indigo,
       ),
       darkTheme: ThemeData.dark(),
@@ -129,6 +129,12 @@ class _MyHomePageState extends State<MyHomePage>
         show_filter = true;
         source = 'netease';
         break;
+      case 3:
+        offset = 0;
+        filter = {'id': '', 'name': '全部'};
+        show_filter = true;
+        source = 'qq';
+        break;
     }
     try {
       if (source == 'myplaylist') {
@@ -151,7 +157,7 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
-  void change_fliter(String id, String name) {
+  void change_fliter(dynamic id, String name) {
     print('change_fliter{id: $id, name: $name}');
     setState(() {
       filter = {'id': id, 'name': name};
@@ -300,6 +306,9 @@ class _MyHomePageState extends State<MyHomePage>
                                       label: ''),
                                   NavigationDestination(
                                       icon: Center(child: Text('网易云')),
+                                      label: ''),
+                                  NavigationDestination(
+                                      icon: Center(child: Text('QQ')),
                                       label: ''),
                                 ],
                                 onDestinationSelected: (index) {
@@ -455,7 +464,7 @@ class _MyHomePageState extends State<MyHomePage>
 }
 
 void _showFilterSelection(BuildContext context, Map<String, dynamic> filter,
-    String now_id, Function change_fliter) {
+    dynamic now_id, Function change_fliter) {
   showModalBottomSheet(
     context: context,
     builder: (BuildContext context) {

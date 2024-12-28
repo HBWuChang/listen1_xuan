@@ -197,7 +197,7 @@ class MediaService {
   }
 
   static Future<dynamic> showPlaylistArray(
-      String source, int offset, String filterId) {
+      String source, int offset, dynamic filterId) {
     final provider = getProviderByName(source);
     final url = '/show_playlist?${queryStringify({
           'offset': offset,
