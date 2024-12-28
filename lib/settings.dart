@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:listen1_xuan/play.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -566,6 +567,14 @@ class _SettingsPageState extends State<SettingsPage> {
             ElevatedButton(
               onPressed: () => importSettingsFromFile(),
               child: const Text('从文件导入配置'),
+            ),
+            ElevatedButton(
+              onPressed: () => clean_local_cache(),
+              child: const Text('清除未在配置文件中的歌曲缓存'),
+            ),
+            ElevatedButton(
+              onPressed: () => clean_local_cache(true),
+              child: const Text('清除所有歌曲缓存'),
             ),
           ],
         ),

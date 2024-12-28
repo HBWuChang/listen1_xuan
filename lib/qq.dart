@@ -221,8 +221,8 @@ class QQ {
   //   const url = `https://y.gtimg.cn/music/photo_new/${s}.jpg`;
   //   return url;
   // }
-  String qq_get_image_url(String qqimgid, String img_type) {
-    if (qqimgid == null) {
+  String qq_get_image_url(dynamic qqimgid, String img_type) {
+    if (qqimgid == null || qqimgid == 0) {
       return '';
     }
     var category = '';
@@ -249,12 +249,18 @@ class QQ {
   //   return play_flag === '1' || (play_flag === '1' && try_flag === '1');
   // }
   bool qq_is_playable(Map<String, dynamic> song) {
-    var switch_flag = song['switch'].toString().split('');
-    switch_flag.removeLast();
-    switch_flag = switch_flag.reversed.toList();
-    var play_flag = switch_flag[0];
-    var try_flag = switch_flag[13];
-    return play_flag == '1' || (play_flag == '1' && try_flag == '1');
+    try {
+      // var switch_flag = song['switch'].toString().split('');
+      // 转为二进制
+      var switch_flag = song['switch'].toRadixString(2).split('');
+      switch_flag.removeLast();
+      switch_flag = switch_flag.reversed.toList();
+      var play_flag = switch_flag[0];
+      var try_flag = switch_flag[13];
+      return play_flag == '1' || (play_flag == '1' && try_flag == '1');
+    } catch (e) {
+      return false;
+    }
   }
 
   // static qq_convert_song(song) {
@@ -542,7 +548,24 @@ class QQ {
       'source_url': 'https://y.qq.com/n/ryqq/playlist/${list_id}',
     };
     var tracks =
-        data['cdlist'][0]['songlist'].map((item) => qq_convert_song(item));
+        data['cdlist'][0]['songlist'].map((item) => qq_convert_song(item)).toList();
+    // 去除重复track['id']
+    var track_ids = [];
+    var error_ids = [];
+    for (var i = 0; i < tracks.length; i++) {
+      if (track_ids.contains(tracks[i]['id'])) {
+        error_ids.add(tracks[i]['id']);
+      } else {
+        track_ids.add(tracks[i]['id']);
+      }
+    }
+    var t_list = [];
+    for (var i = 0; i < tracks.length; i++) {
+      if (!error_ids.contains(tracks[i]['id'])) {
+        t_list.add(tracks[i]);
+      }
+    }
+    tracks = t_list;
     return {'tracks': tracks, 'info': info};
   }
   // static qq_album(url) {
@@ -591,7 +614,25 @@ class QQ {
       'id': 'qqalbum_${album_id}',
       'source_url': 'https://y.qq.com/#type=album&mid=${album_id}',
     };
-    var tracks = data['data']['list'].map((item) => qq_convert_song(item));
+    var tracks =
+        data['cdlist'][0]['songlist'].map((item) => qq_convert_song(item)).toList();
+    // 去除重复track['id']
+    var track_ids = [];
+    var error_ids = [];
+    for (var i = 0; i < tracks.length; i++) {
+      if (track_ids.contains(tracks[i]['id'])) {
+        error_ids.add(tracks[i]['id']);
+      } else {
+        track_ids.add(tracks[i]['id']);
+      }
+    }
+    var t_list = [];
+    for (var i = 0; i < tracks.length; i++) {
+      if (!error_ids.contains(tracks[i]['id'])) {
+        t_list.add(tracks[i]);
+      }
+    }
+    tracks = t_list;
     return {'tracks': tracks, 'info': info};
   }
   // static qq_artist(url) {
@@ -953,7 +994,7 @@ class QQ {
     };
     // var response = await Dio().post(target_url, data: FormData.fromMap(reqData));
     var response = await dio_post_with_cookie_and_csrf(target_url, reqData);
-    var data = response.data;
+    var data = jsonDecode(response.data);
     var purl = data['req_1']['data']['midurlinfo'][0]['purl'];
     if (purl == '') {
       failure();

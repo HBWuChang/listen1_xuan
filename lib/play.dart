@@ -127,6 +127,74 @@ Future<void> set_local_cache(String id, String path) async {
   }
 }
 
+Future<void> clean_local_cache([bool all = false]) async {
+  List<String> without = [
+    'app.log',
+  ];
+  final prefs = await SharedPreferences.getInstance();
+  final local_cache_list_json = prefs.getString('local-cache-list');
+  final tempDir = await getTemporaryDirectory();
+  final tempPath = tempDir.path;
+  // 列出文件夹下的所有文件
+  final filesanddirs = Directory(tempPath).listSync();
+  List<String> files = [];
+  for (var file in filesanddirs) {
+    if (file is File && !without.contains(file.path.split('/').last)) {
+      files.add(file.path);
+    }
+  }
+  int count = 0;
+  if (local_cache_list_json != null) {
+    final local_cache_list = jsonDecode(local_cache_list_json);
+    for (var file in files) {
+      if (all) {
+        await File(file).delete();
+        count++;
+      } else {
+        bool flag = true;
+        for (var key in local_cache_list.keys) {
+          if (local_cache_list[key] == file.split('/').last) {
+            flag = false;
+            break;
+          }
+        }
+        print(file.split('/').last);
+        if (flag) {
+          await File(file).delete();
+          count++;
+        }
+      }
+    }
+  } else {
+    for (var file in files) {
+      await File(file).delete();
+      count++;
+    }
+  }
+  if (count > 0) {
+    Fluttertoast.showToast(
+      msg: '清理了$count个缓存文件',
+    );
+  } else {
+    Fluttertoast.showToast(
+      msg: '没有可清理的缓存文件',
+    );
+  }
+  if (all) {
+    await prefs.remove('local-cache-list');
+  } else {
+    if (local_cache_list_json != null) {
+      final local_cache_list = jsonDecode(local_cache_list_json);
+      for (var key in local_cache_list.keys) {
+        if (!files.contains('$tempPath/${local_cache_list[key]}')) {
+          local_cache_list.remove(key);
+        }
+      }
+      await prefs.setString('local-cache-list', jsonEncode(local_cache_list));
+    }
+  }
+}
+
 Future<void> add_current_playing(List<Map<String, dynamic>> tracks) async {
   List<Map<String, dynamic>> current_playing = await get_current_playing();
   for (var track in tracks) {
@@ -719,8 +787,17 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     }
   }
 
+  // @override
+  // Future<void> pause() => music_player.pause();
   @override
-  Future<void> pause() => music_player.pause();
+  Future<void> pause() async {
+    if (music_player.playing) {
+      music_player.pause();
+    }
+    else {
+      play();
+    }
+  }
 
   @override
   Future<void> seek(Duration position) => music_player.seek(position);
@@ -785,6 +862,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     return PlaybackState(
       controls: [
         if (music_player.playing) MediaControl.pause else MediaControl.play,
+        // MediaControl.pause,
         MediaControl.skipToNext,
         MediaControl.skipToPrevious,
         MediaControl.stop,
