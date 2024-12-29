@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/qq.dart';
@@ -735,6 +737,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
     super.dispose();
   }
 
+  ScrollController _scrollController = ScrollController();
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -765,6 +768,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                     // {info: {cover_img_url: http://i0.hdslb.com/bfs/music/0fa5b14f421dcc686f2adb11faaa64b5f6ca86d2.jpg, title: 【日语】那些令人中毒循环的歌, id: biplaylist_48955, source_url: https://www.bilibili.com/audio/am48955}, tracks: [{id: bitrack_15228, title: 极乐净土, artist: 祈Inory, artist_id: biartist_234782, source: bilibili, source_url: https://www.bilibili.com/audio/au15228, img_url: http://i0.hdslb.com/bfs/music/015f137f9053008496df50518cd506cec62ff6b7.jpg, lyric_url: http://i0.hdslb.com/bfs/music/150529756415228.lrc},
                     // final tracks = snapshot.data['tracks'];
                     CustomScrollView(
+                        controller: _scrollController,
                         slivers: [
                           SliverAppBar(
                             expandedHeight: 280.0,
@@ -1021,43 +1025,66 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                       }),
                             ],
                           ),
-                          SliverToBoxAdapter(
-                              child: Container(
-                            height: MediaQuery.of(context).size.height - 280,
-                            child: ReorderableListView(
-                              onReorder: _onReorder,
-                              children: tracks.map((track) {
-                                return ListTile(
-                                  key: ValueKey(track['id']),
-                                  title: Text(track['title'] ?? '未知标题'),
-                                  subtitle: Text(
-                                      '${track['artist'] ?? '未知艺术家'} - ${track['album'] ?? '未知专辑'}'),
-                                  trailing: IconButton(
-                                    icon: Icon(Icons.more_vert),
-                                    onPressed: () {
-                                      song_dialog(
-                                          context,
-                                          track,
-                                          widget.onPlaylistTap,
-                                          widget.is_my,
-                                          result['info'],
-                                          deltrack);
+                          SliverFillRemaining(
+                            hasScrollBody: true,
+                            child: NotificationListener<ScrollNotification>(
+                              onNotification: (scrollNotification) {
+                                if (scrollNotification
+                                        is ScrollStartNotification ||
+                                    scrollNotification
+                                        is ScrollUpdateNotification ||
+                                    scrollNotification
+                                        is ScrollEndNotification) {
+                                  // 处理滚动事件
+                                  // 传递给CustomScrollView
+                                  // print(_scrollController.position.maxScrollExtent);
+                                  // print(_scrollController.offset);
+                                  // .jumpTo(_scrollController.offset);
+                                  // print(scrollNotification.metrics.pixels);
+                                  if (scrollNotification.metrics.pixels <
+                                      _scrollController.position.maxScrollExtent) {
+                                    _scrollController.jumpTo(
+                                        scrollNotification.metrics.pixels);
+                                  }
+                                  return true;
+                                }
+                                return false;
+                              },
+                              child: ReorderableListView(
+                                onReorder: _onReorder,
+                                children: tracks.map((track) {
+                                  return ListTile(
+                                    key: ValueKey(track['id']),
+                                    title: Text(track['title'] ?? '未知标题'),
+                                    subtitle: Text(
+                                        '${track['artist'] ?? '未知艺术家'} - ${track['album'] ?? '未知专辑'}'),
+                                    trailing: IconButton(
+                                      icon: Icon(Icons.more_vert),
+                                      onPressed: () {
+                                        song_dialog(
+                                            context,
+                                            track,
+                                            widget.onPlaylistTap,
+                                            widget.is_my,
+                                            result['info'],
+                                            deltrack);
+                                      },
+                                    ),
+                                    onTap: () {
+                                      Fluttertoast.showToast(
+                                        msg: '尝试播放：${track['title']}',
+                                      );
+                                      MediaService.bootstrapTrack(
+                                        track,
+                                        playerSuccessCallback,
+                                        playerFailCallback,
+                                      );
                                     },
-                                  ),
-                                  onTap: () {
-                                    Fluttertoast.showToast(
-                                      msg: '尝试播放：${track['title']}',
-                                    );
-                                    MediaService.bootstrapTrack(
-                                      track,
-                                      playerSuccessCallback,
-                                      playerFailCallback,
-                                    );
-                                  },
-                                );
-                              }).toList(),
+                                  );
+                                }).toList(),
+                              ),
                             ),
-                          )),
+                          )
                         ],
                       ),
           ),
