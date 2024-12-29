@@ -39,6 +39,8 @@ Future<void> outputAllSettingsToFile() async {
           case 'favoriteplayerlists':
             settings[key] = prefs.getStringList(key);
             break;
+          case 'settings':
+            continue;
           default:
             settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
         }
