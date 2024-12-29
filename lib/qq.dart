@@ -610,16 +610,15 @@ class QQ {
         '&notice=0&platform=h5&needNewCode=1&_=1459961045571';
     // var response = await Dio().get(target_url);
     var response = await dio_get_with_cookie_and_csrf(target_url);
-    var data = response.data;
+    var data = jsonDecode(response.data);
     var info = {
       'cover_img_url': qq_get_image_url(album_id, 'album'),
       'title': data['data']['name'],
       'id': 'qqalbum_${album_id}',
       'source_url': 'https://y.qq.com/#type=album&mid=${album_id}',
     };
-    var tracks = data['cdlist'][0]['songlist']
-        .map((item) => qq_convert_song(item))
-        .toList();
+    var tracks;
+    tracks = data['data']['list'].map((item) => qq_convert_song(item)).toList();
     // 去除重复track['id']
     var track_ids = [];
     var error_ids = [];
@@ -705,7 +704,7 @@ class QQ {
         }))}';
     // var response = await Dio().get(target_url);
     var response = await dio_get_with_cookie_and_csrf(target_url);
-    var data = response.data;
+    var data = jsonDecode(response.data);
     var info = {
       'cover_img_url': qq_get_image_url(artist_id, 'artist'),
       'title': data['singer']['data']['singer_info']['name'],
@@ -815,12 +814,15 @@ class QQ {
     };
     // var response = await Dio().post(target_url, data: FormData.fromMap(query));
     var response = await dio_post_with_cookie_and_csrf(target_url, query);
-    var data = response.data;
+    var data = jsonDecode(response.data);
     var result = [];
     var total = 0;
     if (searchType == '0') {
-      result = data['req']['data']['body']['song']['list']
-          .map((item) => qq_convert_song2(item));
+      // result = data['req']['data']['body']['song']['list']
+      //     .map((item) => qq_convert_song2(item));
+      for (var item in data['req']['data']['body']['song']['list']) {
+        result.add(qq_convert_song2(item));
+      }
       total = data['req']['data']['meta']['sum'];
     } else if (searchType == '1') {
       result = data['req']['data']['body']['songlist']['list'].map((info) => ({

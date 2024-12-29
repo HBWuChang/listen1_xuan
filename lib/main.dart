@@ -56,7 +56,7 @@ class _MyHomePageState extends State<MyHomePage>
   bool _Mainpage = true;
   String _playlist_id = "bilibili";
   String selectedOption = '网易云';
-  final List<String> _options = ['BiliBili', '网易云'];
+  final List<String> _options = ['BiliBili', '网易云',"QQ"];
   final ValueNotifier<String> selectedOptionNotifier =
       ValueNotifier<String>('Option 1');
   Key _playlistInfoKey = UniqueKey();

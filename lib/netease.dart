@@ -313,19 +313,7 @@ class Netease {
             'https://music.163.com/#/playlist?id=${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
       };
     }).toList();
-    int total = 1;
-    final t = document.getElementsByClassName('u-page')[0].children;
-    for (var i = 0; i < t.length; i++) {
-      try {
-        if (t[i].className == 'zpgi') {
-          total = max(total, int.parse(t[i].text));
-        }
-      } catch (e) {
-        // print(e);
-      }
-    }
-
-    return {"result": result, "total": total, "per_page": 35};
+    return {"result": result};
   }
 
   static Future<void> ne_ensure_cookie(Function callback) async {
@@ -532,6 +520,9 @@ class Netease {
     final data = jsonDecode(response.data);
     var result = <Map<String, dynamic>>[];
     var total = 0;
+    if(data['result']['songCount'] == 0){
+      return {'result': [], 'total': 0, 'type': searchType};
+    }
     if (searchType == '0') {
       result = (data['result']['songs'] as List).map((songInfo) {
         return {

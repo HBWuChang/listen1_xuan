@@ -410,7 +410,9 @@ Future<void> playerFailCallback() async {
   }
   if (playmode == 1) {
     playlogger.d(randommodetemplist);
-    randommodetemplist.removeAt(randommodetemplist.length - 1);
+    if(randommodetemplist.length - 1 > 0) {
+      randommodetemplist.removeAt(randommodetemplist.length - 1);
+    }
   }
 
   onPlaybackCompleted(true);
@@ -550,6 +552,10 @@ class _PlayState extends State<Play> {
                                 child: CachedNetworkImage(
                                   imageUrl: mediaItem.artUri.toString(),
                                   fit: BoxFit.cover,
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.music_note,
+                                    size: 50,
+                                  ),
                                 ),
                               );
                             },

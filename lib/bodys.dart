@@ -26,7 +26,10 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CachedNetworkImage(imageUrl: track['img_url']),
+                CachedNetworkImage(
+                  imageUrl: track['img_url'],
+                  errorWidget: (context, url, error) => Icon(Icons.error),
+                ),
                 ListTile(
                   title: Text('作者：${track['artist'] ?? '未知艺术家'}'),
                   onTap: () {
@@ -149,7 +152,7 @@ class _PlaylistState extends State<Playlist> {
   bool _loading = true;
   bool _loadingMore = false;
   int per_page = 20;
-  int total = 0;
+  bool hasmore = true;
   int _currentOffset = 0;
   final ScrollController _scrollController = ScrollController();
   @override
@@ -166,10 +169,8 @@ class _PlaylistState extends State<Playlist> {
     try {
       setState(() {
         _playlists = result['result'].toList();
-        if (result.containsKey('total')) {
-          total = result['total'];
-          per_page = result['per_page'];
-        }
+        per_page = result['result'].length;
+        hasmore = true;
         _loading = false;
       });
     } catch (e) {
@@ -187,7 +188,7 @@ class _PlaylistState extends State<Playlist> {
   void _loadMoreData() async {
     if (_loadingMore) return;
     _currentOffset += per_page;
-    if (_currentOffset >= total * per_page) return;
+    if (!hasmore) return;
     try {
       setState(() {
         _loadingMore = true;
@@ -195,6 +196,13 @@ class _PlaylistState extends State<Playlist> {
       Map<String, dynamic> result = await MediaService.showPlaylistArray(
           widget.source, _currentOffset, widget.filter['id']);
       print(result);
+      if (result['result'].length == 0) {
+        hasmore = false;
+        setState(() {
+          _loadingMore = false;
+        });
+        return;
+      }
       setState(() {
         _playlists.addAll(result['result']);
         _loadingMore = false;
@@ -1096,6 +1104,9 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
         break;
       case '网易云':
         source = 'netease';
+        break;
+      case 'QQ':
+        source = 'qq';
         break;
     }
   }
