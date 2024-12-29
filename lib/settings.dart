@@ -18,6 +18,8 @@ import 'package:webview_cookie_manager/webview_cookie_manager.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'qq.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:dio/dio.dart';
 
 Future<void> outputAllSettingsToFile() async {
   // 申请所有文件访问权限
@@ -317,6 +319,8 @@ class _netease_login_webviewState extends State<netease_login_webview> {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  String _readmeContent = '';
+
   void open_bl_login() async {
     TextEditingController blCookieController = TextEditingController();
     Map<String, dynamic> settings = await settings_getsettings();
@@ -447,6 +451,27 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadReadme();
+  }
+
+  Future<void> _loadReadme() async {
+    final treadmeContent = await Dio().get(
+      'https://api.github.com/repos/HBWuChang/listen1_xuan/readme',
+    );
+    String decodeBase64(String data) {
+      return utf8.decode(base64Decode(data));
+    }
+
+    // 使用base64对content进行解码
+    setState(() {
+      _readmeContent =
+          decodeBase64(treadmeContent.data['content'].replaceAll("\n", ''));
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -546,14 +571,13 @@ class _SettingsPageState extends State<SettingsPage> {
                         } else {
                           // return Text(const JsonEncoder.withIndent('  ')
                           //     .convert(snapshot.data));
-                          return Text((snapshot.data?['data']?['nickname'] ??
-                              '未知用户'));
+                          return Text(
+                              (snapshot.data?['data']?['nickname'] ?? '未知用户'));
                         }
                       }
                     },
                   ),
                 ),
-                
                 ElevatedButton(
                   onPressed: () => open_qq_login(),
                   child: const Text('登录QQ音乐'),
@@ -575,6 +599,11 @@ class _SettingsPageState extends State<SettingsPage> {
             ElevatedButton(
               onPressed: () => clean_local_cache(true),
               child: const Text('清除所有歌曲缓存'),
+            ),
+            Expanded(
+              child: Markdown(
+                data: _readmeContent,
+              ),
             ),
           ],
         ),
