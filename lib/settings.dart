@@ -21,31 +21,40 @@ import 'qq.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:dio/dio.dart';
 
-Future<void> outputAllSettingsToFile() async {
+// Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
+Future<Map<String, dynamic>> outputAllSettingsToFile(
+    [bool toJsonString = false]) async {
+  final prefs = await SharedPreferences.getInstance();
+  Map<String, dynamic> settings = {};
+  final allkeys = prefs.getKeys();
+  for (var key in allkeys) {
+    switch (key) {
+      case 'playerlists':
+        settings[key] = prefs.getStringList(key);
+        break;
+      case 'auto_choose_source_list':
+        settings[key] = prefs.getStringList(key);
+        break;
+      case 'favoriteplayerlists':
+        settings[key] = prefs.getStringList(key);
+        break;
+      case 'settings':
+        continue;
+      default:
+        try {
+          settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
+        } catch (e) {
+          settings[key] = prefs.getString(key);
+        }
+    }
+  }
+  if (toJsonString) {
+    settings.remove('githubOauthAccessKey');
+    return settings;
+  }
   // 申请所有文件访问权限
   if (await Permission.storage.request().isGranted) {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      Map<String, dynamic> settings = {};
-      final allkeys = prefs.getKeys();
-      for (var key in allkeys) {
-        switch (key) {
-          case 'playerlists':
-            settings[key] = prefs.getStringList(key);
-            break;
-          case 'auto_choose_source_list':
-            settings[key] = prefs.getStringList(key);
-            break;
-          case 'favoriteplayerlists':
-            settings[key] = prefs.getStringList(key);
-            break;
-          case 'settings':
-            continue;
-          default:
-            settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
-        }
-      }
-
       // 确保路径存在
       final downloadDir = Directory('/storage/emulated/0/Download/Listen1');
       if (!await downloadDir.exists()) {
@@ -86,9 +95,52 @@ Future<void> outputAllSettingsToFile() async {
       fontSize: 16.0,
     );
   }
+  return {};
 }
 
-Future<void> importSettingsFromFile() async {
+Future<void> importSettingsFromFile(
+    // [bool fromjson = false, String jsonString = '']) async {
+    [bool fromjson = false,
+    Map<String, dynamic> jsonString = const {}]) async {
+  Future<void> _sets(Map<String, dynamic> settings) async {
+    final prefs = await SharedPreferences.getInstance();
+    for (var key in settings.keys) {
+      switch (key) {
+        case 'playerlists':
+          // settings[key] = prefs.getStringList(key);
+          prefs.setStringList(key, settings[key].cast<String>());
+          break;
+        case 'auto_choose_source_list':
+          prefs.setStringList(key, settings[key].cast<String>());
+          break;
+        case 'favoriteplayerlists':
+          prefs.setStringList(key, settings[key].cast<String>());
+          break;
+        case 'settings':
+          continue;
+        default:
+          // settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
+          prefs.setString(key, jsonEncode(settings[key]));
+      }
+    }
+
+    Fluttertoast.showToast(
+      msg: 'Settings imported successfully',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.blue,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+
+  if (fromjson) {
+    // final settings = jsonDecode(jsonString) as Map<String, dynamic>;
+    final settings = jsonString;
+    await _sets(settings);
+    return;
+  }
   // 申请所有文件访问权限
   if (await Permission.storage.request().isGranted) {
     try {
@@ -103,36 +155,7 @@ Future<void> importSettingsFromFile() async {
         final content = await file.readAsString();
         final settings = jsonDecode(content) as Map<String, dynamic>;
 
-        final prefs = await SharedPreferences.getInstance();
-        for (var key in settings.keys) {
-          switch (key) {
-            case 'playerlists':
-              // settings[key] = prefs.getStringList(key);
-              prefs.setStringList(key, settings[key].cast<String>());
-              break;
-            case 'auto_choose_source_list':
-              prefs.setStringList(key, settings[key].cast<String>());
-              break;
-            case 'favoriteplayerlists':
-              prefs.setStringList(key, settings[key].cast<String>());
-              break;
-            case 'settings':
-              continue;
-            default:
-              // settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
-              prefs.setString(key, jsonEncode(settings[key]));
-          }
-        }
-
-        Fluttertoast.showToast(
-          msg: 'Settings imported successfully',
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.blue,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
+        await _sets(settings);
       } else {
         Fluttertoast.showToast(
           msg: '未选择文件',
@@ -602,8 +625,7 @@ class _SettingsPageState extends State<SettingsPage> {
               children: <Widget>[
                 SvgPicture.string(
                     '<svg width="800px" height="800px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>github [#142]</title><desc>Created with Sketch.</desc><defs></defs><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#000000"><g id="icons" transform="translate(56.000000, 160.000000)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" id="github-[#142]"></path></g></g></g></svg>'),
-                SizedBox(
-                  width: 200,
+                Expanded(
                   child: FutureBuilder(
                     // future: check_bl_cookie(),
                     future: Github.updateStatus(),
@@ -625,18 +647,223 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 ElevatedButton(
                   onPressed: () => Github.openAuthUrl(context),
-                  child: const Text('登录Github'),
+                  child: const Text('登录Github(建议使用魔法'),
                 ),
               ],
             ),
-            ElevatedButton(
-              onPressed: () => outputAllSettingsToFile(),
-              child: const Text('保存配置到文件'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () => outputAllSettingsToFile(),
+                  child: const Text('保存配置到文件'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (Github.status != 2) {
+                      _msg('请先登录Github', 1.0);
+                      return;
+                    }
+                    var playlists = await Github.listExistBackup();
+                    print(playlists);
+
+                    try {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('导出到Github Gist'),
+                            content: Container(
+                              width: double.maxFinite,
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: playlists.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  final playlist = playlists[index];
+                                  return ListTile(
+                                    title: Text(playlist['id']),
+                                    subtitle: Text(playlist['description']),
+                                    onTap: () async {
+                                      try {
+                                        Fluttertoast.showToast(
+                                          msg: '正在导出',
+                                        );
+                                        final settings =
+                                            await outputAllSettingsToFile(true);
+                                        final jsfile =
+                                            Github.json2gist(settings);
+                                        await Github.backupMySettings2Gist(
+                                          jsfile,
+                                          playlist['id'],
+                                          playlist['public'],
+                                        );
+                                        Fluttertoast.showToast(
+                                          msg: '导出成功',
+                                        );
+                                        Navigator.of(context).pop();
+                                      } catch (e) {
+                                        Fluttertoast.showToast(
+                                          msg: '导出失败$e',
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () async {
+                                  try {
+                                    Fluttertoast.showToast(
+                                      msg: '正在导出',
+                                    );
+                                    final settings =
+                                        await outputAllSettingsToFile(true);
+                                    final jsfile = Github.json2gist(settings);
+                                    await Github.backupMySettings2Gist(
+                                      jsfile,
+                                      null,
+                                      true,
+                                    );
+                                    Fluttertoast.showToast(
+                                      msg: '导出成功',
+                                    );
+                                    Navigator.of(context).pop();
+                                  } catch (e) {
+                                    Fluttertoast.showToast(
+                                      msg: '导出失败$e',
+                                    );
+                                  }
+                                },
+                                child: Text('创建公开备份'),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  try {
+                                    Fluttertoast.showToast(
+                                      msg: '正在导出',
+                                    );
+                                    final settings =
+                                        await outputAllSettingsToFile(true);
+                                    final jsfile = Github.json2gist(settings);
+                                    await Github.backupMySettings2Gist(
+                                      jsfile,
+                                      null,
+                                      false,
+                                    );
+                                    Fluttertoast.showToast(
+                                      msg: '导出成功',
+                                    );
+                                    Navigator.of(context).pop();
+                                  } catch (e) {
+                                    Fluttertoast.showToast(
+                                      msg: '导出失败$e',
+                                    );
+                                  }
+                                },
+                                child: Text('创建私有备份'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text('取消'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    } catch (e) {
+                      // print(e);
+                      Fluttertoast.showToast(
+                        msg: '添加失败${e}',
+                      );
+                    }
+                  },
+                  child: const Text('备份配置到Gist'),
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: () => importSettingsFromFile(),
-              child: const Text('从文件导入配置'),
-            ),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+              ElevatedButton(
+                onPressed: () => importSettingsFromFile(),
+                child: const Text('从文件导入配置'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (Github.status != 2) {
+                    _msg('请先登录Github', 1.0);
+                    return;
+                  }
+                  var playlists = await Github.listExistBackup();
+                  print(playlists);
+
+                  try {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text('从Github Gist导入'),
+                          content: Container(
+                            width: double.maxFinite,
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: playlists.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                final playlist = playlists[index];
+                                return ListTile(
+                                  title: Text(playlist['id']),
+                                  subtitle: Text(playlist['description']),
+                                  onTap: () async {
+                                    try {
+                                      Fluttertoast.showToast(
+                                        msg: '正在导入',
+                                      );
+
+                                      final jsfile =
+                                          await Github.importMySettingsFromGist(
+                                        playlist['id'],
+                                      );
+                                      final settings =
+                                          await Github.gist2json(jsfile);
+                                      await importSettingsFromFile(
+                                          true, settings);
+                                      Fluttertoast.showToast(
+                                        msg: '导出成功',
+                                      );
+                                      Navigator.of(context).pop();
+                                    } catch (e) {
+                                      Fluttertoast.showToast(
+                                        msg: '导出失败$e',
+                                      );
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text('取消'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  } catch (e) {
+                    // print(e);
+                    Fluttertoast.showToast(
+                      msg: '添加失败${e}',
+                    );
+                  }
+                },
+                child: const Text('从Gist导入配置'),
+              ),
+            ]),
             ElevatedButton(
               onPressed: () => clean_local_cache(),
               child: const Text('清除未在配置文件中的歌曲缓存'),
@@ -703,7 +930,10 @@ class Github {
       'client_secret': clientSecret,
       'code': code,
     };
-    final response = await dio.post(url, queryParameters: params);
+    final response = await dio.post(
+      url,
+      queryParameters: params,
+    );
     final accessToken = response.data['access_token'];
     final prefs = await SharedPreferences.getInstance();
     prefs.setString('githubOauthAccessKey', accessToken);
@@ -806,7 +1036,7 @@ class Github {
       result[filename] = {
         'content': content,
       };
-      return count + playlist['tracks'].length;
+      return (count as int) + (playlist['tracks'].length as int);
     });
     final summary =
         '本歌单由[Listen1](https://listen1.github.io/listen1/)创建, 歌曲数：$songsCount，歌单数：${playlistIds.length}，点击查看更多';
@@ -817,25 +1047,39 @@ class Github {
     return result;
   }
 
-  static Future<void> gist2json(Map<String, dynamic> gistFiles,
-      Function(Map<String, dynamic>) callback) async {
+  // static Future<void> gist2json(Map<String, dynamic> gistFiles,
+  static Future<Map<String, dynamic>> gist2json(
+    Map<String, dynamic> gistFiles,
+  ) async {
     if (!gistFiles['listen1_backup.json']['truncated']) {
       final jsonString = gistFiles['listen1_backup.json']['content'];
-      callback(json.decode(jsonString));
+      // callback(json.decode(jsonString));
+      return json.decode(jsonString);
     } else {
       final url = gistFiles['listen1_backup.json']['raw_url'];
-      final response = await dio.get(url);
-      callback(response.data);
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('githubOauthAccessKey');
+      final response = await dio.get(url,
+          options: Options(headers: {
+            'Authorization': 'token $accessToken',
+          }));
+      // callback(response.data);
+      return response.data;
     }
   }
 
   static Future<List<dynamic>> listExistBackup() async {
-    final response = await dio.get('/gists');
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('githubOauthAccessKey');
+    final response = await dio.get('/gists',
+        options: Options(headers: {
+          'Authorization': 'token $accessToken',
+        }));
     final result = response.data;
-    return result
-        .where((backupObject) =>
-            backupObject['description'].startsWith('updated by Listen1'))
-        .toList();
+    return result.where((backupObject) {
+      return backupObject['description'] != null &&
+          backupObject['description'].startsWith('updated by Listen1');
+    }).toList();
   }
 
   static Future<void> backupMySettings2Gist(
@@ -849,9 +1093,13 @@ class Github {
       method = 'post';
       url = '/gists';
     }
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('githubOauthAccessKey');
     await dio.request(
       url,
-      options: Options(method: method),
+      options: Options(method: method, headers: {
+        'Authorization': 'token $accessToken',
+      }),
       data: {
         'description':
             'updated by Listen1(https://listen1.github.io/listen1/) at ${DateTime.now().toLocal()}',
@@ -863,7 +1111,12 @@ class Github {
 
   static Future<Map<String, dynamic>> importMySettingsFromGist(
       String gistId) async {
-    final response = await dio.get('/gists/$gistId');
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('githubOauthAccessKey');
+    final response = await dio.get('/gists/$gistId',
+        options: Options(headers: {
+          'Authorization': 'token $accessToken',
+        }));
     return response.data['files'];
   }
 }
