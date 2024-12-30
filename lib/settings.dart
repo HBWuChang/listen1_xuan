@@ -115,8 +115,9 @@ Future<void> importSettingsFromFile() async {
               break;
             case 'favoriteplayerlists':
               prefs.setStringList(key, settings[key].cast<String>());
-
               break;
+            case 'settings':
+              continue;
             default:
               // settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
               prefs.setString(key, jsonEncode(settings[key]));
@@ -208,6 +209,7 @@ Future<Map<String, dynamic>> settings_getsettings() async {
 Future<void> _saveToken(String platform, String token) async {
   Map<String, dynamic> settings = await settings_getsettings();
   final prefs = await SharedPreferences.getInstance();
+
   settings[platform] = token;
   // String jsonString = jsonEncode(tokenData);
   // await prefs.setString('$platform_token', jsonString);
@@ -240,38 +242,47 @@ class SettingsPage extends StatefulWidget {
   _SettingsPageState createState() => _SettingsPageState();
 }
 
-class netease_login_webview extends StatefulWidget {
+class login_webview extends StatefulWidget {
   final WebViewController controller;
   final String config_key;
   final String open_url;
-  const netease_login_webview(
+  const login_webview(
       {super.key,
       required this.controller,
       required this.config_key,
       required this.open_url});
   @override
-  _netease_login_webviewState createState() => _netease_login_webviewState();
+  _login_webviewState createState() => _login_webviewState();
 }
 
-class _netease_login_webviewState extends State<netease_login_webview> {
+class _login_webviewState extends State<login_webview> {
   void get__cookie() async {
-    final cookieManager = WebviewCookieManager();
+    switch (widget.config_key) {
+      case 'github':
+        final url = await widget.controller.currentUrl();
+        print(url);
+        final code = url?.split('code=')[1];
+        Github.handleCallback(code ?? '', context);
+        break;
+      default:
+        final cookieManager = WebviewCookieManager();
 
-    final gotCookies = await cookieManager.getCookies(widget.open_url);
-    for (var item in gotCookies) {
-      print(item);
+        final gotCookies = await cookieManager.getCookies(widget.open_url);
+        for (var item in gotCookies) {
+          print(item);
+        }
+        String cookies = "";
+        for (var item in gotCookies) {
+          cookies += "${item.name}=${Uri.decodeComponent(item.value)};";
+        }
+        cookies = cookies.substring(0, cookies.length - 1);
+        // await _saveToken('ne', cookies);
+        await _saveToken(widget.config_key, cookies);
+        _msg('设置成功$cookies', 3.0);
+      // _msg('设置成功', 1.0);
+      // Navigator.pop(context);
+      // setState(() {});
     }
-    String cookies = "";
-    for (var item in gotCookies) {
-      cookies += "${item.name}=${Uri.decodeComponent(item.value)};";
-    }
-    cookies = cookies.substring(0, cookies.length - 1);
-    // await _saveToken('ne', cookies);
-    await _saveToken(widget.config_key, cookies);
-    _msg('设置成功$cookies', 3.0);
-    // _msg('设置成功', 1.0);
-    // Navigator.pop(context);
-    // setState(() {});
   }
 
   void _msg(String msg, [double showtime = 3.0]) {
@@ -409,7 +420,7 @@ class _SettingsPageState extends State<SettingsPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => netease_login_webview(
+        builder: (context) => login_webview(
             controller: controller,
             config_key: 'ne',
             open_url: 'https://music.163.com/'),
@@ -444,7 +455,7 @@ class _SettingsPageState extends State<SettingsPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => netease_login_webview(
+        builder: (context) => login_webview(
             controller: controller,
             config_key: 'qq',
             open_url: 'https://y.qq.com/'),
@@ -586,6 +597,38 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                SvgPicture.string(
+                    '<svg width="800px" height="800px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>github [#142]</title><desc>Created with Sketch.</desc><defs></defs><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#000000"><g id="icons" transform="translate(56.000000, 160.000000)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" id="github-[#142]"></path></g></g></g></svg>'),
+                SizedBox(
+                  width: 200,
+                  child: FutureBuilder(
+                    // future: check_bl_cookie(),
+                    future: Github.updateStatus(),
+                    builder:
+                        (BuildContext context, AsyncSnapshot<int> snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const CircularProgressIndicator();
+                      } else {
+                        if (snapshot.data == '') {
+                          return const Text('cookie未设置或失效');
+                        } else {
+                          // return Text(const JsonEncoder.withIndent('  ')
+                          //     .convert(snapshot.data));
+                          return Text(Github.getStatusText());
+                        }
+                      }
+                    },
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => Github.openAuthUrl(context),
+                  child: const Text('登录Github'),
+                ),
+              ],
+            ),
             ElevatedButton(
               onPressed: () => outputAllSettingsToFile(),
               child: const Text('保存配置到文件'),
@@ -636,4 +679,191 @@ void _msg(String msg, BuildContext context, [double showtime = 3.0]) {
       duration: Duration(milliseconds: (showtime * 1000).toInt()),
     ),
   );
+}
+
+class Github {
+  static const String OAUTH_URL = 'https://github.com/login/oauth';
+  static const String API_URL = 'https://api.github.com';
+
+  static const String clientId = 'e099a4803bb1e2e773a3';
+  static const String clientSecret = '81fbfc45c65af8c0fbf2b4dae6f23f22e656cfb8';
+
+  static Dio dio = Dio(BaseOptions(
+    baseUrl: API_URL,
+    headers: {'accept': 'application/json'},
+  ));
+
+  static int status = 0;
+  static String username = '';
+
+  static Future<void> handleCallback(String code, BuildContext context) async {
+    final url = '$OAUTH_URL/access_token';
+    final params = {
+      'client_id': clientId,
+      'client_secret': clientSecret,
+      'code': code,
+    };
+    final response = await dio.post(url, queryParameters: params);
+    final accessToken = response.data['access_token'];
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('githubOauthAccessKey', accessToken);
+    _msg('设置成功', context, 1.0);
+  }
+
+  static void openAuthUrl(BuildContext context) {
+    status = 1;
+    final url = '$OAUTH_URL/authorize?client_id=$clientId&scope=gist';
+    // Open URL in browser
+    // window.open(url, '_blank');
+    final controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            // Update loading bar.
+          },
+          onPageStarted: (String url) {},
+          onPageFinished: (String url) {},
+          onHttpError: (HttpResponseError error) {},
+          onWebResourceError: (WebResourceError error) {},
+        ),
+      )
+      ..loadRequest(Uri.parse(url));
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => login_webview(
+            controller: controller, config_key: 'github', open_url: url),
+      ),
+    );
+  }
+
+  static int getStatus() => status;
+
+  static String getStatusText() {
+    switch (status) {
+      case 0:
+        return '未连接';
+      case 1:
+        return '连接中';
+      case 2:
+        return '$username已登录';
+      default:
+        return '???';
+    }
+  }
+
+  static Future<int> updateStatus() async {
+    // final accessToken = localStorage.getItem('githubOauthAccessKey');
+    // final accessToken = null; // Replace with actual access token retrieval
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('githubOauthAccessKey');
+    if (accessToken == null) {
+      status = 0;
+    } else {
+      final response = await dio.get('/user',
+          options: Options(headers: {
+            'Authorization': 'token $accessToken',
+          }));
+      final data = response.data;
+      if (data['login'] == null) {
+        status = 1;
+      } else {
+        status = 2;
+        username = data['login'];
+      }
+    }
+    return status;
+  }
+
+  static void logout() {
+    // localStorage.removeItem('githubOauthAccessKey');
+    status = 0;
+  }
+
+  static Map<String, dynamic> json2gist(Map<String, dynamic> jsonObject) {
+    final result = <String, dynamic>{};
+
+    result['listen1_backup.json'] = {
+      'content': json.encode(jsonObject),
+    };
+
+    final playlistIds = jsonObject['playerlists'];
+    final songsCount = playlistIds.fold<int>(0, (count, playlistId) {
+      final playlist = jsonObject[playlistId];
+      final cover =
+          '<img src="${playlist['info']['cover_img_url']}" width="140" height="140"><br/>';
+      final title = playlist['info']['title'];
+      var tableHeader = '\n| 音乐标题 | 歌手 | 专辑 |\n';
+      tableHeader += '| --- | --- | --- |\n';
+      final tableBody = playlist['tracks'].fold<String>('', (r, track) {
+        return '$r | ${track['title']} | ${track['artist']} | ${track['album']} | \n';
+      });
+      final content =
+          '<details>\n  <summary>$cover   $title</summary><p>\n$tableHeader$tableBody</p></details>';
+      final filename = 'listen1_$playlistId.md';
+      result[filename] = {
+        'content': content,
+      };
+      return count + playlist['tracks'].length;
+    });
+    final summary =
+        '本歌单由[Listen1](https://listen1.github.io/listen1/)创建, 歌曲数：$songsCount，歌单数：${playlistIds.length}，点击查看更多';
+    result['listen1_aha_playlist.md'] = {
+      'content': summary,
+    };
+
+    return result;
+  }
+
+  static Future<void> gist2json(Map<String, dynamic> gistFiles,
+      Function(Map<String, dynamic>) callback) async {
+    if (!gistFiles['listen1_backup.json']['truncated']) {
+      final jsonString = gistFiles['listen1_backup.json']['content'];
+      callback(json.decode(jsonString));
+    } else {
+      final url = gistFiles['listen1_backup.json']['raw_url'];
+      final response = await dio.get(url);
+      callback(response.data);
+    }
+  }
+
+  static Future<List<dynamic>> listExistBackup() async {
+    final response = await dio.get('/gists');
+    final result = response.data;
+    return result
+        .where((backupObject) =>
+            backupObject['description'].startsWith('updated by Listen1'))
+        .toList();
+  }
+
+  static Future<void> backupMySettings2Gist(
+      Map<String, dynamic> files, String? gistId, bool isPublic) async {
+    String method;
+    String url;
+    if (gistId != null) {
+      method = 'patch';
+      url = '/gists/$gistId';
+    } else {
+      method = 'post';
+      url = '/gists';
+    }
+    await dio.request(
+      url,
+      options: Options(method: method),
+      data: {
+        'description':
+            'updated by Listen1(https://listen1.github.io/listen1/) at ${DateTime.now().toLocal()}',
+        'public': isPublic,
+        'files': files,
+      },
+    );
+  }
+
+  static Future<Map<String, dynamic>> importMySettingsFromGist(
+      String gistId) async {
+    final response = await dio.get('/gists/$gistId');
+    return response.data['files'];
+  }
 }
