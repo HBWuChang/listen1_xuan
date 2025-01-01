@@ -40,6 +40,8 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
         break;
       case 'settings':
         continue;
+      case 'local-cache-list':
+        continue;
       default:
         try {
           settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
