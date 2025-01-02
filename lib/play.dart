@@ -421,6 +421,11 @@ Future<void> playerFailCallback() async {
 Future<void> setNotification() async {
   print('setNotification');
   // print(_audioHandler);
+  if (Platform.isWindows) {
+    // Windows-specific code
+  } else {
+    // Non-Windows code
+  }
   try {
     _audioHandler.hashCode;
   } catch (e) {
