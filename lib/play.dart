@@ -802,12 +802,12 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   // Future<void> pause() => music_player.pause();
   @override
   Future<void> pause() async {
-    if (music_player.playing) {
+    // if (music_player.playing) {
       music_player.pause();
-    }
-    else {
-      play();
-    }
+    // }
+    // else {
+    //   play();
+    // }
   }
 
   @override
