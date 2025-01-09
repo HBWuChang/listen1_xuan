@@ -35,7 +35,7 @@ class FileLogOutput extends LogOutput {
 }
 
 final Logger playlogger = Logger(
-    level: Level.debug,
+    level: Level.all,
     output: FileLogOutput(
         File('/data/user/0/com.xiebian.listen1_xuan/cache/app.log')));
 
@@ -286,6 +286,40 @@ Future<Map<String, dynamic>> getnowplayingsong() async {
   return {'track': {}, 'index': -1};
 }
 
+Future<void> change_playback_state(dynamic track) async {
+  try {
+    playlogger.d('开始更新播放状态');
+    // 使用 Completer 来等待 _duration 被赋值
+    final Completer<void> completer = Completer<void>();
+    music_player.durationStream.listen((duration) {
+      if (duration != null && !completer.isCompleted) {
+        // print('音频文件时长: ${duration.inSeconds}秒');
+        completer.complete();
+      }
+    });
+
+    // 等待 _duration 被赋值
+    await completer.future;
+    // 获取音频文件的时长
+
+    final _duration = await music_player.duration;
+    print(_duration);
+    dynamic _item;
+    _item = MediaItem(
+      id: track['id'],
+      title: track['title'],
+      artist: track['artist'],
+      artUri: Uri.parse(track['img_url']),
+      duration: _duration,
+    );
+    (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
+    playlogger.d('更新播放状态成功');
+  } catch (e) {
+    playlogger.e('更新播放状态失败');
+    playlogger.e(e);
+  }
+}
+
 Future<void> playsong(Map<String, dynamic> track) async {
   try {
     await set_player_settings("nowplaying_track_id", track['id']);
@@ -300,35 +334,6 @@ Future<void> playsong(Map<String, dynamic> track) async {
       return;
     }
     await music_player.setFilePath(tdir);
-
-    // 使用 Completer 来等待 _duration 被赋值
-    final Completer<void> completer = Completer<void>();
-    music_player.durationStream.listen((duration) {
-      if (duration != null && !completer.isCompleted) {
-        // print('音频文件时长: ${duration.inSeconds}秒');
-        completer.complete();
-      }
-    });
-
-    // 等待 _duration 被赋值
-    await completer.future;
-    // 获取音频文件的时长
-    final _duration = await music_player.duration;
-    print(_duration);
-    dynamic _item;
-    _item = MediaItem(
-      id: track['id'],
-      title: track['title'],
-      artist: track['artist'],
-      artUri: Uri.parse(track['img_url']),
-      duration: _duration,
-    );
-    try {
-      (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
-    } catch (e) {
-      playlogger.e('更新播放状态失败');
-      playlogger.e(e);
-    }
     double t_volume = 100;
     try {
       t_volume = await get_player_settings("volume");
@@ -338,9 +343,11 @@ Future<void> playsong(Map<String, dynamic> track) async {
     }
     music_player.setVolume(t_volume / 100);
     music_player.play();
-  } catch (e) {
+    change_playback_state(track);
+  } catch (e, stackTrace) {
     playlogger.e('播放失败!!!!');
     playlogger.e(e);
+    playlogger.e(stackTrace);
   }
 }
 
