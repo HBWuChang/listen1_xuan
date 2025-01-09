@@ -287,52 +287,61 @@ Future<Map<String, dynamic>> getnowplayingsong() async {
 }
 
 Future<void> playsong(Map<String, dynamic> track) async {
-  await set_player_settings("nowplaying_track_id", track['id']);
-  await add_current_playing([track]);
-  final tdir = await get_local_cache(track['id']);
-  playlogger.d('playsong');
-  playlogger.d(track);
-  playlogger.d(tdir);
-  if (tdir == "") {
-    MediaService.bootstrapTrack(
-        track, playerSuccessCallback, playerFailCallback);
-    return;
-  }
-  await music_player.setFilePath(tdir);
-
-  // 使用 Completer 来等待 _duration 被赋值
-  final Completer<void> completer = Completer<void>();
-  music_player.durationStream.listen((duration) {
-    if (duration != null && !completer.isCompleted) {
-      // print('音频文件时长: ${duration.inSeconds}秒');
-      completer.complete();
-    }
-  });
-
-  // 等待 _duration 被赋值
-  await completer.future;
-  // 获取音频文件的时长
-  final _duration = await music_player.duration;
-  print(_duration);
-  dynamic _item;
-  _item = MediaItem(
-    id: track['id'],
-    title: track['title'],
-    artist: track['artist'],
-    artUri: Uri.parse(track['img_url']),
-    duration: _duration,
-  );
-  (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
-  // (_audioHandler as AudioPlayerHandler).play();
-  double t_volume = 100;
   try {
-    t_volume = await get_player_settings("volume");
+    await set_player_settings("nowplaying_track_id", track['id']);
+    await add_current_playing([track]);
+    final tdir = await get_local_cache(track['id']);
+    playlogger.d('playsong');
+    playlogger.d(track);
+    playlogger.d(tdir);
+    if (tdir == "") {
+      MediaService.bootstrapTrack(
+          track, playerSuccessCallback, playerFailCallback);
+      return;
+    }
+    await music_player.setFilePath(tdir);
+
+    // 使用 Completer 来等待 _duration 被赋值
+    final Completer<void> completer = Completer<void>();
+    music_player.durationStream.listen((duration) {
+      if (duration != null && !completer.isCompleted) {
+        // print('音频文件时长: ${duration.inSeconds}秒');
+        completer.complete();
+      }
+    });
+
+    // 等待 _duration 被赋值
+    await completer.future;
+    // 获取音频文件的时长
+    final _duration = await music_player.duration;
+    print(_duration);
+    dynamic _item;
+    _item = MediaItem(
+      id: track['id'],
+      title: track['title'],
+      artist: track['artist'],
+      artUri: Uri.parse(track['img_url']),
+      duration: _duration,
+    );
+    try {
+      (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
+    } catch (e) {
+      playlogger.e('更新播放状态失败');
+      playlogger.e(e);
+    }
+    double t_volume = 100;
+    try {
+      t_volume = await get_player_settings("volume");
+    } catch (e) {
+      t_volume = 100;
+      await set_player_settings("volume", t_volume);
+    }
+    music_player.setVolume(t_volume / 100);
+    music_player.play();
   } catch (e) {
-    t_volume = 100;
-    await set_player_settings("volume", t_volume);
+    playlogger.e('播放失败!!!!');
+    playlogger.e(e);
   }
-  music_player.setVolume(t_volume / 100);
-  music_player.play();
 }
 
 Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
@@ -410,7 +419,7 @@ Future<void> playerFailCallback() async {
   }
   if (playmode == 1) {
     playlogger.d(randommodetemplist);
-    if(randommodetemplist.length - 1 > 0) {
+    if (randommodetemplist.length - 1 > 0) {
       randommodetemplist.removeAt(randommodetemplist.length - 1);
     }
   }
@@ -504,15 +513,16 @@ class _PlayState extends State<Play> {
                 // if (_player.playing) MediaControl.pause else MediaControl.play,
                 Vibration.vibrate(duration: 100);
                 if (music_player.playing) {
-                  (_audioHandler as AudioPlayerHandler).pause();
+                  // (_audioHandler as AudioPlayerHandler).pause();
+                  global_pause();
                 } else {
-                  (_audioHandler as AudioPlayerHandler).play();
+                  // (_audioHandler as AudioPlayerHandler).play();
+                  global_play();
                 }
               },
               onLongPress: () {
                 Vibration.vibrate(duration: 100);
-
-                (_audioHandler as AudioPlayerHandler).stop();
+                global_change_play_mode();
               },
               onHorizontalDragEnd: (details) {
                 if (details.primaryVelocity != null) {
@@ -520,10 +530,12 @@ class _PlayState extends State<Play> {
 
                   if (details.primaryVelocity! > 0) {
                     // _playPrevious(); // 向右滑动，播放上一首
-                    (_audioHandler as AudioPlayerHandler).skipToPrevious();
+                    // (_audioHandler as AudioPlayerHandler).skipToPrevious();
+                    global_skipToPrevious();
                   } else if (details.primaryVelocity! < 0) {
                     // _playNext(); // 向左滑动，播放下一首
-                    (_audioHandler as AudioPlayerHandler).skipToNext();
+                    // (_audioHandler as AudioPlayerHandler).skipToNext();
+                    global_skipToNext();
                   }
                 }
               },
@@ -666,7 +678,7 @@ class _PlayState extends State<Play> {
                                                     .toDouble() ??
                                                 1.0,
                                             onChanged: (value) {
-                                              _audioHandler.seek(Duration(
+                                              global_seek(Duration(
                                                   milliseconds: value.toInt()));
                                             },
                                           ));
@@ -683,29 +695,14 @@ class _PlayState extends State<Play> {
                             height: 50,
                             child: Center(
                               child: playing
-                                  ? _button(Icons.pause, _audioHandler.pause)
-                                  : _button(
-                                      Icons.play_arrow, _audioHandler.play),
+                                  ? _button(Icons.pause, global_pause)
+                                  : _button(Icons.play_arrow, global_play),
                             ),
                           )
                         ],
                       );
                     },
                   ),
-
-                  // Display the processing state.
-                  // StreamBuilder<AudioProcessingState>(
-                  //   stream: _audioHandler.playbackState
-                  //       .map((state) => state.processingState)
-                  //       .distinct(),
-                  //   builder: (context, snapshot) {
-                  //     final processingState =
-                  //         snapshot.data ?? AudioProcessingState.idle;
-                  //     return Text(
-                  //         // ignore: deprecated_member_use
-                  //         "Processing state: ${describeEnum(processingState)}");
-                  //   },
-                  // ),
                 ),
               ));
         }
@@ -732,6 +729,82 @@ class MediaState {
   final Duration position;
 
   MediaState(this.mediaItem, this.position);
+}
+
+Future<void> global_play() async {
+  final currentMediaItem = await _audioHandler.mediaItem.value;
+  if (currentMediaItem != null) {
+    final title = currentMediaItem.title;
+    print('Playing: $title');
+    if (title == 'test') {
+      await fresh_playmode();
+      final track = await getnowplayingsong();
+      if (track['index'] != -1) {
+        await playsong(track['track']);
+      } else {
+        music_player.play();
+      }
+    } else {
+      music_player.play();
+    }
+  } else {
+    music_player.play();
+  }
+}
+
+Future<void> global_pause() async {
+  music_player.pause();
+}
+
+Future<void> global_seek(Duration position) async {
+  music_player.seek(position);
+}
+
+Future<void> global_skipToPrevious() async {
+  await fresh_playmode();
+
+  final current_playing = await get_current_playing();
+  final nowplaying_track = await getnowplayingsong();
+  if (nowplaying_track['index'] != -1) {
+    final index = nowplaying_track['index'];
+    switch (playmode) {
+      case 0:
+        index - 1 >= 0
+            ? await playsong(current_playing[index - 1])
+            : await playsong(current_playing[current_playing.length - 1]);
+        break;
+      case 1:
+        try {
+          await playsong(randommodetemplist[randommodetemplist.length - 1]);
+          randommodetemplist.removeAt(randommodetemplist.length - 1);
+          return;
+        } catch (e) {
+          print(e);
+        }
+
+        final randomIndex = (current_playing.length *
+                (DateTime.now().millisecondsSinceEpoch % 1000) /
+                1000)
+            .floor();
+        await playsong(current_playing[randomIndex]);
+        break;
+      case 2:
+        await playsong(current_playing[index]);
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+Future<void> global_skipToNext() async {
+  await onPlaybackCompleted(true);
+}
+
+Future<void> global_change_play_mode() async {
+  await fresh_playmode();
+  playmode = (playmode + 1) % 3;
+  await set_player_settings("playmode", playmode);
 }
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
@@ -776,91 +849,34 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   // Future<void> play() => _player.play();
   @override
   Future<void> play() async {
-    final currentMediaItem = mediaItem.value;
-    if (currentMediaItem != null) {
-      final title = currentMediaItem.title;
-      print('Playing: $title');
-      // 在这里添加你需要的逻辑
-      if (title == 'test') {
-        await fresh_playmode();
-
-        final track = await getnowplayingsong();
-        if (track['index'] != -1) {
-          await playsong(track['track']);
-        } else {
-          music_player.play();
-        }
-      } else {
-        music_player.play();
-      }
-    } else {
-      music_player.play();
-    }
+    await global_play();
   }
 
   // @override
   // Future<void> pause() => music_player.pause();
   @override
   Future<void> pause() async {
-    // if (music_player.playing) {
-      music_player.pause();
-    // }
-    // else {
-    //   play();
-    // }
+    await global_pause();
   }
 
   @override
-  Future<void> seek(Duration position) => music_player.seek(position);
+  Future<void> seek(Duration position) async {
+    await global_seek(position);
+  }
 
   @override
   Future<void> skipToPrevious() async {
-    await fresh_playmode();
-
-    final current_playing = await get_current_playing();
-    final nowplaying_track = await getnowplayingsong();
-    if (nowplaying_track['index'] != -1) {
-      final index = nowplaying_track['index'];
-      switch (playmode) {
-        case 0:
-          index - 1 >= 0
-              ? await playsong(current_playing[index - 1])
-              : await playsong(current_playing[current_playing.length - 1]);
-          break;
-        case 1:
-          try {
-            await playsong(randommodetemplist[randommodetemplist.length - 1]);
-            randommodetemplist.removeAt(randommodetemplist.length - 1);
-            return;
-          } catch (e) {
-            print(e);
-          }
-
-          final randomIndex = (current_playing.length *
-                  (DateTime.now().millisecondsSinceEpoch % 1000) /
-                  1000)
-              .floor();
-          await playsong(current_playing[randomIndex]);
-          break;
-        case 2:
-          await playsong(current_playing[index]);
-          break;
-        default:
-          break;
-      }
-    }
+    await global_skipToPrevious();
   }
 
   @override
   Future<void> skipToNext() async {
-    await onPlaybackCompleted(true);
+    await global_skipToNext();
   }
 
   @override
   Future<void> stop() async {
-    await fresh_playmode();
-    playmode = (playmode + 1) % 3;
-    await set_player_settings("playmode", playmode);
+    await global_change_play_mode();
   }
 
   /// Transform a just_audio event into an audio_service state.
