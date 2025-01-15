@@ -39,7 +39,6 @@ final Logger playlogger = Logger(
     output: FileLogOutput(
         File('/data/user/0/com.xiebian.listen1_xuan/cache/app.log')));
 
-// final play = Play();
 final music_player = AudioPlayer();
 late AudioHandler _audioHandler;
 int playmode = 0;
