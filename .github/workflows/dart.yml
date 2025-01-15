@@ -27,5 +27,9 @@ jobs:
        run: sed -i "/android {/a\\    namespace 'com.xiebian.listen1_xuan'" /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/build.gradle
      - name: webview_cookie_manager-2.0.6
        run: sed -i "/android {/a\\    namespace 'com.xiebian.listen1_xuan'" /home/runner/.pub-cache/hosted/pub.dev/webview_cookie_manager-2.0.6/android/build.gradle
+     - name: Remove package attribute from connectivity_plus AndroidManifest.xml
+       run: sed -i '/package="dev.fluttercommunity.plus.connectivity"/d' /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/src/main/AndroidManifest.xml
+     - name: Remove package attribute from webview_cookie_manager AndroidManifest.xml
+       run: sed -i '/package="com.pichillilorenzo.flutter_inappwebview.webviewcookie"/d' /home/runner/.pub-cache/hosted/pub.dev/webview_cookie_manager-2.0.6/android/src/main/AndroidManifest.xml
      # - run: cat /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/build.gradle
      - run: flutter build apk
