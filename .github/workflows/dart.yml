@@ -23,7 +23,9 @@ jobs:
      - run: flutter test
      # /home/runner/.pub-cache
      - run: ls /home/runner/.pub-cache/hosted/pub.dev
-     - name: Add namespace to build.gradle
+     - name: connectivity_plus-2.3.8
        run: sed -i "/android {/a\\    namespace 'com.xiebian.listen1_xuan'" /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/build.gradle
+     - name: webview_cookie_manager-2.0.6
+       run: sed -i "/android {/a\\    namespace 'com.xiebian.listen1_xuan'" /home/runner/.pub-cache/hosted/pub.dev/webview_cookie_manager-2.0.6/android/build.gradle
      # - run: cat /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/build.gradle
      - run: flutter build apk
