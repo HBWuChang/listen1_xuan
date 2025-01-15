@@ -8,7 +8,8 @@ name: Dart
 on:
   push:
     branches: [ "main" ]
-
+    paths:
+      - '**/*.dart'
 jobs:
  build:
    runs-on: ubuntu-latest
@@ -20,4 +21,6 @@ jobs:
      - run: flutter --version
      - run: flutter pub get
      - run: flutter test
-     - run: flutter build apk
+     # /home/runner/.pub-cache
+     - run: ls /home/runner/.pub-cache
+     # - run: flutter build apk
