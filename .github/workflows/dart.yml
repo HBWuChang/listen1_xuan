@@ -20,7 +20,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version-file: pubspec.yaml # path to pubspec.yaml
+          flutter-version: 3.5.4
       - run: flutter --version
       - run: flutter pub get
       - run: flutter test
