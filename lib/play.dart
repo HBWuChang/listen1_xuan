@@ -834,7 +834,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     mediaItem.add(_item);
 
     // Load the player.
-    music_player.setAudioSource(AudioSource.uri(Uri.parse(_item.id)));
+    music_player.setAudioSource(AudioSource.uri(Uri.parse(_item.id)),preload: false);
     music_player.playerStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
         onPlaybackCompleted();
