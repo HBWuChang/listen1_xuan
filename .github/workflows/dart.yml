@@ -3,8 +3,8 @@ name: Dart
 on:
   push:
     branches: [ "main" ]
-    # paths:
-    #   - '**/*.dart'
+    paths:
+      - '**/*.dart'
 
 jobs:
   build:
@@ -31,3 +31,8 @@ jobs:
       - name: Check webview_cookie_manager AndroidManifest.xml
         run: cat /home/runner/.pub-cache/hosted/pub.dev/webview_cookie_manager-2.0.6/android/src/main/AndroidManifest.xml
       - run: flutter build apk
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
