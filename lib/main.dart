@@ -34,6 +34,7 @@ class MyApp extends StatelessWidget {
       supportedLocales: [
         const Locale('zh', 'CN'), // 中文简体
         // 其他支持的语言
+        
       ],
       locale: const Locale('zh', 'CN'), // 设置默认语言为中文
       home: MyHomePage(),
