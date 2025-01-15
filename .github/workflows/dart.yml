@@ -8,8 +8,8 @@ name: Dart
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - '**/*.dart'
+    # paths:
+    #   - '**/*.dart'
 jobs:
  build:
    runs-on: ubuntu-latest
