@@ -11,44 +11,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      # - uses: subosito/flutter-action@v2
-      #   with:
-      #     channel: 'stable'
-      # - run: flutter --version
-      # - run: flutter pub get
-      # - run: flutter test
-      # - run: ls /home/runner/.pub-cache/hosted/pub.dev
-      # - name: Add namespace to connectivity_plus build.gradle
-      #   run: sed -i "/android {/a\\    namespace 'com.xiebian.listen1_xuan'" /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/build.gradle
-      # - name: Remove package attribute from connectivity_plus AndroidManifest.xml
-      #   run: sed -i 's/package="dev.fluttercommunity.plus.connectivity"//' /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/src/main/AndroidManifest.xml
-      # - name: Check connectivity_plus AndroidManifest.xml
-      #   run: cat /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/src/main/AndroidManifest.xml
-      # - name: Add namespace to webview_cookie_manager build.gradle
-      #   run: sed -i "/android {/a\\    namespace 'com.xiebian.listen1_xuan'" /home/runner/.pub-cache/hosted/pub.dev/webview_cookie_manager-2.0.6/android/build.gradle
-      # - name: Remove package attribute from webview_cookie_manager AndroidManifest.xml
-      #   run: sed -i 's/package="io.flutter.plugins.webview_cookie_manager"//' /home/runner/.pub-cache/hosted/pub.dev/webview_cookie_manager-2.0.6/android/src/main/AndroidManifest.xml
-      # - name: Check webview_cookie_manager AndroidManifest.xml
-      #   run: cat /home/runner/.pub-cache/hosted/pub.dev/webview_cookie_manager-2.0.6/android/src/main/AndroidManifest.xml
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter test
+      - run: ls /home/runner/.pub-cache/hosted/pub.dev
+      - name: Add namespace to connectivity_plus build.gradle
+        run: sed -i "/android {/a\\    namespace 'com.xiebian.listen1_xuan'" /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/build.gradle
+      - name: Remove package attribute from connectivity_plus AndroidManifest.xml
+        run: sed -i 's/package="dev.fluttercommunity.plus.connectivity"//' /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/src/main/AndroidManifest.xml
+      - name: Check connectivity_plus AndroidManifest.xml
+        run: cat /home/runner/.pub-cache/hosted/pub.dev/connectivity_plus-2.3.8/android/src/main/AndroidManifest.xml
+      - name: Add namespace to webview_cookie_manager build.gradle
+        run: sed -i "/android {/a\\    namespace 'com.xiebian.listen1_xuan'" /home/runner/.pub-cache/hosted/pub.dev/webview_cookie_manager-2.0.6/android/build.gradle
+      - name: Remove package attribute from webview_cookie_manager AndroidManifest.xml
+        run: sed -i 's/package="io.flutter.plugins.webview_cookie_manager"//' /home/runner/.pub-cache/hosted/pub.dev/webview_cookie_manager-2.0.6/android/src/main/AndroidManifest.xml
+      - name: Check webview_cookie_manager AndroidManifest.xml
+        run: cat /home/runner/.pub-cache/hosted/pub.dev/webview_cookie_manager-2.0.6/android/src/main/AndroidManifest.xml
 
       - name: 解码生成 jks
         run: echo $KEYSTORE_BASE64 | base64 -di > android/app/xuan.jks
         env:
             KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-      - run: cat android/app/xuan.jks
+      # - run: cat android/app/xuan.jks
 
       # - run: flutter build apk
-      # - name: flutter build apk
-      #   # 对应 android/app/build.gradle signingConfigs中的配置项
-      #   # run: flutter build apk --release --split-per-abi
-      #   run: flutter build apk --release
-      #   env:
-      #       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-      #       KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-      #       KEY_PASSWORD: ${{ secrets.KEY_PASSWORD}}
+      - name: flutter build apk
+        # 对应 android/app/build.gradle signingConfigs中的配置项
+        # run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release
+        env:
+            KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+            KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+            KEY_PASSWORD: ${{ secrets.KEY_PASSWORD}}
 
-      # - name: Upload APK as artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: app-release-apk
-      #     path: build/app/outputs/flutter-apk/app-release.apk
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
