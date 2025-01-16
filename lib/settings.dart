@@ -888,9 +888,16 @@ class _SettingsPageState extends State<SettingsPage> {
                             print('安装APK失败: $e');
                             return;
                           }
-                        } else {
+                        } 
+                        final filePath = '$tempPath/canary.zip';
+
+                        final url_list =
+                            'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
+                        final prefs = await SharedPreferences.getInstance();
+                        final token = prefs.getString('githubOauthAccessKey');
+                        if (token == null) {
                           Fluttertoast.showToast(
-                            msg: 'APK 文件未找到',
+                            msg: '请先登录Github',
                             toastLength: Toast.LENGTH_SHORT,
                             gravity: ToastGravity.CENTER,
                             timeInSecForIosWeb: 1,
@@ -898,13 +905,8 @@ class _SettingsPageState extends State<SettingsPage> {
                             textColor: Colors.white,
                             fontSize: 16.0,
                           );
+                          return;
                         }
-                        final filePath = '$tempPath/canary.zip';
-
-                        final url_list =
-                            'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
-                        String token = 'ghp_MSqh084BoCBkbAK';
-                        token =token+'LJSyftoeTee9qUT1JMPu7';
                         final response = await Dio().get(url_list,
                             options: Options(headers: {
                               'accept': 'application/vnd.github.v3+json',
@@ -1136,7 +1138,8 @@ class Github {
 
   static void openAuthUrl(BuildContext context) {
     status = 1;
-    final url = '$OAUTH_URL/authorize?client_id=$clientId&scope=gist';
+    final url =
+        '$OAUTH_URL/authorize?client_id=$clientId&scope=gist,public_repo';
     // Open URL in browser
     // window.open(url, '_blank');
     final controller = WebViewController()

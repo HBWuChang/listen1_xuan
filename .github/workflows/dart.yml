@@ -35,13 +35,22 @@ jobs:
       - name: Add namespace to install_plugin build.gradle
         run: sed -i "/android {/a\\    namespace 'com.xiebian.listen1_xuan'" /home/runner/.pub-cache/hosted/pub.dev/install_plugin-2.1.0/android/build.gradle
 
-      - name: change install_plugin build.gradle
+      - name: Remove original defaultConfig in install_plugin build.gradle
+        run: sed -i '/defaultConfig {/,/}/d' /home/runner/.pub-cache/hosted/pub.dev/install_plugin-2.1.0/android/build.gradle
+      - name: Add new defaultConfig in install_plugin build.gradle
         run: |
-          sed -i '/defaultConfig {/a\\        targetSdkVersion 28' /home/runner/.pub-cache/hosted/pub.dev/install_plugin-2.1.0/android/build.gradle
-          sed -i '/defaultConfig {/a\\        compileOptions {\\n            sourceCompatibility JavaVersion.VERSION_17\\n            targetCompatibility JavaVersion.VERSION_17\\n        }' /home/runner/.pub-cache/hosted/pub.dev/install_plugin-2.1.0/android/build.gradle
-          sed -i '/defaultConfig {/a\\        kotlinOptions {\\n            jvmTarget = "17"\\n        }' /home/runner/.pub-cache/hosted/pub.dev/install_plugin-2.1.0/android/build.gradle
-
-
+          sed -i '/android {/a\
+          defaultConfig {\
+              minSdkVersion 16\
+              targetSdkVersion 28\
+              compileOptions {\
+                  sourceCompatibility JavaVersion.VERSION_17\
+                  targetCompatibility JavaVersion.VERSION_17\
+              }\
+              kotlinOptions {\
+                  jvmTarget = "17"\
+              }\
+          }' /home/runner/.pub-cache/hosted/pub.dev/install_plugin-2.1.0/android/build.gradle
       - name: Remove package attribute from install_plugin AndroidManifest.xml
         run: sed -i 's/package="com.example.installplugin"//' /home/runner/.pub-cache/hosted/pub.dev/install_plugin-2.1.0/android/src/main/AndroidManifest.xml
       - name: Check install_plugin AndroidManifest.xml
