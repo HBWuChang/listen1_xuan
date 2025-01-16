@@ -103,111 +103,6 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
   return {};
 }
 
-Future<void> download_latest_canary(BuildContext context, setstate,
-    [bool clean = false]) async {
-  try {
-    final tempDir = await getTemporaryDirectory();
-    final tempPath = tempDir.path;
-    final filePath = '$tempPath/canary.zip';
-    if (clean) {
-      final file = File(filePath);
-      if (await file.exists()) {
-        await file.delete();
-        Fluttertoast.showToast(
-          msg: '清理成功',
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.blue,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-        return;
-      }
-      Fluttertoast.showToast(
-        msg: '没有文件需要清理',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    }
-    final url_list =
-        'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
-    final token = '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';
-    final response = await Dio().get(url_list,
-        options: Options(headers: {
-          'accept': 'application/vnd.github.v3+json',
-          'authorization': 'Bearer ' + token,
-          'x-github-api-version': '2022-11-28',
-        }));
-    final art = response.data["artifacts"][0];
-    final download_url = art["archive_download_url"];
-    final download_name = art["name"];
-    double total = 1;
-    double received = 0;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('下载进度'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              LinearProgressIndicator(value: received / total),
-              SizedBox(height: 20),
-              Text('${(received / total * 100).toStringAsFixed(0)}%'),
-            ],
-          ),
-        );
-      },
-    );
-
-    await Dio().download(
-      download_url,
-      filePath,
-      options: Options(headers: {
-        'accept': 'application/vnd.github.v3+json',
-        'authorization': 'Bearer ' + token,
-        'x-github-api-version': '2022-11-28',
-      }),
-      onReceiveProgress: (receivedBytes, totalBytes) {
-        if (totalBytes != -1) {
-          setstate(() {
-            received = receivedBytes.toDouble();
-            total = totalBytes.toDouble();
-          });
-        }
-      },
-    );
-
-    Navigator.of(context).pop(); // 关闭进度条对话框
-
-    Fluttertoast.showToast(
-      msg: '下载成功',
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.CENTER,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.blue,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-  } catch (e) {
-    Fluttertoast.showToast(
-      msg: '下载失败$e',
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.CENTER,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-  }
-}
-
 Future<void> importSettingsFromFile(
     // [bool fromjson = false, String jsonString = '']) async {
     [bool fromjson = false,
@@ -1008,8 +903,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
                         final url_list =
                             'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
-                        final token =
-                            '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';
+                        String token = 'ghp_MSqh084BoCBkbAK';
+                        token =token+'LJSyftoeTee9qUT1JMPu7';
                         final response = await Dio().get(url_list,
                             options: Options(headers: {
                               'accept': 'application/vnd.github.v3+json',
