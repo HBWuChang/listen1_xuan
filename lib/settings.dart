@@ -20,6 +20,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'qq.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:dio/dio.dart';
+import 'dart:async';
+import 'package:archive/archive.dart';
+import 'package:install_plugin/install_plugin.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
 Future<Map<String, dynamic>> outputAllSettingsToFile(
@@ -98,6 +101,111 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
     );
   }
   return {};
+}
+
+Future<void> download_latest_canary(BuildContext context, setstate,
+    [bool clean = false]) async {
+  try {
+    final tempDir = await getTemporaryDirectory();
+    final tempPath = tempDir.path;
+    final filePath = '$tempPath/canary.zip';
+    if (clean) {
+      final file = File(filePath);
+      if (await file.exists()) {
+        await file.delete();
+        Fluttertoast.showToast(
+          msg: '清理成功',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+        return;
+      }
+      Fluttertoast.showToast(
+        msg: '没有文件需要清理',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
+    final url_list =
+        'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
+    final token = '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';
+    final response = await Dio().get(url_list,
+        options: Options(headers: {
+          'accept': 'application/vnd.github.v3+json',
+          'authorization': 'Bearer ' + token,
+          'x-github-api-version': '2022-11-28',
+        }));
+    final art = response.data["artifacts"][0];
+    final download_url = art["archive_download_url"];
+    final download_name = art["name"];
+    double total = 1;
+    double received = 0;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('下载进度'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LinearProgressIndicator(value: received / total),
+              SizedBox(height: 20),
+              Text('${(received / total * 100).toStringAsFixed(0)}%'),
+            ],
+          ),
+        );
+      },
+    );
+
+    await Dio().download(
+      download_url,
+      filePath,
+      options: Options(headers: {
+        'accept': 'application/vnd.github.v3+json',
+        'authorization': 'Bearer ' + token,
+        'x-github-api-version': '2022-11-28',
+      }),
+      onReceiveProgress: (receivedBytes, totalBytes) {
+        if (totalBytes != -1) {
+          setstate(() {
+            received = receivedBytes.toDouble();
+            total = totalBytes.toDouble();
+          });
+        }
+      },
+    );
+
+    Navigator.of(context).pop(); // 关闭进度条对话框
+
+    Fluttertoast.showToast(
+      msg: '下载成功',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.blue,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  } catch (e) {
+    Fluttertoast.showToast(
+      msg: '下载失败$e',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
 }
 
 Future<void> importSettingsFromFile(
@@ -519,7 +627,6 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            const SizedBox(height: 50),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
@@ -653,184 +760,84 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: () => outputAllSettingsToFile(),
-                  child: const Text('保存配置到文件'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (Github.status != 2) {
-                      _msg('请先登录Github', 1.0);
-                      return;
-                    }
-                    var playlists = await Github.listExistBackup();
-                    print(playlists);
+            Wrap(
+                alignment: WrapAlignment.spaceAround,
+                direction: Axis.horizontal,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => outputAllSettingsToFile(),
+                    child: const Text('保存配置到文件'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (Github.status != 2) {
+                        _msg('请先登录Github', 1.0);
+                        return;
+                      }
+                      var playlists = await Github.listExistBackup();
+                      print(playlists);
 
-                    try {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text('导出到Github Gist'),
-                            content: Container(
-                              width: double.maxFinite,
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                itemCount: playlists.length,
-                                itemBuilder: (BuildContext context, int index) {
-                                  final playlist = playlists[index];
-                                  return ListTile(
-                                    title: Text(playlist['id']),
-                                    subtitle: Text(playlist['description']),
-                                    onTap: () async {
-                                      try {
-                                        Fluttertoast.showToast(
-                                          msg: '正在导出',
-                                        );
-                                        final settings =
-                                            await outputAllSettingsToFile(true);
-                                        final jsfile =
-                                            Github.json2gist(settings);
-                                        await Github.backupMySettings2Gist(
-                                          jsfile,
-                                          playlist['id'],
-                                          playlist['public'],
-                                        );
-                                        Fluttertoast.showToast(
-                                          msg: '导出成功',
-                                        );
-                                        Navigator.of(context).pop();
-                                      } catch (e) {
-                                        Fluttertoast.showToast(
-                                          msg: '导出失败$e',
-                                        );
-                                      }
-                                    },
-                                  );
-                                },
+                      try {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text('导出到Github Gist'),
+                              content: Container(
+                                width: double.maxFinite,
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: playlists.length,
+                                  itemBuilder:
+                                      (BuildContext context, int index) {
+                                    final playlist = playlists[index];
+                                    return ListTile(
+                                      title: Text(playlist['id']),
+                                      subtitle: Text(playlist['description']),
+                                      onTap: () async {
+                                        try {
+                                          Fluttertoast.showToast(
+                                            msg: '正在导出',
+                                          );
+                                          final settings =
+                                              await outputAllSettingsToFile(
+                                                  true);
+                                          final jsfile =
+                                              Github.json2gist(settings);
+                                          await Github.backupMySettings2Gist(
+                                            jsfile,
+                                            playlist['id'],
+                                            playlist['public'],
+                                          );
+                                          Fluttertoast.showToast(
+                                            msg: '导出成功',
+                                          );
+                                          Navigator.of(context).pop();
+                                        } catch (e) {
+                                          Fluttertoast.showToast(
+                                            msg: '导出失败$e',
+                                          );
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () async {
-                                  try {
-                                    Fluttertoast.showToast(
-                                      msg: '正在导出',
-                                    );
-                                    final settings =
-                                        await outputAllSettingsToFile(true);
-                                    final jsfile = Github.json2gist(settings);
-                                    await Github.backupMySettings2Gist(
-                                      jsfile,
-                                      null,
-                                      true,
-                                    );
-                                    Fluttertoast.showToast(
-                                      msg: '导出成功',
-                                    );
-                                    Navigator.of(context).pop();
-                                  } catch (e) {
-                                    Fluttertoast.showToast(
-                                      msg: '导出失败$e',
-                                    );
-                                  }
-                                },
-                                child: Text('创建公开备份'),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  try {
-                                    Fluttertoast.showToast(
-                                      msg: '正在导出',
-                                    );
-                                    final settings =
-                                        await outputAllSettingsToFile(true);
-                                    final jsfile = Github.json2gist(settings);
-                                    await Github.backupMySettings2Gist(
-                                      jsfile,
-                                      null,
-                                      false,
-                                    );
-                                    Fluttertoast.showToast(
-                                      msg: '导出成功',
-                                    );
-                                    Navigator.of(context).pop();
-                                  } catch (e) {
-                                    Fluttertoast.showToast(
-                                      msg: '导出失败$e',
-                                    );
-                                  }
-                                },
-                                child: Text('创建私有备份'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: Text('取消'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    } catch (e) {
-                      // print(e);
-                      Fluttertoast.showToast(
-                        msg: '添加失败${e}',
-                      );
-                    }
-                  },
-                  child: const Text('备份配置到Gist'),
-                ),
-              ],
-            ),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-              ElevatedButton(
-                onPressed: () => importSettingsFromFile(),
-                child: const Text('从文件导入配置'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (Github.status != 2) {
-                    _msg('请先登录Github', 1.0);
-                    return;
-                  }
-                  var playlists = await Github.listExistBackup();
-                  print(playlists);
-
-                  try {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text('从Github Gist导入'),
-                          content: Container(
-                            width: double.maxFinite,
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: playlists.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                final playlist = playlists[index];
-                                return ListTile(
-                                  title: Text(playlist['id']),
-                                  subtitle: Text(playlist['description']),
-                                  onTap: () async {
+                              actions: [
+                                TextButton(
+                                  onPressed: () async {
                                     try {
                                       Fluttertoast.showToast(
-                                        msg: '正在导入',
-                                      );
-
-                                      final jsfile =
-                                          await Github.importMySettingsFromGist(
-                                        playlist['id'],
+                                        msg: '正在导出',
                                       );
                                       final settings =
-                                          await Github.gist2json(jsfile);
-                                      await importSettingsFromFile(
-                                          true, settings);
+                                          await outputAllSettingsToFile(true);
+                                      final jsfile = Github.json2gist(settings);
+                                      await Github.backupMySettings2Gist(
+                                        jsfile,
+                                        null,
+                                        true,
+                                      );
                                       Fluttertoast.showToast(
                                         msg: '导出成功',
                                       );
@@ -841,39 +848,329 @@ class _SettingsPageState extends State<SettingsPage> {
                                       );
                                     }
                                   },
-                                );
-                              },
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: Text('取消'),
-                            ),
-                          ],
+                                  child: Text('创建公开备份'),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    try {
+                                      Fluttertoast.showToast(
+                                        msg: '正在导出',
+                                      );
+                                      final settings =
+                                          await outputAllSettingsToFile(true);
+                                      final jsfile = Github.json2gist(settings);
+                                      await Github.backupMySettings2Gist(
+                                        jsfile,
+                                        null,
+                                        false,
+                                      );
+                                      Fluttertoast.showToast(
+                                        msg: '导出成功',
+                                      );
+                                      Navigator.of(context).pop();
+                                    } catch (e) {
+                                      Fluttertoast.showToast(
+                                        msg: '导出失败$e',
+                                      );
+                                    }
+                                  },
+                                  child: Text('创建私有备份'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('取消'),
+                                ),
+                              ],
+                            );
+                          },
                         );
-                      },
-                    );
-                  } catch (e) {
-                    // print(e);
-                    Fluttertoast.showToast(
-                      msg: '添加失败${e}',
-                    );
-                  }
-                },
-                child: const Text('从Gist导入配置'),
-              ),
-            ]),
-            ElevatedButton(
-              onPressed: () => clean_local_cache(),
-              child: const Text('清除未在配置文件中的歌曲缓存'),
-            ),
-            ElevatedButton(
-              onPressed: () => clean_local_cache(true),
-              child: const Text('清除所有歌曲缓存'),
-            ),
+                      } catch (e) {
+                        // print(e);
+                        Fluttertoast.showToast(
+                          msg: '添加失败${e}',
+                        );
+                      }
+                    },
+                    child: const Text('备份配置到Gist'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => importSettingsFromFile(),
+                    child: const Text('从文件导入配置'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (Github.status != 2) {
+                        _msg('请先登录Github', 1.0);
+                        return;
+                      }
+                      var playlists = await Github.listExistBackup();
+                      print(playlists);
+
+                      try {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text('从Github Gist导入'),
+                              content: Container(
+                                width: double.maxFinite,
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: playlists.length,
+                                  itemBuilder:
+                                      (BuildContext context, int index) {
+                                    final playlist = playlists[index];
+                                    return ListTile(
+                                      title: Text(playlist['id']),
+                                      subtitle: Text(playlist['description']),
+                                      onTap: () async {
+                                        try {
+                                          Fluttertoast.showToast(
+                                            msg: '正在导入',
+                                          );
+
+                                          final jsfile = await Github
+                                              .importMySettingsFromGist(
+                                            playlist['id'],
+                                          );
+                                          final settings =
+                                              await Github.gist2json(jsfile);
+                                          await importSettingsFromFile(
+                                              true, settings);
+                                          Fluttertoast.showToast(
+                                            msg: '导出成功',
+                                          );
+                                          Navigator.of(context).pop();
+                                        } catch (e) {
+                                          Fluttertoast.showToast(
+                                            msg: '导出失败$e',
+                                          );
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('取消'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      } catch (e) {
+                        // print(e);
+                        Fluttertoast.showToast(
+                          msg: '添加失败${e}',
+                        );
+                      }
+                    },
+                    child: const Text('从Gist导入配置'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        final tempDir = await getTemporaryDirectory();
+                        final tempPath = tempDir.path;
+                        final apkFile = File('$tempPath/app-release.apk');
+                        if (await apkFile.exists()) {
+                          try {
+                            InstallPlugin.installApk(
+                                    '$tempPath/app-release.apk')
+                                .then((result) {
+                              print('install apk $result');
+                            }).catchError((error) {
+                              print('install apk error: $error');
+                            });
+                            return;
+                          } catch (e) {
+                            print('安装APK失败: $e');
+                            return;
+                          }
+                        } else {
+                          Fluttertoast.showToast(
+                            msg: 'APK 文件未找到',
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.CENTER,
+                            timeInSecForIosWeb: 1,
+                            backgroundColor: Colors.red,
+                            textColor: Colors.white,
+                            fontSize: 16.0,
+                          );
+                        }
+                        final filePath = '$tempPath/canary.zip';
+
+                        final url_list =
+                            'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
+                        final token =
+                            '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';
+                        final response = await Dio().get(url_list,
+                            options: Options(headers: {
+                              'accept': 'application/vnd.github.v3+json',
+                              'authorization': 'Bearer ' + token,
+                              'x-github-api-version': '2022-11-28',
+                            }));
+                        final art = response.data["artifacts"][0];
+                        final download_url = art["archive_download_url"];
+                        final download_name = art["name"];
+                        double total = art["size_in_bytes"].toDouble();
+                        double received = 0;
+                        final StreamController<double>
+                            progressStreamController =
+                            StreamController<double>();
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (BuildContext context) {
+                            return PopScope(
+                              canPop: false,
+                              onPopInvokedWithResult: (didPop, result) => {},
+                              child: StatefulBuilder(
+                                builder: (BuildContext context,
+                                    StateSetter setState) {
+                                  return AlertDialog(
+                                    title: Text('下载进度'),
+                                    content: StreamBuilder<double>(
+                                      stream: progressStreamController.stream,
+                                      builder: (context, snapshot) {
+                                        double progress = snapshot.data ?? 0;
+                                        return Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            LinearProgressIndicator(
+                                                value: progress),
+                                            SizedBox(height: 20),
+                                            Text(
+                                                '${(progress * 100).toStringAsFixed(0)}%'),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        );
+                        await Dio().download(
+                          download_url,
+                          filePath,
+                          options: Options(headers: {
+                            'accept': 'application/vnd.github.v3+json',
+                            'authorization': 'Bearer ' + token,
+                            'x-github-api-version': '2022-11-28',
+                          }),
+                          onReceiveProgress: (receivedBytes, totalBytes) {
+                            received = receivedBytes.toDouble();
+                            double progress = received / total;
+                            progressStreamController.add(progress);
+                          },
+                        );
+
+                        Navigator.of(context).pop(); // 关闭进度条对话框
+                        // 解压 ZIP 文件
+                        final bytes = File(filePath).readAsBytesSync();
+                        final archive = ZipDecoder().decodeBytes(bytes);
+
+                        for (final file in archive) {
+                          final filename = file.name;
+                          if (file.isFile) {
+                            final data = file.content as List<int>;
+                            File('$tempPath/$filename')
+                              ..createSync(recursive: true)
+                              ..writeAsBytesSync(data);
+                          } else {
+                            Directory('$filePath/$filename')
+                                .create(recursive: true);
+                          }
+                        }
+                        if (await apkFile.exists()) {
+                          try {
+                            InstallPlugin.installApk(
+                                    '$tempPath/app-release.apk')
+                                .then((result) {
+                              print('install apk $result');
+                            }).catchError((error) {
+                              print('install apk error: $error');
+                            });
+                          } catch (e) {
+                            print('安装APK失败: $e');
+                          }
+                        } else {
+                          Fluttertoast.showToast(
+                            msg: 'APK 文件未找到',
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.CENTER,
+                            timeInSecForIosWeb: 1,
+                            backgroundColor: Colors.red,
+                            textColor: Colors.white,
+                            fontSize: 16.0,
+                          );
+                        }
+                        Fluttertoast.showToast(
+                          msg: '下载成功',
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.CENTER,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.blue,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+                      } catch (e) {
+                        Fluttertoast.showToast(
+                          msg: '下载失败$e',
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.CENTER,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+                      }
+                    },
+                    child: const Text('下载最新测试版'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final tempDir = await getTemporaryDirectory();
+                      final tempPath = tempDir.path;
+                      final filePath = '$tempPath/canary.zip';
+
+                      var file = File(filePath);
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      file = File('$tempPath/app-release.apk');
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      Fluttertoast.showToast(
+                        msg: '清理成功',
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.CENTER,
+                        timeInSecForIosWeb: 1,
+                        backgroundColor: Colors.blue,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                      );
+                    },
+                    child: const Text('清除安装包缓存'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => clean_local_cache(),
+                    child: const Text('清除未在配置文件中的歌曲缓存'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => clean_local_cache(true),
+                    child: const Text('清除所有歌曲缓存'),
+                  ),
+                ]),
             Expanded(
               child: Markdown(
                 data: _readmeContent,
