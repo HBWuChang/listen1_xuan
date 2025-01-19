@@ -872,36 +872,28 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   // @override
   // Future<void> play() => _player.play();
   @override
-  Future<void> play() async {
-    await global_play();
-  }
+  Future<void> play() => global_play();
 
   // @override
   // Future<void> pause() => music_player.pause();
   @override
-  Future<void> pause() async {
-    await global_pause();
-  }
+  Future<void> pause() => global_pause();
 
   @override
-  Future<void> seek(Duration position) async {
-    await global_seek(position);
-  }
+  Future<void> seek(Duration position) => global_seek(position);
+  @override
+  Future<void> skipToPrevious() => global_skipToPrevious();
 
   @override
-  Future<void> skipToPrevious() async {
-    await global_skipToPrevious();
-  }
+  Future<void> skipToNext() => global_skipToNext();
+
+  // @override
+  // Future<void> stop() async {
+  //   await global_change_play_mode();
+  // }
 
   @override
-  Future<void> skipToNext() async {
-    await global_skipToNext();
-  }
-
-  @override
-  Future<void> stop() async {
-    await global_change_play_mode();
-  }
+  Future<void> stop() => global_change_play_mode();
 
   /// Transform a just_audio event into an audio_service state.
   ///
