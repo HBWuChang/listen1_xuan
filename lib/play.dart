@@ -126,7 +126,23 @@ Future<void> set_local_cache(String id, String path) async {
   }
 }
 
-Future<void> clean_local_cache([bool all = false]) async {
+// Future<void> clean_local_cache([bool all = false]) async {
+Future<void> clean_local_cache([bool all = false, String id = '']) async {
+  if (id != '') {
+    String path = await get_local_cache(id);
+    if (path != '') {
+      await File(path).delete();
+      Fluttertoast.showToast(
+        msg: '已清理',
+      );
+      return;
+    }
+    Fluttertoast.showToast(
+      msg: '没有可清理的缓存文件',
+    );
+    return;
+  }
+
   List<String> without = [
     'app.log',
   ];
@@ -134,6 +150,7 @@ Future<void> clean_local_cache([bool all = false]) async {
   final local_cache_list_json = prefs.getString('local-cache-list');
   final tempDir = await getTemporaryDirectory();
   final tempPath = tempDir.path;
+
   // 列出文件夹下的所有文件
   final filesanddirs = Directory(tempPath).listSync();
   List<String> files = [];
@@ -833,7 +850,8 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     mediaItem.add(_item);
 
     // Load the player.
-    music_player.setAudioSource(AudioSource.uri(Uri.parse(_item.id)),preload: false);
+    music_player.setAudioSource(AudioSource.uri(Uri.parse(_item.id)),
+        preload: false);
     music_player.playerStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
         onPlaybackCompleted();

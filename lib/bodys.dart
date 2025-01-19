@@ -83,6 +83,12 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
                     }
                   },
                 ),
+                ListTile(
+                  title: Text('删除本地缓存'),
+                  onTap: () async {
+                    await clean_local_cache(false, track['id']);
+                  },
+                ),
                 if (is_my)
                   ListTile(
                     title: Text('删除歌曲'),
@@ -1042,7 +1048,8 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                   // .jumpTo(_scrollController.offset);
                                   // print(scrollNotification.metrics.pixels);
                                   if (scrollNotification.metrics.pixels <
-                                      _scrollController.position.maxScrollExtent) {
+                                      _scrollController
+                                          .position.maxScrollExtent) {
                                     _scrollController.jumpTo(
                                         scrollNotification.metrics.pixels);
                                   }
