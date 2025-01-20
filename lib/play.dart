@@ -336,7 +336,8 @@ Future<void> change_playback_state(dynamic track) async {
   }
 }
 
-Future<void> playsong(Map<String, dynamic> track) async {
+// Future<void> playsong(Map<String, dynamic> track) async {
+Future<void> playsong(Map<String, dynamic> track, [start = true]) async {
   try {
     await set_player_settings("nowplaying_track_id", track['id']);
     await add_current_playing([track]);
@@ -358,8 +359,10 @@ Future<void> playsong(Map<String, dynamic> track) async {
       await set_player_settings("volume", t_volume);
     }
     music_player.setVolume(t_volume / 100);
-    music_player.play();
-    change_playback_state(track);
+    if (start) {
+      music_player.play();
+    }
+    await change_playback_state(track);
   } catch (e, stackTrace) {
     playlogger.e('播放失败!!!!');
     playlogger.e(e);
@@ -450,6 +453,15 @@ Future<void> playerFailCallback() async {
   onPlaybackCompleted(true);
 }
 
+Future<void> fresh_playmode() async {
+  try {
+    playmode = await get_player_settings("playmode");
+  } catch (e) {
+    playmode = 0;
+    await set_player_settings("playmode", playmode);
+  }
+}
+
 Future<void> setNotification() async {
   print('setNotification');
   // print(_audioHandler);
@@ -472,14 +484,10 @@ Future<void> setNotification() async {
       cacheManager: null,
     );
   }
-}
-
-Future<void> fresh_playmode() async {
-  try {
-    playmode = await get_player_settings("playmode");
-  } catch (e) {
-    playmode = 0;
-    await set_player_settings("playmode", playmode);
+  await fresh_playmode();
+  final track = await getnowplayingsong();
+  if (track['index'] != -1) {
+    await playsong(track['track'], false);
   }
 }
 
@@ -755,24 +763,7 @@ class MediaState {
 }
 
 Future<void> global_play() async {
-  final currentMediaItem = await _audioHandler.mediaItem.value;
-  if (currentMediaItem != null) {
-    final title = currentMediaItem.title;
-    print('Playing: $title');
-    if (title == 'test') {
-      await fresh_playmode();
-      final track = await getnowplayingsong();
-      if (track['index'] != -1) {
-        await playsong(track['track']);
-      } else {
-        music_player.play();
-      }
-    } else {
-      music_player.play();
-    }
-  } else {
-    music_player.play();
-  }
+  music_player.play();
 }
 
 Future<void> global_pause() async {
