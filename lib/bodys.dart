@@ -701,7 +701,9 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
 
   void deltrack(Map<String, dynamic> track) {
     setState(() {
-      tracks.remove(track);
+      // tracks.remove(track);
+      _unfilteredTracks.remove(track);
+      _filterTracks();
     });
   }
 
@@ -723,6 +725,12 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
     if (!widget.is_my) {
       Fluttertoast.showToast(
         msg: '只有自己创建的歌单才能排序',
+      );
+      return;
+    }
+    if (_searchController.text.toLowerCase().isNotEmpty) {
+      Fluttertoast.showToast(
+        msg: '搜索状态下无法排序',
       );
       return;
     }

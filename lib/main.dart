@@ -34,7 +34,6 @@ class MyApp extends StatelessWidget {
       supportedLocales: [
         const Locale('zh', 'CN'), // 中文简体
         // 其他支持的语言
-        
       ],
       locale: const Locale('zh', 'CN'), // 设置默认语言为中文
       home: MyHomePage(),
@@ -210,7 +209,8 @@ class _MyHomePageState extends State<MyHomePage>
               if (!didPop)
                 {
                   change_main_status(""),
-                }
+                  if (_isSearchActive) {_onSearchBackTapped()}
+                },
             },
         child: Scaffold(
           appBar: _Mainpage
