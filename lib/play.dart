@@ -483,11 +483,11 @@ Future<void> setNotification() async {
       ),
       cacheManager: null,
     );
-  }
-  await fresh_playmode();
-  final track = await getnowplayingsong();
-  if (track['index'] != -1) {
-    await playsong(track['track'], false);
+    await fresh_playmode();
+    final track = await getnowplayingsong();
+    if (track['index'] != -1) {
+      await playsong(track['track'], false);
+    }
   }
 }
 
