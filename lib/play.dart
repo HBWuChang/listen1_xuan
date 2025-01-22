@@ -19,6 +19,7 @@ import 'myplaylist.dart';
 import 'package:vibration/vibration.dart';
 import 'package:logger/logger.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:math';
 
 class FileLogOutput extends LogOutput {
   final File file;
@@ -66,10 +67,12 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
             : await playsong(current_playing[0]);
         break;
       case 1:
-        final randomIndex = (current_playing.length *
-                (DateTime.now().millisecondsSinceEpoch % 1000) /
-                1000)
-            .floor();
+        // final randomIndex = (current_playing.length *
+        //         (DateTime.now().millisecondsSinceEpoch % 1000) /
+        //         1000)
+        //     .floor();
+        final random = Random();
+        final randomIndex = random.nextInt(current_playing.length);
         // if (randommodetemplist.contains(current_playing[index])) {
         //   randommodetemplist.remove(current_playing[index]);
         // }

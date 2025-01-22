@@ -9,6 +9,31 @@ import 'loweb.dart';
 import 'bodys.dart';
 import 'play.dart';
 import 'dart:async';
+import 'dart:isolate';
+import 'package:flutter_isolate/flutter_isolate.dart';
+
+late SendPort download_sendport;
+var download_receiveport = ReceivePort();
+
+@pragma('vm:entry-point')
+void downloadtasks_background(SendPort mainPort) async {
+  Future get_download_tasks() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> download_tasks = prefs.getStringList("download_tasks") ?? [];
+    return download_tasks;
+  }
+
+  final receivePort = ReceivePort();
+  mainPort.send(receivePort.sendPort);
+  for (var i = 0; i < 20; i++) {
+    print("background");
+  }
+  receivePort.listen((message) async {
+    if (message == "get_download_tasks") {
+      List<String> download_tasks = await get_download_tasks();
+    }
+  });
+}
 
 void main() {
   runApp(MyApp());
@@ -68,6 +93,14 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void initState() {
     super.initState();
+    download_receiveport.listen((message) {
+      if (message is SendPort) {
+        print('download_sendport初始化');
+        download_sendport = message;
+      }
+    });
+    FlutterIsolate.spawn(
+        downloadtasks_background, download_receiveport.sendPort);
     _focusNode.addListener(() {
       if (_focusNode.hasFocus) {
         setState(() {
@@ -248,6 +281,7 @@ class _MyHomePageState extends State<MyHomePage>
                                 icon: Icon(Icons.settings),
                                 onPressed: () {
                                   // Navigate to settings
+                                  // download_sendport.send("get_download_tasks");
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(builder: (context) {
