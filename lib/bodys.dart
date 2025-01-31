@@ -668,6 +668,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
   bool _loadfailed = false;
   bool _is_fav = false;
   TextEditingController _searchController = TextEditingController();
+  double lastmove = 0;
   List<Map<String, dynamic>> _unfilteredTracks = [];
   List<Map<String, dynamic>> tracks = [];
   Map<String, dynamic> result = {};
@@ -1055,12 +1056,24 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                   // print(_scrollController.offset);
                                   // .jumpTo(_scrollController.offset);
                                   // print(scrollNotification.metrics.pixels);
-                                  if (scrollNotification.metrics.pixels <
-                                      _scrollController
-                                          .position.maxScrollExtent) {
-                                    _scrollController.jumpTo(
-                                        scrollNotification.metrics.pixels);
+                                  // if (scrollNotification.metrics.pixels <
+                                  //     _scrollController
+                                  //         .position.maxScrollExtent) {
+                                  //   _scrollController.jumpTo(
+                                  //       scrollNotification.metrics.pixels);
+                                  // }
+
+                                  final move = scrollNotification.metrics.pixels- lastmove;
+                                  if (move > 0) {
+                                    if(_scrollController.position.maxScrollExtent != _scrollController.offset){
+                                      _scrollController.jumpTo((_scrollController.offset + move)>_scrollController.position.maxScrollExtent?_scrollController.position.maxScrollExtent:(_scrollController.offset + move));
+                                    }
+                                  } else {
+                                    if(_scrollController.offset != 0){
+                                      _scrollController.jumpTo((_scrollController.offset + move)<0?0:(_scrollController.offset + move));
+                                    }
                                   }
+                                  lastmove = scrollNotification.metrics.pixels;
                                   return true;
                                 }
                                 return false;
