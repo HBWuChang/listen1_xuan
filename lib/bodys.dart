@@ -1052,17 +1052,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                         is ScrollEndNotification) {
                                   // 处理滚动事件
                                   // 传递给CustomScrollView
-                                  // print(_scrollController.position.maxScrollExtent);
-                                  // print(_scrollController.offset);
-                                  // .jumpTo(_scrollController.offset);
-                                  // print(scrollNotification.metrics.pixels);
-                                  // if (scrollNotification.metrics.pixels <
-                                  //     _scrollController
-                                  //         .position.maxScrollExtent) {
-                                  //   _scrollController.jumpTo(
-                                  //       scrollNotification.metrics.pixels);
-                                  // }
-
+                                  
                                   final move = scrollNotification.metrics.pixels- lastmove;
                                   if (move > 0) {
                                     if(_scrollController.position.maxScrollExtent != _scrollController.offset){
