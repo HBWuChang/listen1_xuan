@@ -201,7 +201,7 @@ Future<void> setSaveCookie({
   required List<Cookie> cookies,
 }) async {
   //Save cookies
-  final tempDir = await getApplicationDocumentsDirectory();
+  final tempDir = await getApplicationDocumentsDirectory ();
   final tempPath = tempDir.path;
   await PersistCookieJar(
     ignoreExpires: true,
@@ -871,7 +871,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ElevatedButton(
                     onPressed: () async {
                       try {
-                        final tempDir = await getApplicationDocumentsDirectory();
+                        final tempDir = await getApplicationDocumentsDirectory ();
                         final tempPath = tempDir.path;
                         final apkFile = File('$tempPath/app-release.apk');
                         if (await apkFile.exists()) {
@@ -1035,7 +1035,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   ElevatedButton(
                     onPressed: () async {
-                      final tempDir = await getApplicationDocumentsDirectory();
+                      final tempDir = await getApplicationDocumentsDirectory ();
                       final tempPath = tempDir.path;
                       final filePath = '$tempPath/canary.zip';
 
