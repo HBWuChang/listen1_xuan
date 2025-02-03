@@ -151,7 +151,7 @@ Future<void> clean_local_cache([bool all = false, String id = '']) async {
   ];
   final prefs = await SharedPreferences.getInstance();
   final local_cache_list_json = prefs.getString('local-cache-list');
-  final tempDir = await https://blog.csdn.net/xiaolaohuqwer/article/details/117953610#:~:text=%E4%B8%B4%E6%97%B6%E7%9B%AE%E5%BD%95%3A%20%E5%8F%AF%E4%BB%A5%E4%BD%BF%E7%94%A8%20getTemporaryDirectory%28%29%20%E6%9D%A5%E8%8E%B7%E5%8F%96%E4%B8%B4%E6%97%B6%E7%9B%AE%E5%BD%95%EF%BC%9B%20%E7%B3%BB%E7%BB%9F%E5%8F%AF%E9%9A%8F%E6%97%B6%E6%B8%85%E9%99%A4%E7%9A%84%E4%B8%B4%E6%97%B6%E7%9B%AE%E5%BD%95%EF%BC%88%E7%BC%93%E5%AD%98%EF%BC%89%E3%80%82,%E5%9C%A8iOS%E4%B8%8A%EF%BC%8C%E8%BF%99%E5%AF%B9%E5%BA%94%E4%BA%8ENSTemporaryDirectory%28%29%20%E8%BF%94%E5%9B%9E%E7%9A%84%E5%80%BC%E3%80%82%20%E5%9C%A8Android%E4%B8%8A%EF%BC%8C%E8%BF%99%E6%98%AFgetCacheDir%28%29%E8%BF%94%E5%9B%9E%E7%9A%84%E5%80%BC%E3%80%82%20%E8%AF%A5%E7%9B%AE%E5%BD%95%E7%94%A8%E4%BA%8E%E5%AD%98%E5%82%A8%E5%8F%AA%E6%9C%89%E8%87%AA%E5%B7%B1%E5%8F%AF%E4%BB%A5%E8%AE%BF%E9%97%AE%E7%9A%84%E6%96%87%E4%BB%B6%E3%80%82%20%E5%8F%AA%E6%9C%89%E5%BD%93%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E8%A2%AB%E5%8D%B8%E8%BD%BD%E6%97%B6%EF%BC%8C%E7%B3%BB%E7%BB%9F%E6%89%8D%E4%BC%9A%E6%B8%85%E9%99%A4%E8%AF%A5%E7%9B%AE%E5%BD%95%E3%80%82();
+  final tempDir = await getApplicationDocumentsDirectory();
   final tempPath = tempDir.path;
 
   // 列出文件夹下的所有文件
