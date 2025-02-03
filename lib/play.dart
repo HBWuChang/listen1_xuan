@@ -106,7 +106,7 @@ Future<String> get_local_cache(String id) async {
   if (local_cache_list_json != null) {
     final local_cache_list = jsonDecode(local_cache_list_json);
     if (local_cache_list[id] != null) {
-      final tempDir = await getTemporaryDirectory();
+      final tempDir = await getApplicationDocumentsDirectory ();
       final tempPath = tempDir.path;
       final filePath = '$tempPath/${local_cache_list[id]}';
       if (await File(filePath).exists()) return filePath;
@@ -151,7 +151,7 @@ Future<void> clean_local_cache([bool all = false, String id = '']) async {
   ];
   final prefs = await SharedPreferences.getInstance();
   final local_cache_list_json = prefs.getString('local-cache-list');
-  final tempDir = await getTemporaryDirectory();
+  final tempDir = await getApplicationDocumentsDirectory();
   final tempPath = tempDir.path;
 
   // 列出文件夹下的所有文件
@@ -381,7 +381,7 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
   playlogger.d(res);
   playlogger.d(track);
   try {
-    final tempDir = await getTemporaryDirectory();
+    final tempDir = await getApplicationDocumentsDirectory ();
     final tempPath = tempDir.path;
     final _local_cache = await get_local_cache(track['id']);
     if (_local_cache == '') {

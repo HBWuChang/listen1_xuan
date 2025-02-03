@@ -25,7 +25,7 @@ class QQ {
 
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
     final dio = Dio();
-    // final tempDir = await getTemporaryDirectory();
+    // final tempDir = await getApplicationDocumentsDirectory ();
     // final tempPath = tempDir.path;
     // dio.interceptors.add(CookieManager(PersistCookieJar(
     //   ignoreExpires: true,
@@ -64,7 +64,7 @@ class QQ {
     print("dio_post_with_cookie_and_csrf");
     try {
       final dio = Dio();
-      final tempDir = await getTemporaryDirectory();
+      final tempDir = await getApplicationDocumentsDirectory ();
       final tempPath = tempDir.path;
       dio.interceptors.add(CookieManager(PersistCookieJar(
         ignoreExpires: true,

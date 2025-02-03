@@ -94,7 +94,7 @@ class Netease {
         url = url + '?csrf_token=$_csrf';
       }
       final dio = Dio();
-      final tempDir = await getTemporaryDirectory();
+      final tempDir = await getApplicationDocumentsDirectory ();
       final tempPath = tempDir.path;
       dio.interceptors.add(CookieManager(PersistCookieJar(
         ignoreExpires: true,
