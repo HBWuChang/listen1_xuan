@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -15,12 +17,35 @@ import 'package:flutter_isolate/flutter_isolate.dart';
 late SendPort download_sendport;
 var download_receiveport = ReceivePort();
 
+Future<bool> add_to_download_tasks(List<String> download_tasks) async {
+  try {
+    download_sendport.send(download_tasks);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 @pragma('vm:entry-point')
 void downloadtasks_background(SendPort mainPort) async {
   Future get_download_tasks() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> download_tasks = prefs.getStringList("download_tasks") ?? [];
+    Map<String, dynamic> download_tasks =
+        jsonDecode(prefs.getString("download_tasks") ?? "{}");
+    if (download_tasks.isEmpty) {
+      return {
+        "waiting": [],
+        "downloading": [],
+        "downloaded": [],
+        "failed": [],
+      };
+    }
     return download_tasks;
+  }
+
+  Future set_download_tasks(Map<String, dynamic> download_tasks) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString("download_tasks", jsonEncode(download_tasks));
   }
 
   final receivePort = ReceivePort();
@@ -29,8 +54,30 @@ void downloadtasks_background(SendPort mainPort) async {
     print("background");
   }
   receivePort.listen((message) async {
+    print("background receive: $message");
     if (message == "get_download_tasks") {
-      List<String> download_tasks = await get_download_tasks();
+      Map<String, dynamic> download_tasks = await get_download_tasks();
+    }
+    // 若为List<String>
+    if (message is List<String>) {
+      Map<String, dynamic> download_tasks = await get_download_tasks();
+      for (var item in message) {
+        if (download_tasks["waiting"].contains(item) ||
+            download_tasks["downloading"].contains(item) ||
+            download_tasks["downloaded"].contains(item) ) {
+          continue;
+        }
+        if (download_tasks["failed"].contains(item)) {
+          download_tasks["failed"].remove(item);
+        }
+        if (await get_local_cache(item) != '') {
+          download_tasks["downloaded"].add(item);
+          await set_download_tasks(download_tasks);
+          continue;
+        }
+        download_tasks["waiting"].add(item);
+        await set_download_tasks(download_tasks);
+      }
     }
   });
 }

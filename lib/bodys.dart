@@ -1,5 +1,5 @@
 import 'dart:math';
-
+import 'main.dart';
 import 'package:flutter/material.dart';
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/qq.dart';
@@ -79,6 +79,21 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
                       myplaylist.Add_to_my_playlist(
                         context,
                         [track],
+                      );
+                    }
+                  },
+                ),
+                ListTile(
+                  title: Text('添加到下载队列'),
+                  onTap: () async {
+                    final ok= await add_to_download_tasks([track['id']]);
+                    if(ok){
+                      Fluttertoast.showToast(
+                        msg: '已添加到下载队列',
+                      );
+                    }else{
+                      Fluttertoast.showToast(
+                        msg: '添加失败',
                       );
                     }
                   },
@@ -1052,15 +1067,30 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                         is ScrollEndNotification) {
                                   // 处理滚动事件
                                   // 传递给CustomScrollView
-                                  
-                                  final move = scrollNotification.metrics.pixels- lastmove;
+
+                                  final move =
+                                      scrollNotification.metrics.pixels -
+                                          lastmove;
                                   if (move > 0) {
-                                    if(_scrollController.position.maxScrollExtent != _scrollController.offset){
-                                      _scrollController.jumpTo((_scrollController.offset + move)>_scrollController.position.maxScrollExtent?_scrollController.position.maxScrollExtent:(_scrollController.offset + move));
+                                    if (_scrollController
+                                            .position.maxScrollExtent !=
+                                        _scrollController.offset) {
+                                      _scrollController.jumpTo(
+                                          (_scrollController.offset + move) >
+                                                  _scrollController
+                                                      .position.maxScrollExtent
+                                              ? _scrollController
+                                                  .position.maxScrollExtent
+                                              : (_scrollController.offset +
+                                                  move));
                                     }
                                   } else {
-                                    if(_scrollController.offset != 0){
-                                      _scrollController.jumpTo((_scrollController.offset + move)<0?0:(_scrollController.offset + move));
+                                    if (_scrollController.offset != 0) {
+                                      _scrollController.jumpTo(
+                                          (_scrollController.offset + move) < 0
+                                              ? 0
+                                              : (_scrollController.offset +
+                                                  move));
                                     }
                                   }
                                   lastmove = scrollNotification.metrics.pixels;
