@@ -106,7 +106,7 @@ Future<String> get_local_cache(String id) async {
   if (local_cache_list_json != null) {
     final local_cache_list = jsonDecode(local_cache_list_json);
     if (local_cache_list[id] != null) {
-      final tempDir = await getApplicationDocumentsDirectory ();
+      final tempDir = await getApplicationDocumentsDirectory();
       final tempPath = tempDir.path;
       final filePath = '$tempPath/${local_cache_list[id]}';
       if (await File(filePath).exists()) return filePath;
@@ -381,7 +381,7 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
   playlogger.d(res);
   playlogger.d(track);
   try {
-    final tempDir = await getApplicationDocumentsDirectory ();
+    final tempDir = await getApplicationDocumentsDirectory();
     final tempPath = tempDir.path;
     final _local_cache = await get_local_cache(track['id']);
     if (_local_cache == '') {
@@ -729,8 +729,22 @@ class _PlayState extends State<Play> {
                             height: 50,
                             child: Center(
                               child: playing
-                                  ? _button(Icons.pause, global_pause)
-                                  : _button(Icons.play_arrow, global_play),
+                                  // ? _button(Icons.pause, global_pause)
+                                  // : _button(Icons.play_arrow, global_play),
+                                  ? _button(Icons.pause, () {
+                                      if (music_player.playing) {
+                                        global_pause();
+                                      } else {
+                                        global_play();
+                                      }
+                                    })
+                                  : _button(Icons.play_arrow, () {
+                                      if (music_player.playing) {
+                                        global_pause();
+                                      } else {
+                                        global_play();
+                                      }
+                                    }),
                             ),
                           )
                         ],
