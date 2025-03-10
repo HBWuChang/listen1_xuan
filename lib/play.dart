@@ -467,7 +467,6 @@ Future<void> fresh_playmode() async {
 
 Future<void> setNotification() async {
   print('setNotification');
-  // print(_audioHandler);
   if (Platform.isWindows) {
     // Windows-specific code
   } else {
