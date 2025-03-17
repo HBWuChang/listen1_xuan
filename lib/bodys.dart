@@ -86,12 +86,12 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
                 ListTile(
                   title: Text('添加到下载队列'),
                   onTap: () async {
-                    final ok= await add_to_download_tasks([track['id']]);
-                    if(ok){
+                    final ok = await add_to_download_tasks([track['id']]);
+                    if (ok) {
                       Fluttertoast.showToast(
                         msg: '已添加到下载队列',
                       );
-                    }else{
+                    } else {
                       Fluttertoast.showToast(
                         msg: '添加失败',
                       );
@@ -1058,80 +1058,88 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                           SliverFillRemaining(
                             hasScrollBody: true,
                             child: NotificationListener<ScrollNotification>(
-                              onNotification: (scrollNotification) {
-                                if (scrollNotification
-                                        is ScrollStartNotification ||
-                                    scrollNotification
-                                        is ScrollUpdateNotification ||
-                                    scrollNotification
-                                        is ScrollEndNotification) {
-                                  // 处理滚动事件
-                                  // 传递给CustomScrollView
+                                onNotification: (scrollNotification) {
+                                  if (scrollNotification
+                                          is ScrollStartNotification ||
+                                      scrollNotification
+                                          is ScrollUpdateNotification ||
+                                      scrollNotification
+                                          is ScrollEndNotification) {
+                                    // 处理滚动事件
+                                    // 传递给CustomScrollView
 
-                                  final move =
-                                      scrollNotification.metrics.pixels -
-                                          lastmove;
-                                  if (move > 0) {
-                                    if (_scrollController
-                                            .position.maxScrollExtent !=
-                                        _scrollController.offset) {
-                                      _scrollController.jumpTo(
-                                          (_scrollController.offset + move) >
-                                                  _scrollController
-                                                      .position.maxScrollExtent
-                                              ? _scrollController
-                                                  .position.maxScrollExtent
-                                              : (_scrollController.offset +
-                                                  move));
+                                    final move =
+                                        scrollNotification.metrics.pixels -
+                                            lastmove;
+                                    if (move > 0) {
+                                      if (_scrollController
+                                              .position.maxScrollExtent !=
+                                          _scrollController.offset) {
+                                        _scrollController.jumpTo(
+                                            (_scrollController.offset + move) >
+                                                    _scrollController.position
+                                                        .maxScrollExtent
+                                                ? _scrollController
+                                                    .position.maxScrollExtent
+                                                : (_scrollController.offset +
+                                                    move));
+                                      }
+                                    } else {
+                                      if (_scrollController.offset != 0) {
+                                        _scrollController.jumpTo(
+                                            (_scrollController.offset + move) <
+                                                    0
+                                                ? 0
+                                                : (_scrollController.offset +
+                                                    move));
+                                      }
                                     }
-                                  } else {
-                                    if (_scrollController.offset != 0) {
-                                      _scrollController.jumpTo(
-                                          (_scrollController.offset + move) < 0
-                                              ? 0
-                                              : (_scrollController.offset +
-                                                  move));
-                                    }
+                                    lastmove =
+                                        scrollNotification.metrics.pixels;
+                                    return true;
                                   }
-                                  lastmove = scrollNotification.metrics.pixels;
-                                  return true;
-                                }
-                                return false;
-                              },
-                              child: ReorderableListView(
-                                onReorder: _onReorder,
-                                children: tracks.map((track) {
-                                  return ListTile(
-                                    key: ValueKey(track['id']),
-                                    title: Text(track['title'] ?? '未知标题'),
-                                    subtitle: Text(
-                                        '${track['artist'] ?? '未知艺术家'} - ${track['album'] ?? '未知专辑'}'),
-                                    trailing: IconButton(
-                                      icon: Icon(Icons.more_vert),
-                                      onPressed: () {
-                                        song_dialog(
-                                            context,
+                                  return false;
+                                },
+                                child: Scrollbar(
+                                  thickness: 16.0, // 设置滚动条的厚度
+                                  radius: Radius.circular(4.0), // 设置滚动条的圆角
+                                  interactive: true, // 是否可以和用户交互
+                                  // controller:
+                                      // _scrollController, // 设置滚动条的控制器
+                                  child: ReorderableListView(
+                                    onReorder: _onReorder,
+                                    children: tracks.map((track) {
+                                      return ListTile(
+                                        key: ValueKey(track['id']),
+                                        title: Text(track['title'] ?? '未知标题'),
+                                        subtitle: Text(
+                                            '${track['artist'] ?? '未知艺术家'} - ${track['album'] ?? '未知专辑'}'),
+                                        trailing: IconButton(
+                                          icon: Icon(Icons.more_vert),
+                                          onPressed: () {
+                                            song_dialog(
+                                                context,
+                                                track,
+                                                widget.onPlaylistTap,
+                                                widget.is_my,
+                                                result['info'],
+                                                deltrack);
+                                          },
+                                        ),
+                                        onTap: () {
+                                          Fluttertoast.showToast(
+                                            msg: '尝试播放：${track['title']}',
+                                          );
+                                          MediaService.bootstrapTrack(
                                             track,
-                                            widget.onPlaylistTap,
-                                            widget.is_my,
-                                            result['info'],
-                                            deltrack);
-                                      },
-                                    ),
-                                    onTap: () {
-                                      Fluttertoast.showToast(
-                                        msg: '尝试播放：${track['title']}',
+                                            playerSuccessCallback,
+                                            playerFailCallback,
+                                          );
+                                        },
                                       );
-                                      MediaService.bootstrapTrack(
-                                        track,
-                                        playerSuccessCallback,
-                                        playerFailCallback,
-                                      );
-                                    },
-                                  );
-                                }).toList(),
-                              ),
-                            ),
+                                    }).toList(),
+                                  ),
+                                )),
                           )
                         ],
                       ),
