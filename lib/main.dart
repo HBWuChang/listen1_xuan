@@ -502,11 +502,11 @@ class _MyHomePageState extends State<MyHomePage>
               height: 200,
               width: 40,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface, // 使用当前主题的表面颜色
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black26,
+                    color: const Color.fromARGB(113, 120, 120, 120),
                     blurRadius: 10,
                     offset: Offset(0, 2),
                   ),

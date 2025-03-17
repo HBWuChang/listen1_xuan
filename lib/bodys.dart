@@ -13,6 +13,7 @@ import 'myplaylist.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:async';
 
 Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
     Function? change_main_status,
@@ -687,12 +688,18 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
   List<Map<String, dynamic>> _unfilteredTracks = [];
   List<Map<String, dynamic>> tracks = [];
   Map<String, dynamic> result = {};
+  OverlayEntry? scroll_bar_overlayEntry;
+  bool scroll_bar_Visible = false;
+  double scroll_bar_pos = 0.5;
+  Timer? scroll_bar_timer;
+  StateSetter? scroll_bar_setState; // 添加这个变量
   @override
   void initState() {
     super.initState();
     check_fav();
     _loadData();
     _searchController.addListener(_filterTracks);
+    inner_scrollController.addListener(_onInnerScroll);
   }
 
   void check_fav() async {
@@ -761,13 +768,52 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
     });
   }
 
+  void _onInnerScroll() {
+    if (!scroll_bar_Visible) {
+      _show_scroll_bar(context);
+    }
+    _startAutoCloseTimer();
+    scroll_bar_pos = inner_scrollController.position.pixels /
+        inner_scrollController.position.maxScrollExtent;
+    scroll_bar_pos = scroll_bar_pos > 1 ? 1 : scroll_bar_pos;
+    scroll_bar_pos = scroll_bar_pos < 0 ? 0 : scroll_bar_pos;
+    if (scroll_bar_setState != null && scroll_bar_Visible) {
+      try {
+        scroll_bar_setState!(() {});
+      } catch (e) {
+        scroll_bar_setState = null;
+      }
+    }
+    // 获取滚动信息
+    final move = inner_scrollController.position.pixels - lastmove;
+    if (move > 0) {
+      if (outter_scrollController.position.maxScrollExtent !=
+          outter_scrollController.offset) {
+        outter_scrollController.jumpTo((outter_scrollController.offset + move) >
+                outter_scrollController.position.maxScrollExtent
+            ? outter_scrollController.position.maxScrollExtent
+            : (outter_scrollController.offset + move));
+      }
+    } else {
+      if (outter_scrollController.offset != 0) {
+        outter_scrollController.jumpTo(
+            (outter_scrollController.offset + move) < 0
+                ? 0
+                : (outter_scrollController.offset + move));
+      }
+    }
+    lastmove = inner_scrollController.position.pixels; // 记录当前滚动位置
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    inner_scrollController.dispose();
     super.dispose();
   }
 
-  ScrollController _scrollController = ScrollController();
+  ScrollController outter_scrollController = ScrollController();
+  ScrollController inner_scrollController = ScrollController();
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -788,363 +834,377 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                 }
             },
         child: Scaffold(
-          body: Center(
-            child: _loading
-                ? CircularProgressIndicator()
-                : _loadfailed
-                    ? Text('加载失败')
-                    :
-                    // final playlistInfo = snapshot.data['info'];
-                    // {info: {cover_img_url: http://i0.hdslb.com/bfs/music/0fa5b14f421dcc686f2adb11faaa64b5f6ca86d2.jpg, title: 【日语】那些令人中毒循环的歌, id: biplaylist_48955, source_url: https://www.bilibili.com/audio/am48955}, tracks: [{id: bitrack_15228, title: 极乐净土, artist: 祈Inory, artist_id: biartist_234782, source: bilibili, source_url: https://www.bilibili.com/audio/au15228, img_url: http://i0.hdslb.com/bfs/music/015f137f9053008496df50518cd506cec62ff6b7.jpg, lyric_url: http://i0.hdslb.com/bfs/music/150529756415228.lrc},
-                    // final tracks = snapshot.data['tracks'];
-                    CustomScrollView(
-                        controller: _scrollController,
-                        slivers: [
-                          SliverAppBar(
-                            expandedHeight: 280.0,
-                            pinned: true,
-                            leading: IconButton(
-                              icon: Icon(Icons.arrow_back),
-                              onPressed: () {
-                                widget.onPlaylistTap('');
-                              },
-                            ),
-                            title: Container(
-                              height: 48,
-                              child: Marquee(
-                                text: result['info']['title'],
-                                style: TextStyle(fontSize: 16),
-                                scrollAxis: Axis.horizontal,
-                                blankSpace: 20.0,
-                                velocity: 50.0,
-                                pauseAfterRound: Duration(seconds: 1),
-                                startPadding: 10.0,
-                                accelerationDuration: Duration(seconds: 1),
-                                accelerationCurve: Curves.linear,
-                                decelerationDuration:
-                                    Duration(milliseconds: 500),
-                                decelerationCurve: Curves.easeOut,
-                              ),
-                            ),
-                            titleSpacing: 0,
-                            flexibleSpace: FlexibleSpaceBar(
-                              collapseMode: CollapseMode.parallax,
-                              background: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(height: 80), // 添加一个空的SizedBox来调整位置
-                                  CachedNetworkImage(
-                                    imageUrl: result['info']['cover_img_url'],
-                                    width: 150,
-                                    height: 150,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) =>
-                                        CircularProgressIndicator(),
-                                    errorWidget: (context, url, error) =>
-                                        Icon(Icons.error),
-                                  ),
-                                  SizedBox(height: 8.0),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Expanded(
-                                        flex: 5,
-                                        child: ElevatedButton(
-                                          onPressed: () async {
-                                            // 播放全部按钮点击事件
-                                            List<Map<String, dynamic>>
-                                                trackList =
-                                                List<Map<String, dynamic>>.from(
-                                                    tracks);
-                                            await set_current_playing(
-                                                trackList);
-                                            await set_player_settings(
-                                                "nowplaying_track_id",
-                                                tracks[0]['id']);
-                                            await playsong(tracks[0]);
-                                          },
-                                          child:
-                                              Text('播放全部（共${tracks.length}首）'),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 2,
-                                        child: IconButton(
-                                          onPressed: () async {
-                                            List<Map<String, dynamic>>
-                                                trackList =
-                                                List<Map<String, dynamic>>.from(
-                                                    tracks);
-                                            await add_current_playing(
-                                                trackList);
-                                            Fluttertoast.showToast(
-                                              msg: '已添加到当前播放列表',
-                                            );
-                                          },
-                                          icon: Icon(Icons.add_box_outlined),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 4,
-                                        child: TextField(
-                                          controller: _searchController,
-                                          decoration: InputDecoration(
-                                            hintText: '搜索',
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            actions: [
-                              IconButton(
-                                  icon: Icon(Icons.add),
-                                  onPressed: () async {
-                                    // 添加按钮点击事件
-                                    try {
-                                      // await myplaylist.saveMyPlaylist('my', result);
-                                      myplaylist.Add_to_my_playlist(
-                                          context,
-                                          tracks,
-                                          result['info']['title'],
-                                          result['info']['cover_img_url']);
-                                    } catch (e) {
-                                      // print(e);
-                                      Fluttertoast.showToast(
-                                        msg: '添加失败${e}',
-                                      );
-                                    }
-                                  }),
-                              widget.is_my
-                                  ? IconButton(
-                                      icon: Icon(Icons.delete),
-                                      onPressed: () {
-                                        // 删除按钮点击事件
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return AlertDialog(
-                                              title: Text('删除歌单'),
-                                              content: Text('确定要删除这个歌单吗？'),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () {
-                                                    Navigator.of(context).pop();
-                                                  },
-                                                  child: Text('取消'),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () async {
-                                                    await myplaylist
-                                                        .removeMyPlaylist('my',
-                                                            widget.listId);
-                                                    Navigator.of(context).pop();
-                                                    widget.onPlaylistTap('');
-                                                  },
-                                                  child: Text('确定'),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        );
-                                      },
-                                    )
-                                  : IconButton(
-                                      icon: Icon(Icons.link),
-                                      onPressed: () {
-                                        // 链接按钮点击事件
-                                        // launchUrl(playlistInfo['source_url']);
-                                        launchUrl(Uri.parse(
-                                            result['info']['source_url']));
-                                      },
-                                    ),
-                              widget.is_my
-                                  ? IconButton(
-                                      icon: Icon(Icons.edit),
-                                      onPressed: () {
-                                        // 编辑按钮点击事件
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            final TextEditingController
-                                                _titleController =
-                                                TextEditingController();
-                                            final TextEditingController
-                                                _coverImgUrlController =
-                                                TextEditingController();
-                                            _titleController.text =
-                                                result['info']['title'];
-                                            _coverImgUrlController.text =
-                                                result['info']['cover_img_url'];
-                                            return AlertDialog(
-                                              title: Text('编辑歌单'),
-                                              content: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  TextField(
-                                                    controller:
-                                                        _titleController,
-                                                    decoration: InputDecoration(
-                                                      labelText: '歌单标题',
-                                                    ),
-                                                  ),
-                                                  TextField(
-                                                    controller:
-                                                        _coverImgUrlController,
-                                                    decoration: InputDecoration(
-                                                      labelText: '封面图片链接',
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () {
-                                                    Navigator.of(context).pop();
-                                                  },
-                                                  child: Text('取消'),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () async {
-                                                    await myplaylist
-                                                        .editMyPlaylist(
-                                                      widget.listId,
-                                                      _titleController.text,
-                                                      _coverImgUrlController
-                                                          .text,
-                                                    );
-                                                    Fluttertoast.showToast(
-                                                      msg: '编辑成功',
-                                                    );
-                                                    Navigator.of(context).pop();
-                                                    widget.onPlaylistTap('');
-                                                  },
-                                                  child: Text('确定'),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        );
-                                      },
-                                    )
-                                  : IconButton(
-                                      // icon: Icon(Icons.star_border),
-                                      icon: _is_fav
-                                          ? Icon(Icons.star)
-                                          : Icon(Icons.star_border),
-                                      onPressed: () async {
-                                        // 添加按钮点击事件
-                                        if (_is_fav) {
-                                          await myplaylist.removeMyPlaylist(
-                                              'favorite', widget.listId);
-                                          check_fav();
-                                          Fluttertoast.showToast(
-                                            msg: '已取消收藏',
-                                          );
-                                        } else {
-                                          await myplaylist.saveMyPlaylist(
-                                              'favorite', result);
-                                          check_fav();
-                                          Fluttertoast.showToast(
-                                            msg: '已添加到我的收藏',
-                                          );
-                                        }
-                                      }),
-                            ],
+            body: Center(
+          child: _loading
+              ? CircularProgressIndicator()
+              : _loadfailed
+                  ? Text('加载失败')
+                  :
+                  // final playlistInfo = snapshot.data['info'];
+                  // {info: {cover_img_url: http://i0.hdslb.com/bfs/music/0fa5b14f421dcc686f2adb11faaa64b5f6ca86d2.jpg, title: 【日语】那些令人中毒循环的歌, id: biplaylist_48955, source_url: https://www.bilibili.com/audio/am48955}, tracks: [{id: bitrack_15228, title: 极乐净土, artist: 祈Inory, artist_id: biartist_234782, source: bilibili, source_url: https://www.bilibili.com/audio/au15228, img_url: http://i0.hdslb.com/bfs/music/015f137f9053008496df50518cd506cec62ff6b7.jpg, lyric_url: http://i0.hdslb.com/bfs/music/150529756415228.lrc},
+                  // final tracks = snapshot.data['tracks'];
+                  CustomScrollView(
+                      controller: outter_scrollController,
+                      slivers: [
+                        SliverAppBar(
+                          expandedHeight: 280.0,
+                          pinned: true,
+                          leading: IconButton(
+                            icon: Icon(Icons.arrow_back),
+                            onPressed: () {
+                              widget.onPlaylistTap('');
+                            },
                           ),
-                          SliverFillRemaining(
-                            hasScrollBody: true,
-                            child: NotificationListener<ScrollNotification>(
-                                onNotification: (scrollNotification) {
-                                  if (scrollNotification
-                                          is ScrollStartNotification ||
-                                      scrollNotification
-                                          is ScrollUpdateNotification ||
-                                      scrollNotification
-                                          is ScrollEndNotification) {
-                                    // 处理滚动事件
-                                    // 传递给CustomScrollView
-
-                                    final move =
-                                        scrollNotification.metrics.pixels -
-                                            lastmove;
-                                    if (move > 0) {
-                                      if (_scrollController
-                                              .position.maxScrollExtent !=
-                                          _scrollController.offset) {
-                                        _scrollController.jumpTo(
-                                            (_scrollController.offset + move) >
-                                                    _scrollController.position
-                                                        .maxScrollExtent
-                                                ? _scrollController
-                                                    .position.maxScrollExtent
-                                                : (_scrollController.offset +
-                                                    move));
-                                      }
-                                    } else {
-                                      if (_scrollController.offset != 0) {
-                                        _scrollController.jumpTo(
-                                            (_scrollController.offset + move) <
-                                                    0
-                                                ? 0
-                                                : (_scrollController.offset +
-                                                    move));
-                                      }
-                                    }
-                                    lastmove =
-                                        scrollNotification.metrics.pixels;
-                                    return true;
-                                  }
-                                  return false;
-                                },
-                                child: Scrollbar(
-                                  thickness: 16.0, // 设置滚动条的厚度
-                                  radius: Radius.circular(4.0), // 设置滚动条的圆角
-                                  interactive: true, // 是否可以和用户交互
-                                  // controller:
-                                      // _scrollController, // 设置滚动条的控制器
-                                  child: ReorderableListView(
-                                    onReorder: _onReorder,
-                                    children: tracks.map((track) {
-                                      return ListTile(
-                                        key: ValueKey(track['id']),
-                                        title: Text(track['title'] ?? '未知标题'),
-                                        subtitle: Text(
-                                            '${track['artist'] ?? '未知艺术家'} - ${track['album'] ?? '未知专辑'}'),
-                                        trailing: IconButton(
-                                          icon: Icon(Icons.more_vert),
-                                          onPressed: () {
-                                            song_dialog(
-                                                context,
-                                                track,
-                                                widget.onPlaylistTap,
-                                                widget.is_my,
-                                                result['info'],
-                                                deltrack);
-                                          },
-                                        ),
-                                        onTap: () {
+                          title: Container(
+                            height: 48,
+                            child: Marquee(
+                              text: result['info']['title'],
+                              style: TextStyle(fontSize: 16),
+                              scrollAxis: Axis.horizontal,
+                              blankSpace: 20.0,
+                              velocity: 50.0,
+                              pauseAfterRound: Duration(seconds: 1),
+                              startPadding: 10.0,
+                              accelerationDuration: Duration(seconds: 1),
+                              accelerationCurve: Curves.linear,
+                              decelerationDuration: Duration(milliseconds: 500),
+                              decelerationCurve: Curves.easeOut,
+                            ),
+                          ),
+                          titleSpacing: 0,
+                          flexibleSpace: FlexibleSpaceBar(
+                            collapseMode: CollapseMode.parallax,
+                            background: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(height: 80), // 添加一个空的SizedBox来调整位置
+                                CachedNetworkImage(
+                                  imageUrl: result['info']['cover_img_url'],
+                                  width: 150,
+                                  height: 150,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) =>
+                                      CircularProgressIndicator(),
+                                  errorWidget: (context, url, error) =>
+                                      Icon(Icons.error),
+                                ),
+                                SizedBox(height: 8.0),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Expanded(
+                                      flex: 5,
+                                      child: ElevatedButton(
+                                        onPressed: () async {
+                                          // 播放全部按钮点击事件
+                                          List<Map<String, dynamic>> trackList =
+                                              List<Map<String, dynamic>>.from(
+                                                  tracks);
+                                          await set_current_playing(trackList);
+                                          await set_player_settings(
+                                              "nowplaying_track_id",
+                                              tracks[0]['id']);
+                                          await playsong(tracks[0]);
+                                        },
+                                        child: Text('播放全部（共${tracks.length}首）'),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      flex: 2,
+                                      child: IconButton(
+                                        onPressed: () async {
+                                          List<Map<String, dynamic>> trackList =
+                                              List<Map<String, dynamic>>.from(
+                                                  tracks);
+                                          await add_current_playing(trackList);
                                           Fluttertoast.showToast(
-                                            msg: '尝试播放：${track['title']}',
+                                            msg: '已添加到当前播放列表',
                                           );
-                                          MediaService.bootstrapTrack(
-                                            track,
-                                            playerSuccessCallback,
-                                            playerFailCallback,
+                                        },
+                                        icon: Icon(Icons.add_box_outlined),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      flex: 4,
+                                      child: TextField(
+                                        controller: _searchController,
+                                        decoration: InputDecoration(
+                                          hintText: '搜索',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          actions: [
+                            IconButton(
+                                icon: Icon(Icons.add),
+                                onPressed: () async {
+                                  // 添加按钮点击事件
+                                  try {
+                                    // await myplaylist.saveMyPlaylist('my', result);
+                                    myplaylist.Add_to_my_playlist(
+                                        context,
+                                        tracks,
+                                        result['info']['title'],
+                                        result['info']['cover_img_url']);
+                                  } catch (e) {
+                                    // print(e);
+                                    Fluttertoast.showToast(
+                                      msg: '添加失败${e}',
+                                    );
+                                  }
+                                }),
+                            widget.is_my
+                                ? IconButton(
+                                    icon: Icon(Icons.delete),
+                                    onPressed: () {
+                                      // 删除按钮点击事件
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: Text('删除歌单'),
+                                            content: Text('确定要删除这个歌单吗？'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text('取消'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () async {
+                                                  await myplaylist
+                                                      .removeMyPlaylist(
+                                                          'my', widget.listId);
+                                                  Navigator.of(context).pop();
+                                                  widget.onPlaylistTap('');
+                                                },
+                                                child: Text('确定'),
+                                              ),
+                                            ],
                                           );
                                         },
                                       );
-                                    }).toList(),
+                                    },
+                                  )
+                                : IconButton(
+                                    icon: Icon(Icons.link),
+                                    onPressed: () {
+                                      // 链接按钮点击事件
+                                      // launchUrl(playlistInfo['source_url']);
+                                      launchUrl(Uri.parse(
+                                          result['info']['source_url']));
+                                    },
                                   ),
-                                )),
-                          )
-                        ],
-                      ),
+                            widget.is_my
+                                ? IconButton(
+                                    icon: Icon(Icons.edit),
+                                    onPressed: () {
+                                      // 编辑按钮点击事件
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          final TextEditingController
+                                              _titleController =
+                                              TextEditingController();
+                                          final TextEditingController
+                                              _coverImgUrlController =
+                                              TextEditingController();
+                                          _titleController.text =
+                                              result['info']['title'];
+                                          _coverImgUrlController.text =
+                                              result['info']['cover_img_url'];
+                                          return AlertDialog(
+                                            title: Text('编辑歌单'),
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                TextField(
+                                                  controller: _titleController,
+                                                  decoration: InputDecoration(
+                                                    labelText: '歌单标题',
+                                                  ),
+                                                ),
+                                                TextField(
+                                                  controller:
+                                                      _coverImgUrlController,
+                                                  decoration: InputDecoration(
+                                                    labelText: '封面图片链接',
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text('取消'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () async {
+                                                  await myplaylist
+                                                      .editMyPlaylist(
+                                                    widget.listId,
+                                                    _titleController.text,
+                                                    _coverImgUrlController.text,
+                                                  );
+                                                  Fluttertoast.showToast(
+                                                    msg: '编辑成功',
+                                                  );
+                                                  Navigator.of(context).pop();
+                                                  widget.onPlaylistTap('');
+                                                },
+                                                child: Text('确定'),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                  )
+                                : IconButton(
+                                    // icon: Icon(Icons.star_border),
+                                    icon: _is_fav
+                                        ? Icon(Icons.star)
+                                        : Icon(Icons.star_border),
+                                    onPressed: () async {
+                                      // 添加按钮点击事件
+                                      if (_is_fav) {
+                                        await myplaylist.removeMyPlaylist(
+                                            'favorite', widget.listId);
+                                        check_fav();
+                                        Fluttertoast.showToast(
+                                          msg: '已取消收藏',
+                                        );
+                                      } else {
+                                        await myplaylist.saveMyPlaylist(
+                                            'favorite', result);
+                                        check_fav();
+                                        Fluttertoast.showToast(
+                                          msg: '已添加到我的收藏',
+                                        );
+                                      }
+                                    }),
+                          ],
+                        ),
+                        SliverFillRemaining(
+                          hasScrollBody: true,
+                          child: ReorderableListView(
+                            onReorder: _onReorder,
+                            scrollController: inner_scrollController,
+                            children: tracks.map((track) {
+                              return ListTile(
+                                key: ValueKey(track['id']),
+                                title: Text(track['title'] ?? '未知标题'),
+                                subtitle: Text(
+                                    '${track['artist'] ?? '未知艺术家'} - ${track['album'] ?? '未知专辑'}'),
+                                trailing: IconButton(
+                                  icon: Icon(Icons.more_vert),
+                                  onPressed: () {
+                                    song_dialog(
+                                        context,
+                                        track,
+                                        widget.onPlaylistTap,
+                                        widget.is_my,
+                                        result['info'],
+                                        deltrack);
+                                  },
+                                ),
+                                onTap: () {
+                                  Fluttertoast.showToast(
+                                    msg: '尝试播放：${track['title']}',
+                                  );
+                                  MediaService.bootstrapTrack(
+                                    track,
+                                    playerSuccessCallback,
+                                    playerFailCallback,
+                                  );
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        )
+                      ],
+                    ),
+        )));
+  }
+
+  void _show_scroll_bar(BuildContext context) async {
+    scroll_bar_pos = inner_scrollController.position.pixels /
+        inner_scrollController.position.maxScrollExtent;
+    scroll_bar_Visible = true;
+    scroll_bar_overlayEntry = _createOverlayEntry();
+    Overlay.of(context)!.insert(scroll_bar_overlayEntry!);
+    _startAutoCloseTimer();
+  }
+
+  void _startAutoCloseTimer() {
+    scroll_bar_timer?.cancel();
+    scroll_bar_timer = Timer(Duration(seconds: 1), () {
+      scroll_bar_overlayEntry?.remove();
+      scroll_bar_overlayEntry = null;
+      scroll_bar_Visible = false;
+    });
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        top: 100,
+        right: 0,
+        child: Material(
+          color: Colors.transparent,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              scroll_bar_overlayEntry?.remove();
+              scroll_bar_overlayEntry = null;
+              scroll_bar_Visible = false;
+            },
+            child: Container(
+              height: MediaQuery.of(context).size.height -200,
+              width: 30,
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(0, 120, 120, 120),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color.fromARGB(0, 120, 120, 120),
+                    blurRadius: 10,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: RotatedBox(
+                quarterTurns: 1,
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    scroll_bar_setState = setState;
+                    return Slider(
+                      value: scroll_bar_pos,
+                      onChanged: (value) {
+                        setState(() {
+                          scroll_bar_pos = value;
+                        });
+                        inner_scrollController.jumpTo(value *
+                            inner_scrollController.position.maxScrollExtent);
+                        _startAutoCloseTimer(); // 重置计时器
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
           ),
-        ));
+        ),
+      ),
+    );
   }
 }
 
