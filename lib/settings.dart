@@ -1020,6 +1020,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           fontSize: 16.0,
                         );
                       } catch (e) {
+                        Navigator.of(context).pop(); // 关闭进度条对话框
                         Fluttertoast.showToast(
                           msg: '下载失败$e',
                           toastLength: Toast.LENGTH_SHORT,
