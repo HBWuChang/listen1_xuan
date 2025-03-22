@@ -342,7 +342,7 @@ Future<void> change_playback_state(dynamic track) async {
 // Future<void> playsong(Map<String, dynamic> track) async {
 Future<void> playsong(Map<String, dynamic> track, [start = true,on_playersuccesscallback=false]) async {
   try {
-    if (on_playersuccesscallback && (get_player_settings("nowplaying_track_id") != track['id'])) {
+    if (on_playersuccesscallback && (await get_player_settings("nowplaying_track_id") != track['id'])) {
       return;
     }
     await set_player_settings("nowplaying_track_id", track['id']);
@@ -443,7 +443,7 @@ Future<void> playerFailCallback(dynamic track) async {
   Fluttertoast.showToast(
     msg: '播放失败：${track['title']}',
   );
-  if(get_player_settings("nowplaying_track_id")!=track['id']){
+  if(await get_player_settings("nowplaying_track_id")!=track['id']){
     return;
   }
   var connectivityResult = await (Connectivity().checkConnectivity());

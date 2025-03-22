@@ -1120,11 +1120,6 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                   Fluttertoast.showToast(
                                     msg: '尝试播放：${track['title']}',
                                   );
-                                  // MediaService.bootstrapTrack(
-                                  //   track,
-                                  //   playerSuccessCallback,
-                                  //   playerFailCallback,
-                                  // );
                                   playsong(track);
                                 },
                               );
