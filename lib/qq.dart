@@ -1003,7 +1003,7 @@ class QQ {
     var data = jsonDecode(response.data);
     var purl = data['req_1']['data']['midurlinfo'][0]['purl'];
     if (purl == '') {
-      failure();
+      failure(track);
       return;
     }
     var url = data['req_1']['data']['sip'][0] + purl;

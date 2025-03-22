@@ -663,7 +663,7 @@ class Bilibili {
             sound['platform'] = 'bilibili';
             success(sound, track);
           } else {
-            failure();
+            failure(track);
           }
         } catch (e) {
           if (response2.data['data']['durl'].length > 0) {
@@ -672,7 +672,7 @@ class Bilibili {
             sound['platform'] = 'bilibili';
             success(sound, track);
           } else {
-            failure();
+            failure(track);
           }
         }
       } catch (e) {

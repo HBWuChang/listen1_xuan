@@ -340,8 +340,11 @@ Future<void> change_playback_state(dynamic track) async {
 }
 
 // Future<void> playsong(Map<String, dynamic> track) async {
-Future<void> playsong(Map<String, dynamic> track, [start = true]) async {
+Future<void> playsong(Map<String, dynamic> track, [start = true,on_playersuccesscallback=false]) async {
   try {
+    if (on_playersuccesscallback && (get_player_settings("nowplaying_track_id") != track['id'])) {
+      return;
+    }
     await set_player_settings("nowplaying_track_id", track['id']);
     await add_current_playing([track]);
     final tdir = await get_local_cache(track['id']);
@@ -423,21 +426,26 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
       }
       await set_local_cache(track['id'], fileName);
     }
-    playsong(track);
+    playsong(track,true,true);
     return;
   } catch (e) {
     print('Error downloading or playing audio: $e');
     playlogger.e('Error downloading or playing audio: $e');
-    playerFailCallback();
+    playerFailCallback(track);
   }
 }
 
-Future<void> playerFailCallback() async {
+Future<void> playerFailCallback(dynamic track) async {
   print('playerFailCallback');
+  print(track);
+  // {id: netrack_2084034562, title: Anytime Anywhere, artist: milet, artist_id: neartist_31464106, album: Anytime Anywhere, album_id: nealbum_175250775, source: netease, source_url: https://music.163.com/#/song?id=2084034562, img_url: https://p1.music.126.net/11p2mKi5CMKJvAS43ulraQ==/109951168930518368.jpg, sourceName: 网易, $$hashKey: object:2884, disabled: false, index: 365, playNow: true, bitrate: 320kbps, platform: netease, platformText: 网易}
   playlogger.e('playerFailCallback');
   Fluttertoast.showToast(
-    msg: 'Error downloading audio',
+    msg: '播放失败：${track['title']}',
   );
+  if(get_player_settings("nowplaying_track_id")!=track['id']){
+    return;
+  }
   var connectivityResult = await (Connectivity().checkConnectivity());
   playlogger.d(connectivityResult);
   while (connectivityResult == ConnectivityResult.none) {

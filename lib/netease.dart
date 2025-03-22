@@ -488,10 +488,10 @@ class Netease {
         sound['platform'] = 'netease';
         success(sound, track);
       } else {
-        failure();
+        failure(track);
       }
     } catch (e) {
-      failure();
+      failure(track);
     }
   }
 

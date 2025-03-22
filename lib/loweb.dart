@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:async/async.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
@@ -370,7 +371,7 @@ class MediaService {
       Function playerSuccessCallback, Function playerFailCallback) async {
     final successCallback = playerSuccessCallback;
     final sound = {};
-    void failureCallback() async {
+    void failureCallback(dynamic track) async {
       final prefs = await SharedPreferences.getInstance();
       // if (await localStorage.getObject('enable_auto_choose_source') == false) {
       // if (prefs.getBool('enable_auto_choose_source') == false) {
@@ -404,7 +405,7 @@ class MediaService {
 
       try {
         // await Future.wait(getUrlPromises);
-        playerFailCallback();
+        playerFailCallback(track);
       } catch (response) {
         playerSuccessCallback(response, track);
       }
