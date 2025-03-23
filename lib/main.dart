@@ -92,7 +92,7 @@ void downloadtasks_background(SendPort mainPort) async {
 }
 
 void main() {
-  HttpOverrides.global = MyHttpOverrides();
+  // HttpOverrides.global = MyHttpOverrides();
   runApp(MyApp());
 }
 
