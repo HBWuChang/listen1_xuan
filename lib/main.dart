@@ -13,6 +13,16 @@ import 'play.dart';
 import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter_isolate/flutter_isolate.dart';
+import 'dart:io';
+
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
 
 late SendPort download_sendport;
 var download_receiveport = ReceivePort();
@@ -64,7 +74,7 @@ void downloadtasks_background(SendPort mainPort) async {
       for (var item in message) {
         if (download_tasks["waiting"].contains(item) ||
             download_tasks["downloading"].contains(item) ||
-            download_tasks["downloaded"].contains(item) ) {
+            download_tasks["downloaded"].contains(item)) {
           continue;
         }
         if (download_tasks["failed"].contains(item)) {
@@ -72,17 +82,17 @@ void downloadtasks_background(SendPort mainPort) async {
         }
         if (await get_local_cache(item) != '') {
           download_tasks["downloaded"].add(item);
-          await set_download_tasks(download_tasks);
           continue;
         }
         download_tasks["waiting"].add(item);
-        await set_download_tasks(download_tasks);
       }
+      await set_download_tasks(download_tasks);
     }
   });
 }
 
 void main() {
+  HttpOverrides.global = MyHttpOverrides();
   runApp(MyApp());
 }
 

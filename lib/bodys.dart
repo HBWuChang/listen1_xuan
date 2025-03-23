@@ -335,7 +335,9 @@ class _MyPlaylistState extends State<MyPlaylist> {
         _loading = false;
       });
     } catch (e) {
-      print(e);
+      Fluttertoast.showToast(
+        msg: '我的歌单加载失败',
+      );
     }
   }
 
@@ -348,7 +350,9 @@ class _MyPlaylistState extends State<MyPlaylist> {
         _isFavDataLoaded = true;
       });
     } catch (e) {
-      print(e);
+      Fluttertoast.showToast(
+        msg: '收藏歌单加载失败',
+      );
     }
   }
 
@@ -398,7 +402,9 @@ class _MyPlaylistState extends State<MyPlaylist> {
         _isNeDataLoaded = true;
       });
     } catch (e) {
-      print(e);
+      Fluttertoast.showToast(
+        msg: '网易云音乐歌单加载失败',
+      );
     }
   }
 
@@ -436,7 +442,9 @@ class _MyPlaylistState extends State<MyPlaylist> {
         _isQqDataLoaded = true;
       });
     } catch (e) {
-      print(e);
+      Fluttertoast.showToast(
+        msg: 'QQ音乐歌单加载失败',
+      );
     }
   }
 
@@ -481,12 +489,18 @@ class _MyPlaylistState extends State<MyPlaylist> {
                         body: Column(
                           children: _playlists_my.map((playlist) {
                             return ListTile(
-                              leading: CachedNetworkImage(
-                                imageUrl: playlist['info']['cover_img_url'],
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                              ),
+                              leading: playlist['info']['cover_img_url'] == ""
+                                  ? Container(
+                                      width: 50,
+                                      height: 50,
+                                    )
+                                  : CachedNetworkImage(
+                                      imageUrl: playlist['info']
+                                          ['cover_img_url'],
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                    ),
                               title: Text(playlist['info']['title']),
                               onTap: () {
                                 widget.onPlaylistTap(
@@ -1164,7 +1178,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
               scroll_bar_Visible = false;
             },
             child: Container(
-              height: MediaQuery.of(context).size.height -200,
+              height: MediaQuery.of(context).size.height - 200,
               width: 30,
               decoration: BoxDecoration(
                 color: const Color.fromARGB(0, 120, 120, 120),

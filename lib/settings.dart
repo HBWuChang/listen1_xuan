@@ -259,6 +259,19 @@ Future<void> _saveToken(String platform, String token) async {
       }
       await setSaveCookie(url: 'https://music.163.com', cookies: cookies);
       break;
+    case 'qq':
+      List<Cookie> cookies = [];
+      for (var item in token.split(';')) {
+        // var cookie = item.split('=');
+        // 除去两端空格
+        var cookie = item.trim().split('=');
+        // cookies.add(Cookie(cookie[0], cookie[1]));
+        var cookieName = cookie[0].trim();
+        var cookieValue = Uri.encodeComponent(cookie[1].trim());
+        cookies.add(Cookie(cookieName, cookieValue));
+      }
+      await setSaveCookie(url: 'https://u.y.qq.com', cookies: cookies);
+      break;
     default:
   }
 }

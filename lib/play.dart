@@ -57,7 +57,9 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
   final nowplaying_track = await getnowplayingsong();
   playlogger.d('onPlaybackCompleted');
   playlogger.d(nowplaying_track);
-
+  if (current_playing.length == 1 && force_next) {
+    return;
+  }
   if (nowplaying_track['index'] != -1) {
     final index = nowplaying_track['index'];
     switch (playmode) {
@@ -71,6 +73,7 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
         //         (DateTime.now().millisecondsSinceEpoch % 1000) /
         //         1000)
         //     .floor();
+
         final random = Random();
         final randomIndex = random.nextInt(current_playing.length);
         // if (randommodetemplist.contains(current_playing[index])) {
@@ -340,9 +343,11 @@ Future<void> change_playback_state(dynamic track) async {
 }
 
 // Future<void> playsong(Map<String, dynamic> track) async {
-Future<void> playsong(Map<String, dynamic> track, [start = true,on_playersuccesscallback=false]) async {
+Future<void> playsong(Map<String, dynamic> track,
+    [start = true, on_playersuccesscallback = false]) async {
   try {
-    if (on_playersuccesscallback && (await get_player_settings("nowplaying_track_id") != track['id'])) {
+    if (on_playersuccesscallback &&
+        (await get_player_settings("nowplaying_track_id") != track['id'])) {
       return;
     }
     await set_player_settings("nowplaying_track_id", track['id']);
@@ -426,7 +431,7 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
       }
       await set_local_cache(track['id'], fileName);
     }
-    playsong(track,true,true);
+    playsong(track, true, true);
     return;
   } catch (e) {
     print('Error downloading or playing audio: $e');
@@ -443,7 +448,7 @@ Future<void> playerFailCallback(dynamic track) async {
   Fluttertoast.showToast(
     msg: '播放失败：${track['title']}',
   );
-  if(await get_player_settings("nowplaying_track_id")!=track['id']){
+  if (await get_player_settings("nowplaying_track_id") != track['id']) {
     return;
   }
   var connectivityResult = await (Connectivity().checkConnectivity());

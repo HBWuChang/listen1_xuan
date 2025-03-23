@@ -64,7 +64,7 @@ class QQ {
     print("dio_post_with_cookie_and_csrf");
     try {
       final dio = Dio();
-      final tempDir = await getApplicationDocumentsDirectory ();
+      final tempDir = await getApplicationDocumentsDirectory();
       final tempPath = tempDir.path;
       dio.interceptors.add(CookieManager(PersistCookieJar(
         ignoreExpires: true,
@@ -938,12 +938,22 @@ class QQ {
   // }
   Future<void> bootstrap_track(
       Map<String, dynamic> track, Function success, Function failure) async {
+    Map<String, dynamic> settings = await settings_getsettings();
+    String qqcookie = settings['qq'];
+    // print(qqcookie);
+
     var sound = {};
     var songId = track['id'].substring('qqtrack_'.length);
     var target_url = 'https://u.y.qq.com/cgi-bin/musicu.fcg';
-    var guid = '10000';
+    // var guid = '10000';
+    // $guid = mt_rand() % 10000000000;
+    var guid = Random().nextDouble().toStringAsFixed(10).substring(2);
     var songmidList = [songId];
-    var uin = '0';
+    var uin = qqcookie
+        .split(';')
+        .firstWhere((element) => element.startsWith('uin='),
+            orElse: () => 'uin=0')
+        .split('=')[1];
     var fileType = '128';
     var fileConfig = {
       'm4a': {
@@ -1458,42 +1468,46 @@ class QQ {
   //   };
   // }
   Future<Map<String, dynamic>> get_user_favorite_playlist(String url) async {
-    var user_id = getParameterByName('user_id', url);
-    var size = 100;
-    var target_url =
-        'https://c.y.qq.com/fav/fcgi-bin/fcg_get_profile_order_asset.fcg';
-    var data = {
-      'ct': 20,
-      'cid': 205360956,
-      'userid': user_id,
-      'reqtype': 3,
-      'sin': 0,
-      'ein': size,
-    };
-    // var response = await dio_get_with_cookie_and_csrf(target_url, queryParameters: data);
-    target_url +=
-        '?' + data.entries.map((e) => '${e.key}=${e.value}').join('&');
-    var response = await dio_get_with_cookie_and_csrf(target_url);
-    var playlists = [];
-    response.data['data']['cdlist'].forEach((item) {
-      var playlist = {};
-      if (item['dir_show'] == 0) {
-        return;
-      }
-      playlist = {
-        'cover_img_url': item['logo'],
-        'id': 'qqplaylist_${item['dissid']}',
-        'source_url': 'https://y.qq.com/n/ryqq/playlist/${item['dissid']}',
-        'title': item['dissname'],
+    try {
+      var user_id = getParameterByName('user_id', url);
+      var size = 100;
+      var target_url =
+          'https://c.y.qq.com/fav/fcgi-bin/fcg_get_profile_order_asset.fcg';
+      var data = {
+        'ct': 20,
+        'cid': 205360956,
+        'userid': user_id,
+        'reqtype': 3,
+        'sin': 0,
+        'ein': size,
       };
-      playlists.add(playlist);
-    });
-    return {
-      'status': 'success',
-      'data': {
-        'playlists': playlists,
-      },
-    };
+      // var response = await dio_get_with_cookie_and_csrf(target_url, queryParameters: data);
+      target_url +=
+          '?' + data.entries.map((e) => '${e.key}=${e.value}').join('&');
+      var response = await dio_get_with_cookie_and_csrf(target_url);
+      var playlists = [];
+      response.data['data']['cdlist'].forEach((item) {
+        var playlist = {};
+        if (item['dir_show'] == 0) {
+          return;
+        }
+        playlist = {
+          'cover_img_url': item['logo'],
+          'id': 'qqplaylist_${item['dissid']}',
+          'source_url': 'https://y.qq.com/n/ryqq/playlist/${item['dissid']}',
+          'title': item['dissname'],
+        };
+        playlists.add(playlist);
+      });
+      return {
+        'status': 'success',
+        'data': {
+          'playlists': playlists,
+        },
+      };
+    } catch (e) {
+      return {'status': 'fail', 'data': {}};
+    }
   }
   //  static get_recommend_playlist() {
   //   const target_url = `https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&&loginUin=0&hostUin=0inCharset=utf8&outCharset=utf-8&platform=yqq.json&needNewCode=0&data=${encodeURIComponent(
