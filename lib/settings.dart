@@ -201,7 +201,7 @@ Future<void> setSaveCookie({
   required List<Cookie> cookies,
 }) async {
   //Save cookies
-  final tempDir = await getApplicationDocumentsDirectory ();
+  final tempDir = await getApplicationDocumentsDirectory();
   final tempPath = tempDir.path;
   await PersistCookieJar(
     ignoreExpires: true,
@@ -232,6 +232,11 @@ Future<Map<String, dynamic>> settings_getsettings() async {
     return {};
   }
   return jsonDecode(jsonString);
+}
+
+Future<void> settings_setsettings(Map<String, dynamic> settings) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('settings', jsonEncode(settings));
 }
 
 Future<void> _saveToken(String platform, String token) async {
@@ -374,7 +379,7 @@ class _login_webviewState extends State<login_webview> {
 
 class _SettingsPageState extends State<SettingsPage> {
   String _readmeContent = '';
-
+  bool useHttpOverrides = false;
   void open_bl_login() async {
     TextEditingController blCookieController = TextEditingController();
     Map<String, dynamic> settings = await settings_getsettings();
@@ -504,9 +509,32 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  void get_useHttpOverrides() async {
+    Map<String, dynamic> settings = await settings_getsettings();
+    if (settings["useHttpOverrides"] != null) {
+      useHttpOverrides = settings["useHttpOverrides"];
+    }
+  }
+
+  void set_useHttpOverrides(bool value) async {
+    Map<String, dynamic> settings = await settings_getsettings();
+    settings["useHttpOverrides"] = value;
+    await settings_setsettings(settings);
+    Fluttertoast.showToast(
+      msg: '重启应用后生效',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      timeInSecForIosWeb: 1,
+      backgroundColor: const Color.fromARGB(255, 250, 76, 1),
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
+    get_useHttpOverrides();
     _loadReadme();
   }
 
@@ -884,7 +912,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   ElevatedButton(
                     onPressed: () async {
                       try {
-                        final tempDir = await getApplicationDocumentsDirectory ();
+                        final tempDir =
+                            await getApplicationDocumentsDirectory();
                         final tempPath = tempDir.path;
                         final apkFile = File('$tempPath/app-release.apk');
                         if (await apkFile.exists()) {
@@ -901,7 +930,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             print('安装APK失败: $e');
                             return;
                           }
-                        } 
+                        }
                         final filePath = '$tempPath/canary.zip';
 
                         final url_list =
@@ -1049,7 +1078,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   ElevatedButton(
                     onPressed: () async {
-                      final tempDir = await getApplicationDocumentsDirectory ();
+                      final tempDir = await getApplicationDocumentsDirectory();
                       final tempPath = tempDir.path;
                       final filePath = '$tempPath/canary.zip';
 
@@ -1080,6 +1109,20 @@ class _SettingsPageState extends State<SettingsPage> {
                   ElevatedButton(
                     onPressed: () => clean_local_cache(true),
                     child: const Text('清除所有歌曲缓存'),
+                  ),
+                  StatefulBuilder(
+                    builder: (BuildContext context, StateSetter setState) {
+                      return SwitchListTile(
+                        title: const Text('禁用ssl证书验证'),
+                        value: useHttpOverrides,
+                        onChanged: (bool value) {
+                          set_useHttpOverrides(value);
+                          setState(() {
+                            useHttpOverrides = value;
+                          });
+                        },
+                      );
+                    },
                   ),
                 ]),
             Expanded(

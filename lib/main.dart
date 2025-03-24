@@ -91,8 +91,21 @@ void downloadtasks_background(SendPort mainPort) async {
   });
 }
 
-void main() {
-  // HttpOverrides.global = MyHttpOverrides();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 框架已初始化
+
+  Map<String, dynamic> settings = await settings_getsettings();
+  bool useHttpOverrides = false;
+  if (settings["useHttpOverrides"] == null) {
+    settings["useHttpOverrides"] = false;
+    await settings_setsettings(settings);
+  } else {
+    useHttpOverrides = settings["useHttpOverrides"];
+  }
+  // 根据设置的值决定是否运行 HttpOverrides.global = MyHttpOverrides();
+  if (useHttpOverrides) {
+    HttpOverrides.global = MyHttpOverrides();
+  }
   runApp(MyApp());
 }
 

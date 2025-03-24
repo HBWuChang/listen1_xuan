@@ -1352,8 +1352,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                             Fluttertoast.showToast(
                               msg: '尝试播放：${track['title']}',
                             );
-                            MediaService.bootstrapTrack(track,
-                                playerSuccessCallback, playerFailCallback);
+                            playsong(track);
                           },
                         );
                       },
