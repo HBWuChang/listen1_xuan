@@ -707,6 +707,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
   double scroll_bar_pos = 0.5;
   Timer? scroll_bar_timer;
   StateSetter? scroll_bar_setState; // 添加这个变量
+  bool last_move_is_up = false;
   @override
   void initState() {
     super.initState();
@@ -800,6 +801,13 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
     }
     // 获取滚动信息
     final move = inner_scrollController.position.pixels - lastmove;
+    // 判断滚动方向
+    bool now_move_is_up = move > 0;
+    if (now_move_is_up != last_move_is_up && move > 20) {
+      last_move_is_up = now_move_is_up;
+      return;
+    }
+    last_move_is_up = now_move_is_up;
     if (move > 0) {
       if (outter_scrollController.position.maxScrollExtent !=
           outter_scrollController.offset) {
