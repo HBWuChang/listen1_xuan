@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -14,6 +14,11 @@ import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import 'dart:io';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:path_provider/path_provider.dart';
+
+final dio_with_cookie_manager = Dio();
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -106,6 +111,14 @@ void main() async {
   if (useHttpOverrides) {
     HttpOverrides.global = MyHttpOverrides();
   }
+  final appDocDir = await getApplicationDocumentsDirectory();
+  final cookiePath = '${appDocDir.path}/cookies';
+
+  // 创建 PersistCookieJar 实例
+  final cookieJar = PersistCookieJar(storage: FileStorage(cookiePath));
+
+  // 将 PersistCookieJar 添加到 Dio 的拦截器中
+  dio_with_cookie_manager.interceptors.add(CookieManager(cookieJar));
   runApp(MyApp());
 }
 
@@ -143,7 +156,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin {
-  final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ'];
+  final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
   bool _isSearchActive = false;
   TextEditingController input_text_Controller = TextEditingController();
   FocusNode _focusNode = FocusNode();
@@ -152,7 +165,7 @@ class _MyHomePageState extends State<MyHomePage>
   bool _Mainpage = true;
   String _playlist_id = "bilibili";
   String selectedOption = '网易云';
-  final List<String> _options = ['BiliBili', '网易云', "QQ"];
+  final List<String> _options = ['BiliBili', '网易云', "QQ", '酷狗'];
   final ValueNotifier<String> selectedOptionNotifier =
       ValueNotifier<String>('Option 1');
   Key _playlistInfoKey = UniqueKey();
@@ -239,6 +252,12 @@ class _MyHomePageState extends State<MyHomePage>
         show_filter = true;
         source = 'qq';
         break;
+      case 4:
+        offset = 0;
+        filter = {'id': '', 'name': '全部'};
+        show_filter = false;
+        source = 'kugou';
+        break;
     }
     try {
       if (source == 'myplaylist') {
@@ -249,13 +268,22 @@ class _MyHomePageState extends State<MyHomePage>
       }
       // 检查 mounted 属性
       if (!mounted) return;
-      filter_detail = await MediaService.getPlaylistFilters(source);
-      // 再次检查 mounted 属性
-      if (mounted) {
-        setState(() {
-          _selectedIndex = index;
-        });
-      }
+      // filter_detail = await MediaService.getPlaylistFilters(source);
+      // // 再次检查 mounted 属性
+      // if (mounted) {
+      //   setState(() {
+      //     _selectedIndex = index;
+      //   });
+      // }
+      var t = await MediaService.getPlaylistFilters(source);
+      t["success"]((data) {
+        filter_detail = data;
+        if (mounted) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        }
+      });
     } catch (e) {
       print(e);
     }

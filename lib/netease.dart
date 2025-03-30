@@ -94,7 +94,7 @@ class Netease {
         url = url + '?csrf_token=$_csrf';
       }
       final dio = Dio();
-      final tempDir = await getApplicationDocumentsDirectory ();
+      final tempDir = await getApplicationDocumentsDirectory();
       final tempPath = tempDir.path;
       dio.interceptors.add(CookieManager(PersistCookieJar(
         ignoreExpires: true,
@@ -243,40 +243,192 @@ class Netease {
     };
   }
 
+  // static ne_show_toplist(offset) {
+  //   if (offset !== undefined && offset > 0) {
+  //     return {
+  //       success: (fn) => fn({ result: [] }),
+  //     };
+  //   }
+  //   const url = 'https://music.163.com/weapi/toplist/detail';
+  //   const data = this.weapi({});
+  //   return {
+  //     success: (fn) => {
+  //       axios.post(url, new URLSearchParams(data)).then((response) => {
+  //         const result = [];
+  //         response.data.list.forEach((item) => {
+  //           const playlist = {
+  //             cover_img_url: item.coverImgUrl,
+  //             id: `neplaylist_${item.id}`,
+  //             source_url: `https://music.163.com/#/playlist?id=${item.id}`,
+  //             title: item.name,
+  //           };
+  //           result.push(playlist);
+  //         });
+  //         return fn({ result });
+  //       });
+  //     },
+  //   };
+  // }
   // Future<void> neShowToplist( int? offset) async {
+  // Future<Map<String, dynamic>> ne_show_toplist(int? offset) async {
+  //   if (offset != null && offset > 0) {
+  //     // callback({'result': []});
+  //     return {"result": []};
+  //   }
+  //   const url = 'https://music.163.com/weapi/toplist/detail';
+  //   final data = await weapi({});
+  //   final response = await dio_post_with_cookie_and_csrf(url, data);
+  //   final result = response.data['list'].map((item) {
+  //     return {
+  //       'cover_img_url': item['coverImgUrl'],
+  //       'id': 'neplaylist_${item['id']}',
+  //       'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+  //       'title': item['name'],
+  //     };
+  //   }).toList();
+  //   // callback({'result': result});
+  //   return {"result": result};
+  // }
   Future<Map<String, dynamic>> ne_show_toplist(int? offset) async {
     if (offset != null && offset > 0) {
-      // callback({'result': []});
-      return {"result": []};
+      return {
+        "success": (fn) => fn({'result': []})
+      };
     }
     const url = 'https://music.163.com/weapi/toplist/detail';
-    final data = await weapi({});
-    final response = await dio_post_with_cookie_and_csrf(url, data);
-    final result = response.data['list'].map((item) {
-      return {
-        'cover_img_url': item['coverImgUrl'],
-        'id': 'neplaylist_${item['id']}',
-        'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
-        'title': item['name'],
-      };
-    }).toList();
-    // callback({'result': result});
-    return {"result": result};
+    final data = weapi({});
+    return {
+      'success': (fn) async {
+        final response = await dio_post_with_cookie_and_csrf(url, data);
+        final result = response.data['list'].map((item) {
+          return {
+            'cover_img_url': item['coverImgUrl'],
+            'id': 'neplaylist_${item['id']}',
+            'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+            'title': item['name'],
+          };
+        }).toList();
+        fn({'result': result});
+      },
+    };
   }
+// static show_playlist(url) {
+//     const order = 'hot';
+//     const offset = getParameterByName('offset', url);
+//     const filterId = getParameterByName('filter_id', url);
 
+//     if (filterId === 'toplist') {
+//       return this.ne_show_toplist(offset);
+//     }
+
+//     let filter = '';
+//     if (filterId !== '') {
+//       filter = `&cat=${filterId}`;
+//     }
+//     let target_url = '';
+//     if (offset != null) {
+//       target_url = `https://music.163.com/discover/playlist/?order=${order}${filter}&limit=35&offset=${offset}`;
+//     } else {
+//       target_url = `https://music.163.com/discover/playlist/?order=${order}${filter}`;
+//     }
+
+//     return {
+//       success: (fn) => {
+//         axios.get(target_url).then((response) => {
+//           const { data } = response;
+//           const list_elements = Array.from(
+//             new DOMParser()
+//               .parseFromString(data, 'text/html')
+//               .getElementsByClassName('m-cvrlst')[0].children
+//           );
+//           const result = list_elements.map((item) => ({
+//             cover_img_url: item
+//               .getElementsByTagName('img')[0]
+//               .src.replace('140y140', '512y512'),
+
+//             title: item
+//               .getElementsByTagName('div')[0]
+//               .getElementsByTagName('a')[0].title,
+//             id: `neplaylist_${getParameterByName(
+//               'id',
+//               item.getElementsByTagName('div')[0].getElementsByTagName('a')[0]
+//                 .href
+//             )}`,
+//             source_url: `https://music.163.com/#/playlist?id=${getParameterByName(
+//               'id',
+//               item.getElementsByTagName('div')[0].getElementsByTagName('a')[0]
+//                 .href
+//             )}`,
+//           }));
+//           return fn({
+//             result,
+//           });
+//         });
+//       },
+//     };
+//   }
+  // Future<Map<String, dynamic>> show_playlist(String url) async {
+  //   const order = 'hot';
+  //   final offset = int.parse(getParameterByName('offset', url));
+  //   final filterId = getParameterByName('filter_id', url);
+
+  //   if (filterId == 'toplist') {
+  //     // await neShowToplist(
+  //     //     offset != null ? int.tryParse(offset) : null, callback);
+  //     return ne_show_toplist(offset);
+  //   }
+
+  //   String filter = '';
+  //   if (filterId.isNotEmpty) {
+  //     filter = '&cat=$filterId';
+  //   }
+  //   String targetUrl;
+  //   if (offset != null) {
+  //     targetUrl =
+  //         'https://music.163.com/discover/playlist/?order=$order$filter&limit=35&offset=$offset';
+  //   } else {
+  //     targetUrl =
+  //         'https://music.163.com/discover/playlist/?order=$order$filter';
+  //   }
+
+  //   final response = await dio_get_with_cookie_and_csrf(targetUrl);
+  //   final document = parse(response.data);
+  //   final listElements =
+  //       document.getElementsByClassName('m-cvrlst')[0].children;
+  //   final result = listElements.map((item) {
+  //     final imgElement = item.getElementsByTagName('img')[0];
+  //     final divElement = item.getElementsByTagName('div')[0];
+  //     final aElement = divElement.getElementsByTagName('a')[0];
+  //     // return {
+  //     //   'cover_img_url': imgElement.src.replaceAll('140y140', '512y512'),
+  //     //   'title': aElement.title,
+  //     //   'id': 'neplaylist_${getParameterByName('id', aElement.href)}',
+  //     //   'source_url':
+  //     //       'https://music.163.com/#/playlist?id=${getParameterByName('id', aElement.href)}',
+  //     // };
+  //     return {
+  //       'cover_img_url':
+  //           imgElement.attributes['src']!.replaceAll('140y140', '512y512'),
+  //       'title': aElement.attributes['title']!,
+  //       'id':
+  //           'neplaylist_${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
+  //       'source_url':
+  //           'https://music.163.com/#/playlist?id=${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
+  //     };
+  //   }).toList();
+  //   return {"result": result};
+  // }
   Future<Map<String, dynamic>> show_playlist(String url) async {
     const order = 'hot';
-    final offset = int.parse(getParameterByName('offset', url));
+    final offset = getParameterByName('offset', url);
     final filterId = getParameterByName('filter_id', url);
 
     if (filterId == 'toplist') {
-      // await neShowToplist(
-      //     offset != null ? int.tryParse(offset) : null, callback);
-      return ne_show_toplist(offset);
+      return ne_show_toplist(int.parse(offset!));
     }
 
     String filter = '';
-    if (filterId.isNotEmpty) {
+    if (filterId != '') {
       filter = '&cat=$filterId';
     }
     String targetUrl;
@@ -287,33 +439,29 @@ class Netease {
       targetUrl =
           'https://music.163.com/discover/playlist/?order=$order$filter';
     }
-
-    final response = await dio_get_with_cookie_and_csrf(targetUrl);
-    final document = parse(response.data);
-    final listElements =
-        document.getElementsByClassName('m-cvrlst')[0].children;
-    final result = listElements.map((item) {
-      final imgElement = item.getElementsByTagName('img')[0];
-      final divElement = item.getElementsByTagName('div')[0];
-      final aElement = divElement.getElementsByTagName('a')[0];
-      // return {
-      //   'cover_img_url': imgElement.src.replaceAll('140y140', '512y512'),
-      //   'title': aElement.title,
-      //   'id': 'neplaylist_${getParameterByName('id', aElement.href)}',
-      //   'source_url':
-      //       'https://music.163.com/#/playlist?id=${getParameterByName('id', aElement.href)}',
-      // };
-      return {
-        'cover_img_url':
-            imgElement.attributes['src']!.replaceAll('140y140', '512y512'),
-        'title': aElement.attributes['title']!,
-        'id':
-            'neplaylist_${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
-        'source_url':
-            'https://music.163.com/#/playlist?id=${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
-      };
-    }).toList();
-    return {"result": result};
+    return {
+      'success': (fn) async {
+        final response = await dio_get_with_cookie_and_csrf(targetUrl);
+        final document = parse(response.data);
+        final listElements =
+            document.getElementsByClassName('m-cvrlst')[0].children;
+        final result = listElements.map((item) {
+          final imgElement = item.getElementsByTagName('img')[0];
+          final divElement = item.getElementsByTagName('div')[0];
+          final aElement = divElement.getElementsByTagName('a')[0];
+          return {
+            'cover_img_url':
+                imgElement.attributes['src']!.replaceAll('140y140', '512y512'),
+            'title': aElement.attributes['title']!,
+            'id':
+                'neplaylist_${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
+            'source_url':
+                'https://music.163.com/#/playlist?id=${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
+          };
+        }).toList();
+        fn(result);
+      },
+    };
   }
 
   static Future<void> ne_ensure_cookie(Function callback) async {
@@ -382,40 +530,128 @@ class Netease {
     callback(null, track);
   }
 
-  // static Future<void> neGetPlaylist(String url, Function fn) async {
-  Future<Map<String, dynamic>> ne_get_playlist(String url) async {
-    final listId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
-    const targetUrl = 'https://music.163.com/weapi/v3/playlist/detail';
-    final data = weapi({
-      'id': listId,
-      'offset': 0,
-      'total': true,
-      'limit': 1000,
-      'n': 1000,
-      'csrf_token': '',
-    });
-    // await neEnsureCookie((_) async {
-    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
-    // final resData = response.data;
-    final resData = jsonDecode(response.data);
-    final info = {
-      'id': 'neplaylist_$listId',
-      'cover_img_url': resData['playlist']['coverImgUrl'],
-      'title': resData['playlist']['name'],
-      'source_url': 'https://music.163.com/#/playlist?id=$listId',
-    };
-    final maxAllowSize = 1000;
-    final trackIdsArray =
-        _splitArray(resData['playlist']['trackIds'], maxAllowSize);
+  // static ne_get_playlist(url) {
+  //   // special thanks for @Binaryify
+  //   // https://github.com/Binaryify/NeteaseCloudMusicApi
+  //   return {
+  //     success: (fn) => {
+  //       const list_id = getParameterByName('list_id', url).split('_').pop();
+  //       const target_url = 'https://music.163.com/weapi/v3/playlist/detail';
+  //       const d = {
+  //         id: list_id,
+  //         offset: 0,
+  //         total: true,
+  //         limit: 1000,
+  //         n: 1000,
+  //         csrf_token: '',
+  //       };
+  //       const data = this.weapi(d);
+  //       this.ne_ensure_cookie(() => {
+  //         axios.post(target_url, new URLSearchParams(data)).then((response) => {
+  //           const { data: res_data } = response;
+  //           const info = {
+  //             id: `neplaylist_${list_id}`,
+  //             cover_img_url: res_data.playlist.coverImgUrl,
+  //             title: res_data.playlist.name,
+  //             source_url: `https://music.163.com/#/playlist?id=${list_id}`,
+  //           };
+  //           const max_allow_size = 1000;
+  //           const trackIdsArray = this.split_array(
+  //             res_data.playlist.trackIds,
+  //             max_allow_size
+  //           );
 
-    final tracks = <Map<String, dynamic>>[];
-    for (final trackIds in trackIdsArray) {
-      final trackData = await ng_parse_playlist_tracks(trackIds);
-      tracks.addAll(trackData);
-    }
-    return {'tracks': tracks, 'info': info};
-    // });
-    // return {'info': {}, 'tracks': []};
+  //           function ng_parse_playlist_tracks_wrapper(trackIds, callback) {
+  //             return netease.ng_parse_playlist_tracks(trackIds, callback);
+  //           }
+
+  //           async.concat(
+  //             trackIdsArray,
+  //             ng_parse_playlist_tracks_wrapper,
+  //             (err, tracks) => {
+  //               fn({ tracks, info });
+  //             }
+  //           );
+
+  //           // request every tracks to fetch song info
+  //           // async_process_list(res_data.playlist.trackIds, ng_render_playlist_result_item,
+  //           //   (err, tracks) => fn({
+  //           //     tracks,
+  //           //     info,
+  //           //   }));
+  //         });
+  //       });
+  //     },
+  //   };
+  // }
+  // Future<Map<String, dynamic>> ne_get_playlist(String url) async {
+  //   final listId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
+  //   const targetUrl = 'https://music.163.com/weapi/v3/playlist/detail';
+  //   final data = weapi({
+  //     'id': listId,
+  //     'offset': 0,
+  //     'total': true,
+  //     'limit': 1000,
+  //     'n': 1000,
+  //     'csrf_token': '',
+  //   });
+  //   // await neEnsureCookie((_) async {
+  //   final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+  //   // final resData = response.data;
+  //   final resData = jsonDecode(response.data);
+  //   final info = {
+  //     'id': 'neplaylist_$listId',
+  //     'cover_img_url': resData['playlist']['coverImgUrl'],
+  //     'title': resData['playlist']['name'],
+  //     'source_url': 'https://music.163.com/#/playlist?id=$listId',
+  //   };
+  //   final maxAllowSize = 1000;
+  //   final trackIdsArray =
+  //       _splitArray(resData['playlist']['trackIds'], maxAllowSize);
+
+  //   final tracks = <Map<String, dynamic>>[];
+  //   for (final trackIds in trackIdsArray) {
+  //     final trackData = await ng_parse_playlist_tracks(trackIds);
+  //     tracks.addAll(trackData);
+  //   }
+  //   return {'tracks': tracks, 'info': info};
+  //   // });
+  //   // return {'info': {}, 'tracks': []};
+  // }
+  Future<Map<String, dynamic>> ne_get_playlist(String url) async {
+    return {
+      'success': (fn) async {
+        final listId =
+            Uri.parse(url).queryParameters['list_id']!.split('_').last;
+        const targetUrl = 'https://music.163.com/weapi/v3/playlist/detail';
+        final data = weapi({
+          'id': listId,
+          'offset': 0,
+          'total': true,
+          'limit': 1000,
+          'n': 1000,
+          'csrf_token': '',
+        });
+        final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+        final resData = jsonDecode(response.data);
+        final info = {
+          'id': 'neplaylist_$listId',
+          'cover_img_url': resData['playlist']['coverImgUrl'],
+          'title': resData['playlist']['name'],
+          'source_url': 'https://music.163.com/#/playlist?id=$listId',
+        };
+        final maxAllowSize = 1000;
+        final trackIdsArray =
+            _splitArray(resData['playlist']['trackIds'], maxAllowSize);
+
+        final tracks = <Map<String, dynamic>>[];
+        for (final trackIds in trackIdsArray) {
+          final trackData = await ng_parse_playlist_tracks(trackIds);
+          tracks.addAll(trackData);
+        }
+        fn({'tracks': tracks, 'info': info});
+      },
+    };
   }
 
   static List<List<dynamic>> _splitArray(List<dynamic> array, int size) {
@@ -499,7 +735,131 @@ class Netease {
     return song['fee'] != 4 && song['fee'] != 1;
   }
 
-  // static Future<void> search(String url, Function fn) async {
+  // static search(url) {
+  //   // use chrome extension to modify referer.
+  //   const target_url = 'https://music.163.com/api/search/pc';
+  //   const keyword = getParameterByName('keywords', url);
+  //   const curpage = getParameterByName('curpage', url);
+  //   const searchType = getParameterByName('type', url);
+  //   let ne_search_type = '1';
+  //   if (searchType === '1') {
+  //     ne_search_type = '1000';
+  //   }
+  //   const req_data = {
+  //     s: keyword,
+  //     offset: 20 * (curpage - 1),
+  //     limit: 20,
+  //     type: ne_search_type,
+  //   };
+  //   return {
+  //     success: (fn) => {
+  //       axios
+  //         .post(target_url, new URLSearchParams(req_data))
+  //         .then((response) => {
+  //           const { data } = response;
+  //           let result = [];
+  //           let total = 0;
+  //           if (searchType === '0') {
+  //             result = data.result.songs.map((song_info) => ({
+  //               id: `netrack_${song_info.id}`,
+  //               title: song_info.name,
+  //               artist: song_info.artists[0].name,
+  //               artist_id: `neartist_${song_info.artists[0].id}`,
+  //               album: song_info.album.name,
+  //               album_id: `nealbum_${song_info.album.id}`,
+  //               source: 'netease',
+  //               source_url: `https://music.163.com/#/song?id=${song_info.id}`,
+  //               img_url: song_info.album.picUrl,
+  //               // url: `netrack_${song_info.id}`,
+  //               url: !this.is_playable(song_info) ? '' : undefined,
+  //             }));
+  //             total = data.result.songCount;
+  //           } else if (searchType === '1') {
+  //             result = data.result.playlists.map((info) => ({
+  //               id: `neplaylist_${info.id}`,
+  //               title: info.name,
+  //               source: 'netease',
+  //               source_url: `https://music.163.com/#/playlist?id=${info.id}`,
+  //               img_url: info.coverImgUrl,
+  //               url: `neplaylist_${info.id}`,
+  //               author: info.creator.nickname,
+  //               count: info.trackCount,
+  //             }));
+  //             total = data.result.playlistCount;
+  //           }
+
+  //           return fn({
+  //             result,
+  //             total,
+  //             type: searchType,
+  //           });
+  //         })
+  //         .catch(() =>
+  //           fn({
+  //             result: [],
+  //             total: 0,
+  //             type: searchType,
+  //           })
+  //         );
+  //     },
+  //   };
+  // }
+  // Future<Map<String, dynamic>> search(String url) async {
+  //   const targetUrl = 'https://music.163.com/api/search/pc';
+  //   final keyword = Uri.parse(url).queryParameters['keywords'];
+  //   final curpage = Uri.parse(url).queryParameters['curpage'];
+  //   final searchType = Uri.parse(url).queryParameters['type'];
+  //   var neSearchType = '1';
+  //   if (searchType == '1') {
+  //     neSearchType = '1000';
+  //   }
+  //   final reqData = {
+  //     's': keyword,
+  //     'offset': 20 * (int.parse(curpage!) - 1),
+  //     'limit': 20,
+  //     'type': neSearchType,
+  //   };
+  //   final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
+  //   // final data = response.data;
+  //   final data = jsonDecode(response.data);
+  //   var result = <Map<String, dynamic>>[];
+  //   var total = 0;
+  //   if (data['result']['songCount'] == 0) {
+  //     return {'result': [], 'total': 0, 'type': searchType};
+  //   }
+  //   if (searchType == '0') {
+  //     result = (data['result']['songs'] as List).map((songInfo) {
+  //       return {
+  //         'id': 'netrack_${songInfo['id']}',
+  //         'title': songInfo['name'],
+  //         'artist': songInfo['artists'][0]['name'],
+  //         'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
+  //         'album': songInfo['album']['name'],
+  //         'album_id': 'nealbum_${songInfo['album']['id']}',
+  //         'source': 'netease',
+  //         'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
+  //         'img_url': songInfo['album']['picUrl'],
+  //         'url': !is_playable(songInfo) ? '' : null,
+  //       };
+  //     }).toList();
+  //     total = data['result']['songCount'];
+  //   } else if (searchType == '1') {
+  //     result = (data['result']['playlists'] as List).map((info) {
+  //       return {
+  //         'id': 'neplaylist_${info['id']}',
+  //         'title': info['name'],
+  //         'source': 'netease',
+  //         'source_url': 'https://music.163.com/#/playlist?id=${info['id']}',
+  //         'img_url': info['coverImgUrl'],
+  //         'url': 'neplaylist_${info['id']}',
+  //         'author': info['creator']['nickname'],
+  //         'count': info['trackCount'],
+  //       };
+  //     }).toList();
+  //     total = data['result']['playlistCount'];
+  //   }
+  //   return {'result': result, 'total': total, 'type': searchType};
+  // }
   Future<Map<String, dynamic>> search(String url) async {
     const targetUrl = 'https://music.163.com/api/search/pc';
     final keyword = Uri.parse(url).queryParameters['keywords'];
@@ -515,110 +875,313 @@ class Netease {
       'limit': 20,
       'type': neSearchType,
     };
-    final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
-    // final data = response.data;
-    final data = jsonDecode(response.data);
-    var result = <Map<String, dynamic>>[];
-    var total = 0;
-    if(data['result']['songCount'] == 0){
-      return {'result': [], 'total': 0, 'type': searchType};
-    }
-    if (searchType == '0') {
-      result = (data['result']['songs'] as List).map((songInfo) {
-        return {
-          'id': 'netrack_${songInfo['id']}',
-          'title': songInfo['name'],
-          'artist': songInfo['artists'][0]['name'],
-          'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
-          'album': songInfo['album']['name'],
-          'album_id': 'nealbum_${songInfo['album']['id']}',
-          'source': 'netease',
-          'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
-          'img_url': songInfo['album']['picUrl'],
-          'url': !is_playable(songInfo) ? '' : null,
-        };
-      }).toList();
-      total = data['result']['songCount'];
-    } else if (searchType == '1') {
-      result = (data['result']['playlists'] as List).map((info) {
-        return {
-          'id': 'neplaylist_${info['id']}',
-          'title': info['name'],
-          'source': 'netease',
-          'source_url': 'https://music.163.com/#/playlist?id=${info['id']}',
-          'img_url': info['coverImgUrl'],
-          'url': 'neplaylist_${info['id']}',
-          'author': info['creator']['nickname'],
-          'count': info['trackCount'],
-        };
-      }).toList();
-      total = data['result']['playlistCount'];
-    }
-    return {'result': result, 'total': total, 'type': searchType};
+    return {
+      'success': (fn) async {
+        final response =
+            await dio_post_with_cookie_and_csrf(targetUrl, reqData);
+        final data = jsonDecode(response.data);
+        var result = <Map<String, dynamic>>[];
+        var total = 0;
+        if (data['result']['songCount'] == 0) {
+          fn({'result': [], 'total': 0, 'type': searchType});
+          return;
+        }
+        if (searchType == '0') {
+          result = (data['result']['songs'] as List).map((songInfo) {
+            return {
+              'id': 'netrack_${songInfo['id']}',
+              'title': songInfo['name'],
+              'artist': songInfo['artists'][0]['name'],
+              'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
+              'album': songInfo['album']['name'],
+              'album_id': 'nealbum_${songInfo['album']['id']}',
+              'source': 'netease',
+              'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
+              'img_url': songInfo['album']['picUrl'],
+              'url': !is_playable(songInfo) ? '' : null,
+            };
+          }).toList();
+          total = data['result']['songCount'];
+        } else if (searchType == '1') {
+          result = (data['result']['playlists'] as List).map((info) {
+            return {
+              'id': 'neplaylist_${info['id']}',
+              'title': info['name'],
+              'source': 'netease',
+              'source_url': 'https://music.163.com/#/playlist?id=${info['id']}',
+              'img_url': info['coverImgUrl'],
+              'url': 'neplaylist_${info['id']}',
+              'author': info['creator']['nickname'],
+              'count': info['trackCount'],
+            };
+          }).toList();
+          total = data['result']['playlistCount'];
+        }
+        fn({'result': result, 'total': total, 'type': searchType});
+      },
+    };
   }
 
-  // static Future<void> neAlbum(String url, Function fn) async {
+  // static ne_album(url) {
+  //   const album_id = getParameterByName('list_id', url).split('_').pop();
+  //   // use chrome extension to modify referer.
+  //   const target_url = `https://music.163.com/api/album/${album_id}`;
+
+  //   return {
+  //     success: (fn) => {
+  //       axios.get(target_url).then((response) => {
+  //         const { data } = response;
+  //         const info = {
+  //           cover_img_url: data.album.picUrl,
+  //           title: data.album.name,
+  //           id: `nealbum_${data.album.id}`,
+  //           source_url: `https://music.163.com/#/album?id=${data.album.id}`,
+  //         };
+
+  //         const tracks = data.album.songs.map((song_info) => ({
+  //           id: `netrack_${song_info.id}`,
+  //           title: song_info.name,
+  //           artist: song_info.artists[0].name,
+  //           artist_id: `neartist_${song_info.artists[0].id}`,
+  //           album: song_info.album.name,
+  //           album_id: `nealbum_${song_info.album.id}`,
+  //           source: 'netease',
+  //           source_url: `https://music.163.com/#/song?id=${song_info.id}`,
+  //           img_url: song_info.album.picUrl,
+  //           url: !this.is_playable(song_info) ? '' : undefined,
+  //         }));
+  //         return fn({
+  //           tracks,
+  //           info,
+  //         });
+  //       });
+  //     },
+  //   };
+  // }
+  // Future<Map<String, dynamic>> ne_album(String url) async {
+  //   final albumId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
+  //   final targetUrl = 'https://music.163.com/api/album/$albumId';
+  //   final response = await dio_get_with_cookie_and_csrf(targetUrl);
+  //   final data = response.data;
+  //   final info = {
+  //     'cover_img_url': data['album']['picUrl'],
+  //     'title': data['album']['name'],
+  //     'id': 'nealbum_${data['album']['id']}',
+  //     'source_url': 'https://music.163.com/#/album?id=${data['album']['id']}',
+  //   };
+  //   final tracks = (data['album']['songs'] as List).map((songInfo) {
+  //     return {
+  //       'id': 'netrack_${songInfo['id']}',
+  //       'title': songInfo['name'],
+  //       'artist': songInfo['artists'][0]['name'],
+  //       'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
+  //       'album': songInfo['album']['name'],
+  //       'album_id': 'nealbum_${songInfo['album']['id']}',
+  //       'source': 'netease',
+  //       'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
+  //       'img_url': songInfo['album']['picUrl'],
+  //       'url': !is_playable(songInfo) ? '' : null,
+  //     };
+  //   }).toList();
+  //   return {'tracks': tracks, 'info': info};
+  // }
   Future<Map<String, dynamic>> ne_album(String url) async {
     final albumId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
-    final targetUrl = 'https://music.163.com/api/album/$albumId';
-    final response = await dio_get_with_cookie_and_csrf(targetUrl);
-    final data = response.data;
-    final info = {
-      'cover_img_url': data['album']['picUrl'],
-      'title': data['album']['name'],
-      'id': 'nealbum_${data['album']['id']}',
-      'source_url': 'https://music.163.com/#/album?id=${data['album']['id']}',
+    const targetUrl = 'https://music.163.com/api/album/';
+    return {
+      'success': (fn) async {
+        final response =
+            await dio_get_with_cookie_and_csrf(targetUrl + albumId);
+        final data = jsonDecode(response.data);
+        final info = {
+          'cover_img_url': data['album']['picUrl'],
+          'title': data['album']['name'],
+          'id': 'nealbum_${data['album']['id']}',
+          'source_url':
+              'https://music.163.com/#/album?id=${data['album']['id']}',
+        };
+        final tracks = (data['album']['songs'] as List).map((songInfo) {
+          return {
+            'id': 'netrack_${songInfo['id']}',
+            'title': songInfo['name'],
+            'artist': songInfo['artists'][0]['name'],
+            'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
+            'album': songInfo['album']['name'],
+            'album_id': 'nealbum_${songInfo['album']['id']}',
+            'source': 'netease',
+            'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
+            'img_url': songInfo['album']['picUrl'],
+            // url: `netrack_${song_info.id}`,
+            // url: !this.is_playable(song_info) ? '' : undefined,
+          };
+        }).toList();
+        fn({'tracks': tracks, 'info': info});
+      },
     };
-    final tracks = (data['album']['songs'] as List).map((songInfo) {
-      return {
-        'id': 'netrack_${songInfo['id']}',
-        'title': songInfo['name'],
-        'artist': songInfo['artists'][0]['name'],
-        'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
-        'album': songInfo['album']['name'],
-        'album_id': 'nealbum_${songInfo['album']['id']}',
-        'source': 'netease',
-        'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
-        'img_url': songInfo['album']['picUrl'],
-        'url': !is_playable(songInfo) ? '' : null,
-      };
-    }).toList();
-    return {'tracks': tracks, 'info': info};
   }
 
-  // static Future<void> neArtist(String url, Function fn) async {
+  // static ne_artist(url) {
+  //   const artist_id = getParameterByName('list_id', url).split('_').pop();
+  //   // use chrome extension to modify referer.
+  //   const target_url = `https://music.163.com/api/artist/${artist_id}`;
+
+  //   return {
+  //     success: (fn) => {
+  //       axios.get(target_url).then((response) => {
+  //         const { data } = response;
+  //         const info = {
+  //           cover_img_url: data.artist.picUrl,
+  //           title: data.artist.name,
+  //           id: `neartist_${data.artist.id}`,
+  //           source_url: `https://music.163.com/#/artist?id=${data.artist.id}`,
+  //         };
+
+  //         const tracks = data.hotSongs.map((song_info) => ({
+  //           id: `netrack_${song_info.id}`,
+  //           title: song_info.name,
+  //           artist: song_info.artists[0].name,
+  //           artist_id: `neartist_${song_info.artists[0].id}`,
+  //           album: song_info.album.name,
+  //           album_id: `nealbum_${song_info.album.id}`,
+  //           source: 'netease',
+  //           source_url: `https://music.163.com/#/song?id=${song_info.id}`,
+  //           img_url: song_info.album.picUrl,
+  //           // url: `netrack_${song_info.id}`,
+  //           url: !this.is_playable(song_info) ? '' : undefined,
+  //         }));
+  //         return fn({
+  //           tracks,
+  //           info,
+  //         });
+  //       });
+  //     },
+  //   };
+  // Future<Map<String, dynamic>> ne_artist(String url) async {
+  //   final artistId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
+  //   final targetUrl = 'https://music.163.com/api/artist/$artistId';
+  //   // final response =
+  //   //     await Dio().get(targetUrl + '?csrf_token=${await get_csrf()}');
+  //   final response = await dio_get_with_cookie_and_csrf(targetUrl);
+  //   final data = jsonDecode(response.data);
+  //   final info = {
+  //     'cover_img_url': data['artist']['picUrl'],
+  //     'title': data['artist']['name'],
+  //     'id': 'neartist_${data['artist']['id']}',
+  //     'source_url': 'https://music.163.com/#/artist?id=${data['artist']['id']}',
+  //   };
+  //   final tracks = (data['hotSongs'] as List).map((songInfo) {
+  //     return {
+  //       'id': 'netrack_${songInfo['id']}',
+  //       'title': songInfo['name'],
+  //       'artist': songInfo['artists'][0]['name'],
+  //       'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
+  //       'album': songInfo['album']['name'],
+  //       'album_id': 'nealbum_${songInfo['album']['id']}',
+  //       'source': 'netease',
+  //       'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
+  //       'img_url': songInfo['album']['picUrl'],
+  //       'url': !is_playable(songInfo) ? '' : null,
+  //     };
+  //   }).toList();
+  //   // fn({'tracks': tracks, 'info': info});
+  //   return {'tracks': tracks, 'info': info};
+  // }
   Future<Map<String, dynamic>> ne_artist(String url) async {
     final artistId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
-    final targetUrl = 'https://music.163.com/api/artist/$artistId';
-    // final response =
-    //     await Dio().get(targetUrl + '?csrf_token=${await get_csrf()}');
-    final response = await dio_get_with_cookie_and_csrf(targetUrl);
-    final data = jsonDecode(response.data);
-    final info = {
-      'cover_img_url': data['artist']['picUrl'],
-      'title': data['artist']['name'],
-      'id': 'neartist_${data['artist']['id']}',
-      'source_url': 'https://music.163.com/#/artist?id=${data['artist']['id']}',
+    const targetUrl = 'https://music.163.com/api/artist/';
+    return {
+      'success': (fn) async {
+        final response =
+            await dio_get_with_cookie_and_csrf(targetUrl + artistId);
+        final data = jsonDecode(response.data);
+        final info = {
+          'cover_img_url': data['artist']['picUrl'],
+          'title': data['artist']['name'],
+          'id': 'neartist_${data['artist']['id']}',
+          'source_url':
+              'https://music.163.com/#/artist?id=${data['artist']['id']}',
+        };
+        final tracks = (data['hotSongs'] as List).map((songInfo) {
+          return {
+            'id': 'netrack_${songInfo['id']}',
+            'title': songInfo['name'],
+            'artist': songInfo['artists'][0]['name'],
+            'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
+            'album': songInfo['album']['name'],
+            'album_id': 'nealbum_${songInfo['album']['id']}',
+            'source': 'netease',
+            'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
+            'img_url': songInfo['album']['picUrl'],
+            // url: `netrack_${song_info.id}`,
+            // url: !this.is_playable(song_info) ? '' : undefined,
+          };
+        }).toList();
+        fn({'tracks': tracks, 'info': info});
+      },
     };
-    final tracks = (data['hotSongs'] as List).map((songInfo) {
-      return {
-        'id': 'netrack_${songInfo['id']}',
-        'title': songInfo['name'],
-        'artist': songInfo['artists'][0]['name'],
-        'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
-        'album': songInfo['album']['name'],
-        'album_id': 'nealbum_${songInfo['album']['id']}',
-        'source': 'netease',
-        'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
-        'img_url': songInfo['album']['picUrl'],
-        'url': !is_playable(songInfo) ? '' : null,
-      };
-    }).toList();
-    // fn({'tracks': tracks, 'info': info});
-    return {'tracks': tracks, 'info': info};
   }
 
-  // static Future<void> lyric(String url, Function fn) async {
+  // static lyric(url) {
+  //   const track_id = getParameterByName('track_id', url).split('_').pop();
+  //   // use chrome extension to modify referer.
+  //   const target_url = 'https://music.163.com/weapi/song/lyric?csrf_token=';
+  //   const csrf = '';
+  //   const d = {
+  //     id: track_id,
+  //     lv: -1,
+  //     tv: -1,
+  //     csrf_token: csrf,
+  //   };
+  //   const data = this.weapi(d);
+  //   return {
+  //     success: (fn) => {
+  //       axios.post(target_url, new URLSearchParams(data)).then((response) => {
+  //         const { data: res_data } = response;
+  //         let lrc = '';
+  //         let tlrc = '';
+  //         if (res_data.lrc != null) {
+  //           lrc = res_data.lrc.lyric;
+  //         }
+  //         if (res_data.tlyric != null && res_data.tlyric.lyric != null) {
+  //           // eslint-disable-next-line no-control-regex
+  //           tlrc = res_data.tlyric.lyric.replace(/(|\\)/g, '');
+  //           tlrc = tlrc.replace(/[\u2005]+/g, ' ');
+  //         }
+  //         return fn({
+  //           lyric: lrc,
+  //           tlyric: tlrc,
+  //         });
+  //       });
+  //     },
+  //   };
+  // }
+  // Future<Map<String, dynamic>> lyric(String url) async {
+  //   final trackId = Uri.parse(url).queryParameters['track_id']!.split('_').last;
+  //   const targetUrl = 'https://music.163.com/weapi/song/lyric';
+  //   final data = weapi({
+  //     'id': trackId,
+  //     'lv': -1,
+  //     'tv': -1,
+  //     'csrf_token': await get_csrf(),
+  //   });
+  //   // final response = await Dio().post(
+  //   //     targetUrl + '?csrf_token=${await get_csrf()}',
+  //   //     data: FormData.fromMap(data));
+  //   final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+  //   final resData = response.data;
+  //   var lrc = '';
+  //   var tlrc = '';
+  //   if (resData['lrc'] != null) {
+  //     lrc = resData['lrc']['lyric'];
+  //   }
+  //   if (resData['tlyric'] != null && resData['tlyric']['lyric'] != null) {
+  //     tlrc = resData['tlyric']['lyric']
+  //         .replaceAll(RegExp(r'(|\\)'), '')
+  //         .replaceAll(RegExp(r'[\u2005]+'), ' ');
+  //   }
+  //   // fn({'lyric': lrc, 'tlyric': tlrc});
+  //   return {'lyric': lrc, 'tlyric': tlrc};
+  // }
   Future<Map<String, dynamic>> lyric(String url) async {
     final trackId = Uri.parse(url).queryParameters['track_id']!.split('_').last;
     const targetUrl = 'https://music.163.com/weapi/song/lyric';
@@ -628,27 +1191,100 @@ class Netease {
       'tv': -1,
       'csrf_token': await get_csrf(),
     });
-    // final response = await Dio().post(
-    //     targetUrl + '?csrf_token=${await get_csrf()}',
-    //     data: FormData.fromMap(data));
-    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
-    final resData = response.data;
-    var lrc = '';
-    var tlrc = '';
-    if (resData['lrc'] != null) {
-      lrc = resData['lrc']['lyric'];
-    }
-    if (resData['tlyric'] != null && resData['tlyric']['lyric'] != null) {
-      tlrc = resData['tlyric']['lyric']
-          .replaceAll(RegExp(r'(|\\)'), '')
-          .replaceAll(RegExp(r'[\u2005]+'), ' ');
-    }
-    // fn({'lyric': lrc, 'tlyric': tlrc});
-    return {'lyric': lrc, 'tlyric': tlrc};
+    return {
+      'success': (fn) async {
+        final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+        final resData = jsonDecode(response.data);
+        var lrc = '';
+        var tlrc = '';
+        if (resData['lrc'] != null) {
+          lrc = resData['lrc']['lyric'];
+        }
+        if (resData['tlyric'] != null && resData['tlyric']['lyric'] != null) {
+          tlrc = resData['tlyric']['lyric']
+              .replaceAll(RegExp(r'(|\\)'), '')
+              .replaceAll(RegExp(r'[\u2005]+'), ' ');
+        }
+        fn({'lyric': lrc, 'tlyric': tlrc});
+      },
+    };
   }
 
-  // static Future<void> parseUrl(String url, Function fn) async {
-  static Future<Map<String, dynamic>> parse_url(String url) async {
+  // static parse_url(url) {
+  //   let result;
+  //   let id = '';
+  //   // eslint-disable-next-line no-param-reassign
+  //   url = url.replace(
+  //     'music.163.com/#/discover/toplist?',
+  //     'music.163.com/#/playlist?'
+  //   ); // eslint-disable-line no-param-reassign
+  //   url = url.replace('music.163.com/#/my/m/music/', 'music.163.com/'); // eslint-disable-line no-param-reassign
+  //   url = url.replace('music.163.com/#/m/', 'music.163.com/'); // eslint-disable-line no-param-reassign
+  //   url = url.replace('music.163.com/#/', 'music.163.com/'); // eslint-disable-line no-param-reassign
+  //   if (url.search('//music.163.com/playlist') !== -1) {
+  //     const match = /\/\/music.163.com\/playlist\/([0-9]+)/.exec(url);
+  //     id = match ? match[1] : getParameterByName('id', url);
+  //     result = {
+  //       type: 'playlist',
+  //       id: `neplaylist_${id}`,
+  //     };
+  //   } else if (url.search('//music.163.com/artist') !== -1) {
+  //     result = {
+  //       type: 'playlist',
+  //       id: `neartist_${getParameterByName('id', url)}`,
+  //     };
+  //   } else if (url.search('//music.163.com/album') !== -1) {
+  //     const match = /\/\/music.163.com\/album\/([0-9]+)/.exec(url);
+  //     id = match ? match[1] : getParameterByName('id', url);
+  //     result = {
+  //       type: 'playlist',
+  //       id: `nealbum_${id}`,
+  //     };
+  //   }
+  //   return {
+  //     success: (fn) => {
+  //       fn(result);
+  //     },
+  //   };
+  // }
+  // static Future<Map<String, dynamic>> parse_url(String url) async {
+  //   var result;
+  //   var id = '';
+  //   url = url.replaceAll(
+  //       'music.163.com/#/discover/toplist?', 'music.163.com/#/playlist?');
+  //   url = url.replaceAll('music.163.com/#/my/m/music/', 'music.163.com/');
+  //   url = url.replaceAll('music.163.com/#/m/', 'music.163.com/');
+  //   url = url.replaceAll('music.163.com/#/', 'music.163.com/');
+  //   if (url.contains('//music.163.com/playlist')) {
+  //     final match =
+  //         RegExp(r'\/\/music.163.com\/playlist\/([0-9]+)').firstMatch(url);
+  //     id = match != null
+  //         ? match.group(1)!
+  //         : Uri.parse(url).queryParameters['id']!;
+  //     result = {
+  //       'type': 'playlist',
+  //       'id': 'neplaylist_$id',
+  //     };
+  //   } else if (url.contains('//music.163.com/artist')) {
+  //     result = {
+  //       'type': 'playlist',
+  //       'id': 'neartist_${Uri.parse(url).queryParameters['id']}',
+  //     };
+  //   } else if (url.contains('//music.163.com/album')) {
+  //     final match =
+  //         RegExp(r'\/\/music.163.com\/album\/([0-9]+)').firstMatch(url);
+  //     id = match != null
+  //         ? match.group(1)!
+  //         : Uri.parse(url).queryParameters['id']!;
+  //     result = {
+  //       'type': 'playlist',
+  //       'id': 'nealbum_$id',
+  //     };
+  //   }
+  //   // fn(result);
+  //   return result;
+  // }
+  Future<Map<String, dynamic>> parse_url(String url) async {
     var result;
     var id = '';
     url = url.replaceAll(
@@ -682,8 +1318,11 @@ class Netease {
         'id': 'nealbum_$id',
       };
     }
-    // fn(result);
-    return result;
+    return {
+      'success': (fn) {
+        fn(result);
+      },
+    };
   }
 
   // static Future<void> getPlaylist(String url, Function fn) async {
@@ -693,15 +1332,12 @@ class Netease {
       case 'neplaylist':
         // await neGetPlaylist(url, fn);
         return ne_get_playlist(url);
-        break;
       case 'nealbum':
         // await neAlbum(url, fn);
         return ne_album(url);
-        break;
       case 'neartist':
         // await neArtist(url, fn);
         return ne_artist(url);
-        break;
       default:
         return {};
     }
@@ -820,11 +1456,98 @@ class Netease {
     // return {
     //   success: (fn) => fn({ recommend, all }),
     // };
-    return Future.value({'recommend': recommend, 'all': all});
+    // return Future.value({'recommend': recommend, 'all': all});
+    return Future.value({
+      'success': (fn) {
+        fn({'recommend': recommend, 'all': all});
+      },
+    });
   }
 
-  // static Future<void> getUserPlaylist(
-  //     String url, String playlistType, Function fn) async {
+  // static get_user_playlist(url, playlistType) {
+  //   const user_id = getParameterByName('user_id', url);
+  //   const target_url = 'https://music.163.com/api/user/playlist';
+
+  //   const req_data = {
+  //     uid: user_id,
+  //     limit: 1000,
+  //     offset: 0,
+  //     includeVideo: true,
+  //   };
+
+  //   return {
+  //     success: (fn) => {
+  //       axios
+  //         .post(target_url, new URLSearchParams(req_data))
+  //         .then((response) => {
+  //           const playlists = [];
+  //           response.data.playlist.forEach((item) => {
+  //             if (playlistType === 'created' && item.subscribed !== false) {
+  //               return;
+  //             }
+  //             if (playlistType === 'favorite' && item.subscribed !== true) {
+  //               return;
+  //             }
+  //             const playlist = {
+  //               cover_img_url: item.coverImgUrl,
+  //               id: `neplaylist_${item.id}`,
+  //               source_url: `https://music.163.com/#/playlist?id=${item.id}`,
+  //               title: item.name,
+  //             };
+  //             playlists.push(playlist);
+  //           });
+  //           return fn({
+  //             status: 'success',
+  //             data: {
+  //               playlists,
+  //             },
+  //           });
+  //         });
+  //     },
+  //   };
+  // }
+  // Future<Map<String, dynamic>> get_user_playlist(
+  //     String url, String playlistType) async {
+  //   final userId = Uri.parse(url).queryParameters['user_id'];
+  //   const targetUrl = 'https://music.163.com/api/user/playlist';
+
+  //   final reqData = {
+  //     'uid': userId,
+  //     'limit': 1000,
+  //     'offset': 0,
+  //     'includeVideo': true,
+  //   };
+
+  //   // final response = await Dio().post(
+  //   //     targetUrl + '?csrf_token=${await get_csrf()}',
+  //   //     data: FormData.fromMap(reqData));
+  //   final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
+  //   final playlists =
+  //       (jsonDecode(response.data)['playlist'] as List).where((item) {
+  //     if (playlistType == 'created' && item['subscribed'] != false) {
+  //       return false;
+  //     }
+  //     if (playlistType == 'favorite' && item['subscribed'] != true) {
+  //       return false;
+  //     }
+  //     return true;
+  //   }).map((item) {
+  //     return {
+  //       'cover_img_url': item['coverImgUrl'],
+  //       'id': 'neplaylist_${item['id']}',
+  //       'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+  //       'title': item['name'],
+  //     };
+  //   }).toList();
+  //   // fn({
+  //   //   'status': 'success',
+  //   //   'data': {'playlists': playlists}
+  //   // });
+  //   return {
+  //     'status': 'success',
+  //     'data': {'playlists': playlists}
+  //   };
+  // }
   Future<Map<String, dynamic>> get_user_playlist(
       String url, String playlistType) async {
     final userId = Uri.parse(url).queryParameters['user_id'];
@@ -836,35 +1559,39 @@ class Netease {
       'offset': 0,
       'includeVideo': true,
     };
-
-    // final response = await Dio().post(
-    //     targetUrl + '?csrf_token=${await get_csrf()}',
-    //     data: FormData.fromMap(reqData));
-    final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
-    final playlists =
-        (jsonDecode(response.data)['playlist'] as List).where((item) {
-      if (playlistType == 'created' && item['subscribed'] != false) {
-        return false;
-      }
-      if (playlistType == 'favorite' && item['subscribed'] != true) {
-        return false;
-      }
-      return true;
-    }).map((item) {
-      return {
-        'cover_img_url': item['coverImgUrl'],
-        'id': 'neplaylist_${item['id']}',
-        'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
-        'title': item['name'],
-      };
-    }).toList();
-    // fn({
-    //   'status': 'success',
-    //   'data': {'playlists': playlists}
-    // });
     return {
-      'status': 'success',
-      'data': {'playlists': playlists}
+      'success': (fn) async {
+        try {
+          final response =
+              await dio_post_with_cookie_and_csrf(targetUrl, reqData);
+          final playlists =
+              (jsonDecode(response.data)['playlist'] as List).where((item) {
+            if (playlistType == 'created' && item['subscribed'] != false) {
+              return false;
+            }
+            if (playlistType == 'favorite' && item['subscribed'] != true) {
+              return false;
+            }
+            return true;
+          }).map((item) {
+            return {
+              'cover_img_url': item['coverImgUrl'],
+              'id': 'neplaylist_${item['id']}',
+              'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+              'title': item['name'],
+            };
+          }).toList();
+          fn({
+            'status': 'success',
+            'data': {'playlists': playlists}
+          });
+        } catch (e) {
+          fn({
+            'status': 'fail',
+            'data': {'playlists': []}
+          });
+        }
+      },
     };
   }
 
@@ -881,7 +1608,72 @@ class Netease {
     return await get_user_playlist(url, 'favorite');
   }
 
-  // static Future<void> getRecommendPlaylist(Function fn) async {
+  // static get_recommend_playlist() {
+  //   const target_url = 'https://music.163.com/weapi/personalized/playlist';
+
+  //   const req_data = {
+  //     limit: 30,
+  //     total: true,
+  //     n: 1000,
+  //   };
+
+  //   const encrypt_req_data = this.weapi(req_data);
+
+  //   return {
+  //     success: (fn) => {
+  //       axios
+  //         .post(target_url, new URLSearchParams(encrypt_req_data))
+  //         .then((response) => {
+  //           const playlists = [];
+  //           response.data.result.forEach((item) => {
+  //             const playlist = {
+  //               cover_img_url: item.picUrl,
+  //               id: `neplaylist_${item.id}`,
+  //               source_url: `https://music.163.com/#/playlist?id=${item.id}`,
+  //               title: item.name,
+  //             };
+  //             playlists.push(playlist);
+  //           });
+  //           return fn({
+  //             status: 'success',
+  //             data: {
+  //               playlists,
+  //             },
+  //           });
+  //         });
+  //     },
+  //   };
+  // }
+  // Future<Map<String, dynamic>> get_recommend_playlist() async {
+  //   const targetUrl = 'https://music.163.com/weapi/personalized/playlist';
+
+  //   final reqData = {
+  //     'limit': 30,
+  //     'total': true,
+  //     'n': 1000,
+  //   };
+
+  //   final encryptReqData = weapi(reqData);
+
+  //   final response =
+  //       await dio_post_with_cookie_and_csrf(targetUrl, encryptReqData);
+  //   final playlists = (response.data['result'] as List).map((item) {
+  //     return {
+  //       'cover_img_url': item['picUrl'],
+  //       'id': 'neplaylist_${item['id']}',
+  //       'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+  //       'title': item['name'],
+  //     };
+  //   }).toList();
+  //   // fn({
+  //   //   'status': 'success',
+  //   //   'data': {'playlists': playlists}
+  //   // });
+  //   return {
+  //     'status': 'success',
+  //     'data': {'playlists': playlists}
+  //   };
+  // }
   Future<Map<String, dynamic>> get_recommend_playlist() async {
     const targetUrl = 'https://music.163.com/weapi/personalized/playlist';
 
@@ -892,28 +1684,57 @@ class Netease {
     };
 
     final encryptReqData = weapi(reqData);
-
-    final response =
-        await dio_post_with_cookie_and_csrf(targetUrl, encryptReqData);
-    final playlists = (response.data['result'] as List).map((item) {
-      return {
-        'cover_img_url': item['picUrl'],
-        'id': 'neplaylist_${item['id']}',
-        'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
-        'title': item['name'],
-      };
-    }).toList();
-    // fn({
-    //   'status': 'success',
-    //   'data': {'playlists': playlists}
-    // });
     return {
-      'status': 'success',
-      'data': {'playlists': playlists}
+      'success': (fn) async {
+        final response =
+            await dio_post_with_cookie_and_csrf(targetUrl, encryptReqData);
+        final playlists = (response.data['result'] as List).map((item) {
+          return {
+            'cover_img_url': item['picUrl'],
+            'id': 'neplaylist_${item['id']}',
+            'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+            'title': item['name'],
+          };
+        }).toList();
+        fn({
+          'status': 'success',
+          'data': {'playlists': playlists}
+        });
+      },
     };
   }
 
-  // static Future<void> getUser(Function fn) async {
+  // static get_user() {
+  //   const url = `https://music.163.com/api/nuser/account/get`;
+
+  //   const encrypt_req_data = this.weapi({});
+  //   return {
+  //     success: (fn) => {
+  //       axios.post(url, new URLSearchParams(encrypt_req_data)).then((res) => {
+  //         let result = { is_login: false };
+  //         let status = 'fail';
+  //         if (res.data.account !== null) {
+  //           status = 'success';
+  //           const { data } = res;
+  //           result = {
+  //             is_login: true,
+  //             user_id: data.account.id,
+  //             user_name: data.account.userName,
+  //             nickname: data.profile.nickname,
+  //             avatar: data.profile.avatarUrl,
+  //             platform: 'netease',
+  //             data,
+  //           };
+  //         }
+
+  //         return fn({
+  //           status,
+  //           data: result,
+  //         });
+  //       });
+  //     },
+  //   };
+  // }
   Future<Map<String, dynamic>> get_user() async {
     const url = 'https://music.163.com/weapi/w/nuser/account/get';
 

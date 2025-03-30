@@ -3,6 +3,7 @@ import 'main.dart';
 import 'package:flutter/material.dart';
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/qq.dart';
+import 'package:listen1_xuan/kugou.dart';
 import 'netease.dart';
 import 'package:listen1_xuan/settings.dart';
 import 'package:marquee/marquee.dart';
@@ -189,17 +190,20 @@ class _PlaylistState extends State<Playlist> {
   void _loadData() async {
     Map<String, dynamic> result = await MediaService.showPlaylistArray(
         widget.source, widget.offset, widget.filter['id']);
-    print(result);
-    try {
-      setState(() {
-        _playlists = result['result'].toList();
-        per_page = result['result'].length;
-        hasmore = true;
-        _loading = false;
-      });
-    } catch (e) {
-      print(e);
-    }
+        
+    result['success']((data) {
+      print(data); // 打印实际的数据
+      // try {
+        setState(() {
+          _playlists = data.toList();
+          per_page = data.length;
+          hasmore = true;
+          _loading = false;
+        });
+      // } catch (e) {
+      //   print(e);
+      // }
+    });
   }
 
   void _onScroll() {
@@ -219,17 +223,19 @@ class _PlaylistState extends State<Playlist> {
       });
       Map<String, dynamic> result = await MediaService.showPlaylistArray(
           widget.source, _currentOffset, widget.filter['id']);
-      print(result);
-      if (result['result'].length == 0) {
-        hasmore = false;
+      result['success']((data) {
+        print(data); // 打印实际的数据
+        if (data.length == 0) {
+          hasmore = false;
+          setState(() {
+            _loadingMore = false;
+          });
+          return;
+        }
         setState(() {
+          _playlists.addAll(data);
           _loadingMore = false;
         });
-        return;
-      }
-      setState(() {
-        _playlists.addAll(result['result']);
-        _loadingMore = false;
       });
     } catch (e) {
       print(e);
@@ -376,30 +382,70 @@ class _MyPlaylistState extends State<MyPlaylist> {
     var result_ne2 = await netease
         .get_user_favorite_playlist("/get_user_favorite_playlist?user_id=$uid");
     try {
-      setState(() {
-        for (var i = 0; i < result_ne['data']["playlists"].length; i++) {
+      // setState(() {
+      //   for (var i = 0; i < result_ne['data']["playlists"].length; i++) {
+      //     _playlists_ne.add({
+      //       "info": {
+      //         'cover_img_url': result_ne['data']["playlists"][i]
+      //             ['cover_img_url'],
+      //         'title': result_ne['data']["playlists"][i]['title'],
+      //         'id': result_ne['data']["playlists"][i]['id'],
+      //         'source_url': result_ne['data']["playlists"][i]['source_url']
+      //       }
+      //     });
+      //   }
+      //   for (var i = 0; i < result_ne2['data']["playlists"].length; i++) {
+      //     _playlists_ne.add({
+      //       "info": {
+      //         'cover_img_url': result_ne2['data']["playlists"][i]
+      //             ['cover_img_url'],
+      //         'title': result_ne2['data']["playlists"][i]['title'],
+      //         'id': result_ne2['data']["playlists"][i]['id'],
+      //         'source_url': result_ne2['data']["playlists"][i]['source_url']
+      //       }
+      //     });
+      //   }
+      //   _isNeDataLoaded = true;
+      // });
+      bool tflag1 = false;
+      bool tflag2 = false;
+      void check() {
+        if (tflag1 && tflag2) {
+          setState(() {
+            _isNeDataLoaded = true;
+          });
+        }
+      }
+
+      result_ne['success']((data) {
+        if(data["status"]!="fail")
+        for (var i = 0; i < data['data']["playlists"].length; i++) {
           _playlists_ne.add({
             "info": {
-              'cover_img_url': result_ne['data']["playlists"][i]
-                  ['cover_img_url'],
-              'title': result_ne['data']["playlists"][i]['title'],
-              'id': result_ne['data']["playlists"][i]['id'],
-              'source_url': result_ne['data']["playlists"][i]['source_url']
+              'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
+              'title': data['data']["playlists"][i]['title'],
+              'id': data['data']["playlists"][i]['id'],
+              'source_url': data['data']["playlists"][i]['source_url']
             }
           });
         }
-        for (var i = 0; i < result_ne2['data']["playlists"].length; i++) {
+        tflag1 = true;
+        check();
+      });
+      result_ne2['success']((data) {
+        if(data["status"]!="fail")
+        for (var i = 0; i < data['data']["playlists"].length; i++) {
           _playlists_ne.add({
             "info": {
-              'cover_img_url': result_ne2['data']["playlists"][i]
-                  ['cover_img_url'],
-              'title': result_ne2['data']["playlists"][i]['title'],
-              'id': result_ne2['data']["playlists"][i]['id'],
-              'source_url': result_ne2['data']["playlists"][i]['source_url']
+              'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
+              'title': data['data']["playlists"][i]['title'],
+              'id': data['data']["playlists"][i]['id'],
+              'source_url': data['data']["playlists"][i]['source_url']
             }
           });
         }
-        _isNeDataLoaded = true;
+        tflag2 = true;
+        check();
       });
     } catch (e) {
       Fluttertoast.showToast(
@@ -416,30 +462,70 @@ class _MyPlaylistState extends State<MyPlaylist> {
     var result_qq2 = await qq
         .get_user_favorite_playlist("/get_user_favorite_playlist?user_id=$uid");
     try {
-      setState(() {
-        for (var i = 0; i < result_qq['data']["playlists"].length; i++) {
+      // setState(() {
+      //   for (var i = 0; i < result_qq['data']["playlists"].length; i++) {
+      //     _playlists_qq.add({
+      //       "info": {
+      //         'cover_img_url': result_qq['data']["playlists"][i]
+      //             ['cover_img_url'],
+      //         'title': result_qq['data']["playlists"][i]['title'],
+      //         'id': result_qq['data']["playlists"][i]['id'],
+      //         'source_url': result_qq['data']["playlists"][i]['source_url']
+      //       }
+      //     });
+      //   }
+      //   for (var i = 0; i < result_qq2['data']["playlists"].length; i++) {
+      //     _playlists_qq.add({
+      //       "info": {
+      //         'cover_img_url': result_qq2['data']["playlists"][i]
+      //             ['cover_img_url'],
+      //         'title': result_qq2['data']["playlists"][i]['title'],
+      //         'id': result_qq2['data']["playlists"][i]['id'],
+      //         'source_url': result_qq2['data']["playlists"][i]['source_url']
+      //       }
+      //     });
+      //   }
+      //   _isQqDataLoaded = true;
+      // });
+      bool tflag1 = false;
+      bool tflag2 = false;
+      void check() {
+        if (tflag1 && tflag2) {
+          setState(() {
+            _isQqDataLoaded = true;
+          });
+        }
+      }
+      
+      result_qq['success']((data) {
+        if(data["status"]!="fail")
+        for (var i = 0; i < data['data']["playlists"].length; i++) {
           _playlists_qq.add({
             "info": {
-              'cover_img_url': result_qq['data']["playlists"][i]
-                  ['cover_img_url'],
-              'title': result_qq['data']["playlists"][i]['title'],
-              'id': result_qq['data']["playlists"][i]['id'],
-              'source_url': result_qq['data']["playlists"][i]['source_url']
+              'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
+              'title': data['data']["playlists"][i]['title'],
+              'id': data['data']["playlists"][i]['id'],
+              'source_url': data['data']["playlists"][i]['source_url']
             }
           });
         }
-        for (var i = 0; i < result_qq2['data']["playlists"].length; i++) {
+        tflag1 = true;
+        check();
+      });
+      result_qq2['success']((data) {
+        if(data["status"]!="fail")
+        for (var i = 0; i < data['data']["playlists"].length; i++) {
           _playlists_qq.add({
             "info": {
-              'cover_img_url': result_qq2['data']["playlists"][i]
-                  ['cover_img_url'],
-              'title': result_qq2['data']["playlists"][i]['title'],
-              'id': result_qq2['data']["playlists"][i]['id'],
-              'source_url': result_qq2['data']["playlists"][i]['source_url']
+              'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
+              'title': data['data']["playlists"][i]['title'],
+              'id': data['data']["playlists"][i]['id'],
+              'source_url': data['data']["playlists"][i]['source_url']
             }
           });
         }
-        _isQqDataLoaded = true;
+        tflag2 = true;
+        check();
       });
     } catch (e) {
       Fluttertoast.showToast(
@@ -725,15 +811,27 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
   }
 
   void _loadData() async {
-    result = await MediaService.getPlaylist(widget.listId);
-    tracks = List<Map<String, dynamic>>.from(result['tracks']);
-    _unfilteredTracks = List<Map<String, dynamic>>.from(tracks);
-    setState(() {
-      _playlist = result;
-      _loading = false;
-      if (result['info']['title'] == null) {
-        _loadfailed = true;
-      }
+    var res = await MediaService.getPlaylist(widget.listId);
+    // tracks = List<Map<String, dynamic>>.from(result['tracks']);
+    // _unfilteredTracks = List<Map<String, dynamic>>.from(tracks);
+    // setState(() {
+    //   _playlist = result;
+    //   _loading = false;
+    //   if (result['info']['title'] == null) {
+    //     _loadfailed = true;
+    //   }
+    // });
+    res['success']((data) {
+      result = data;
+      setState(() {
+        _playlist = data;
+        tracks = List<Map<String, dynamic>>.from(data['tracks']);
+        _unfilteredTracks = List<Map<String, dynamic>>.from(tracks);
+        _loading = false;
+        if (data['info']['title'] == null) {
+          _loadfailed = true;
+        }
+      });
     });
   }
 
@@ -1286,14 +1384,21 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
     curpage += 1;
     if (curpage >= result['total'] / (tracks.length / (curpage - 1))) return;
     change_source();
-    result = await MediaService.search(source, {
+    var ret = await MediaService.search(source, {
       'keywords': widget.input_text_Controller.text,
       'curpage': curpage,
       'type': song_or_playlist ? 1 : 0
     });
-    setState(() {
-      tracks.addAll(List<Map<String, dynamic>>.from(result['result']));
-      // _loading = false;
+    // setState(() {
+    //   tracks.addAll(List<Map<String, dynamic>>.from(result['result']));
+    //   // _loading = false;
+    // });
+    ret["success"]((data) {
+      result = data;
+      setState(() {
+        tracks.addAll(List<Map<String, dynamic>>.from(data['result']));
+        _loading = false;
+      });
     });
   }
 
@@ -1308,14 +1413,21 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
       setState(() {
         _loading = true;
       });
-      result = await MediaService.search(source, {
+      var ret = await MediaService.search(source, {
         'keywords': query,
         'curpage': curpage,
         'type': song_or_playlist ? 1 : 0
       });
-      setState(() {
-        tracks = List<Map<String, dynamic>>.from(result['result']);
-        _loading = false;
+      // setState(() {
+      //   tracks = List<Map<String, dynamic>>.from(result['result']);
+      //   _loading = false;
+      // });
+      ret["success"]((data) {
+        result = data;
+        setState(() {
+          tracks = List<Map<String, dynamic>>.from(data['result']);
+          _loading = false;
+        });
       });
     } catch (e) {
       // print(e);

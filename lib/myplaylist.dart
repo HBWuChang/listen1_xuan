@@ -184,20 +184,24 @@ class MyPlaylist {
     final listId = getParameterByName('list_id', url);
     final prefs = await SharedPreferences.getInstance();
     final playlistJson = listId != null ? prefs.getString(listId) : null;
-    if (playlistJson != null) {
-      final playlist = jsonDecode(playlistJson);
-      if (playlist['tracks'] != null) {
-        for (var track in playlist['tracks']) {
-          track.remove('url');
-          track['disabled'] = false;
+    return {
+      "success": ((fn) {
+        if (playlistJson != null) {
+          final playlist = jsonDecode(playlistJson);
+          if (playlist['tracks'] != null) {
+            for (var track in playlist['tracks']) {
+              track.remove('url');
+              track['disabled'] = false;
+            }
+          }
+          fn(playlist);
+          // return playlist;
+        } else {
+          fn(null);
+          // return null;
         }
-      }
-      // fn(playlist);
-      return playlist;
-    } else {
-      // fn(null);
-      return null;
-    }
+      })
+    };
   }
 
   String guid() {

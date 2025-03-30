@@ -8,7 +8,7 @@ import 'netease.dart';
 import 'myplaylist.dart';
 import 'play.dart';
 import 'qq.dart';
-
+import 'kugou.dart';
 class Provider {
   final String name;
   final dynamic instance;
@@ -55,8 +55,8 @@ final List<Provider> providers = [
   ),
   Provider(
     name: 'kugou',
-    // instance: kugou,
-    instance: null,
+    instance: kugou,
+    // instance: null,
     searchable: true,
     supportLogin: false,
     id: 'kg',
