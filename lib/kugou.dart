@@ -138,7 +138,7 @@ class Kugou {
     final url =
         'https://www.kugou.com/yy/index.php?r=play/getdata&hash=${track['lyric_url']}';
     final response = await dio_with_cookie_manager.get(url);
-    final data = jsonDecode(response.data);
+    final data = response.data;
     track['img_url'] = data['data']['img'];
     callback(null, track);
   }

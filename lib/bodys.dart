@@ -30,10 +30,12 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CachedNetworkImage(
-                  imageUrl: track['img_url'],
-                  errorWidget: (context, url, error) => Icon(Icons.error),
-                ),
+                track['img_url'] == null
+                    ? Container()
+                    : CachedNetworkImage(
+                        imageUrl: track['img_url'],
+                        errorWidget: (context, url, error) => Icon(Icons.error),
+                      ),
                 ListTile(
                   title: Text('作者：${track['artist'] ?? '未知艺术家'}'),
                   onTap: () {
@@ -190,16 +192,16 @@ class _PlaylistState extends State<Playlist> {
   void _loadData() async {
     Map<String, dynamic> result = await MediaService.showPlaylistArray(
         widget.source, widget.offset, widget.filter['id']);
-        
+
     result['success']((data) {
       print(data); // 打印实际的数据
       // try {
-        setState(() {
-          _playlists = data.toList();
-          per_page = data.length;
-          hasmore = true;
-          _loading = false;
-        });
+      setState(() {
+        _playlists = data.toList();
+        per_page = data.length;
+        hasmore = true;
+        _loading = false;
+      });
       // } catch (e) {
       //   print(e);
       // }
@@ -418,32 +420,32 @@ class _MyPlaylistState extends State<MyPlaylist> {
       }
 
       result_ne['success']((data) {
-        if(data["status"]!="fail")
-        for (var i = 0; i < data['data']["playlists"].length; i++) {
-          _playlists_ne.add({
-            "info": {
-              'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
-              'title': data['data']["playlists"][i]['title'],
-              'id': data['data']["playlists"][i]['id'],
-              'source_url': data['data']["playlists"][i]['source_url']
-            }
-          });
-        }
+        if (data["status"] != "fail")
+          for (var i = 0; i < data['data']["playlists"].length; i++) {
+            _playlists_ne.add({
+              "info": {
+                'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
+                'title': data['data']["playlists"][i]['title'],
+                'id': data['data']["playlists"][i]['id'],
+                'source_url': data['data']["playlists"][i]['source_url']
+              }
+            });
+          }
         tflag1 = true;
         check();
       });
       result_ne2['success']((data) {
-        if(data["status"]!="fail")
-        for (var i = 0; i < data['data']["playlists"].length; i++) {
-          _playlists_ne.add({
-            "info": {
-              'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
-              'title': data['data']["playlists"][i]['title'],
-              'id': data['data']["playlists"][i]['id'],
-              'source_url': data['data']["playlists"][i]['source_url']
-            }
-          });
-        }
+        if (data["status"] != "fail")
+          for (var i = 0; i < data['data']["playlists"].length; i++) {
+            _playlists_ne.add({
+              "info": {
+                'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
+                'title': data['data']["playlists"][i]['title'],
+                'id': data['data']["playlists"][i]['id'],
+                'source_url': data['data']["playlists"][i]['source_url']
+              }
+            });
+          }
         tflag2 = true;
         check();
       });
@@ -496,34 +498,34 @@ class _MyPlaylistState extends State<MyPlaylist> {
           });
         }
       }
-      
+
       result_qq['success']((data) {
-        if(data["status"]!="fail")
-        for (var i = 0; i < data['data']["playlists"].length; i++) {
-          _playlists_qq.add({
-            "info": {
-              'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
-              'title': data['data']["playlists"][i]['title'],
-              'id': data['data']["playlists"][i]['id'],
-              'source_url': data['data']["playlists"][i]['source_url']
-            }
-          });
-        }
+        if (data["status"] != "fail")
+          for (var i = 0; i < data['data']["playlists"].length; i++) {
+            _playlists_qq.add({
+              "info": {
+                'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
+                'title': data['data']["playlists"][i]['title'],
+                'id': data['data']["playlists"][i]['id'],
+                'source_url': data['data']["playlists"][i]['source_url']
+              }
+            });
+          }
         tflag1 = true;
         check();
       });
       result_qq2['success']((data) {
-        if(data["status"]!="fail")
-        for (var i = 0; i < data['data']["playlists"].length; i++) {
-          _playlists_qq.add({
-            "info": {
-              'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
-              'title': data['data']["playlists"][i]['title'],
-              'id': data['data']["playlists"][i]['id'],
-              'source_url': data['data']["playlists"][i]['source_url']
-            }
-          });
-        }
+        if (data["status"] != "fail")
+          for (var i = 0; i < data['data']["playlists"].length; i++) {
+            _playlists_qq.add({
+              "info": {
+                'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
+                'title': data['data']["playlists"][i]['title'],
+                'id': data['data']["playlists"][i]['id'],
+                'source_url': data['data']["playlists"][i]['source_url']
+              }
+            });
+          }
         tflag2 = true;
         check();
       });
@@ -1366,6 +1368,9 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
         break;
       case 'QQ':
         source = 'qq';
+        break;
+      case '酷狗':
+        source = 'kugou';
         break;
     }
   }
