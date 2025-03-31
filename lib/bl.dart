@@ -9,7 +9,7 @@ import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' show parse;
 import 'lowebutil.dart';
 import 'package:marquee/marquee.dart';
-
+import 'main.dart';
 final bilibili = Bilibili();
 
 class Bilibili {
@@ -26,17 +26,17 @@ class Bilibili {
       'content-type': 'application/json',
       'cookie': cookie,
     };
-    final dio = Dio();
+    final dio = dio_with_cookie_manager;
     try {
       print(headers);
-      final response = await Dio().get(url, options: Options(headers: headers));
+      final response = await dio_with_cookie_manager.get(url, options: Options(headers: headers));
       print(response.statusCode);
       print(response.data);
       bilibiliData = response.data;
       url = 'https://api.bilibili.com/x/v3/fav/folder/collected/list';
       String upMid = cookie.split('DedeUserID=')[1].split(';')[0];
       String turl = url + '?pn=1&ps=20&up_mid=' + upMid + '&platform=web';
-      var response2 = await Dio().get(turl, options: Options(headers: headers));
+      var response2 = await dio_with_cookie_manager.get(turl, options: Options(headers: headers));
       var res2 = response2.data;
       bilibiliData2.clear();
       res2['data']['list'].forEach((element) {
@@ -119,7 +119,7 @@ class Bilibili {
         };
         var medias = [];
         var response =
-            await Dio().get(turl, options: Options(headers: headers));
+            await dio_with_cookie_manager.get(turl, options: Options(headers: headers));
         var res = response.data;
         final data = response.data['data'];
         final info = {
@@ -137,7 +137,7 @@ class Bilibili {
           do {
             turl = '${url}pn=$pn&media_id=${selectmid.substring(2)}';
             response =
-                await Dio().get(turl, options: Options(headers: headers));
+                await dio_with_cookie_manager.get(turl, options: Options(headers: headers));
             res = response.data;
             res["data"]['medias'].forEach((element) {
               medias.add(element);
@@ -163,7 +163,7 @@ class Bilibili {
         };
         var medias = [];
         var response =
-            await Dio().get(turl, options: Options(headers: headers));
+            await dio_with_cookie_manager.get(turl, options: Options(headers: headers));
         var res = response.data;
         final data = response.data['data'];
         final info = {
@@ -209,7 +209,7 @@ class Bilibili {
       } else {
         return '';
       }
-      Response response = await Dio().get(
+      Response response = await dio_with_cookie_manager.get(
         'https://api.bilibili.com/x/web-interface/nav',
         options: Options(
           headers: {
@@ -263,7 +263,7 @@ class Bilibili {
 
   static Future<Map<String, String>> fetch_wbi_key() async {
     final response =
-        await Dio().get('https://api.bilibili.com/x/web-interface/nav');
+        await dio_with_cookie_manager.get('https://api.bilibili.com/x/web-interface/nav');
     final jsonContent = response.data;
     final imgUrl = jsonContent['data']['wbi_img']['img_url'];
     final subUrl = jsonContent['data']['wbi_img']['sub_url'];
@@ -387,14 +387,14 @@ class Bilibili {
     try {
       final queryString = await encWbi(params);
       final targetUrl = '$url?$queryString';
-      return await Dio().get(targetUrl);
+      return await dio_with_cookie_manager.get(targetUrl);
       // return await dio_get_with_cookie_and_csrf(targetUrl);
     } catch (e) {
       clearWbiKey();
       try {
         final queryString = await encWbi(params);
         final targetUrl = '$url?$queryString';
-        return await Dio().get(targetUrl);
+        return await dio_with_cookie_manager.get(targetUrl);
       } catch (e) {
         return Future.error('Request failed');
       }
@@ -474,7 +474,7 @@ class Bilibili {
 
     return {
       'success': (Function fn) {
-        Dio().get(targetUrl).then((response) {
+        dio_with_cookie_manager.get(targetUrl).then((response) {
           final data = response.data['data']["data"] as List;
           final result = data.map((item) {
             return {
@@ -526,7 +526,7 @@ class Bilibili {
 
     return {
       'success': (Function fn) {
-        Dio().get(targetUrl).then((response) async {
+        dio_with_cookie_manager.get(targetUrl).then((response) async {
           final data = response.data['data'];
           final info = {
             'cover_img_url': data['cover'],
@@ -536,7 +536,7 @@ class Bilibili {
           };
           final target =
               'https://www.bilibili.com/audio/music-service-c/web/song/of-menu?pn=1&ps=100&sid=$listId';
-          final res = await Dio().get(target);
+          final res = await dio_with_cookie_manager.get(target);
           final tracks = res.data['data']['data'].map((item) {
             return bi_convert_song(item);
           }).toList();
@@ -608,7 +608,7 @@ class Bilibili {
 
     return {
       'success': (Function fn) {
-        Dio().get(targetUrl).then((response) {
+        dio_with_cookie_manager.get(targetUrl).then((response) {
           final info = {
             'cover_img_url': response.data['data']['pic'],
             'title': response.data['data']['title'],
@@ -724,7 +724,7 @@ class Bilibili {
         } else {
           targetUrl =
               'https://api.bilibili.com/audio/music-service-c/web/song/upper?pn=1&ps=0&order=2&uid=$artistId';
-          final res = await Dio().get(targetUrl);
+          final res = await dio_with_cookie_manager.get(targetUrl);
           final tracks = res.data['data']['data'].map((item) {
             return bi_convert_song(item);
           }).toList();
@@ -762,14 +762,14 @@ class Bilibili {
       final targetUrl =
           'https://api.bilibili.com/x/web-interface/view?bvid=$bvid';
       try {
-        final response = await Dio().get(targetUrl);
+        final response = await dio_with_cookie_manager.get(targetUrl);
         var cid = response.data['data']['pages'][0]['cid'];
         if (trackIdCheck.length > 1) {
           cid = trackIdCheck[1];
         }
         final targetUrl2 =
             'http://api.bilibili.com/x/player/playurl?fnval=16&bvid=$bvid&cid=$cid';
-        final response2 = await Dio().get(targetUrl2);
+        final response2 = await dio_with_cookie_manager.get(targetUrl2);
         try {
           if (response2.data['data']['dash']['audio'].length > 0) {
             final url = response2.data['data']['dash']['audio'][0]['baseUrl'];
@@ -798,7 +798,7 @@ class Bilibili {
       final targetUrl =
           'https://www.bilibili.com/audio/music-service-c/web/url?sid=$songId';
       try {
-        final response = await Dio().get(targetUrl);
+        final response = await dio_with_cookie_manager.get(targetUrl);
         final data = response.data;
         if (data['code'] == 0) {
           sound['url'] = data['data']['cdns'][0];
@@ -884,7 +884,7 @@ class Bilibili {
   //   } else {
   //     cookie = 'buvid3=0';
   //   }
-  //   final response = await Dio().get(targetUrl,
+  //   final response = await dio_with_cookie_manager.get(targetUrl,
   //       options: Options(headers: {
   //         'cookie': cookie,
   //       }));
@@ -913,7 +913,7 @@ class Bilibili {
         } else {
           cookie = 'buvid3=0';
         }
-        Dio()
+        dio_with_cookie_manager
             .get(targetUrl,
                 options: Options(headers: {
                   'cookie': cookie,

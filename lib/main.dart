@@ -303,6 +303,10 @@ class _MyHomePageState extends State<MyHomePage>
       setState(() {
         _Mainpage = false;
         _playlist_id = id;
+        if(_isSearchActive) {
+          _onSearchBackTapped();
+        }
+        _focusNode.unfocus();
       });
     } else {
       setState(() {

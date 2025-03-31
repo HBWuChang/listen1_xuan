@@ -814,15 +814,6 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
 
   void _loadData() async {
     var res = await MediaService.getPlaylist(widget.listId);
-    // tracks = List<Map<String, dynamic>>.from(result['tracks']);
-    // _unfilteredTracks = List<Map<String, dynamic>>.from(tracks);
-    // setState(() {
-    //   _playlist = result;
-    //   _loading = false;
-    //   if (result['info']['title'] == null) {
-    //     _loadfailed = true;
-    //   }
-    // });
     res['success']((data) {
       result = data;
       setState(() {

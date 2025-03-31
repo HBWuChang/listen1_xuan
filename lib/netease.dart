@@ -17,6 +17,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:pointycastle/export.dart';
 import 'package:convert/convert.dart';
+import 'main.dart';
 
 final netease = Netease();
 
@@ -69,10 +70,10 @@ class Netease {
     //   } else {
     //     url = url + '?csrf_token=$_csrf';
     //   }
-    //   return await Dio()
+    //   return await dio_with_cookie_manager
     //       .get(url, options: Options(headers: {'cookie': _cookies}));
     // } catch (e) {
-    return await Dio().get(url);
+    return await dio_with_cookie_manager.get(url);
     // }
   }
 
@@ -93,7 +94,7 @@ class Netease {
       } else {
         url = url + '?csrf_token=$_csrf';
       }
-      final dio = Dio();
+      final dio = dio_with_cookie_manager;
       final tempDir = await getApplicationDocumentsDirectory();
       final tempPath = tempDir.path;
       dio.interceptors.add(CookieManager(PersistCookieJar(
@@ -131,7 +132,8 @@ class Netease {
         }, contentType: 'application/x-www-form-urlencoded'),
       );
     } catch (e) {
-      return await Dio().post(url, data: FormData.fromMap(data));
+      return await dio_with_cookie_manager.post(url,
+          data: FormData.fromMap(data));
     }
   }
 
@@ -677,7 +679,7 @@ class Netease {
     t['ids'] = '[' + t['ids'].substring(0, t['ids'].length - 1) + ']';
     final data = weapi(t);
     final datastr = FormData.fromMap(data);
-    final response = await Dio().post(targetUrl,
+    final response = await dio_with_cookie_manager.post(targetUrl,
         data: data,
         options: Options(contentType: 'application/x-www-form-urlencoded'));
     final tracks =
@@ -1060,7 +1062,7 @@ class Netease {
   //   final artistId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
   //   final targetUrl = 'https://music.163.com/api/artist/$artistId';
   //   // final response =
-  //   //     await Dio().get(targetUrl + '?csrf_token=${await get_csrf()}');
+  //   //     await dio_with_cookie_manager.get(targetUrl + '?csrf_token=${await get_csrf()}');
   //   final response = await dio_get_with_cookie_and_csrf(targetUrl);
   //   final data = jsonDecode(response.data);
   //   final info = {
@@ -1164,7 +1166,7 @@ class Netease {
   //     'tv': -1,
   //     'csrf_token': await get_csrf(),
   //   });
-  //   // final response = await Dio().post(
+  //   // final response = await dio_with_cookie_manager.post(
   //   //     targetUrl + '?csrf_token=${await get_csrf()}',
   //   //     data: FormData.fromMap(data));
   //   final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
@@ -1518,7 +1520,7 @@ class Netease {
   //     'includeVideo': true,
   //   };
 
-  //   // final response = await Dio().post(
+  //   // final response = await dio_with_cookie_manager.post(
   //   //     targetUrl + '?csrf_token=${await get_csrf()}',
   //   //     data: FormData.fromMap(reqData));
   //   final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
