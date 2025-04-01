@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/netease.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
@@ -303,7 +304,7 @@ class _MyHomePageState extends State<MyHomePage>
       setState(() {
         _Mainpage = false;
         _playlist_id = id;
-        if(_isSearchActive) {
+        if (_isSearchActive) {
           _onSearchBackTapped();
         }
         _focusNode.unfocus();
@@ -328,6 +329,7 @@ class _MyHomePageState extends State<MyHomePage>
     super.dispose();
   }
 
+  int last_pop_time = 0;
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -339,14 +341,29 @@ class _MyHomePageState extends State<MyHomePage>
         //   return true; // 允许默认的返回操作
         // },
         canPop: false,
-        onPopInvokedWithResult: (didPop, result) => {
-              print("didPop: $didPop, result: $result"),
-              if (!didPop)
-                {
-                  change_main_status(""),
-                  if (_isSearchActive) {_onSearchBackTapped()}
-                },
-            },
+        onPopInvokedWithResult: (didPop, result) {
+          if (_Mainpage) {
+            if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
+              exit(0);
+            } else {
+              Fluttertoast.showToast(
+                msg: "再按一次退出",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.BOTTOM,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.black54,
+                textColor: Colors.white,
+                fontSize: 16.0,
+              );
+              last_pop_time = DateTime.now().millisecondsSinceEpoch;
+            }
+          } else {
+            change_main_status("");
+            if (_isSearchActive) {
+              _onSearchBackTapped();
+            }
+          }
+        },
         child: Scaffold(
           appBar: _Mainpage
               ? AppBar(
