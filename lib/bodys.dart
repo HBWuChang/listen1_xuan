@@ -15,6 +15,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
+import 'package:flutter/services.dart'; // 添加此导入
 
 Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
     Function? change_main_status,
@@ -25,7 +26,16 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-          title: Text(track['title'] ?? '未知标题'),
+          title: GestureDetector(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: track['title'] ?? '未知标题'));
+              Fluttertoast.showToast(msg: '标题已复制到剪切板');
+            },
+            child: SelectableText(
+              track['title'] ?? '未知标题',
+              style: TextStyle(fontSize: 16),
+            ),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -44,6 +54,10 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
                       change_main_status!(track['artist_id'] ?? '');
                     }
                   },
+                  onLongPress: () {
+                    Clipboard.setData(ClipboardData(text: track['artist'] ?? '未知艺术家'));
+                    Fluttertoast.showToast(msg: '作者已复制到剪切板');
+                  },
                 ),
                 if (track['album'] != null)
                   ListTile(
@@ -52,11 +66,19 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
                       Navigator.of(context).pop();
                       change_main_status!(track['album_id']);
                     },
+                    onLongPress: () {
+                      Clipboard.setData(ClipboardData(text: track['album']));
+                      Fluttertoast.showToast(msg: '专辑已复制到剪切板');
+                    },
                   ),
                 ListTile(
                   title: Text('歌曲链接'),
                   onTap: () {
                     launchUrl(Uri.parse(track['source_url']));
+                  },
+                  onLongPress: () {
+                    Clipboard.setData(ClipboardData(text: track['source_url']));
+                    Fluttertoast.showToast(msg: '歌曲链接已复制到剪切板');
                   },
                 ),
                 ListTile(
