@@ -507,7 +507,7 @@ Future<void> setNotification() async {
 }
 
 class Play extends StatefulWidget {
-  final Function(String, [bool]) onPlaylistTap;
+  final Function(String, {bool is_my, String search_text}) onPlaylistTap;
   Play({
     required this.onPlaylistTap,
   });

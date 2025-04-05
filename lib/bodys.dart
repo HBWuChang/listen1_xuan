@@ -47,6 +47,20 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
                         errorWidget: (context, url, error) => Icon(Icons.error),
                       ),
                 ListTile(
+                  title: Text('搜索此音乐'),
+                  onTap: () {
+                    if (change_main_status != null) {
+                      Navigator.of(context).pop();
+                      change_main_status!("", search_text: track['title']);
+                    }
+                  },
+                  onLongPress: () {
+                    Clipboard.setData(
+                        ClipboardData(text: track['artist'] ?? '未知艺术家'));
+                    Fluttertoast.showToast(msg: '作者已复制到剪切板');
+                  },
+                ),
+                ListTile(
                   title: Text('作者：${track['artist'] ?? '未知艺术家'}'),
                   onTap: () {
                     if (change_main_status != null) {
@@ -55,7 +69,8 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
                     }
                   },
                   onLongPress: () {
-                    Clipboard.setData(ClipboardData(text: track['artist'] ?? '未知艺术家'));
+                    Clipboard.setData(
+                        ClipboardData(text: track['artist'] ?? '未知艺术家'));
                     Fluttertoast.showToast(msg: '作者已复制到剪切板');
                   },
                 ),
@@ -327,7 +342,7 @@ class _PlaylistState extends State<Playlist> {
 }
 
 class MyPlaylist extends StatefulWidget {
-  final Function(String, [bool]) onPlaylistTap;
+  final Function(String, {bool is_my, String search_text}) onPlaylistTap;
   MyPlaylist({
     required this.onPlaylistTap,
   });
@@ -614,7 +629,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                               title: Text(playlist['info']['title']),
                               onTap: () {
                                 widget.onPlaylistTap(
-                                    playlist['info']['id'], true);
+                                    playlist['info']['id'], is_my: true);
                               },
                             );
                           }).toList(),

@@ -297,7 +297,8 @@ class _MyHomePageState extends State<MyHomePage>
     });
   }
 
-  void change_main_status(String id, [bool is_my = false]) {
+  void change_main_status(String id,
+      {bool is_my = false, String search_text = ""}) {
     main_is_my = is_my;
     _playlistInfoKey = UniqueKey();
     if (id != "") {
@@ -310,9 +311,17 @@ class _MyHomePageState extends State<MyHomePage>
         _focusNode.unfocus();
       });
     } else {
-      setState(() {
-        _Mainpage = true;
-      });
+      if (search_text != "") {
+        setState(() {
+          _Mainpage = true;
+          input_text_Controller.text = search_text;
+          _focusNode.requestFocus();
+        });
+      } else {
+        setState(() {
+          _Mainpage = true;
+        });
+      }
     }
   }
 
@@ -342,6 +351,10 @@ class _MyHomePageState extends State<MyHomePage>
         // },
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
+          if (_isSearchActive) {
+            _onSearchBackTapped();
+            return;
+          }
           if (_Mainpage) {
             if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
               exit(0);
