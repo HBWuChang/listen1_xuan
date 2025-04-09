@@ -10,6 +10,7 @@ import 'package:html/parser.dart' show parse;
 import 'lowebutil.dart';
 import 'package:marquee/marquee.dart';
 import 'main.dart';
+
 final bilibili = Bilibili();
 
 class Bilibili {
@@ -29,14 +30,16 @@ class Bilibili {
     final dio = dio_with_cookie_manager;
     try {
       print(headers);
-      final response = await dio_with_cookie_manager.get(url, options: Options(headers: headers));
+      final response = await dio_with_cookie_manager.get(url,
+          options: Options(headers: headers));
       print(response.statusCode);
       print(response.data);
       bilibiliData = response.data;
       url = 'https://api.bilibili.com/x/v3/fav/folder/collected/list';
       String upMid = cookie.split('DedeUserID=')[1].split(';')[0];
       String turl = url + '?pn=1&ps=20&up_mid=' + upMid + '&platform=web';
-      var response2 = await dio_with_cookie_manager.get(turl, options: Options(headers: headers));
+      var response2 = await dio_with_cookie_manager.get(turl,
+          options: Options(headers: headers));
       var res2 = response2.data;
       bilibiliData2.clear();
       res2['data']['list'].forEach((element) {
@@ -118,8 +121,8 @@ class Bilibili {
           'cookie': cookie,
         };
         var medias = [];
-        var response =
-            await dio_with_cookie_manager.get(turl, options: Options(headers: headers));
+        var response = await dio_with_cookie_manager.get(turl,
+            options: Options(headers: headers));
         var res = response.data;
         final data = response.data['data'];
         final info = {
@@ -136,8 +139,8 @@ class Bilibili {
           var pn = 2;
           do {
             turl = '${url}pn=$pn&media_id=${selectmid.substring(2)}';
-            response =
-                await dio_with_cookie_manager.get(turl, options: Options(headers: headers));
+            response = await dio_with_cookie_manager.get(turl,
+                options: Options(headers: headers));
             res = response.data;
             res["data"]['medias'].forEach((element) {
               medias.add(element);
@@ -162,8 +165,8 @@ class Bilibili {
           'cookie': cookie,
         };
         var medias = [];
-        var response =
-            await dio_with_cookie_manager.get(turl, options: Options(headers: headers));
+        var response = await dio_with_cookie_manager.get(turl,
+            options: Options(headers: headers));
         var res = response.data;
         final data = response.data['data'];
         final info = {
@@ -262,8 +265,8 @@ class Bilibili {
   }
 
   static Future<Map<String, String>> fetch_wbi_key() async {
-    final response =
-        await dio_with_cookie_manager.get('https://api.bilibili.com/x/web-interface/nav');
+    final response = await dio_with_cookie_manager
+        .get('https://api.bilibili.com/x/web-interface/nav');
     final jsonContent = response.data;
     final imgUrl = jsonContent['data']['wbi_img']['img_url'];
     final subUrl = jsonContent['data']['wbi_img']['sub_url'];
@@ -768,11 +771,15 @@ class Bilibili {
           cid = trackIdCheck[1];
         }
         final targetUrl2 =
-            'http://api.bilibili.com/x/player/playurl?fnval=16&bvid=$bvid&cid=$cid';
+            'https://api.bilibili.com/x/player/playurl?fnval=16&bvid=$bvid&cid=$cid';
         final response2 = await dio_with_cookie_manager.get(targetUrl2);
         try {
-          if (response2.data['data']['dash']['audio'].length > 0) {
-            final url = response2.data['data']['dash']['audio'][0]['baseUrl'];
+          final audioList = response2.data['data']['dash']['audio'];
+          if (audioList.isNotEmpty) {
+            // 找到最大的 id 对应的元素
+            final maxAudio =
+                audioList.reduce((a, b) => a['id'] > b['id'] ? a : b);
+            final url = maxAudio['baseUrl'];
             sound['url'] = url;
             sound['platform'] = 'bilibili';
             success(sound, track);
@@ -790,7 +797,7 @@ class Bilibili {
           }
         }
       } catch (e) {
-        failure();
+        failure(track);
       }
     } else {
       final sound = {};
@@ -805,10 +812,10 @@ class Bilibili {
           sound['platform'] = 'bilibili';
           success(sound, track);
         } else {
-          failure();
+          failure(track);
         }
       } catch (e) {
-        failure();
+        failure(track);
       }
     }
   }

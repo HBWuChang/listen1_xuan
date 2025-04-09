@@ -628,8 +628,8 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                     ),
                               title: Text(playlist['info']['title']),
                               onTap: () {
-                                widget.onPlaylistTap(
-                                    playlist['info']['id'], is_my: true);
+                                widget.onPlaylistTap(playlist['info']['id'],
+                                    is_my: true);
                               },
                             );
                           }).toList(),
@@ -833,6 +833,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
   Timer? scroll_bar_timer;
   StateSetter? scroll_bar_setState; // 添加这个变量
   bool last_move_is_up = false;
+  bool on_drag_slider = false;
   @override
   void initState() {
     super.initState();
@@ -936,20 +937,23 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
       return;
     }
     last_move_is_up = now_move_is_up;
-    if (move > 0) {
-      if (outter_scrollController.position.maxScrollExtent !=
-          outter_scrollController.offset) {
-        outter_scrollController.jumpTo((outter_scrollController.offset + move) >
-                outter_scrollController.position.maxScrollExtent
-            ? outter_scrollController.position.maxScrollExtent
-            : (outter_scrollController.offset + move));
-      }
-    } else {
-      if (outter_scrollController.offset != 0) {
-        outter_scrollController.jumpTo(
-            (outter_scrollController.offset + move) < 0
-                ? 0
-                : (outter_scrollController.offset + move));
+    if (!on_drag_slider) {
+      if (move > 0) {
+        if (outter_scrollController.position.maxScrollExtent !=
+            outter_scrollController.offset) {
+          outter_scrollController.jumpTo(
+              (outter_scrollController.offset + move) >
+                      outter_scrollController.position.maxScrollExtent
+                  ? outter_scrollController.position.maxScrollExtent
+                  : (outter_scrollController.offset + move));
+        }
+      } else {
+        if (outter_scrollController.offset != 0) {
+          outter_scrollController.jumpTo(
+              (outter_scrollController.offset + move) < 0
+                  ? 0
+                  : (outter_scrollController.offset + move));
+        }
       }
     }
     lastmove = inner_scrollController.position.pixels; // 记录当前滚动位置
@@ -1341,6 +1345,10 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                         inner_scrollController.jumpTo(value *
                             inner_scrollController.position.maxScrollExtent);
                         _startAutoCloseTimer(); // 重置计时器
+                      },
+                      onChangeStart: (value) => on_drag_slider = true,
+                      onChangeEnd: (value) {
+                        on_drag_slider = false;
                       },
                     );
                   },

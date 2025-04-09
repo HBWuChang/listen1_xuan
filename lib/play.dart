@@ -396,12 +396,16 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
       // 获取应用程序的临时目录
       // final fileName = res['url'].split('/').last.split('?').first;
       // 根据.定位文件后缀名
-      final fileName = res['url']
+      String fileName = res['url']
               .split('.')[res['url'].split('.').length - 2]
               .split('/')
               .last +
           '.' +
           res['url'].split('.').last.split('?').first;
+      // switch (res["platform"]) {
+      //   case "bilibili":
+      //     fileName = fileName + '.mp3';
+      // }
       final filePath = '$tempPath/$fileName';
       // 若本地已经存在该文件，则直接播放
       switch (res["platform"]) {
