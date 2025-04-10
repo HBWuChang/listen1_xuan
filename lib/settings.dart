@@ -205,6 +205,10 @@ Future<void> setSaveCookie({
   final tempPath = tempDir.path;
   await PersistCookieJar(
     ignoreExpires: true,
+    storage: FileStorage(tempPath + "/.cookies/"),
+  ).delete(Uri.parse(url));
+  await PersistCookieJar(
+    ignoreExpires: true,
     // storage: FileStorage(appDocPath + "/.cookies/"),
     storage: FileStorage(tempPath + "/.cookies/"),
   ).saveFromResponse(Uri.parse(url), cookies);
@@ -248,19 +252,6 @@ Future<void> _saveToken(String platform, String token) async {
   // await prefs.setString('$platform_token', jsonString);
   await prefs.setString('settings', jsonEncode(settings));
   switch (platform) {
-    case 'bl':
-      List<Cookie> cookies = [];
-      for (var item in token.split(';')) {
-        // var cookie = item.split('=');
-        // 除去两端空格
-        var cookie = item.trim().split('=');
-        // cookies.add(Cookie(cookie[0], cookie[1]));
-        var cookieName = cookie[0].trim();
-        var cookieValue = Uri.encodeComponent(cookie[1].trim());
-        cookies.add(Cookie(cookieName, cookieValue));
-      }
-      await setSaveCookie(url: 'https://api.bilibili.com', cookies: cookies);
-      break;
     case 'ne':
       List<Cookie> cookies = [];
       for (var item in token.split(';')) {

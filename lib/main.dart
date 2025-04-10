@@ -113,7 +113,7 @@ void main() async {
     HttpOverrides.global = MyHttpOverrides();
   }
   final appDocDir = await getApplicationDocumentsDirectory();
-  final cookiePath = '${appDocDir.path}/cookies';
+  final cookiePath = '${appDocDir.path}/.cookies/';
 
   // 创建 PersistCookieJar 实例
   final cookieJar = PersistCookieJar(storage: FileStorage(cookiePath));
