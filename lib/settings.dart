@@ -719,7 +719,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           context: context,
                           builder: (BuildContext context) {
                             return AlertDialog(
-                              title: Text('导出到Github Gist'),
+                              title: Text('导出歌单到Github Gist'),
                               content: Container(
                                 width: double.maxFinite,
                                 child: ListView.builder(
@@ -830,7 +830,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         );
                       }
                     },
-                    child: const Text('备份配置到Gist'),
+                    child: const Text('导出歌单到Github Gist'),
                   ),
                   ElevatedButton(
                     onPressed: () => importSettingsFromFile(),
@@ -850,7 +850,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           context: context,
                           builder: (BuildContext context) {
                             return AlertDialog(
-                              title: Text('从Github Gist导入'),
+                              title: Text('从Github Gist导入歌单'),
                               content: Container(
                                 width: double.maxFinite,
                                 child: ListView.builder(
@@ -908,7 +908,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         );
                       }
                     },
-                    child: const Text('从Gist导入配置'),
+                    child: const Text('从Github Gist导入歌单'),
                   ),
                   ElevatedButton(
                     onPressed: () async {
@@ -958,7 +958,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             }));
                         final art = response.data["artifacts"][0];
                         final download_url = art["archive_download_url"];
-                        final download_name = art["name"];
+                        final created_at = art["created_at"];
                         double total = art["size_in_bytes"].toDouble();
                         double received = 0;
                         final StreamController<double>
@@ -975,7 +975,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 builder: (BuildContext context,
                                     StateSetter setState) {
                                   return AlertDialog(
-                                    title: Text('下载进度'),
+                                    title: Text('下载进度: ${created_at}'),
                                     content: StreamBuilder<double>(
                                       stream: progressStreamController.stream,
                                       builder: (context, snapshot) {
@@ -987,7 +987,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                 value: progress),
                                             SizedBox(height: 20),
                                             Text(
-                                                '${(progress * 100).toStringAsFixed(0)}%'),
+                                                '${(progress * total / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB'),
                                           ],
                                         );
                                       },
