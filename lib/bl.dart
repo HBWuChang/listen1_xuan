@@ -30,16 +30,14 @@ class Bilibili {
     final dio = Dio();
     try {
       print(headers);
-      final response = await Dio().get(url,
-          options: Options(headers: headers));
+      final response = await Dio().get(url, options: Options(headers: headers));
       print(response.statusCode);
       print(response.data);
       bilibiliData = response.data;
       url = 'https://api.bilibili.com/x/v3/fav/folder/collected/list';
       String upMid = cookie.split('DedeUserID=')[1].split(';')[0];
       String turl = url + '?pn=1&ps=20&up_mid=' + upMid + '&platform=web';
-      var response2 = await Dio().get(turl,
-          options: Options(headers: headers));
+      var response2 = await Dio().get(turl, options: Options(headers: headers));
       var res2 = response2.data;
       bilibiliData2.clear();
       res2['data']['list'].forEach((element) {
@@ -106,7 +104,12 @@ class Bilibili {
   static Future<Map<String, dynamic>> biGetPlaylistxuan(String url) async {
     final selectmid = getParameterByName('list_id', url)?.split('_').last;
     if (selectmid == null) {
-      return {'info': {}, 'tracks': []};
+      // return {'info': {}, 'tracks': []};
+      return {
+        'success': (fn) {
+          fn({'info': {}, 'tracks': []});
+        }
+      };
     }
     try {
       if (selectmid.substring(0, 2) == 'my') {
@@ -121,8 +124,8 @@ class Bilibili {
           'cookie': cookie,
         };
         var medias = [];
-        var response = await Dio().get(turl,
-            options: Options(headers: headers));
+        var response =
+            await Dio().get(turl, options: Options(headers: headers));
         var res = response.data;
         final data = response.data['data'];
         final info = {
@@ -139,8 +142,8 @@ class Bilibili {
           var pn = 2;
           do {
             turl = '${url}pn=$pn&media_id=${selectmid.substring(2)}';
-            response = await Dio().get(turl,
-                options: Options(headers: headers));
+            response =
+                await Dio().get(turl, options: Options(headers: headers));
             res = response.data;
             res["data"]['medias'].forEach((element) {
               medias.add(element);
@@ -152,7 +155,12 @@ class Bilibili {
           return biConvertSongxuan(item);
         }).toList();
 
-        return {'info': info, 'tracks': tracks};
+        // return {'info': info, 'tracks': tracks};
+        return {
+          'success': (fn) {
+            fn({'info': info, 'tracks': tracks});
+          }
+        };
       } else {
         final settings = await settings_getsettings();
         final cookie = settings['bl'];
@@ -165,8 +173,8 @@ class Bilibili {
           'cookie': cookie,
         };
         var medias = [];
-        var response = await Dio().get(turl,
-            options: Options(headers: headers));
+        var response =
+            await Dio().get(turl, options: Options(headers: headers));
         var res = response.data;
         final data = response.data['data'];
         final info = {
@@ -185,11 +193,21 @@ class Bilibili {
         }).toList();
 
         // return {'info': {}, 'tracks': []};
-        return {'info': info, 'tracks': tracks};
+        // return {'info': info, 'tracks': tracks};
+        return {
+          'success': (fn) {
+            fn({'info': info, 'tracks': tracks});
+          }
+        };
       }
     } catch (e) {
       print(e);
-      return {'info': {}, 'tracks': []};
+      // return {'info': {}, 'tracks': []};
+      return {
+        'success': (fn) {
+          fn({'info': {}, 'tracks': []});
+        }
+      };
     }
   }
 
@@ -233,30 +251,7 @@ class Bilibili {
     return '';
   }
 
-// static show_playlist(url) {
-//     let offset = getParameterByName('offset', url);
-//     if (offset === undefined) {
-//       offset = 0;
-//     }
-//     const page = offset / 20 + 1;
-//     const target_url = `https://www.bilibili.com/audio/music-service-c/web/menu/hit?ps=20&pn=${page}`;
-//     return {
-//       success: (fn) => {
-//         axios.get(target_url).then((response) => {
-//           const { data } = response.data.data;
-//           const result = data.map((item) => ({
-//             cover_img_url: item.cover,
-//             title: item.title,
-//             id: `biplaylist_${item.menuId}`,
-//             source_url: `https://www.bilibili.com/audio/am${item.menuId}`,
-//           }));
-//           return fn({
-//             result,
-//           });
-//         });
-//       },
-//     };
-//   }
+
   static Map<String, String>? wbiKey;
 
   static String htmlDecode(String value) {
@@ -265,8 +260,8 @@ class Bilibili {
   }
 
   static Future<Map<String, String>> fetch_wbi_key() async {
-    final response = await Dio()
-        .get('https://api.bilibili.com/x/web-interface/nav');
+    final response =
+        await Dio().get('https://api.bilibili.com/x/web-interface/nav');
     final jsonContent = response.data;
     final imgUrl = jsonContent['data']['wbi_img']['img_url'];
     final subUrl = jsonContent['data']['wbi_img']['sub_url'];
@@ -445,30 +440,7 @@ class Bilibili {
     };
   }
 
-// static show_playlist(url) {
-//     let offset = getParameterByName('offset', url);
-//     if (offset === undefined) {
-//       offset = 0;
-//     }
-//     const page = offset / 20 + 1;
-//     const target_url = `https://www.bilibili.com/audio/music-service-c/web/menu/hit?ps=20&pn=${page}`;
-//     return {
-//       success: (fn) => {
-//         axios.get(target_url).then((response) => {
-//           const { data } = response.data.data;
-//           const result = data.map((item) => ({
-//             cover_img_url: item.cover,
-//             title: item.title,
-//             id: `biplaylist_${item.menuId}`,
-//             source_url: `https://www.bilibili.com/audio/am${item.menuId}`,
-//           }));
-//           return fn({
-//             result,
-//           });
-//         });
-//       },
-//     };
-//   }
+
   Future<Map<String, dynamic>> show_playlist(String url) async {
     int offset = int.parse(getParameterByName('offset', url) ?? '0');
     int page = (offset / 20).ceil() + 1;
@@ -493,34 +465,6 @@ class Bilibili {
       },
     };
   }
-
-  // static bi_get_playlist(url) {
-  //   const list_id = getParameterByName('list_id', url).split('_').pop();
-  //   const target_url = `https://www.bilibili.com/audio/music-service-c/web/menu/info?sid=${list_id}`;
-  //   return {
-  //     success: (fn) => {
-  //       axios.get(target_url).then((response) => {
-  //         const { data } = response.data;
-  //         const info = {
-  //           cover_img_url: data.cover,
-  //           title: data.title,
-  //           id: `biplaylist_${list_id}`,
-  //           source_url: `https://www.bilibili.com/audio/am${list_id}`,
-  //         };
-  //         const target = `https://www.bilibili.com/audio/music-service-c/web/song/of-menu?pn=1&ps=100&sid=${list_id}`;
-  //         axios.get(target).then((res) => {
-  //           const tracks = res.data.data.data.map((item) =>
-  //             this.bi_convert_song(item)
-  //           );
-  //           return fn({
-  //             info,
-  //             tracks,
-  //           });
-  //         });
-  //       });
-  //     },
-  //   };
-  // }
 
   static Future<Map<String, dynamic>> bi_get_playlist(String url) async {
     final listId = getParameterByName('list_id', url)?.split('_').last;
@@ -549,27 +493,7 @@ class Bilibili {
     };
   }
 
-//  static bi_album(url) {
-//     return {
-//       success: (fn) =>
-//         fn({
-//           tracks: [],
-//           info: {},
-//         }),
-//       // bilibili havn't album
-//       // const album_id = getParameterByName('list_id', url).split('_').pop();
-//       // const target_url = '';
-//       // axios.get(target_url).then((response) => {
-//       //   const data = response.data;
-//       //   const info = {};
-//       //   const tracks = [];
-//       //   return fn({
-//       //     tracks,
-//       //     info,
-//       //   });
-//       // });
-//     };
-//   }
+
   Future<Map<String, dynamic>> bi_album(String url) async {
     return {
       'success': (Function fn) => fn({
@@ -579,31 +503,7 @@ class Bilibili {
     };
   }
 
-// static bi_track(url) {
-//     const track_id = getParameterByName('list_id', url).split('_').pop();
-//     return {
-//       success: (fn) => {
-//         const target_url = `https://api.bilibili.com/x/web-interface/view?bvid=${track_id}`;
-//         axios.get(target_url).then((response) => {
-//           const info = {
-//             cover_img_url: response.data.data.pic,
-//             title: response.data.data.title,
-//             id: `bitrack_v_${track_id}`,
-//             source_url: `https://www.bilibili.com/${track_id}`,
-//           };
-//           const author = response.data.data.owner;
-//           const default_img = response.data.data.pic;
-//           const tracks = response.data.data.pages.map((item) =>
-//             this.bi_convert_song3(item, track_id, author, default_img)
-//           );
-//           return fn({
-//             tracks,
-//             info,
-//           });
-//         });
-//       },
-//     };
-//   }
+
   static Future<Map<String, dynamic>> bi_track(String url) async {
     final trackId = getParameterByName('list_id', url)?.split('_').last;
     final targetUrl =
@@ -645,59 +545,7 @@ class Bilibili {
       'img_url': imgUrl,
     };
   }
-// static bi_artist(url) {
-//     const artist_id = getParameterByName('list_id', url).split('_').pop();
 
-//     return {
-//       success: (fn) => {
-//         let target_url;
-//         bilibili
-//           .wrap_wbi_request('https://api.bilibili.com/x/space/wbi/acc/info', {
-//             mid: artist_id,
-//           })
-//           .then((response) => {
-//             const info = {
-//               cover_img_url: response.data.data.face,
-//               title: response.data.data.name,
-//               id: `biartist_${artist_id}`,
-//               source_url: `https://space.bilibili.com/${artist_id}/#/audio`,
-//             };
-//             if (getParameterByName('list_id', url).split('_').length === 3) {
-//               return bilibili
-//                 .wrap_wbi_request(
-//                   'https://api.bilibili.com/x/space/wbi/arc/search',
-//                   {
-//                     mid: artist_id,
-//                     pn: 1,
-//                     ps: 25,
-//                     order: 'click',
-//                     index: 1,
-//                   }
-//                 )
-//                 .then((res) => {
-//                   const tracks = res.data.data.list.vlist.map((item) =>
-//                     this.bi_convert_song2(item)
-//                   );
-//                   return fn({
-//                     tracks,
-//                     info,
-//                   });
-//                 });
-//             }
-//             target_url = `https://api.bilibili.com/audio/music-service-c/web/song/upper?pn=1&ps=0&order=2&uid=${artist_id}`;
-//             return axios.get(target_url).then((res) => {
-//               const tracks = res.data.data.data.map((item) =>
-//                 this.bi_convert_song(item)
-//               );
-//               return fn({
-//                 tracks,
-//                 info,
-//               });
-//             });
-//           });
-//       },
-//     };
-//   }
   static Future<Map<String, dynamic>> bi_artist(String url) async {
     final artistId = getParameterByName('list_id', url)?.split('_').last;
     return {
@@ -819,92 +667,7 @@ class Bilibili {
       }
     }
   }
-// static search(url) {
-//     return {
-//       success: (fn) => {
-//         const keyword = getParameterByName('keywords', url);
-//         const curpage = getParameterByName('curpage', url);
 
-//         const target_url = `https://api.bilibili.com/x/web-interface/search/type?__refresh__=true&_extra=&context=&page=${curpage}&page_size=42&platform=pc&highlight=1&single_column=0&keyword=${encodeURIComponent(
-//           keyword
-//         )}&category_id=&search_type=video&dynamic_offset=0&preload=true&com2co=true`;
-
-//         const domain = `https://api.bilibili.com`;
-//         const cookieName = 'buvid3';
-//         const expire =
-//           (new Date().getTime() + 1e3 * 60 * 60 * 24 * 365 * 100) / 1000;
-//         cookieGet(
-//           {
-//             url: domain,
-//             name: cookieName,
-//           },
-//           (cookie) => {
-//             if (cookie == null) {
-//               cookieSet(
-//                 {
-//                   url: domain,
-//                   name: cookieName,
-//                   value: '0',
-//                   expirationDate: expire,
-//                 },
-//                 () => {
-//                   axios.get(target_url).then((response) => {
-//                     const result = response.data.data.result.map((song) =>
-//                       this.bi_convert_song2(song)
-//                     );
-//                     const total = response.data.data.numResults;
-//                     return fn({
-//                       result,
-//                       total,
-//                     });
-//                   });
-//                 }
-//               );
-//             } else {
-//               axios.get(target_url).then((response) => {
-//                 const result = response.data.data.result.map((song) =>
-//                   this.bi_convert_song2(song)
-//                 );
-//                 const total = response.data.data.numResults;
-//                 return fn({
-//                   result,
-//                   total,
-//                 });
-//               });
-//             }
-//           }
-//         );
-//       },
-//     };
-//   }
-  // Future<Map<String, dynamic>> search(String url) async {
-  //   final keyword = getParameterByName('keywords', url);
-  //   final curpage = getParameterByName('curpage', url);
-
-  //   final targetUrl =
-  //       'https://api.bilibili.com/x/web-interface/search/type?__refresh__=true&_extra=&context=&page=$curpage&page_size=42&platform=pc&highlight=1&single_column=0&keyword=${Uri.encodeComponent(keyword!)}&category_id=&search_type=video&dynamic_offset=0&preload=true&com2co=true';
-
-  //   String cookie = '';
-  //   Map<String, dynamic> settings = await _getsettings();
-  //   if (settings.containsKey('bl') && settings['bl'] != '') {
-  //     cookie = settings['bl'];
-  //   } else {
-  //     cookie = 'buvid3=0';
-  //   }
-  //   final response = await Dio().get(targetUrl,
-  //       options: Options(headers: {
-  //         'cookie': cookie,
-  //       }));
-  //   final result = response.data['data']['result'].map((song) {
-  //     return bi_convert_song2(song);
-  //   }).toList();
-  //   final total = response.data['data']['numResults'];
-
-  //   return {
-  //     'result': result,
-  //     'total': total,
-  //   };
-  // }
   Future<Map<String, dynamic>> search(String url) async {
     return {
       'success': (fn) async {
@@ -967,11 +730,6 @@ class Bilibili {
     }
   }
 
-// static get_playlist_filters() {
-//     return {
-//       success: (fn) => fn({ recommend: [], all: [] }),
-//     };
-//   }
   Future<Map<String, dynamic>> get_playlist_filters() async {
     return {
       'success': (Function fn) {
