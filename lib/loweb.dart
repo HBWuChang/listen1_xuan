@@ -415,6 +415,10 @@ class MediaService {
       playerSuccessCallback(get_local_cache(track['id']), track);
     } else {
       final provider = getProviderByName(track['source']);
+      if (provider == null) {
+        playerFailCallback(track);
+        return;
+      }
       provider.bootstrap_track(track, successCallback, failureCallback);
     }
   }

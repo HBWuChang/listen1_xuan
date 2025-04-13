@@ -1,11 +1,8 @@
-import 'dart:math';
 import 'main.dart';
 import 'package:flutter/material.dart';
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/qq.dart';
-import 'package:listen1_xuan/kugou.dart';
 import 'netease.dart';
-import 'package:listen1_xuan/settings.dart';
 import 'package:marquee/marquee.dart';
 import 'loweb.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -15,7 +12,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
-import 'package:flutter/services.dart'; // 添加此导入
+import 'package:flutter/services.dart';
 
 Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
     Function? change_main_status,
@@ -40,12 +37,25 @@ Future<void> song_dialog(BuildContext context, Map<String, dynamic> track,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                track['img_url'] == null
-                    ? Container()
-                    : CachedNetworkImage(
-                        imageUrl: track['img_url'],
-                        errorWidget: (context, url, error) => Icon(Icons.error),
-                      ),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(
+                        ClipboardData(text: track['title'] ?? '未知标题'));
+                    Fluttertoast.showToast(msg: '标题已复制到剪切板');
+                  },
+                  onLongPress: () {
+                    Clipboard.setData(
+                        ClipboardData(text: track['img_url'] ?? '未知封面'));
+                    Fluttertoast.showToast(msg: '封面链接已复制到剪切板');
+                  },
+                  child: track['img_url'] == null
+                      ? Container()
+                      : CachedNetworkImage(
+                          imageUrl: track['img_url'],
+                          errorWidget: (context, url, error) =>
+                              Icon(Icons.error),
+                        ),
+                ),
                 ListTile(
                   title: Text('搜索此音乐'),
                   onTap: () {
