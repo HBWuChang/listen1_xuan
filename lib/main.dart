@@ -530,7 +530,6 @@ class _MyHomePageState extends State<MyHomePage>
                       onPlaylistTap: change_main_status,
                       is_my: main_is_my,
                     ),
-          // bottomNavigationBar: play));
           bottomNavigationBar: Play(onPlaylistTap: change_main_status),
           floatingActionButton: FloatingActionButton(
             onPressed: () {

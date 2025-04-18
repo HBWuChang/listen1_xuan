@@ -242,16 +242,16 @@ class _PlaylistState extends State<Playlist> {
 
     result['success']((data) {
       print(data); // 打印实际的数据
-      // try {
-      setState(() {
-        _playlists = data.toList();
-        per_page = data.length;
-        hasmore = true;
-        _loading = false;
-      });
-      // } catch (e) {
-      //   print(e);
-      // }
+      try {
+        setState(() {
+          _playlists = data.toList();
+          per_page = data.length;
+          hasmore = true;
+          _loading = false;
+        });
+      } catch (e) {
+        print(e);
+      }
     });
   }
 

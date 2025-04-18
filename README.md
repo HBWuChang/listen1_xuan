@@ -1,6 +1,7 @@
 # listen1_xuan
 
 本软件为flutter重写的Listen1
+flutter version 3.24.1
 ---
 1.0.0+7
 - 酷狗音乐源可用（但无法登录账号~~原Listen1就没有实现~~
