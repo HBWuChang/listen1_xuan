@@ -93,7 +93,7 @@ class QQ {
       'success': (fn) async {
         var response = await dio_get_with_cookie_and_csrf(url);
         var result = <Map<String, dynamic>>[];
-        response.data['data']['topList'].forEach((item) {
+        jsonDecode( response.data['data']['topList']).forEach((item) {
           var playlist = {
             'cover_img_url': item['picUrl'],
             'id': 'qqtoplist_${item['id']}',

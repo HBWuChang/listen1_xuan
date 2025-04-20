@@ -18,6 +18,7 @@ import 'dart:io';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:easy_animated_indexed_stack/easy_animated_indexed_stack.dart';
 
 final dio_with_cookie_manager = Dio();
 
@@ -155,6 +156,9 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
+List<String> sources = ['myplaylist', 'bilibili', 'netease', 'qq', 'kugou'];
+List<bool> show_filters = [false, false, true, true, false];
+
 class _MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin {
   final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
@@ -220,46 +224,19 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   int _selectedIndex = 0;
-  int offset = 0;
+  List<int> offsets = List.generate(sources.length, (i) => 0);
   bool main_is_my = false;
   String source = 'myplaylist';
-  Map<String, dynamic> filter = {'id': '', 'name': '全部'};
+  List<Map<String, dynamic>> filters =
+      List.generate(sources.length, (i) => {'id': '', 'name': '全部'});
   bool show_filter = false;
   // bool show_more = false;
   Map<String, dynamic> filter_detail = {};
-  void _onItemTapped(int index) async {
-    switch (index) {
-      case 0:
-        source = 'myplaylist';
-        offset = 0;
-        filter = {'id': '', 'name': '全部'};
-        show_filter = false;
-        break;
-      case 1:
-        offset = 0;
-        filter = {'id': '', 'name': '全部'};
-        show_filter = false;
-        source = 'bilibili';
-        break;
-      case 2:
-        offset = 0;
-        filter = {'id': '', 'name': '全部'};
-        show_filter = true;
-        source = 'netease';
-        break;
-      case 3:
-        offset = 0;
-        filter = {'id': '', 'name': '全部'};
-        show_filter = true;
-        source = 'qq';
-        break;
-      case 4:
-        offset = 0;
-        filter = {'id': '', 'name': '全部'};
-        show_filter = false;
-        source = 'kugou';
-        break;
-    }
+  bool move_direction = false; // 是否向左滑动
+  void _onItemTapped(int index, {bool re = false}) async {
+    move_direction = re ? index < _selectedIndex : index > _selectedIndex;
+    source = sources[index];
+    show_filter = show_filters[index];
     try {
       if (source == 'myplaylist') {
         setState(() {
@@ -269,13 +246,6 @@ class _MyHomePageState extends State<MyHomePage>
       }
       // 检查 mounted 属性
       if (!mounted) return;
-      // filter_detail = await MediaService.getPlaylistFilters(source);
-      // // 再次检查 mounted 属性
-      // if (mounted) {
-      //   setState(() {
-      //     _selectedIndex = index;
-      //   });
-      // }
       var t = await MediaService.getPlaylistFilters(source);
       t["success"]((data) {
         filter_detail = data;
@@ -293,7 +263,7 @@ class _MyHomePageState extends State<MyHomePage>
   void change_fliter(dynamic id, String name) {
     print('change_fliter{id: $id, name: $name}');
     setState(() {
-      filter = {'id': id, 'name': name};
+      filters[sources.indexOf(source)] = {'id': id, 'name': name};
     });
   }
 
@@ -472,12 +442,13 @@ class _MyHomePageState extends State<MyHomePage>
                                   );
                                 }).toList(),
                                 onDestinationSelected: (index) {
-                                  _onItemTapped(index);
+                                  _onItemTapped(index, re: true);
                                 },
                               )),
                               if (show_filter)
                                 TextButton(
-                                  child: Text(filter['name']),
+                                  child: Text(
+                                      filters[sources.indexOf(source)]['name']),
                                   onPressed: () {
                                     Map<String, dynamic> tfilter = {};
                                     tfilter["推荐"] = filter_detail["recommend"];
@@ -485,8 +456,11 @@ class _MyHomePageState extends State<MyHomePage>
                                       tfilter[item["category"]] =
                                           item["filters"];
                                     }
-                                    _showFilterSelection(context, tfilter,
-                                        filter['id'], change_fliter);
+                                    _showFilterSelection(
+                                        context,
+                                        tfilter,
+                                        filters[sources.indexOf(source)]['id'],
+                                        change_fliter);
                                   },
                                 ),
                             ])),
@@ -497,31 +471,57 @@ class _MyHomePageState extends State<MyHomePage>
                         ),
                         Expanded(
                             child: GestureDetector(
-                                onHorizontalDragEnd: (details) {
-                                  if (details.primaryVelocity != null) {
-                                    if (details.primaryVelocity! > 0) {
-                                      if (_selectedIndex == 0) {
-                                        return;
-                                      }
-                                      _onItemTapped(_selectedIndex - 1);
-                                    } else if (details.primaryVelocity! < 0) {
-                                      if (_selectedIndex ==
-                                          platforms.length - 1) {
-                                        return;
-                                      }
-                                      _onItemTapped(_selectedIndex + 1);
-                                    }
-                                  }
-                                },
-                                child: source != "myplaylist"
-                                    ? Playlist(
-                                        key: ValueKey(filter),
-                                        source: source,
-                                        offset: offset,
-                                        filter: filter,
-                                        onPlaylistTap: change_main_status)
-                                    : MyPlaylist(
-                                        onPlaylistTap: change_main_status)))
+                          onHorizontalDragEnd: (details) {
+                            if (details.primaryVelocity != null) {
+                              if (details.primaryVelocity! > 0) {
+                                if (_selectedIndex == 0) {
+                                  return;
+                                }
+                                _onItemTapped(_selectedIndex - 1);
+                              } else if (details.primaryVelocity! < 0) {
+                                if (_selectedIndex == platforms.length - 1) {
+                                  return;
+                                }
+                                _onItemTapped(_selectedIndex + 1);
+                              }
+                            }
+                          },
+                          child: EasyAnimatedIndexedStack(
+                              index: sources.indexOf(source),
+                              animationBuilder: (context, animation, child) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: Offset(
+                                          !move_direction ? 1.0 : -1.0, 0),
+                                      end: Offset.zero,
+                                    ).animate(CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeInOut,
+                                    )),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              // curve: Curves.easeInOutQuart,
+                              duration: const Duration(milliseconds: 250),
+                              children: [
+                                MyPlaylist(
+                                  onPlaylistTap: change_main_status,
+                                ), // 我的歌单
+                                ...List.generate(
+                                  sources.length - 1,
+                                  (index) => Playlist(
+                                    source: sources[index + 1],
+                                    offset: offsets[index + 1],
+                                    filter: filters[index + 1],
+                                    onPlaylistTap: change_main_status,
+                                    key: Key(filters[index + 1].toString()),
+                                  ),
+                                ),
+                              ]),
+                        ))
                       ],
                     )
                   : PlaylistInfo(

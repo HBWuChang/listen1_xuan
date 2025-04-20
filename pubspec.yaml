@@ -41,6 +41,8 @@ dependencies:
   archive: ^4.0.2
   install_plugin: ^2.1.0
   flutter_isolate: ^2.1.0
+  easy_animated_indexed_stack: ^0.0.3
+  adaptive_theme: ^3.6.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
