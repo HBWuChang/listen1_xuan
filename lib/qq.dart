@@ -84,7 +84,7 @@ class QQ {
   Future<Map<String, dynamic>> qq_show_toplist([int offset = 0]) async {
     if (offset > 0) {
       return {
-        'success': (fn) => fn({'result': []}),
+        'success': (fn) => fn([]),
       };
     }
     var url =
@@ -93,7 +93,7 @@ class QQ {
       'success': (fn) async {
         var response = await dio_get_with_cookie_and_csrf(url);
         var result = <Map<String, dynamic>>[];
-        jsonDecode( response.data['data']['topList']).forEach((item) {
+        jsonDecode(response.data)['data']['topList'].forEach((item) {
           var playlist = {
             'cover_img_url': item['picUrl'],
             'id': 'qqtoplist_${item['id']}',
@@ -102,7 +102,7 @@ class QQ {
           };
           result.add(playlist);
         });
-        return fn({'result': result});
+        return fn(result);
       },
     };
   }
@@ -263,8 +263,9 @@ class QQ {
         var limit = 100;
         var target_url = get_toplist_url(list_id.toString(), listPeriod, limit);
         var response = await dio_get_with_cookie_and_csrf(target_url);
-        var tracks =
-            response.data['toplist']['data']['songInfoList'].map((song) {
+        var tracks = jsonDecode(response.data)['toplist']['data']
+                ['songInfoList']
+            .map((song) {
           var d = {
             'id': 'qqtrack_${song['mid']}',
             'title': htmlDecode(song['name']),

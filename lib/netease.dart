@@ -57,24 +57,23 @@ class CookieInterceptors extends InterceptorsWrapper {
 
 class Netease {
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
-    // final tokens = await settings_getsettings();
-    // try {
-    //   final _cookies = tokens['ne'];
-    //   final _csrf = _cookies
-    //       .split(';')
-    //       .firstWhere((element) => element.contains('__csrf'))
-    //       .split('=')
-    //       .last;
-    //   if (url.contains('?')) {
-    //     url = url + '&csrf_token=$_csrf';
-    //   } else {
-    //     url = url + '?csrf_token=$_csrf';
-    //   }
-    //   return await dio_with_cookie_manager
-    //       .get(url, options: Options(headers: {'cookie': _cookies}));
-    // } catch (e) {
-    return await dio_with_cookie_manager.get(url);
-    // }
+    final tokens = await settings_getsettings();
+    try {
+      final _cookies = tokens['ne'];
+      final _csrf = _cookies
+          .split(';')
+          .firstWhere((element) => element.contains('__csrf'))
+          .split('=')
+          .last;
+      if (url.contains('?')) {
+        url = url + '&csrf_token=$_csrf';
+      } else {
+        url = url + '?csrf_token=$_csrf';
+      }
+      return await dio_with_cookie_manager.get(url);
+    } catch (e) {
+      return await dio_with_cookie_manager.get(url);
+    }
   }
 
   Future<dynamic> dio_post_with_cookie_and_csrf(
@@ -293,9 +292,7 @@ class Netease {
   // }
   Future<Map<String, dynamic>> ne_show_toplist(int? offset) async {
     if (offset != null && offset > 0) {
-      return {
-        "success": (fn) => fn({'result': []})
-      };
+      return {"success": (fn) => fn([])};
     }
     const url = 'https://music.163.com/weapi/toplist/detail';
     final data = weapi({});
@@ -310,7 +307,7 @@ class Netease {
             'title': item['name'],
           };
         }).toList();
-        fn({'result': result});
+        fn(result);
       },
     };
   }
@@ -443,25 +440,29 @@ class Netease {
     }
     return {
       'success': (fn) async {
-        final response = await dio_get_with_cookie_and_csrf(targetUrl);
-        final document = parse(response.data);
-        final listElements =
-            document.getElementsByClassName('m-cvrlst')[0].children;
-        final result = listElements.map((item) {
-          final imgElement = item.getElementsByTagName('img')[0];
-          final divElement = item.getElementsByTagName('div')[0];
-          final aElement = divElement.getElementsByTagName('a')[0];
-          return {
-            'cover_img_url':
-                imgElement.attributes['src']!.replaceAll('140y140', '512y512'),
-            'title': aElement.attributes['title']!,
-            'id':
-                'neplaylist_${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
-            'source_url':
-                'https://music.163.com/#/playlist?id=${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
-          };
-        }).toList();
-        fn(result);
+        try {
+          final response = await dio_get_with_cookie_and_csrf(targetUrl);
+          final document = parse(response.data);
+          final listElements =
+              document.getElementsByClassName('m-cvrlst')[0].children;
+          final result = listElements.map((item) {
+            final imgElement = item.getElementsByTagName('img')[0];
+            final divElement = item.getElementsByTagName('div')[0];
+            final aElement = divElement.getElementsByTagName('a')[0];
+            return {
+              'cover_img_url': imgElement.attributes['src']!
+                  .replaceAll('140y140', '512y512'),
+              'title': aElement.attributes['title']!,
+              'id':
+                  'neplaylist_${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
+              'source_url':
+                  'https://music.163.com/#/playlist?id=${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
+            };
+          }).toList();
+          fn(result);
+        } catch (e) {
+          fn([]);
+        }
       },
     };
   }

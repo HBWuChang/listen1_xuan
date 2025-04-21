@@ -210,6 +210,7 @@ class _MyHomePageState extends State<MyHomePage>
       }
     });
     _animationController.forward(from: 0.0);
+    init_playlist_filters();
   }
 
   void _onSearchBackTapped() {
@@ -231,29 +232,30 @@ class _MyHomePageState extends State<MyHomePage>
       List.generate(sources.length, (i) => {'id': '', 'name': '全部'});
   bool show_filter = false;
   // bool show_more = false;
-  Map<String, dynamic> filter_detail = {};
+  List<Map<String, dynamic>> filter_details =
+      List.generate(sources.length, (i) => {'recommend': [], 'all': []});
   bool move_direction = false; // 是否向左滑动
+  void init_playlist_filters() async {
+    for (var i = 1; i < sources.length; i++) {
+      var t = await MediaService.getPlaylistFilters(sources[i]);
+      t["success"]((data) {
+        debugPrint(sources[i]);
+        debugPrint(data.toString());
+        filter_details[i] = data;
+      });
+    }
+  }
+
   void _onItemTapped(int index, {bool re = false}) async {
+    if (index == _selectedIndex) {
+      return;
+    }
     move_direction = re ? index < _selectedIndex : index > _selectedIndex;
     source = sources[index];
     show_filter = show_filters[index];
     try {
-      if (source == 'myplaylist') {
-        setState(() {
-          _selectedIndex = index;
-        });
-        return;
-      }
-      // 检查 mounted 属性
-      if (!mounted) return;
-      var t = await MediaService.getPlaylistFilters(source);
-      t["success"]((data) {
-        filter_detail = data;
-        if (mounted) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        }
+      setState(() {
+        _selectedIndex = index;
       });
     } catch (e) {
       print(e);
@@ -312,13 +314,6 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   Widget build(BuildContext context) {
     return PopScope(
-        // onWillPop: () async {
-        //   if (!_Mainpage) {
-        //     change_main_status("");
-        //     return false; // 阻止默认的返回操作
-        //   }
-        //   return true; // 允许默认的返回操作
-        // },
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
           if (_isSearchActive) {
@@ -451,8 +446,12 @@ class _MyHomePageState extends State<MyHomePage>
                                       filters[sources.indexOf(source)]['name']),
                                   onPressed: () {
                                     Map<String, dynamic> tfilter = {};
-                                    tfilter["推荐"] = filter_detail["recommend"];
-                                    for (var item in filter_detail["all"]) {
+                                    tfilter["推荐"] =
+                                        filter_details[_selectedIndex]
+                                            ["recommend"];
+                                    for (var item
+                                        in filter_details[_selectedIndex]
+                                            ["all"]) {
                                       tfilter[item["category"]] =
                                           item["filters"];
                                     }
@@ -492,16 +491,28 @@ class _MyHomePageState extends State<MyHomePage>
                                 return FadeTransition(
                                   opacity: animation,
                                   child: SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: Offset(
-                                          !move_direction ? 1.0 : -1.0, 0),
-                                      end: Offset.zero,
-                                    ).animate(CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeInOut,
-                                    )),
-                                    child: child,
-                                  ),
+                                      position: Tween<Offset>(
+                                        begin: Offset(
+                                            !move_direction ? 1.0 : -1.0, 0),
+                                        end: Offset.zero,
+                                      ).animate(CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeInOut,
+                                      )),
+                                      child: Transform(
+                                        transform: Matrix4.identity()
+                                          ..setEntry(3, 2, 0.001) // 设置透视效果
+                                          ..rotateX((
+                                              1 - animation.value)*1.5) // 沿 X 轴旋转
+                                          ..rotateY((move_direction
+                                              ? (0.5 - animation.value / 2)
+                                              : -(0.5 - animation.value / 2))*3)
+                                          ..rotateZ(move_direction
+                                              ? (0.5 - animation.value / 2)
+                                              : -(0.5 - animation.value / 2)),
+                                        alignment: Alignment.center,
+                                        child: child,
+                                      )),
                                 );
                               },
                               // curve: Curves.easeInOutQuart,
