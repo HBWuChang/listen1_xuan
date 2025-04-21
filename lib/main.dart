@@ -511,9 +511,9 @@ class _MyHomePageState extends State<MyHomePage>
                                 curvedAnimation.addListener(() {
                                   print(animation.value);
                                   if (animation.value == 0) {
-                                    left_to_right_reverse = true;
-                                  } else if (animation.value == 1) {
                                     left_to_right_reverse = false;
+                                  } else if (animation.value == 1) {
+                                    left_to_right_reverse = true;
                                   }
                                 });
 
