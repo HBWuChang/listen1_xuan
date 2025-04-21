@@ -311,6 +311,8 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   int last_pop_time = 0;
+  bool left_to_right_reverse = true;
+  AnimationStatus lastStatus = AnimationStatus.forward;
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -488,28 +490,66 @@ class _MyHomePageState extends State<MyHomePage>
                           child: EasyAnimatedIndexedStack(
                               index: sources.indexOf(source),
                               animationBuilder: (context, animation, child) {
+                                final curvedAnimation = CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeInOut,
+                                );
+
+                                // 添加状态监听器
+                                // curvedAnimation.addStatusListener((status) {
+                                //   print("AnimationStatus $status");
+                                //   print(animation.value);
+                                //   if (status == AnimationStatus.completed &&
+                                //       lastStatus == AnimationStatus.forward) {
+                                //     left_to_right_reverse =
+                                //         !left_to_right_reverse;
+                                //     debugPrint(
+                                //         "left_to_right_reverse $left_to_right_reverse");
+                                //   }
+                                //   lastStatus = status;
+                                // });
+                                curvedAnimation.addListener(() {
+                                  print(animation.value);
+                                  if (animation.value == 0) {
+                                    left_to_right_reverse = true;
+                                  } else if (animation.value == 1) {
+                                    left_to_right_reverse = false;
+                                  }
+                                });
+
                                 return FadeTransition(
                                   opacity: animation,
                                   child: SlideTransition(
                                       position: Tween<Offset>(
                                         begin: Offset(
-                                            !move_direction ? 1.0 : -1.0, 0),
+                                            (move_direction ? 1 : -1) *
+                                                (left_to_right_reverse
+                                                    ? -1
+                                                    : 1) *
+                                                1,
+                                            0.2),
                                         end: Offset.zero,
                                       ).animate(CurvedAnimation(
                                         parent: animation,
                                         curve: Curves.easeInOut,
                                       )),
                                       child: Transform(
-                                        transform: Matrix4.identity()
+                                        transform: (Matrix4.identity()
                                           ..setEntry(3, 2, 0.001) // 设置透视效果
-                                          ..rotateX((
-                                              1 - animation.value)*1.5) // 沿 X 轴旋转
-                                          ..rotateY((move_direction
-                                              ? (0.5 - animation.value / 2)
-                                              : -(0.5 - animation.value / 2))*3)
-                                          ..rotateZ(move_direction
-                                              ? (0.5 - animation.value / 2)
-                                              : -(0.5 - animation.value / 2)),
+                                          ..rotateX((1 - animation.value) *
+                                              1.5) // 沿 X 轴旋转
+                                          ..rotateY((0.5 -
+                                                  animation.value / 2) *
+                                              (move_direction ? 1 : -1) *
+                                              (left_to_right_reverse ? -1 : 1) *
+                                              3)
+                                          // ..rotateZ(
+                                          //     (0.5 - animation.value / 2) *
+                                          //         (move_direction ? 1 : -1) *
+                                          //         (left_to_right_reverse
+                                          //             ? -1
+                                          //             : 1))
+                                                      ),
                                         alignment: Alignment.center,
                                         child: child,
                                       )),
