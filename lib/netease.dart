@@ -96,10 +96,7 @@ class Netease {
       final dio = dio_with_cookie_manager;
       final tempDir = await getApplicationDocumentsDirectory();
       final tempPath = tempDir.path;
-      dio.interceptors.add(CookieManager(PersistCookieJar(
-        ignoreExpires: true,
-        storage: FileStorage(tempPath + "/.cookies/"),
-      )));
+    
       // dio.interceptors.add(CookieInterceptors());
       // dynamic cookies = _cookies.split(';');
       // for (var cookie in cookies) {
