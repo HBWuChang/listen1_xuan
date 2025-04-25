@@ -382,6 +382,8 @@ class _login_webviewState extends State<login_webview> {
 class _SettingsPageState extends State<SettingsPage> {
   String _readmeContent = '';
   bool useHttpOverrides = false;
+  late String apkfile_name;
+
   void open_bl_login() async {
     TextEditingController blCookieController = TextEditingController();
     Map<String, dynamic> settings = await settings_getsettings();
@@ -538,6 +540,22 @@ class _SettingsPageState extends State<SettingsPage> {
     super.initState();
     get_useHttpOverrides();
     _loadReadme();
+    init_apkfilepath();
+  }
+
+  Future<void> init_apkfilepath() async {
+    final tempDir = await getApplicationDocumentsDirectory();
+    final tempPath = tempDir.path;
+    switch (SysInfo.kernelArchitecture.name) {
+      case "ARM64":
+        apkfile_name = '$tempPath/app-arm64-v8a-release.apk';
+      case "ARM":
+        apkfile_name = '$tempPath/app-armeabi-v7a-release.apk';
+      case "X86_64":
+        apkfile_name = '$tempPath/app-x86_64-release.apk';
+      default:
+        apkfile_name = '$tempPath/app-release.apk';
+    }
   }
 
   Future<void> _loadReadme() async {
@@ -917,7 +935,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         final tempDir =
                             await getApplicationDocumentsDirectory();
                         final tempPath = tempDir.path;
-                        final apkFile = File('$tempPath/app-release.apk');
+
+                        final apkFile = File(apkfile_name);
                         if (await apkFile.exists()) {
                           try {
                             InstallPlugin.installApk(
@@ -965,6 +984,20 @@ class _SettingsPageState extends State<SettingsPage> {
                           case "ARM64":
                             for (var i in response.data["artifacts"]) {
                               if (i['name'].indexOf("arm64") > 0) {
+                                art = i;
+                                break;
+                              }
+                            }
+                          case "ARM":
+                            for (var i in response.data["artifacts"]) {
+                              if (i['name'].indexOf("armeabi") > 0) {
+                                art = i;
+                                break;
+                              }
+                            }
+                          case "X86_64":
+                            for (var i in response.data["artifacts"]) {
+                              if (i['name'].indexOf("x86_64") > 0) {
                                 art = i;
                                 break;
                               }
@@ -1047,8 +1080,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         }
                         if (await apkFile.exists()) {
                           try {
-                            InstallPlugin.installApk(
-                                    '$tempPath/app-release.apk')
+                            InstallPlugin.installApk(apkfile_name)
                                 .then((result) {
                               print('install apk $result');
                             }).catchError((error) {
@@ -1102,7 +1134,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       if (await file.exists()) {
                         await file.delete();
                       }
-                      file = File('$tempPath/app-release.apk');
+                      file = File(apkfile_name);
                       if (await file.exists()) {
                         await file.delete();
                       }
