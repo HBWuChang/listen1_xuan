@@ -377,8 +377,8 @@ class _MyHomePageState extends State<MyHomePage>
           }
           if (_Mainpage) {
             if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
-              // exit(0);
-              print("exit(0)");
+              exit(0);
+              // print("exit(0)");
             } else {
               Fluttertoast.showToast(
                 msg: "再按一次退出",
