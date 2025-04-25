@@ -94,25 +94,10 @@ class Netease {
         url = url + '?csrf_token=$_csrf';
       }
       final dio = dio_with_cookie_manager;
-      final tempDir = await getApplicationDocumentsDirectory();
-      final tempPath = tempDir.path;
-
-      // dio.interceptors.add(CookieInterceptors());
-      // dynamic cookies = _cookies.split(';');
-      // for (var cookie in cookies) {
-      //   cookie = cookie.trim();
-      // }
-
       return await dio.post(
         url,
         data: data,
-        // options: Options(headers: {'cookie': _cookies}));
-        // queryParameters: {'cookie': cookies},
         options: Options(headers: {
-          // 'cookie': cookies,
-          // ":authority": "music.163.com",
-          // ":method": "POST",
-          // ":path": url.substring(url.indexOf("music.163.com") + 13),
           "user-agent":
               "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
           "referer": "https://music.163.com/",
@@ -936,9 +921,17 @@ class Netease {
     const url = 'https://music.163.com/weapi/w/nuser/account/get';
 
     // final encryptReqData = weapi({});
+    final tokens = await settings_getsettings();
+    final _cookies = tokens['ne'];
+
+    final _csrf = _cookies
+        .split(';')
+        .firstWhere((String element) => element.contains('__csrf'))
+        .split('=')
+        .last;
     dynamic encryptReqData = {
       // 'csrf_token': await get_csrf(),
-      'csrf_token': "af3c2b3649aac37f7dd3a32ce1818ffc",
+      'csrf_token': _csrf,
     };
     // print(encryptReqData);
     // print(jsonEncode(encryptReqData));

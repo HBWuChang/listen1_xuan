@@ -324,12 +324,8 @@ class _login_webviewState extends State<login_webview> {
           cookies += "${item.name}=${Uri.decodeComponent(item.value)};";
         }
         cookies = cookies.substring(0, cookies.length - 1);
-        // await _saveToken('ne', cookies);
         await _saveToken(widget.config_key, cookies);
         _msg('设置成功$cookies', 3.0);
-      // _msg('设置成功', 1.0);
-      // Navigator.pop(context);
-      // setState(() {});
     }
   }
 

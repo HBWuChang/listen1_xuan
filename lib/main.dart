@@ -119,7 +119,8 @@ void main() async {
   final cookiePath = '${appDocDir.path}/.cookies/';
 
   // 创建 PersistCookieJar 实例
-  final cookieJar = PersistCookieJar(storage: FileStorage(cookiePath));
+  final cookieJar =
+      PersistCookieJar(storage: FileStorage(cookiePath), ignoreExpires: true);
 
   // 将 PersistCookieJar 添加到 Dio 的拦截器中
   dio_with_cookie_manager.interceptors.add(CookieManager(cookieJar));
