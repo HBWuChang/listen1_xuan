@@ -296,7 +296,10 @@ class _PlaylistState extends State<Playlist> {
             : GridView.builder(
                 controller: _scrollController,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, // 每行显示的列数
+                  crossAxisCount: MediaQuery.of(context).size.width >
+                          MediaQuery.of(context).size.height
+                      ? 6
+                      : 3, // 每行显示的列数
                   crossAxisSpacing: 10.0, // 列间距
                   mainAxisSpacing: 10.0, // 行间距
                   childAspectRatio: 0.8, // 子项宽高比
@@ -319,8 +322,18 @@ class _PlaylistState extends State<Playlist> {
                     child: Column(
                       children: [
                         Container(
-                          width: MediaQuery.of(context).size.width / 3 - 20,
-                          height: MediaQuery.of(context).size.width / 3 - 20,
+                          width: MediaQuery.of(context).size.width /
+                                  (MediaQuery.of(context).size.width >
+                                          MediaQuery.of(context).size.height
+                                      ? 6
+                                      : 3) -
+                              20,
+                          height: MediaQuery.of(context).size.width /
+                                  (MediaQuery.of(context).size.width >
+                                          MediaQuery.of(context).size.height
+                                      ? 6
+                                      : 3) -
+                              20,
                           child: CachedNetworkImage(
                             imageUrl: playlist['cover_img_url'],
                             fit: BoxFit.cover,
@@ -1535,7 +1548,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
 
   void _filterTracks() async {
     String query = widget.input_text_Controller.text.toLowerCase();
-    if (query == ''|| query == lastquery) {
+    if (query == '' || query == lastquery) {
       return;
     }
     lastquery = query;

@@ -246,7 +246,6 @@ class _MyHomePageState extends State<MyHomePage>
   // bool show_more = false;
   List<Map<String, dynamic>> filter_details =
       List.generate(sources.length, (i) => {'recommend': [], 'all': []});
-  bool move_direction = false; // 是否向左滑动
   void init_playlist_filters() async {
     for (var i = 1; i < sources.length; i++) {
       var t = await MediaService.getPlaylistFilters(sources[i]);
@@ -263,7 +262,6 @@ class _MyHomePageState extends State<MyHomePage>
     if (index == _selectedIndex) {
       return;
     }
-    move_direction = re ? index < _selectedIndex : index > _selectedIndex;
     source = sources[index];
     show_filter = show_filters[index];
     try {
@@ -565,128 +563,36 @@ class _MyHomePageState extends State<MyHomePage>
                               color: Colors.grey[300],
                             ),
                             Expanded(
-                                child: GestureDetector(
-                                    onHorizontalDragEnd: (details) {
-                                      if (details.primaryVelocity != null) {
-                                        if (details.primaryVelocity! > 0) {
-                                          if (_selectedIndex == 0) {
-                                            return;
-                                          }
-                                          _onItemTapped(_selectedIndex - 1);
-                                        } else if (details.primaryVelocity! <
-                                            0) {
-                                          if (_selectedIndex ==
-                                              platforms.length - 1) {
-                                            return;
-                                          }
-                                          _onItemTapped(_selectedIndex + 1);
-                                        }
-                                      }
-                                    },
-                                    child: PreloadPageView.builder(
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      controller:
-                                          _pageController, // 使用 PageController
-                                      itemCount: sources.length, // 页面数量
-                                      itemBuilder: (context, index) {
-                                        if (index == 0) {
-                                          // 第一个页面：我的歌单
-                                          return MyPlaylist(
-                                            onPlaylistTap: change_main_status,
-                                          );
-                                        } else {
-                                          // 其他页面：动态生成
-                                          return Playlist(
-                                            source: sources[index],
-                                            offset: offsets[index],
-                                            filter: filters[index],
-                                            onPlaylistTap: change_main_status,
-                                            key: Key(filters[index].toString()),
-                                          );
-                                        }
-                                      },
-                                    )
-                                    // EasyAnimatedIndexedStack(
-                                    //     index: sources.indexOf(source),
-                                    //     animationBuilder:
-                                    //         (context, animation, child) {
-                                    //       final curvedAnimation = CurvedAnimation(
-                                    //         parent: animation,
-                                    //         curve: Curves.easeInOut,
-                                    //       );
-
-                                    //       curvedAnimation.addListener(() {
-                                    //         print(animation.value);
-                                    //         if (animation.value == 0) {
-                                    //           left_to_right_reverse = false;
-                                    //         } else if (animation.value == 1) {
-                                    //           left_to_right_reverse = true;
-                                    //         }
-                                    //       });
-
-                                    //       return FadeTransition(
-                                    //         opacity: animation,
-                                    //         child: SlideTransition(
-                                    //             position: Tween<Offset>(
-                                    //               begin: Offset(
-                                    //                   (move_direction ? 1 : -1) *
-                                    //                       (left_to_right_reverse
-                                    //                           ? -1
-                                    //                           : 1) *
-                                    //                       1,
-                                    //                   0.2),
-                                    //               end: Offset.zero,
-                                    //             ).animate(CurvedAnimation(
-                                    //               parent: animation,
-                                    //               curve: Curves.easeInOut,
-                                    //             )),
-                                    //             child: Transform(
-                                    //               transform: (Matrix4.identity()
-                                    //                     ..setEntry(
-                                    //                         3, 2, 0.001) // 设置透视效果
-                                    //                     ..rotateX(
-                                    //                         (1 - animation.value) *
-                                    //                             1.5) // 沿 X 轴旋转
-                                    //                     ..rotateY((0.5 -
-                                    //                             animation.value / 2) *
-                                    //                         (move_direction
-                                    //                             ? 1
-                                    //                             : -1) *
-                                    //                         (left_to_right_reverse
-                                    //                             ? -1
-                                    //                             : 1) *
-                                    //                         3)
-                                    //                   // ..rotateZ(
-                                    //                   //     (0.5 - animation.value / 2) *
-                                    //                   //         (move_direction ? 1 : -1) *
-                                    //                   //         (left_to_right_reverse
-                                    //                   //             ? -1
-                                    //                   //             : 1))
-                                    //                   ),
-                                    //               alignment: Alignment.center,
-                                    //               child: child,
-                                    //             )),
-                                    //       );
-                                    //     },
-                                    //     // curve: Curves.easeInOutQuart,
-                                    //     duration: const Duration(milliseconds: 250),
-                                    //     children: [
-                                    //       MyPlaylist(
-                                    //         onPlaylistTap: change_main_status,
-                                    //       ), // 我的歌单
-                                    //       ...List.generate(
-                                    //         sources.length - 1,
-                                    //         (index) => Playlist(
-                                    //           source: sources[index + 1],
-                                    //           offset: offsets[index + 1],
-                                    //           filter: filters[index + 1],
-                                    //           onPlaylistTap: change_main_status,
-                                    //           key: Key(filters[index + 1].toString()),
-                                    //         ),
-                                    //       ),
-                                    //     ]),
-                                    ))
+                                child: PreloadPageView.builder(
+                              physics: BouncingScrollPhysics(),
+                              controller: _pageController, // 使用 PageController
+                              itemCount: sources.length, // 页面数量
+                              preloadPagesCount: sources.length,
+                              onPageChanged: (index) {
+                                source = sources[index];
+                                show_filter = show_filters[index];
+                                buttons_setstate(() {
+                                  _selectedIndex = index;
+                                });
+                              },
+                              itemBuilder: (context, index) {
+                                if (index == 0) {
+                                  // 第一个页面：我的歌单
+                                  return MyPlaylist(
+                                    onPlaylistTap: change_main_status,
+                                  );
+                                } else {
+                                  // 其他页面：动态生成
+                                  return Playlist(
+                                    source: sources[index],
+                                    offset: offsets[index],
+                                    filter: filters[index],
+                                    onPlaylistTap: change_main_status,
+                                    key: Key(filters[index].toString()),
+                                  );
+                                }
+                              },
+                            ))
                           ],
                         ));
                   };
