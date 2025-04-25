@@ -19,8 +19,10 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:easy_animated_indexed_stack/easy_animated_indexed_stack.dart';
+import 'package:preload_page_view/preload_page_view.dart';
 
 final dio_with_cookie_manager = Dio();
+List<BuildContext> top_context = List.empty(growable: true);
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -159,6 +161,23 @@ class MyHomePage extends StatefulWidget {
 List<String> sources = ['myplaylist', 'bilibili', 'netease', 'qq', 'kugou'];
 List<bool> show_filters = [false, false, true, true, false];
 
+bool clean_top_context() {
+  while (top_context.length > 1) {
+    try {
+      if (Navigator.of(top_context.last).canPop()) {
+        return true;
+      } else {
+        top_context.removeLast();
+      }
+    } catch (e) {
+      top_context.removeLast();
+    }
+  }
+  return false;
+}
+
+var main_showVolumeSlider;
+
 class _MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin {
   final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
@@ -166,13 +185,11 @@ class _MyHomePageState extends State<MyHomePage>
   TextEditingController input_text_Controller = TextEditingController();
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
-  late AnimationController _animationController;
+  late AnimationController animationController;
   bool _Mainpage = true;
   String _playlist_id = "bilibili";
-  String selectedOption = '网易云';
-  final List<String> _options = ['BiliBili', '网易云', "QQ", '酷狗'];
-  final ValueNotifier<String> selectedOptionNotifier =
-      ValueNotifier<String>('Option 1');
+  late PreloadPageController _pageController; // 声明 PageController
+
   Key _playlistInfoKey = UniqueKey();
   OverlayEntry? _overlayEntry;
   Timer? _timer;
@@ -181,6 +198,9 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void initState() {
     super.initState();
+    main_showVolumeSlider = showVolumeSlider;
+    _pageController = PreloadPageController(
+        initialPage: _selectedIndex); // 初始化 PageController
     download_receiveport.listen((message) {
       if (message is SendPort) {
         print('download_sendport初始化');
@@ -189,27 +209,19 @@ class _MyHomePageState extends State<MyHomePage>
     });
     FlutterIsolate.spawn(
         downloadtasks_background, download_receiveport.sendPort);
-    _focusNode.addListener(() {
-      if (_focusNode.hasFocus) {
-        setState(() {
-          _isSearchActive = true;
-          _animationController.forward(from: 0);
-        });
-      }
-    });
 
-    _animationController = AnimationController(
+    animationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 300),
       animationBehavior: AnimationBehavior.preserve,
     );
 
-    _animationController.addStatusListener((status) {
+    animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed && _isSearchActive) {
         _focusNode2.requestFocus();
       }
     });
-    _animationController.forward(from: 0.0);
+    animationController.forward(from: 0.0);
     init_playlist_filters();
   }
 
@@ -221,7 +233,7 @@ class _MyHomePageState extends State<MyHomePage>
         _focusNode.unfocus();
       }
     });
-    _animationController.forward(from: 0.0);
+    animationController.forward(from: 0.0);
   }
 
   int _selectedIndex = 0;
@@ -246,6 +258,7 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
+  var buttons_setstate;
   void _onItemTapped(int index, {bool re = false}) async {
     if (index == _selectedIndex) {
       return;
@@ -254,9 +267,15 @@ class _MyHomePageState extends State<MyHomePage>
     source = sources[index];
     show_filter = show_filters[index];
     try {
-      setState(() {
+      buttons_setstate(() {
         _selectedIndex = index;
       });
+      _pageController.animateToPage(
+        // 通知 PageController 切换页面
+        index,
+        duration: Duration(milliseconds: 150),
+        curve: Curves.easeInOut,
+      );
     } catch (e) {
       print(e);
     }
@@ -284,11 +303,17 @@ class _MyHomePageState extends State<MyHomePage>
       });
     } else {
       if (search_text != "") {
-        setState(() {
-          _Mainpage = true;
-          input_text_Controller.text = search_text;
-          _focusNode.requestFocus();
-        });
+        input_text_Controller.text = search_text;
+        clean_top_context();
+        Navigator.of(top_context.last).push(
+          MaterialPageRoute(builder: (context) {
+            top_context.add(context);
+            return Searchlistinfo(
+                input_text_Controller: input_text_Controller,
+                onPlaylistTap: change_main_status,
+                animationController: animationController);
+          }),
+        );
       } else {
         setState(() {
           _Mainpage = true;
@@ -302,29 +327,39 @@ class _MyHomePageState extends State<MyHomePage>
     _focusNode.dispose();
     _timer?.cancel();
     _focusNode2.dispose();
+    _pageController.dispose(); // 销毁 PageController
     try {
-      _animationController.dispose();
+      animationController.dispose();
     } catch (e) {
       // print(e);
     }
     super.dispose();
   }
 
+  late BuildContext _main_context;
   int last_pop_time = 0;
   bool left_to_right_reverse = true;
   AnimationStatus lastStatus = AnimationStatus.forward;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext main_context) {
+    _main_context = main_context;
     return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
+          print("didPop: didPop,");
+          if (clean_top_context()) {
+            Navigator.of(top_context.last).pop(); // 触发嵌套 Navigator 的 pop
+            top_context.removeLast();
+            return;
+          }
           if (_isSearchActive) {
             _onSearchBackTapped();
             return;
           }
           if (_Mainpage) {
             if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
-              exit(0);
+              // exit(0);
+              print("exit(0)");
             } else {
               Fluttertoast.showToast(
                 msg: "再按一次退出",
@@ -345,259 +380,282 @@ class _MyHomePageState extends State<MyHomePage>
           }
         },
         child: Scaffold(
-          appBar: _Mainpage
-              ? AppBar(
-                  title: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return SizeTransition(
-                        sizeFactor: _animationController,
-                        axis: Axis.horizontal,
-                        axisAlignment: -1,
-                        child: Row(
-                          children: [
-                            if (!_isSearchActive) Text('Listen1'),
-                            if (!_isSearchActive) SizedBox(width: 10),
-                            if (_isSearchActive)
-                              IconButton(
-                                icon: Icon(Icons.arrow_back),
-                                onPressed: _onSearchBackTapped,
-                              ),
-                            Expanded(
-                              child: TextField(
-                                decoration: InputDecoration(
-                                  hintText: '请输入歌曲名，歌手或专辑',
-                                  border: InputBorder.none,
-                                ),
-                                controller: input_text_Controller,
-                                autofocus: _isSearchActive,
-                                focusNode:
-                                    _isSearchActive ? _focusNode2 : _focusNode,
-                              ),
-                            ),
-                            if (!_isSearchActive)
-                              IconButton(
-                                icon: Icon(Icons.settings),
-                                onPressed: () {
-                                  // Navigate to settings
-                                  // download_sendport.send("get_download_tasks");
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) {
-                                      return SettingsPage();
-                                    }),
-                                  );
-                                },
-                              ),
-                            if (_isSearchActive)
-                              DropdownButton<String>(
-                                value: selectedOption,
-                                icon: Icon(Icons.arrow_downward),
-                                onChanged: (String? newValue) {
-                                  setState(() {
-                                    selectedOption = newValue!;
-                                    selectedOptionNotifier.value = newValue;
-                                  });
-                                },
-                                items: _options.map<DropdownMenuItem<String>>(
-                                    (String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
-                              ),
-                          ],
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        ),
-                      );
-                    },
-                  ),
-                )
-              : null,
-          body: _isSearchActive
-              ? Searchlistinfo(
-                  input_text_Controller: input_text_Controller,
-                  selectedOptionNotifier: selectedOptionNotifier,
-                  onPlaylistTap: change_main_status)
-              : _Mainpage
-                  ? Column(
-                      children: [
-                        Container(
-                            height: 45,
-                            child: Row(children: [
-                              Expanded(
-                                  child: NavigationBar(
-                                labelBehavior:
-                                    NavigationDestinationLabelBehavior
-                                        .alwaysHide,
-                                selectedIndex: _selectedIndex,
-                                destinations: platforms.map((platform) {
-                                  return NavigationDestination(
-                                    icon: Center(child: Text(platform)),
-                                    label: '',
-                                  );
-                                }).toList(),
-                                onDestinationSelected: (index) {
-                                  _onItemTapped(index, re: true);
-                                },
-                              )),
-                              if (show_filter)
-                                TextButton(
-                                  child: Text(
-                                      filters[sources.indexOf(source)]['name']),
-                                  onPressed: () {
-                                    Map<String, dynamic> tfilter = {};
-                                    tfilter["推荐"] =
-                                        filter_details[_selectedIndex]
-                                            ["recommend"];
-                                    for (var item
-                                        in filter_details[_selectedIndex]
-                                            ["all"]) {
-                                      tfilter[item["category"]] =
-                                          item["filters"];
-                                    }
-                                    _showFilterSelection(
-                                        context,
-                                        tfilter,
-                                        filters[sources.indexOf(source)]['id'],
-                                        change_fliter);
+          body: Navigator(
+            initialRoute: '/',
+            onGenerateRoute: (RouteSettings settings) {
+              WidgetBuilder builder;
+              switch (settings.name) {
+                case '/':
+                  // 在函数内部定义默认页面
+                  builder = (context_in_1) {
+                    top_context.add(context_in_1);
+                    return Scaffold(
+                        appBar: _Mainpage
+                            ? AppBar(
+                                title: AnimatedBuilder(
+                                  animation: animationController,
+                                  builder: (context_app_bar, child) {
+                                    return SizeTransition(
+                                      sizeFactor: animationController,
+                                      axis: Axis.horizontal,
+                                      axisAlignment: -1,
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          if (!_isSearchActive) Text('Listen1'),
+                                          if (!_isSearchActive)
+                                            SizedBox(width: 10),
+                                          if (_isSearchActive)
+                                            IconButton(
+                                              icon: Icon(Icons.arrow_back),
+                                              onPressed: _onSearchBackTapped,
+                                            ),
+                                          Expanded(
+                                            child: TextField(
+                                              decoration: InputDecoration(
+                                                hintText: '请输入歌曲名，歌手或专辑',
+                                                border: InputBorder.none,
+                                              ),
+                                              controller: input_text_Controller,
+                                              readOnly: true,
+                                              onTap: () async {
+                                                clean_top_context();
+                                                await Navigator.of(
+                                                        top_context.last)
+                                                    .push(
+                                                  MaterialPageRoute(
+                                                      builder: (context) {
+                                                    top_context.add(context);
+                                                    return Searchlistinfo(
+                                                        input_text_Controller:
+                                                            input_text_Controller,
+                                                        onPlaylistTap:
+                                                            change_main_status,
+                                                        animationController:
+                                                            animationController);
+                                                  }),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(Icons.settings),
+                                            onPressed: () {
+                                              Navigator.push(
+                                                main_context,
+                                                MaterialPageRoute(
+                                                    builder: (context) {
+                                                  return SettingsPage();
+                                                }),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    );
                                   },
                                 ),
-                            ])),
-                        // 长灰色细分割线
-                        Divider(
-                          height: 1,
-                          color: Colors.grey[300],
-                        ),
-                        Expanded(
-                            child: GestureDetector(
-                          onHorizontalDragEnd: (details) {
-                            if (details.primaryVelocity != null) {
-                              if (details.primaryVelocity! > 0) {
-                                if (_selectedIndex == 0) {
-                                  return;
-                                }
-                                _onItemTapped(_selectedIndex - 1);
-                              } else if (details.primaryVelocity! < 0) {
-                                if (_selectedIndex == platforms.length - 1) {
-                                  return;
-                                }
-                                _onItemTapped(_selectedIndex + 1);
-                              }
-                            }
-                          },
-                          child: EasyAnimatedIndexedStack(
-                              index: sources.indexOf(source),
-                              animationBuilder: (context, animation, child) {
-                                final curvedAnimation = CurvedAnimation(
-                                  parent: animation,
-                                  curve: Curves.easeInOut,
-                                );
+                              )
+                            : null,
+                        body: Column(
+                          children: [
+                            Container(
+                                height: 45,
+                                child: StatefulBuilder(
+                                    builder: (context, setState) {
+                                  buttons_setstate = setState;
+                                  return Row(children: [
+                                    Expanded(
+                                        child: NavigationBar(
+                                      labelBehavior:
+                                          NavigationDestinationLabelBehavior
+                                              .alwaysHide,
+                                      selectedIndex: _selectedIndex,
+                                      destinations: platforms.map((platform) {
+                                        return NavigationDestination(
+                                          icon: Center(child: Text(platform)),
+                                          label: '',
+                                        );
+                                      }).toList(),
+                                      onDestinationSelected: (index) {
+                                        _onItemTapped(index, re: true);
+                                      },
+                                    )),
+                                    if (show_filter)
+                                      TextButton(
+                                        child: Text(
+                                            filters[sources.indexOf(source)]
+                                                ['name']),
+                                        onPressed: () {
+                                          Map<String, dynamic> tfilter = {};
+                                          tfilter["推荐"] =
+                                              filter_details[_selectedIndex]
+                                                  ["recommend"];
+                                          for (var item
+                                              in filter_details[_selectedIndex]
+                                                  ["all"]) {
+                                            tfilter[item["category"]] =
+                                                item["filters"];
+                                          }
+                                          _showFilterSelection(
+                                              context_in_1,
+                                              tfilter,
+                                              filters[sources.indexOf(source)]
+                                                  ['id'],
+                                              change_fliter);
+                                        },
+                                      ),
+                                  ]);
+                                })),
+                            // 长灰色细分割线
+                            Divider(
+                              height: 1,
+                              color: Colors.grey[300],
+                            ),
+                            Expanded(
+                                child: GestureDetector(
+                                    onHorizontalDragEnd: (details) {
+                                      if (details.primaryVelocity != null) {
+                                        if (details.primaryVelocity! > 0) {
+                                          if (_selectedIndex == 0) {
+                                            return;
+                                          }
+                                          _onItemTapped(_selectedIndex - 1);
+                                        } else if (details.primaryVelocity! <
+                                            0) {
+                                          if (_selectedIndex ==
+                                              platforms.length - 1) {
+                                            return;
+                                          }
+                                          _onItemTapped(_selectedIndex + 1);
+                                        }
+                                      }
+                                    },
+                                    child: PreloadPageView.builder(
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      controller:
+                                          _pageController, // 使用 PageController
+                                      itemCount: sources.length, // 页面数量
+                                      itemBuilder: (context, index) {
+                                        if (index == 0) {
+                                          // 第一个页面：我的歌单
+                                          return MyPlaylist(
+                                            onPlaylistTap: change_main_status,
+                                          );
+                                        } else {
+                                          // 其他页面：动态生成
+                                          return Playlist(
+                                            source: sources[index],
+                                            offset: offsets[index],
+                                            filter: filters[index],
+                                            onPlaylistTap: change_main_status,
+                                            key: Key(filters[index].toString()),
+                                          );
+                                        }
+                                      },
+                                    )
+                                    // EasyAnimatedIndexedStack(
+                                    //     index: sources.indexOf(source),
+                                    //     animationBuilder:
+                                    //         (context, animation, child) {
+                                    //       final curvedAnimation = CurvedAnimation(
+                                    //         parent: animation,
+                                    //         curve: Curves.easeInOut,
+                                    //       );
 
-                                // 添加状态监听器
-                                // curvedAnimation.addStatusListener((status) {
-                                //   print("AnimationStatus $status");
-                                //   print(animation.value);
-                                //   if (status == AnimationStatus.completed &&
-                                //       lastStatus == AnimationStatus.forward) {
-                                //     left_to_right_reverse =
-                                //         !left_to_right_reverse;
-                                //     debugPrint(
-                                //         "left_to_right_reverse $left_to_right_reverse");
-                                //   }
-                                //   lastStatus = status;
-                                // });
-                                curvedAnimation.addListener(() {
-                                  print(animation.value);
-                                  if (animation.value == 0) {
-                                    left_to_right_reverse = false;
-                                  } else if (animation.value == 1) {
-                                    left_to_right_reverse = true;
-                                  }
-                                });
+                                    //       curvedAnimation.addListener(() {
+                                    //         print(animation.value);
+                                    //         if (animation.value == 0) {
+                                    //           left_to_right_reverse = false;
+                                    //         } else if (animation.value == 1) {
+                                    //           left_to_right_reverse = true;
+                                    //         }
+                                    //       });
 
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: SlideTransition(
-                                      position: Tween<Offset>(
-                                        begin: Offset(
-                                            (move_direction ? 1 : -1) *
-                                                (left_to_right_reverse
-                                                    ? -1
-                                                    : 1) *
-                                                1,
-                                            0.2),
-                                        end: Offset.zero,
-                                      ).animate(CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeInOut,
-                                      )),
-                                      child: Transform(
-                                        transform: (Matrix4.identity()
-                                          ..setEntry(3, 2, 0.001) // 设置透视效果
-                                          ..rotateX((1 - animation.value) *
-                                              1.5) // 沿 X 轴旋转
-                                          ..rotateY((0.5 -
-                                                  animation.value / 2) *
-                                              (move_direction ? 1 : -1) *
-                                              (left_to_right_reverse ? -1 : 1) *
-                                              3)
-                                          // ..rotateZ(
-                                          //     (0.5 - animation.value / 2) *
-                                          //         (move_direction ? 1 : -1) *
-                                          //         (left_to_right_reverse
-                                          //             ? -1
-                                          //             : 1))
-                                                      ),
-                                        alignment: Alignment.center,
-                                        child: child,
-                                      )),
-                                );
-                              },
-                              // curve: Curves.easeInOutQuart,
-                              duration: const Duration(milliseconds: 250),
-                              children: [
-                                MyPlaylist(
-                                  onPlaylistTap: change_main_status,
-                                ), // 我的歌单
-                                ...List.generate(
-                                  sources.length - 1,
-                                  (index) => Playlist(
-                                    source: sources[index + 1],
-                                    offset: offsets[index + 1],
-                                    filter: filters[index + 1],
-                                    onPlaylistTap: change_main_status,
-                                    key: Key(filters[index + 1].toString()),
-                                  ),
-                                ),
-                              ]),
-                        ))
-                      ],
-                    )
-                  : PlaylistInfo(
-                      key: _playlistInfoKey,
-                      listId: _playlist_id,
-                      onPlaylistTap: change_main_status,
-                      is_my: main_is_my,
-                    ),
-          bottomNavigationBar: Play(onPlaylistTap: change_main_status),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              if (volumeSliderVisible) {
-                _overlayEntry?.remove();
-                _overlayEntry = null;
-                volumeSliderVisible = false;
-                return;
+                                    //       return FadeTransition(
+                                    //         opacity: animation,
+                                    //         child: SlideTransition(
+                                    //             position: Tween<Offset>(
+                                    //               begin: Offset(
+                                    //                   (move_direction ? 1 : -1) *
+                                    //                       (left_to_right_reverse
+                                    //                           ? -1
+                                    //                           : 1) *
+                                    //                       1,
+                                    //                   0.2),
+                                    //               end: Offset.zero,
+                                    //             ).animate(CurvedAnimation(
+                                    //               parent: animation,
+                                    //               curve: Curves.easeInOut,
+                                    //             )),
+                                    //             child: Transform(
+                                    //               transform: (Matrix4.identity()
+                                    //                     ..setEntry(
+                                    //                         3, 2, 0.001) // 设置透视效果
+                                    //                     ..rotateX(
+                                    //                         (1 - animation.value) *
+                                    //                             1.5) // 沿 X 轴旋转
+                                    //                     ..rotateY((0.5 -
+                                    //                             animation.value / 2) *
+                                    //                         (move_direction
+                                    //                             ? 1
+                                    //                             : -1) *
+                                    //                         (left_to_right_reverse
+                                    //                             ? -1
+                                    //                             : 1) *
+                                    //                         3)
+                                    //                   // ..rotateZ(
+                                    //                   //     (0.5 - animation.value / 2) *
+                                    //                   //         (move_direction ? 1 : -1) *
+                                    //                   //         (left_to_right_reverse
+                                    //                   //             ? -1
+                                    //                   //             : 1))
+                                    //                   ),
+                                    //               alignment: Alignment.center,
+                                    //               child: child,
+                                    //             )),
+                                    //       );
+                                    //     },
+                                    //     // curve: Curves.easeInOutQuart,
+                                    //     duration: const Duration(milliseconds: 250),
+                                    //     children: [
+                                    //       MyPlaylist(
+                                    //         onPlaylistTap: change_main_status,
+                                    //       ), // 我的歌单
+                                    //       ...List.generate(
+                                    //         sources.length - 1,
+                                    //         (index) => Playlist(
+                                    //           source: sources[index + 1],
+                                    //           offset: offsets[index + 1],
+                                    //           filter: filters[index + 1],
+                                    //           onPlaylistTap: change_main_status,
+                                    //           key: Key(filters[index + 1].toString()),
+                                    //         ),
+                                    //       ),
+                                    //     ]),
+                                    ))
+                          ],
+                        ));
+                  };
+                  break;
+
+                default:
+                  builder = (context_in_1) => Scaffold(
+                        appBar: AppBar(title: Text('Default Page')),
+                        body: Center(child: Text('This is the default page')),
+                      );
+                  break;
               }
-              _showVolumeSlider(context);
+              return MaterialPageRoute(builder: builder);
             },
-            child: Icon(Icons.volume_up),
           ),
+          bottomNavigationBar: Play(onPlaylistTap: change_main_status),
         ));
   }
 
-  void _showVolumeSlider(BuildContext context) async {
+  void showVolumeSlider() async {
     try {
       _currentVolume = await get_player_settings("volume");
     } catch (e) {
@@ -606,7 +664,7 @@ class _MyHomePageState extends State<MyHomePage>
     _currentVolume = _currentVolume / 100;
     volumeSliderVisible = true;
     _overlayEntry = _createOverlayEntry();
-    Overlay.of(context)!.insert(_overlayEntry!);
+    Overlay.of(_main_context)!.insert(_overlayEntry!);
     _startAutoCloseTimer();
   }
 

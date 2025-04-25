@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:listen1_xuan/bodys.dart';
+import 'package:listen1_xuan/main.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
@@ -556,8 +557,25 @@ class _PlayState extends State<Play> {
         } else {
           return GestureDetector(
               onTap: () async {
+                main_showVolumeSlider();
                 final track = await getnowplayingsong();
-                song_dialog(context, track['track'], widget.onPlaylistTap);
+                var ret = await song_dialog(
+                    context, track['track'], widget.onPlaylistTap);
+                if (ret != null) {
+                  if (ret["push"] != null) {
+                    clean_top_context();
+                    // Navigator.of(context_PlaylistInfo).push(
+                    Navigator.of(top_context.last).push(
+                      MaterialPageRoute(
+                        builder: (context) => PlaylistInfo(
+                          listId: ret["push"],
+                          onPlaylistTap: widget.onPlaylistTap,
+                          is_my: false,
+                        ),
+                      ),
+                    );
+                  }
+                }
               },
               onDoubleTap: () {
                 // if (_player.playing) MediaControl.pause else MediaControl.play,

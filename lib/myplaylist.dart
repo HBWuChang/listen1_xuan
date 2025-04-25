@@ -30,7 +30,7 @@ class MyPlaylist {
       BuildContext context, List<Map<String, dynamic>> tracks,
       [String? title = "", String? cover_img_url = ""]) async {
     try {
-      showDialog(
+      await showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(

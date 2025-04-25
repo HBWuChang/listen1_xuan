@@ -251,7 +251,6 @@ class Bilibili {
     return '';
   }
 
-
   static Map<String, String>? wbiKey;
 
   static String htmlDecode(String value) {
@@ -440,7 +439,6 @@ class Bilibili {
     };
   }
 
-
   Future<Map<String, dynamic>> show_playlist(String url) async {
     int offset = int.parse(getParameterByName('offset', url) ?? '0');
     int page = (offset / 20).ceil() + 1;
@@ -493,7 +491,6 @@ class Bilibili {
     };
   }
 
-
   Future<Map<String, dynamic>> bi_album(String url) async {
     return {
       'success': (Function fn) => fn({
@@ -502,7 +499,6 @@ class Bilibili {
           }),
     };
   }
-
 
   static Future<Map<String, dynamic>> bi_track(String url) async {
     final trackId = getParameterByName('list_id', url)?.split('_').last;
@@ -550,36 +546,42 @@ class Bilibili {
     final artistId = getParameterByName('list_id', url)?.split('_').last;
     return {
       'success': (Function fn) async {
-        String targetUrl;
-        final response = await wrap_wbi_request(
-            'https://api.bilibili.com/x/space/wbi/acc/info', {'mid': artistId});
-        final info = {
-          'cover_img_url': response.data['data']['face'],
-          'title': response.data['data']['name'],
-          'id': 'biartist_$artistId',
-          'source_url': 'https://space.bilibili.com/$artistId/#/audio',
-        };
-        if (getParameterByName('list_id', url)?.split('_').length == 3) {
-          final res = await wrap_wbi_request(
-              'https://api.bilibili.com/x/space/wbi/arc/search', {
-            'mid': artistId,
-            'pn': 1,
-            'ps': 25,
-            'order': 'click',
-            'index': 1
-          });
-          final tracks = res.data['data']['list']['vlist'].map((item) {
-            return bi_convert_song2(item);
-          }).toList();
-          fn({'tracks': tracks, 'info': info});
-        } else {
-          targetUrl =
-              'https://api.bilibili.com/audio/music-service-c/web/song/upper?pn=1&ps=0&order=2&uid=$artistId';
-          final res = await Dio().get(targetUrl);
-          final tracks = res.data['data']['data'].map((item) {
-            return bi_convert_song(item);
-          }).toList();
-          fn({'tracks': tracks, 'info': info});
+        try {
+          String targetUrl;
+          final response = await wrap_wbi_request(
+              'https://api.bilibili.com/x/space/wbi/acc/info',
+              {'mid': artistId});
+          final info = {
+            'cover_img_url': response.data['data']['face'],
+            'title': response.data['data']['name'],
+            'id': 'biartist_$artistId',
+            'source_url': 'https://space.bilibili.com/$artistId/#/audio',
+          };
+          if (getParameterByName('list_id', url)?.split('_').length == 3) {
+            final res = await wrap_wbi_request(
+                'https://api.bilibili.com/x/space/wbi/arc/search', {
+              'mid': artistId,
+              'pn': 1,
+              'ps': 25,
+              'order': 'click',
+              'index': 1
+            });
+            final tracks = res.data['data']['list']['vlist'].map((item) {
+              return bi_convert_song2(item);
+            }).toList();
+            fn({'tracks': tracks, 'info': info});
+          } else {
+            targetUrl =
+                'https://api.bilibili.com/audio/music-service-c/web/song/upper?pn=1&ps=0&order=2&uid=$artistId';
+            final res = await Dio().get(targetUrl);
+            final tracks = res.data['data']['data'].map((item) {
+              return bi_convert_song(item);
+            }).toList();
+            fn({'tracks': tracks, 'info': info});
+          }
+        } catch (e) {
+          print(e);
+          fn({'tracks': [], 'info': {}});
         }
       }
     };

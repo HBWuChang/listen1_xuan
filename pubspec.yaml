@@ -43,6 +43,7 @@ dependencies:
   flutter_isolate: ^2.1.0
   easy_animated_indexed_stack: ^0.0.3
   adaptive_theme: ^3.6.0
+  preload_page_view: ^0.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
