@@ -485,6 +485,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.2.10"
+  globbing:
+    dependency: transitive
+    description:
+      name: globbing
+      sha256: "4f89cfaf6fa74c9c1740a96259da06bd45411ede56744e28017cc534a12b6e2d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   html:
     dependency: "direct main"
     description:
@@ -970,6 +978,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.3.0+3"
+  system_info3:
+    dependency: "direct main"
+    description:
+      name: system_info3
+      sha256: "86b296fe08ec5062f96379982ff2dfea94be349e63f970b534453997cee34738"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.1"
   term_glyph:
     dependency: transitive
     description:

@@ -23,6 +23,7 @@ import 'package:dio/dio.dart';
 import 'dart:async';
 import 'package:archive/archive.dart';
 import 'package:install_plugin/install_plugin.dart';
+import 'package:system_info3/system_info3.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
 Future<Map<String, dynamic>> outputAllSettingsToFile(
@@ -956,7 +957,21 @@ class _SettingsPageState extends State<SettingsPage> {
                               'authorization': 'Bearer ' + token,
                               'x-github-api-version': '2022-11-28',
                             }));
-                        final art = response.data["artifacts"][0];
+                        print(
+                            'Kernel architecture: ${SysInfo.kernelArchitecture.name}');
+                        late var art;
+
+                        switch (SysInfo.kernelArchitecture.name) {
+                          case "ARM64":
+                            for (var i in response.data["artifacts"]) {
+                              if (i['name'].indexOf("arm64") > 0) {
+                                art = i;
+                                break;
+                              }
+                            }
+                          default:
+                            art = response.data["artifacts"][0];
+                        }
                         final download_url = art["archive_download_url"];
                         final created_at = art["created_at"];
                         double total = art["size_in_bytes"].toDouble();
