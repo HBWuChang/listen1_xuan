@@ -300,8 +300,8 @@ class _PlaylistState extends State<Playlist> {
                           MediaQuery.of(context).size.height
                       ? 6
                       : 3, // 每行显示的列数
-                  crossAxisSpacing: 10.0, // 列间距
-                  mainAxisSpacing: 10.0, // 行间距
+                  crossAxisSpacing: 5.0, // 列间距
+                  mainAxisSpacing: 5.0, // 行间距
                   childAspectRatio: 0.8, // 子项宽高比
                 ),
                 itemCount: _playlists.length,
@@ -327,36 +327,23 @@ class _PlaylistState extends State<Playlist> {
                                           MediaQuery.of(context).size.height
                                       ? 6
                                       : 3) -
-                              20,
+                              10,
                           height: MediaQuery.of(context).size.width /
                                   (MediaQuery.of(context).size.width >
                                           MediaQuery.of(context).size.height
                                       ? 6
                                       : 3) -
-                              20,
+                              10,
                           child: CachedNetworkImage(
                             imageUrl: playlist['cover_img_url'],
                             fit: BoxFit.cover,
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Container(
-                            height: 20, // 设置文字容器高度
-                            child: Marquee(
-                              text: playlist['title'],
-                              style: TextStyle(fontSize: 16),
-                              scrollAxis: Axis.horizontal,
-                              blankSpace: 20.0,
-                              velocity: 50.0,
-                              pauseAfterRound: Duration(seconds: 1),
-                              startPadding: 10.0,
-                              accelerationDuration: Duration(seconds: 1),
-                              accelerationCurve: Curves.linear,
-                              decelerationDuration: Duration(milliseconds: 500),
-                              decelerationCurve: Curves.easeOut,
-                            ),
-                          ),
+                        Text(
+                          playlist['title'],
+                          style: TextStyle(fontSize: 12), // 可选：设置字体大小
+                          maxLines: 2, // 可选：限制最大行数
+                          overflow: TextOverflow.ellipsis, // 可选：超出部分显示省略号
                         ),
                       ],
                     ),
