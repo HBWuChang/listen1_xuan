@@ -293,26 +293,46 @@ class _MyHomePageState extends State<MyHomePage>
     main_is_my = is_my;
     _playlistInfoKey = UniqueKey();
     if (id != "") {
-      setState(() {
-        _Mainpage = false;
-        _playlist_id = id;
-        if (_isSearchActive) {
-          _onSearchBackTapped();
-        }
-        _focusNode.unfocus();
-      });
+      clean_top_context();
+      Navigator.of(top_context.last).push(
+        MaterialPageRoute(
+          builder: (context) => PlaylistInfo(
+            listId: id,
+            onPlaylistTap: change_main_status,
+            is_my: false,
+          ),
+        ),
+      );
     } else {
       if (search_text != "") {
         input_text_Controller.text = search_text;
         clean_top_context();
         Navigator.of(top_context.last).push(
-          MaterialPageRoute(builder: (context) {
-            top_context.add(context);
-            return Searchlistinfo(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) {
+              top_context.add(context);
+              return Searchlistinfo(
                 input_text_Controller: input_text_Controller,
                 onPlaylistTap: change_main_status,
-                animationController: animationController);
-          }),
+                animationController: animationController,
+              );
+            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              const begin = Offset(0.0, -1.0); // 从顶部开始
+              const end = Offset.zero; // 到达原点
+              const curve = Curves.easeInOut;
+
+              var tween =
+                  Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+              var offsetAnimation = animation.drive(tween);
+
+              return SlideTransition(
+                position: offsetAnimation,
+                child: child,
+              );
+            },
+          ),
         );
       } else {
         setState(() {
@@ -424,17 +444,48 @@ class _MyHomePageState extends State<MyHomePage>
                                                 await Navigator.of(
                                                         top_context.last)
                                                     .push(
-                                                  MaterialPageRoute(
-                                                      builder: (context) {
-                                                    top_context.add(context);
-                                                    return Searchlistinfo(
+                                                  PageRouteBuilder(
+                                                    pageBuilder: (context,
+                                                        animation,
+                                                        secondaryAnimation) {
+                                                      top_context.add(context);
+                                                      return Searchlistinfo(
                                                         input_text_Controller:
                                                             input_text_Controller,
                                                         onPlaylistTap:
                                                             change_main_status,
                                                         animationController:
-                                                            animationController);
-                                                  }),
+                                                            animationController,
+                                                      );
+                                                    },
+                                                    transitionsBuilder:
+                                                        (context,
+                                                            animation,
+                                                            secondaryAnimation,
+                                                            child) {
+                                                      const begin = Offset(
+                                                          0.0, -1.0); // 从顶部开始
+                                                      const end =
+                                                          Offset.zero; // 到达原点
+                                                      const curve =
+                                                          Curves.easeInOut;
+
+                                                      var tween = Tween(
+                                                              begin: begin,
+                                                              end: end)
+                                                          .chain(CurveTween(
+                                                              curve: curve));
+                                                      var offsetAnimation =
+                                                          animation
+                                                              .drive(tween);
+
+                                                      return SlideTransition(
+                                                        position:
+                                                            offsetAnimation,
+                                                        child: child,
+                                                      );
+                                                    },
+                                                  ),
                                                 );
                                               },
                                             ),

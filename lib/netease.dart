@@ -96,7 +96,7 @@ class Netease {
       final dio = dio_with_cookie_manager;
       final tempDir = await getApplicationDocumentsDirectory();
       final tempPath = tempDir.path;
-    
+
       // dio.interceptors.add(CookieInterceptors());
       // dynamic cookies = _cookies.split(';');
       // for (var cookie in cookies) {
@@ -877,47 +877,53 @@ class Netease {
     };
     return {
       'success': (fn) async {
-        final response =
-            await dio_post_with_cookie_and_csrf(targetUrl, reqData);
-        final data = jsonDecode(response.data);
-        var result = <Map<String, dynamic>>[];
-        var total = 0;
-        if (data['result']['songCount'] == 0) {
+        try {
+          final response =
+              await dio_post_with_cookie_and_csrf(targetUrl, reqData);
+          final data = jsonDecode(response.data);
+          var result = <Map<String, dynamic>>[];
+          var total = 0;
+          if (data['result']['songCount'] == 0) {
+            fn({'result': [], 'total': 0, 'type': searchType});
+            return;
+          }
+          if (searchType == '0') {
+            result = (data['result']['songs'] as List).map((songInfo) {
+              return {
+                'id': 'netrack_${songInfo['id']}',
+                'title': songInfo['name'],
+                'artist': songInfo['artists'][0]['name'],
+                'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
+                'album': songInfo['album']['name'],
+                'album_id': 'nealbum_${songInfo['album']['id']}',
+                'source': 'netease',
+                'source_url':
+                    'https://music.163.com/#/song?id=${songInfo['id']}',
+                'img_url': songInfo['album']['picUrl'],
+                'url': !is_playable(songInfo) ? '' : null,
+              };
+            }).toList();
+            total = data['result']['songCount'];
+          } else if (searchType == '1') {
+            result = (data['result']['playlists'] as List).map((info) {
+              return {
+                'id': 'neplaylist_${info['id']}',
+                'title': info['name'],
+                'source': 'netease',
+                'source_url':
+                    'https://music.163.com/#/playlist?id=${info['id']}',
+                'img_url': info['coverImgUrl'],
+                'url': 'neplaylist_${info['id']}',
+                'author': info['creator']['nickname'],
+                'count': info['trackCount'],
+              };
+            }).toList();
+            total = data['result']['playlistCount'];
+          }
+          fn({'result': result, 'total': total, 'type': searchType});
+        } catch (e) {
           fn({'result': [], 'total': 0, 'type': searchType});
-          return;
         }
-        if (searchType == '0') {
-          result = (data['result']['songs'] as List).map((songInfo) {
-            return {
-              'id': 'netrack_${songInfo['id']}',
-              'title': songInfo['name'],
-              'artist': songInfo['artists'][0]['name'],
-              'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
-              'album': songInfo['album']['name'],
-              'album_id': 'nealbum_${songInfo['album']['id']}',
-              'source': 'netease',
-              'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
-              'img_url': songInfo['album']['picUrl'],
-              'url': !is_playable(songInfo) ? '' : null,
-            };
-          }).toList();
-          total = data['result']['songCount'];
-        } else if (searchType == '1') {
-          result = (data['result']['playlists'] as List).map((info) {
-            return {
-              'id': 'neplaylist_${info['id']}',
-              'title': info['name'],
-              'source': 'netease',
-              'source_url': 'https://music.163.com/#/playlist?id=${info['id']}',
-              'img_url': info['coverImgUrl'],
-              'url': 'neplaylist_${info['id']}',
-              'author': info['creator']['nickname'],
-              'count': info['trackCount'],
-            };
-          }).toList();
-          total = data['result']['playlistCount'];
-        }
-        fn({'result': result, 'total': total, 'type': searchType});
       },
     };
   }

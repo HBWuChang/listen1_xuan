@@ -74,8 +74,8 @@ Future<dynamic> song_dialog(BuildContext context, Map<String, dynamic> track,
                   title: Text('作者：${track['artist'] ?? '未知艺术家'}'),
                   onTap: () {
                     if (change_main_status != null) {
-                      Navigator.of(context).pop({"push": track['artist_id']});
-                      // change_main_status!(track['artist_id'] ?? '');
+                      Navigator.of(context).pop();
+                      change_main_status!(track['artist_id'] ?? '');
                     }
                   },
                   onLongPress: () {
@@ -88,8 +88,8 @@ Future<dynamic> song_dialog(BuildContext context, Map<String, dynamic> track,
                   ListTile(
                     title: Text('专辑：${track['album']}'),
                     onTap: () {
-                      Navigator.of(context).pop({"push": track['album_id']});
-                      // change_main_status!(track['album_id']);
+                      Navigator.of(context).pop();
+                      change_main_status!(track['album_id']);
                     },
                     onLongPress: () {
                       Clipboard.setData(ClipboardData(text: track['album']));
@@ -1474,6 +1474,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   String source = 'netease';
   int curpage = 1;
   final ScrollController _scrollController = ScrollController();
+  String lastquery = "";
   @override
   void initState() {
     super.initState();
@@ -1534,9 +1535,10 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
 
   void _filterTracks() async {
     String query = widget.input_text_Controller.text.toLowerCase();
-    if (query == '') {
+    if (query == ''|| query == lastquery) {
       return;
     }
+    lastquery = query;
     change_source();
 
     try {
@@ -1548,10 +1550,6 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
         'curpage': curpage,
         'type': song_or_playlist ? 1 : 0
       });
-      // setState(() {
-      //   tracks = List<Map<String, dynamic>>.from(result['result']);
-      //   _loading = false;
-      // });
       ret["success"]((data) {
         result = data;
         setState(() {
@@ -1559,9 +1557,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
           _loading = false;
         });
       });
-    } catch (e) {
-      // print(e);
-    }
+    } catch (e) {}
   }
 
   @override
