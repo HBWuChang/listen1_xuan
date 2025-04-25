@@ -935,8 +935,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         final apkFile = File(apkfile_name);
                         if (await apkFile.exists()) {
                           try {
-                            InstallPlugin.installApk(
-                                    '$tempPath/app-release.apk')
+                            InstallPlugin.installApk(apkfile_name)
                                 .then((result) {
                               print('install apk $result');
                             }).catchError((error) {
@@ -1130,7 +1129,19 @@ class _SettingsPageState extends State<SettingsPage> {
                       if (await file.exists()) {
                         await file.delete();
                       }
-                      file = File(apkfile_name);
+                      file = File('$tempPath/app-arm64-v8a-release.apk');
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      file = File('$tempPath/app-armeabi-v7a-release.apk');
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      file = File('$tempPath/app-x86_64-release.apk');
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      file = File('$tempPath/app-release.apk');
                       if (await file.exists()) {
                         await file.delete();
                       }
