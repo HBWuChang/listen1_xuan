@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - '**/*.dart'
-      - 'pubspec.yaml'
+      # - 'pubspec.yaml'
 
 jobs:
   build:
