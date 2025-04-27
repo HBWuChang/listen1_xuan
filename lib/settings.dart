@@ -153,8 +153,7 @@ Future<void> importSettingsFromFile(
     try {
       // 弹出系统文件选择器选择文件
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
+        type: FileType.any,
       );
 
       if (result != null && result.files.single.path != null) {
@@ -587,7 +586,7 @@ class _SettingsPageState extends State<SettingsPage> {
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: Center(
+      body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
@@ -596,24 +595,21 @@ class _SettingsPageState extends State<SettingsPage> {
               children: <Widget>[
                 SvgPicture.string(
                     '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" class="zhuzhan-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.73252 2.67094C3.33229 2.28484 3.33229 1.64373 3.73252 1.25764C4.11291 0.890684 4.71552 0.890684 5.09591 1.25764L7.21723 3.30403C7.27749 3.36218 7.32869 3.4261 7.37081 3.49407H10.5789C10.6211 3.4261 10.6723 3.36218 10.7325 3.30403L12.8538 1.25764C13.2342 0.890684 13.8368 0.890684 14.2172 1.25764C14.6175 1.64373 14.6175 2.28484 14.2172 2.67094L13.364 3.49407H14C16.2091 3.49407 18 5.28493 18 7.49407V12.9996C18 15.2087 16.2091 16.9996 14 16.9996H4C1.79086 16.9996 0 15.2087 0 12.9996V7.49406C0 5.28492 1.79086 3.49407 4 3.49407H4.58579L3.73252 2.67094ZM4 5.42343C2.89543 5.42343 2 6.31886 2 7.42343V13.0702C2 14.1748 2.89543 15.0702 4 15.0702H14C15.1046 15.0702 16 14.1748 16 13.0702V7.42343C16 6.31886 15.1046 5.42343 14 5.42343H4ZM5 9.31747C5 8.76519 5.44772 8.31747 6 8.31747C6.55228 8.31747 7 8.76519 7 9.31747V10.2115C7 10.7638 6.55228 11.2115 6 11.2115C5.44772 11.2115 5 10.7638 5 10.2115V9.31747ZM12 8.31747C11.4477 8.31747 11 8.76519 11 9.31747V10.2115C11 10.7638 11.4477 11.2115 12 11.2115C12.5523 11.2115 13 10.7638 13 10.2115V9.31747C13 8.76519 12.5523 8.31747 12 8.31747Z" fill="gray"></path></svg>'),
-                SizedBox(
-                  width: 180,
-                  child: FutureBuilder(
-                    // future: check_bl_cookie(),
-                    future: bilibili.check_bl_cookie(),
-                    builder:
-                        (BuildContext context, AsyncSnapshot<String> snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return global_loading_anime;
+                FutureBuilder(
+                  // future: check_bl_cookie(),
+                  future: bilibili.check_bl_cookie(),
+                  builder:
+                      (BuildContext context, AsyncSnapshot<String> snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return global_loading_anime;
+                    } else {
+                      if (snapshot.data == '') {
+                        return const Text('cookie未设置或失效');
                       } else {
-                        if (snapshot.data == '') {
-                          return const Text('cookie未设置或失效');
-                        } else {
-                          return Text(snapshot.data ?? 'Loading...');
-                        }
+                        return Text(snapshot.data ?? 'Loading...');
                       }
-                    },
-                  ),
+                    }
+                  },
                 ),
                 ElevatedButton(
                   onPressed: () => open_bl_login(),
@@ -629,27 +625,24 @@ class _SettingsPageState extends State<SettingsPage> {
                         "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
                     width: 18,
                     height: 18),
-                SizedBox(
-                  width: 200,
-                  child: FutureBuilder(
-                    // future: check_bl_cookie(),
-                    future: Netease().get_user(),
-                    builder: (BuildContext context,
-                        AsyncSnapshot<Map<String, dynamic>> snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return global_loading_anime;
+                FutureBuilder(
+                  // future: check_bl_cookie(),
+                  future: Netease().get_user(),
+                  builder: (BuildContext context,
+                      AsyncSnapshot<Map<String, dynamic>> snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return global_loading_anime;
+                    } else {
+                      if (snapshot.data == '') {
+                        return const Text('cookie未设置或失效');
                       } else {
-                        if (snapshot.data == '') {
-                          return const Text('cookie未设置或失效');
-                        } else {
-                          // return Text(const JsonEncoder.withIndent('  ')
-                          //     .convert(snapshot.data));
-                          return Text((snapshot.data?['result']?['nickname'] ??
-                              '未知用户'));
-                        }
+                        // return Text(const JsonEncoder.withIndent('  ')
+                        //     .convert(snapshot.data));
+                        return Text(
+                            (snapshot.data?['result']?['nickname'] ?? '未知用户'));
                       }
-                    },
-                  ),
+                    }
+                  },
                 ),
                 ElevatedButton(
                   onPressed: () => open_netease_login(),
@@ -665,27 +658,24 @@ class _SettingsPageState extends State<SettingsPage> {
                         "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
                     width: 18,
                     height: 18),
-                SizedBox(
-                  width: 200,
-                  child: FutureBuilder(
-                    // future: check_bl_cookie(),
-                    future: qq.get_user(),
-                    builder: (BuildContext context,
-                        AsyncSnapshot<Map<String, dynamic>> snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return global_loading_anime;
+                FutureBuilder(
+                  // future: check_bl_cookie(),
+                  future: qq.get_user(),
+                  builder: (BuildContext context,
+                      AsyncSnapshot<Map<String, dynamic>> snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return global_loading_anime;
+                    } else {
+                      if (snapshot.data == '') {
+                        return const Text('cookie未设置或失效');
                       } else {
-                        if (snapshot.data == '') {
-                          return const Text('cookie未设置或失效');
-                        } else {
-                          // return Text(const JsonEncoder.withIndent('  ')
-                          //     .convert(snapshot.data));
-                          return Text(
-                              (snapshot.data?['data']?['nickname'] ?? '未知用户'));
-                        }
+                        // return Text(const JsonEncoder.withIndent('  ')
+                        //     .convert(snapshot.data));
+                        return Text(
+                            (snapshot.data?['data']?['nickname'] ?? '未知用户'));
                       }
-                    },
-                  ),
+                    }
+                  },
                 ),
                 ElevatedButton(
                   onPressed: () => open_qq_login(),
@@ -698,25 +688,22 @@ class _SettingsPageState extends State<SettingsPage> {
               children: <Widget>[
                 SvgPicture.string(
                     '<svg width="800px" height="800px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>github [#142]</title><desc>Created with Sketch.</desc><defs></defs><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#000000"><g id="icons" transform="translate(56.000000, 160.000000)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" id="github-[#142]"></path></g></g></g></svg>'),
-                Expanded(
-                  child: FutureBuilder(
-                    // future: check_bl_cookie(),
-                    future: Github.updateStatus(),
-                    builder:
-                        (BuildContext context, AsyncSnapshot<int> snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return global_loading_anime;
+                FutureBuilder(
+                  // future: check_bl_cookie(),
+                  future: Github.updateStatus(),
+                  builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return global_loading_anime;
+                    } else {
+                      if (snapshot.data == '') {
+                        return const Text('cookie未设置或失效');
                       } else {
-                        if (snapshot.data == '') {
-                          return const Text('cookie未设置或失效');
-                        } else {
-                          // return Text(const JsonEncoder.withIndent('  ')
-                          //     .convert(snapshot.data));
-                          return Text(Github.getStatusText());
-                        }
+                        // return Text(const JsonEncoder.withIndent('  ')
+                        //     .convert(snapshot.data));
+                        return Text(Github.getStatusText());
                       }
-                    },
-                  ),
+                    }
+                  },
                 ),
                 ElevatedButton(
                   onPressed: () => Github.openAuthUrl(context),
@@ -1155,7 +1142,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       if (await file.exists()) {
                         await file.delete();
                       }
-                      tempPath ='/storage/emulated/0/Download/Listen1';
+                      tempPath = '/storage/emulated/0/Download/Listen1';
                       filePath = '$tempPath/canary.zip';
 
                       file = File(filePath);
@@ -1178,7 +1165,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       if (await file.exists()) {
                         await file.delete();
                       }
-                      
+
                       Fluttertoast.showToast(
                         msg: '清理成功',
                         toastLength: Toast.LENGTH_SHORT,
@@ -1217,7 +1204,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
                   ),
                 ]),
-            Expanded(
+            SizedBox(
+              height: 1000,
               child: StatefulBuilder(
                 builder: (BuildContext context, StateSetter setState) {
                   _readmeContent_setstate = setState;
@@ -1226,7 +1214,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   );
                 },
               ),
-            ),
+            )
           ],
         ),
       ),
