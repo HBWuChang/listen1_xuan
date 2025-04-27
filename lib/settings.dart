@@ -1158,7 +1158,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       tempPath ='/storage/emulated/0/Download/Listen1';
                       filePath = '$tempPath/canary.zip';
 
-                      var file = File(filePath);
+                      file = File(filePath);
                       if (await file.exists()) {
                         await file.delete();
                       }
