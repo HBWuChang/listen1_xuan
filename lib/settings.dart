@@ -24,6 +24,7 @@ import 'dart:async';
 import 'package:archive/archive.dart';
 import 'package:install_plugin/install_plugin.dart';
 import 'package:system_info3/system_info3.dart';
+import 'animations.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
 Future<Map<String, dynamic>> outputAllSettingsToFile(
@@ -377,7 +378,10 @@ class _login_webviewState extends State<login_webview> {
 
 class _SettingsPageState extends State<SettingsPage> {
   String _readmeContent = '';
+  late StateSetter _readmeContent_setstate;
   bool useHttpOverrides = false;
+  late StateSetter useHttpOverrides_setstate;
+
   late String apkfile_name;
 
   void open_bl_login() async {
@@ -512,7 +516,9 @@ class _SettingsPageState extends State<SettingsPage> {
   void get_useHttpOverrides() async {
     Map<String, dynamic> settings = await settings_getsettings();
     if (settings["useHttpOverrides"] != null) {
-      useHttpOverrides = settings["useHttpOverrides"];
+      useHttpOverrides_setstate(() {
+        useHttpOverrides = settings["useHttpOverrides"];
+      });
     }
   }
 
@@ -563,10 +569,12 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     // 使用base64对content进行解码
-    setState(() {
-      _readmeContent =
-          decodeBase64(treadmeContent.data['content'].replaceAll("\n", ''));
-    });
+    try {
+      _readmeContent_setstate(() {
+        _readmeContent =
+            decodeBase64(treadmeContent.data['content'].replaceAll("\n", ''));
+      });
+    } catch (e) {}
   }
 
   @override
@@ -592,7 +600,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     builder:
                         (BuildContext context, AsyncSnapshot<String> snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
+                        return global_loading_anime;
                       } else {
                         if (snapshot.data == '') {
                           return const Text('cookie未设置或失效');
@@ -625,7 +633,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     builder: (BuildContext context,
                         AsyncSnapshot<Map<String, dynamic>> snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
+                        return global_loading_anime;
                       } else {
                         if (snapshot.data == '') {
                           return const Text('cookie未设置或失效');
@@ -661,7 +669,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     builder: (BuildContext context,
                         AsyncSnapshot<Map<String, dynamic>> snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
+                        return global_loading_anime;
                       } else {
                         if (snapshot.data == '') {
                           return const Text('cookie未设置或失效');
@@ -693,7 +701,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     builder:
                         (BuildContext context, AsyncSnapshot<int> snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
+                        return global_loading_anime;
                       } else {
                         if (snapshot.data == '') {
                           return const Text('cookie未设置或失效');
@@ -1167,22 +1175,30 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   StatefulBuilder(
                     builder: (BuildContext context, StateSetter setState) {
+                      useHttpOverrides_setstate = setState;
                       return SwitchListTile(
                         title: const Text('禁用ssl证书验证'),
                         value: useHttpOverrides,
                         onChanged: (bool value) {
                           set_useHttpOverrides(value);
-                          setState(() {
-                            useHttpOverrides = value;
-                          });
+                          try {
+                            setState(() {
+                              useHttpOverrides = value;
+                            });
+                          } catch (e) {}
                         },
                       );
                     },
                   ),
                 ]),
             Expanded(
-              child: Markdown(
-                data: _readmeContent,
+              child: StatefulBuilder(
+                builder: (BuildContext context, StateSetter setState) {
+                  _readmeContent_setstate = setState;
+                  return Markdown(
+                    data: _readmeContent,
+                  );
+                },
               ),
             ),
           ],

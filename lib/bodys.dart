@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
+import 'animations.dart';
 
 Future<dynamic> song_dialog(BuildContext context, Map<String, dynamic> track,
     Function? change_main_status,
@@ -292,7 +293,7 @@ class _PlaylistState extends State<Playlist> {
     return Scaffold(
       body: Center(
         child: _loading
-            ? CircularProgressIndicator()
+            ? global_loading_anime
             : GridView.builder(
                 controller: _scrollController,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -591,7 +592,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
   Widget build(BuildContext context) {
     return Scaffold(
         body: _loading
-            ? CircularProgressIndicator()
+            ? global_loading_anime
             : SingleChildScrollView(
                 child: Column(children: [
                   ExpansionPanelList(
@@ -709,7 +710,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                   );
                                 }).toList(),
                               )
-                            : Center(child: CircularProgressIndicator()),
+                            : Center(child: global_loading_anime),
                         isExpanded: _isExpandedFav,
                       ),
                       ExpansionPanel(
@@ -759,7 +760,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                       });
                                 }).toList(),
                               )
-                            : Center(child: CircularProgressIndicator()),
+                            : Center(child: global_loading_anime),
                         isExpanded: _isExpandedBl,
                       ),
                       ExpansionPanel(
@@ -812,7 +813,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                   );
                                 }).toList(),
                               )
-                            : Center(child: CircularProgressIndicator()),
+                            : Center(child: global_loading_anime),
                         isExpanded: _isExpandedNe,
                       ),
                       ExpansionPanel(
@@ -867,7 +868,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                   );
                                 }).toList(),
                               )
-                            : Center(child: CircularProgressIndicator()),
+                            : Center(child: global_loading_anime),
                         isExpanded: _isExpandedQq,
                       ),
                     ],
@@ -1049,7 +1050,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
     return Scaffold(
         body: Center(
       child: _loading
-          ? CircularProgressIndicator()
+          ? global_loading_anime
           : _loadfailed
               ? Text('加载失败')
               : CustomScrollView(
@@ -1093,7 +1094,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                               height: 150,
                               fit: BoxFit.cover,
                               placeholder: (context, url) =>
-                                  CircularProgressIndicator(),
+                                  global_loading_anime,
                               errorWidget: (context, url, error) =>
                                   Icon(Icons.error),
                             ),
@@ -1620,7 +1621,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
       ),
       body: Center(
         child: _loading
-            ? CircularProgressIndicator()
+            ? global_loading_anime
             : CustomScrollView(
                 controller: _scrollController,
                 slivers: [

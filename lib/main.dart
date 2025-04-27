@@ -5,12 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/netease.dart';
+import 'package:animations/animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
 import 'settings.dart';
 import 'loweb.dart';
 import 'bodys.dart';
 import 'play.dart';
+import 'animations.dart';
 import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter_isolate/flutter_isolate.dart';
@@ -18,8 +20,8 @@ import 'dart:io';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:easy_animated_indexed_stack/easy_animated_indexed_stack.dart';
 import 'package:preload_page_view/preload_page_view.dart';
+import 'package:flutter/foundation.dart';
 
 final dio_with_cookie_manager = Dio();
 List<BuildContext> top_context = List.empty(growable: true);
@@ -133,10 +135,17 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Listen1',
       theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        useMaterial3: true,
-        primaryColor: Colors.indigo,
-      ),
+          primarySwatch: Colors.indigo,
+          useMaterial3: true,
+          primaryColor: Colors.indigo,
+          pageTransitionsTheme: const PageTransitionsTheme(builders: {
+            TargetPlatform.android: SharedAxisPageTransitionsBuilder(
+              transitionType: SharedAxisTransitionType.scaled,
+            ),
+            TargetPlatform.iOS: SharedAxisPageTransitionsBuilder(
+              transitionType: SharedAxisTransitionType.scaled,
+            ),
+          })),
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
       localizationsDelegates: [
@@ -308,30 +317,21 @@ class _MyHomePageState extends State<MyHomePage>
         clean_top_context();
         Navigator.of(top_context.last).push(
           PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) {
-              top_context.add(context);
-              return Searchlistinfo(
-                input_text_Controller: input_text_Controller,
-                onPlaylistTap: change_main_status,
-                animationController: animationController,
-              );
-            },
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              const begin = Offset(0.0, -1.0); // 从顶部开始
-              const end = Offset.zero; // 到达原点
-              const curve = Curves.easeInOut;
-
-              var tween =
-                  Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-              var offsetAnimation = animation.drive(tween);
-
-              return SlideTransition(
-                position: offsetAnimation,
-                child: child,
-              );
-            },
-          ),
+              pageBuilder: (context, animation, secondaryAnimation) {
+                top_context.add(context);
+                return Searchlistinfo(
+                  input_text_Controller: input_text_Controller,
+                  onPlaylistTap: change_main_status,
+                  animationController: animationController,
+                );
+              },
+              transitionsBuilder: (context, animation, secondaryAnimation,
+                      child) =>
+                  search_Animation(
+                      animation: animation,
+                      secondaryAnimation: secondaryAnimation,
+                      child: child,
+                      axis: Axis.vertical)),
         );
       } else {
         setState(() {
@@ -377,8 +377,11 @@ class _MyHomePageState extends State<MyHomePage>
           }
           if (_Mainpage) {
             if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
-              exit(0);
-              // print("exit(0)");
+              if (kDebugMode) {
+                print("exit(0)");
+              } else {
+                exit(0);
+              }
             } else {
               Fluttertoast.showToast(
                 msg: "再按一次退出",
@@ -457,33 +460,21 @@ class _MyHomePageState extends State<MyHomePage>
                                                             animationController,
                                                       );
                                                     },
-                                                    transitionsBuilder:
-                                                        (context,
+                                                    transitionsBuilder: (context,
                                                             animation,
                                                             secondaryAnimation,
-                                                            child) {
-                                                      const begin = Offset(
-                                                          0.0, -1.0); // 从顶部开始
-                                                      const end =
-                                                          Offset.zero; // 到达原点
-                                                      const curve =
-                                                          Curves.easeInOut;
-
-                                                      var tween = Tween(
-                                                              begin: begin,
-                                                              end: end)
-                                                          .chain(CurveTween(
-                                                              curve: curve));
-                                                      var offsetAnimation =
-                                                          animation
-                                                              .drive(tween);
-
-                                                      return SlideTransition(
-                                                        position:
-                                                            offsetAnimation,
-                                                        child: child,
-                                                      );
-                                                    },
+                                                            child) =>
+                                                        search_Animation(
+                                                            animation:
+                                                                animation,
+                                                            secondaryAnimation:
+                                                                secondaryAnimation,
+                                                            child: child,
+                                                            axis:
+                                                                Axis.vertical),
+                                                    transitionDuration: Duration(
+                                                        milliseconds:
+                                                            300), // 延长动画时间到 1000ms
                                                   ),
                                                 );
                                               },
@@ -494,10 +485,26 @@ class _MyHomePageState extends State<MyHomePage>
                                             onPressed: () {
                                               Navigator.push(
                                                 main_context,
-                                                MaterialPageRoute(
-                                                    builder: (context) {
-                                                  return SettingsPage();
-                                                }),
+                                                PageRouteBuilder(
+                                                  pageBuilder: (context,
+                                                      animation,
+                                                      secondaryAnimation) {
+                                                    return SettingsPage();
+                                                  },
+                                                  transitionsBuilder: (context,
+                                                          animation,
+                                                          secondaryAnimation,
+                                                          child) =>
+                                                      SharedAxisTransition(
+                                                    animation: animation,
+                                                    secondaryAnimation:
+                                                        secondaryAnimation,
+                                                    transitionType:
+                                                        SharedAxisTransitionType
+                                                            .horizontal,
+                                                    child: child,
+                                                  ),
+                                                ),
                                               );
                                             },
                                           ),

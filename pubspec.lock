@@ -9,6 +9,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.6.0"
+  animations:
+    dependency: "direct main"
+    description:
+      name: animations
+      sha256: d3d6dcfb218225bbe68e87ccf6378bbb2e32a94900722c5f81611dad089911cb
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.11"
   archive:
     dependency: "direct main"
     description:
@@ -321,14 +329,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  easy_animated_indexed_stack:
-    dependency: "direct main"
-    description:
-      name: easy_animated_indexed_stack
-      sha256: "23d2acb80c27164d32b8e6d9f45992a5dafc93cb148216522511d428e70cc778"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.3"
   encrypt:
     dependency: "direct main"
     description:
@@ -597,6 +597,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.0"
+  loading_animations:
+    dependency: "direct main"
+    description:
+      name: loading_animations
+      sha256: c62a8c1fbbe5ade3ac2814128a9aa92ee784756b11ad9e6a915b673b90005cc8
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
   logger:
     dependency: "direct main"
     description:

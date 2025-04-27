@@ -21,6 +21,7 @@ import 'package:vibration/vibration.dart';
 import 'package:logger/logger.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:math';
+import 'animations.dart';
 
 class FileLogOutput extends LogOutput {
   final File file;
@@ -551,7 +552,7 @@ class _PlayState extends State<Play> {
       future: setNotification(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return Center(child: global_loading_anime);
         } else if (snapshot.hasError) {
           return Center(child: Text('Error initializing audio handler'));
         } else {

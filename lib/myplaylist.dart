@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'lowebutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:math';
+import 'animations.dart';
 
 class MyPlaylist {
   Future<void> arrayMove(List<dynamic> arr, int oldIndex, int newIndex) async {
@@ -68,7 +69,7 @@ class MyPlaylist {
                   }
                 }
                 return Center(
-                  child: CircularProgressIndicator(),
+                  child: global_loading_anime,
                 );
               },
             ),
