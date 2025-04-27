@@ -347,7 +347,7 @@ class _login_webviewState extends State<login_webview> {
         title: SizedBox(
             height: 30,
             child: Marquee(
-              text: '请登录后，点击右上角保存cooke按钮',
+              text: '请登录后，点击右上角保存cookie按钮',
               style: const TextStyle(fontSize: 20),
               scrollAxis: Axis.horizontal,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -546,8 +546,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> init_apkfilepath() async {
-    final tempDir = await getApplicationDocumentsDirectory();
-    final tempPath = tempDir.path;
+    // 确保路径存在
+    final downloadDir = Directory('/storage/emulated/0/Download/Listen1');
+    if (!await downloadDir.exists()) {
+      await downloadDir.create(recursive: true);
+    }
+    final tempPath = '/storage/emulated/0/Download/Listen1';
     switch (SysInfo.kernelArchitecture.name) {
       case "ARM64":
         apkfile_name = '$tempPath/app-arm64-v8a-release.apk';
@@ -936,9 +940,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ElevatedButton(
                     onPressed: () async {
                       try {
-                        final tempDir =
-                            await getApplicationDocumentsDirectory();
-                        final tempPath = tempDir.path;
+                        final tempPath = '/storage/emulated/0/Download/Listen1';
 
                         final apkFile = File(apkfile_name);
                         if (await apkFile.exists()) {
@@ -1130,8 +1132,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   ElevatedButton(
                     onPressed: () async {
                       final tempDir = await getApplicationDocumentsDirectory();
-                      final tempPath = tempDir.path;
-                      final filePath = '$tempPath/canary.zip';
+                      var tempPath = tempDir.path;
+                      var filePath = '$tempPath/canary.zip';
 
                       var file = File(filePath);
                       if (await file.exists()) {
@@ -1153,6 +1155,30 @@ class _SettingsPageState extends State<SettingsPage> {
                       if (await file.exists()) {
                         await file.delete();
                       }
+                      tempPath ='/storage/emulated/0/Download/Listen1';
+                      filePath = '$tempPath/canary.zip';
+
+                      var file = File(filePath);
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      file = File('$tempPath/app-arm64-v8a-release.apk');
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      file = File('$tempPath/app-armeabi-v7a-release.apk');
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      file = File('$tempPath/app-x86_64-release.apk');
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      file = File('$tempPath/app-release.apk');
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      
                       Fluttertoast.showToast(
                         msg: '清理成功',
                         toastLength: Toast.LENGTH_SHORT,
