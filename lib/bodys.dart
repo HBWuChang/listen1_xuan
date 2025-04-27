@@ -1473,6 +1473,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   List<Map<String, dynamic>> tracks = [];
   Map<String, dynamic> result = {};
   String source = 'netease';
+  String lastsource= 'netease';
   int curpage = 1;
   final ScrollController _scrollController = ScrollController();
   String lastquery = "";
@@ -1536,11 +1537,12 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
 
   void _filterTracks() async {
     String query = widget.input_text_Controller.text.toLowerCase();
-    if (query == '' || query == lastquery) {
+    change_source();
+    if (query == '' || (query == lastquery&&lastsource==source)){
       return;
     }
     lastquery = query;
-    change_source();
+    lastsource = source;
 
     try {
       setState(() {
