@@ -348,16 +348,12 @@ class _PlaylistState extends State<Playlist> {
                             fit: BoxFit.cover,
                           ),
                         ),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            playlist['title'],
-                            style: TextStyle(fontSize: 14), // 可选：设置字体大小
-                            maxLines: 2, // 可选：限制最大行数
-                            overflow: TextOverflow.ellipsis, // 可选：超出部分显示省略号
-                          ),
-                        )
+                        Text(
+                          playlist['title'],
+                          style: TextStyle(fontSize: 12), // 可选：设置字体大小
+                          maxLines: 2, // 可选：限制最大行数
+                          overflow: TextOverflow.ellipsis, // 可选：超出部分显示省略号
+                        ),
                       ],
                     ),
                   );

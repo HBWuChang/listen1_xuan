@@ -293,7 +293,9 @@ class _MyHomePageState extends State<MyHomePage>
   void change_fliter(dynamic id, String name) {
     print('change_fliter{id: $id, name: $name}');
     play_list_setstate(() {
-      filters[sources.indexOf(source)] = {'id': id, 'name': name};
+      buttons_setstate(() {
+        filters[sources.indexOf(source)] = {'id': id, 'name': name};
+      });
     });
   }
 
@@ -371,12 +373,13 @@ class _MyHomePageState extends State<MyHomePage>
       print("global_horizon: $global_horizon");
       if (global_horizon) {
         _selectedIndex = 2;
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge,
-            overlays: [SystemUiOverlay.bottom]);
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
         _pageController = PreloadPageController(
             initialPage: _selectedIndex - 1); // 初始化 PageController
+        show_filter = true;
       } else {
         _selectedIndex = 0;
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
         _pageController = PreloadPageController(
             initialPage: _selectedIndex); // 初始化 PageController
       }
@@ -529,63 +532,100 @@ class _MyHomePageState extends State<MyHomePage>
                                 return Scaffold(
                                     body: Column(
                                   children: [
-                                    SizedBox(
-                                      height: 20,
-                                    ),
                                     Container(
-                                        height: 45,
+                                        height: 40,
                                         child: StatefulBuilder(
                                             builder: (context, setState) {
                                           buttons_setstate = setState;
-                                          return Row(children: [
-                                            Expanded(
-                                                child: Center(
-                                              child: NavigationBar(
-                                                height: 30,
-                                                selectedIndex:
-                                                    _selectedIndex - 1 < 0
-                                                        ? 0
-                                                        : _selectedIndex - 1,
-                                                destinations: platforms
-                                                    .sublist(1)
-                                                    .map((platform) {
-                                                  return NavigationDestination(
-                                                    label: '',
-                                                    icon: Text(platform),
-                                                  );
-                                                }).toList(),
-                                                onDestinationSelected: (index) {
-                                                  _onItemTapped(index + 1);
-                                                },
-                                              ),
-                                            )),
-                                            if (show_filter)
-                                              TextButton(
-                                                child: Text(filters[sources
-                                                    .indexOf(source)]['name']),
-                                                onPressed: () {
-                                                  Map<String, dynamic> tfilter =
-                                                      {};
-                                                  tfilter["推荐"] =
-                                                      filter_details[
-                                                              _selectedIndex]
-                                                          ["recommend"];
-                                                  for (var item
-                                                      in filter_details[
-                                                              _selectedIndex]
-                                                          ["all"]) {
-                                                    tfilter[item["category"]] =
-                                                        item["filters"];
-                                                  }
-                                                  _showFilterSelection(
-                                                      context_in_1,
-                                                      tfilter,
-                                                      filters[sources.indexOf(
-                                                          source)]['id'],
-                                                      change_fliter);
-                                                },
-                                              ),
-                                          ]);
+                                          return Container(
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width -
+                                                  200,
+                                              child: Row(children: [
+                                                Container(
+                                                    width:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .width -
+                                                            200,
+                                                    child: Stack(children: [
+                                                      Positioned(
+                                                          top: -5,
+                                                          child: Container(
+                                                              height: 70,
+                                                              width: MediaQuery.of(
+                                                                          context)
+                                                                      .size
+                                                                      .width -
+                                                                  300,
+                                                              child:
+                                                                  NavigationBar(
+                                                                selectedIndex:
+                                                                    _selectedIndex -
+                                                                                1 <
+                                                                            0
+                                                                        ? 0
+                                                                        : _selectedIndex -
+                                                                            1,
+                                                                destinations:
+                                                                    platforms
+                                                                        .sublist(
+                                                                            1)
+                                                                        .map(
+                                                                            (platform) {
+                                                                  return NavigationDestination(
+                                                                    label: '',
+                                                                    icon: Text(
+                                                                        platform),
+                                                                  );
+                                                                }).toList(),
+                                                                onDestinationSelected:
+                                                                    (index) {
+                                                                  _onItemTapped(
+                                                                      index +
+                                                                          1);
+                                                                },
+                                                              ))),
+                                                      if (show_filter)
+                                                        Positioned(
+                                                          top: -5,
+                                                          right: 20,
+                                                          child: TextButton(
+                                                            child: Text(filters[
+                                                                    sources.indexOf(
+                                                                        source)]
+                                                                ['name']),
+                                                            onPressed: () {
+                                                              Map<String,
+                                                                      dynamic>
+                                                                  tfilter = {};
+                                                              tfilter["推荐"] =
+                                                                  filter_details[
+                                                                          _selectedIndex]
+                                                                      [
+                                                                      "recommend"];
+                                                              for (var item
+                                                                  in filter_details[
+                                                                          _selectedIndex]
+                                                                      ["all"]) {
+                                                                tfilter[item[
+                                                                        "category"]] =
+                                                                    item[
+                                                                        "filters"];
+                                                              }
+                                                              _showFilterSelection(
+                                                                  context_in_1,
+                                                                  tfilter,
+                                                                  filters[sources
+                                                                      .indexOf(
+                                                                          source)]['id'],
+                                                                  change_fliter);
+                                                            },
+                                                          ),
+                                                        )
+                                                    ])),
+                                              ]));
                                         })),
                                     Expanded(child: StatefulBuilder(
                                         builder: (context, setState) {

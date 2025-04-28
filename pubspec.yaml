@@ -1,13 +1,13 @@
 name: listen1_xuan
 description: "A new Flutter project."
-# git checkout 3.24.5
+# git checkout 3.27.4
 # Prevent accidental publishing to pub.dev.
 publish_to: 'none'
 
 version: 1.0.1+10
 
 environment:
-  sdk: ^3.5.4
+  sdk: ^3.6.2
 
 dependencies:
   flutter:
@@ -25,7 +25,7 @@ dependencies:
   audioplayers: ^6.1.0
   path_provider: ^2.0.1
   flutter_local_notifications: ^18.0.1
-  audio_service: ^0.18.16
+  audio_service: ^0.18.18
   just_audio: ^0.9.42
   encrypt: ^5.0.0
   webview_flutter: ^4.10.0

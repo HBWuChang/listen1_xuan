@@ -2,7 +2,7 @@
 
 本软件为flutter重写的Listen1
 -
-flutter version 3.24.1
+flutter version 3.27.4
 ## 一些预览
 ### 主页
 ![alt text](Screenshot_2025-04-25-21-59-30-413_com.xiebian.listen1_xuan.jpg) 

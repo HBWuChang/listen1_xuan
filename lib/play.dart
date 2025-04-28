@@ -1204,7 +1204,7 @@ Future<int> global_change_play_mode() async {
     playmode = (playmode + 1) % 3;
   });
   await set_player_settings("playmode", playmode);
-  update_playmode_to_audio_service();
+  // update_playmode_to_audio_service();
   return playmode;
 }
 
@@ -1270,17 +1270,17 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   //   await global_change_play_mode();
   // }
 
-  // @override
-  // Future<void> stop() => global_change_play_mode();
   @override
-  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
-    if (change_p) {
-      change_p = false;
-      return;
-    }
-    // await music_player.setRepeatMode(repeatMode);
-    await global_change_play_mode();
-  }
+  Future<void> stop() => global_change_play_mode();
+  // @override
+  // Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
+  //   if (change_p) {
+  //     change_p = false;
+  //     return;
+  //   }
+  //   // await music_player.setRepeatMode(repeatMode);
+  //   await global_change_play_mode();
+  // }
 
   /// Transform a just_audio event into an audio_service state.
   ///
