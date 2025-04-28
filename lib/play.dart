@@ -569,6 +569,9 @@ class _PlayState extends State<Play> {
         } else {
           return GestureDetector(
               onTap: () async {
+                if (!widget.horizon) {
+                  main_showVolumeSlider();
+                }
                 final track = await getnowplayingsong();
                 var ret = await song_dialog(
                     context, track['track'], widget.onPlaylistTap);
