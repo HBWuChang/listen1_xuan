@@ -367,36 +367,40 @@ class Netease {
   Future<Map<String, dynamic>> ne_get_playlist(String url) async {
     return {
       'success': (fn) async {
-        final listId =
-            Uri.parse(url).queryParameters['list_id']!.split('_').last;
-        const targetUrl = 'https://music.163.com/weapi/v3/playlist/detail';
-        final data = weapi({
-          'id': listId,
-          'offset': 0,
-          'total': true,
-          'limit': 1000,
-          'n': 1000,
-          'csrf_token': '',
-        });
-        final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
-        final resData = jsonDecode(response.data);
-        final info = {
-          'id': 'neplaylist_$listId',
-          'cover_img_url': resData['playlist']['coverImgUrl'],
-          'title': resData['playlist']['name'],
-          'source_url': 'https://music.163.com/#/playlist?id=$listId',
-        };
-        final maxAllowSize = 1000;
-        final trackIdsArray =
-            _splitArray(resData['playlist']['trackIds'], maxAllowSize);
+        try {
+          final listId =
+              Uri.parse(url).queryParameters['list_id']!.split('_').last;
+          const targetUrl = 'https://music.163.com/weapi/v3/playlist/detail';
+          final data = weapi({
+            'id': listId,
+            'offset': 0,
+            'total': true,
+            'limit': 1000,
+            'n': 1000,
+            'csrf_token': '',
+          });
+          final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+          final resData = jsonDecode(response.data);
+          final info = {
+            'id': 'neplaylist_$listId',
+            'cover_img_url': resData['playlist']['coverImgUrl'],
+            'title': resData['playlist']['name'],
+            'source_url': 'https://music.163.com/#/playlist?id=$listId',
+          };
+          final maxAllowSize = 1000;
+          final trackIdsArray =
+              _splitArray(resData['playlist']['trackIds'], maxAllowSize);
 
-        final tracks = <Map<String, dynamic>>[];
-        for (final trackIds in trackIdsArray) {
-          final trackData = await ng_parse_playlist_tracks(trackIds);
-          tracks.addAll(trackData);
+          final tracks = <Map<String, dynamic>>[];
+          for (final trackIds in trackIdsArray) {
+            final trackData = await ng_parse_playlist_tracks(trackIds);
+            tracks.addAll(trackData);
+          }
+          fn({'tracks': tracks, 'info': info});
+        } catch (e) {
+          fn({'tracks': [], 'info': {}});
         }
-        fn({'tracks': tracks, 'info': info});
-      },
+      }
     };
   }
 

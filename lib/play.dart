@@ -749,7 +749,7 @@ class _PlayState extends State<Play> {
                                                   ),
                                                 ),
                                                 Container(
-                                                  width: 150,
+                                                  width: 120,
                                                   child:
                                                       StreamBuilder<MediaState>(
                                                     stream: _mediaStateStream,

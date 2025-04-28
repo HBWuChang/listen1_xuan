@@ -515,131 +515,123 @@ class _MyHomePageState extends State<MyHomePage>
                           color: Colors.grey[300],
                         )),
                     Expanded(
-                      child: Expanded(
-                        child: Navigator(
-                          initialRoute: '/',
-                          onGenerateRoute: (RouteSettings settings) {
-                            WidgetBuilder builder;
-                            switch (settings.name) {
-                              case '/':
-                                // 在函数内部定义默认页面
-                                builder = (context_in_1) {
-                                  top_context.add(context_in_1);
-                                  return Scaffold(
-                                      body: Expanded(
-                                          child: Column(
-                                    children: [
-                                      SizedBox(
-                                        height: 20,
-                                      ),
-                                      Container(
-                                          height: 45,
-                                          child: StatefulBuilder(
-                                              builder: (context, setState) {
-                                            buttons_setstate = setState;
-                                            return Row(children: [
-                                              Expanded(
-                                                  child: Center(
-                                                child: NavigationBar(
-                                                  height: 30,
-                                                  selectedIndex:
-                                                      _selectedIndex - 1 < 0
-                                                          ? 0
-                                                          : _selectedIndex - 1,
-                                                  destinations: platforms
-                                                      .sublist(1)
-                                                      .map((platform) {
-                                                    return NavigationDestination(
-                                                      label: '',
-                                                      icon: Text(platform),
-                                                    );
-                                                  }).toList(),
-                                                  onDestinationSelected:
-                                                      (index) {
-                                                    _onItemTapped(index + 1);
-                                                  },
-                                                ),
-                                              )),
-                                              if (show_filter)
-                                                TextButton(
-                                                  child: Text(filters[sources
-                                                          .indexOf(source)]
-                                                      ['name']),
-                                                  onPressed: () {
-                                                    Map<String, dynamic>
-                                                        tfilter = {};
-                                                    tfilter["推荐"] =
-                                                        filter_details[
-                                                                _selectedIndex]
-                                                            ["recommend"];
-                                                    for (var item
-                                                        in filter_details[
-                                                                _selectedIndex]
-                                                            ["all"]) {
-                                                      tfilter[item[
-                                                              "category"]] =
-                                                          item["filters"];
-                                                    }
-                                                    _showFilterSelection(
-                                                        context_in_1,
-                                                        tfilter,
-                                                        filters[sources.indexOf(
-                                                            source)]['id'],
-                                                        change_fliter);
-                                                  },
-                                                ),
-                                            ]);
-                                          })),
-                                      Expanded(child: StatefulBuilder(
-                                          builder: (context, setState) {
-                                        play_list_setstate = setState;
-                                        return PreloadPageView.builder(
-                                          physics: BouncingScrollPhysics(),
-                                          controller:
-                                              _pageController, // 使用 PageController
-                                          itemCount: sources.length - 1, // 页面数量
-                                          preloadPagesCount: sources.length - 1,
-                                          onPageChanged: (index) {
-                                            index = index + 1;
-                                            source = sources[index];
-                                            show_filter = show_filters[index];
-                                            buttons_setstate(() {
-                                              _selectedIndex = index;
-                                            });
-                                          },
-                                          itemBuilder: (context, index) {
-                                            index = index + 1;
-                                            // 其他页面：动态生成
-                                            return Playlist(
-                                              source: sources[index],
-                                              offset: offsets[index],
-                                              filter: filters[index],
-                                              onPlaylistTap: change_main_status,
-                                              key: Key(
-                                                  filters[index].toString()),
-                                            );
-                                          },
-                                        );
-                                      })),
-                                    ],
-                                  )));
-                                };
-                                break;
-                              default:
-                                builder = (context_in_1) => Scaffold(
-                                      appBar:
-                                          AppBar(title: Text('Default Page')),
-                                      body: Center(
-                                          child:
-                                              Text('This is the default page')),
-                                    );
-                                break;
-                            }
-                            return MaterialPageRoute(builder: builder);
-                          },
-                        ),
+                      child: Navigator(
+                        initialRoute: '/',
+                        onGenerateRoute: (RouteSettings settings) {
+                          WidgetBuilder builder;
+                          switch (settings.name) {
+                            case '/':
+                              // 在函数内部定义默认页面
+                              builder = (context_in_1) {
+                                top_context.add(context_in_1);
+                                return Scaffold(
+                                    body: Column(
+                                  children: [
+                                    SizedBox(
+                                      height: 20,
+                                    ),
+                                    Container(
+                                        height: 45,
+                                        child: StatefulBuilder(
+                                            builder: (context, setState) {
+                                          buttons_setstate = setState;
+                                          return Row(children: [
+                                            Expanded(
+                                                child: Center(
+                                              child: NavigationBar(
+                                                height: 30,
+                                                selectedIndex:
+                                                    _selectedIndex - 1 < 0
+                                                        ? 0
+                                                        : _selectedIndex - 1,
+                                                destinations: platforms
+                                                    .sublist(1)
+                                                    .map((platform) {
+                                                  return NavigationDestination(
+                                                    label: '',
+                                                    icon: Text(platform),
+                                                  );
+                                                }).toList(),
+                                                onDestinationSelected: (index) {
+                                                  _onItemTapped(index + 1);
+                                                },
+                                              ),
+                                            )),
+                                            if (show_filter)
+                                              TextButton(
+                                                child: Text(filters[sources
+                                                    .indexOf(source)]['name']),
+                                                onPressed: () {
+                                                  Map<String, dynamic> tfilter =
+                                                      {};
+                                                  tfilter["推荐"] =
+                                                      filter_details[
+                                                              _selectedIndex]
+                                                          ["recommend"];
+                                                  for (var item
+                                                      in filter_details[
+                                                              _selectedIndex]
+                                                          ["all"]) {
+                                                    tfilter[item["category"]] =
+                                                        item["filters"];
+                                                  }
+                                                  _showFilterSelection(
+                                                      context_in_1,
+                                                      tfilter,
+                                                      filters[sources.indexOf(
+                                                          source)]['id'],
+                                                      change_fliter);
+                                                },
+                                              ),
+                                          ]);
+                                        })),
+                                    Expanded(child: StatefulBuilder(
+                                        builder: (context, setState) {
+                                      play_list_setstate = setState;
+                                      return PreloadPageView.builder(
+                                        physics: BouncingScrollPhysics(),
+                                        controller:
+                                            _pageController, // 使用 PageController
+                                        itemCount: sources.length - 1, // 页面数量
+                                        preloadPagesCount: sources.length - 1,
+                                        onPageChanged: (index) {
+                                          index = index + 1;
+                                          source = sources[index];
+                                          show_filter = show_filters[index];
+                                          buttons_setstate(() {
+                                            _selectedIndex = index;
+                                          });
+                                        },
+                                        itemBuilder: (context, index) {
+                                          index = index + 1;
+                                          // 其他页面：动态生成
+                                          return Playlist(
+                                            source: sources[index],
+                                            offset: offsets[index],
+                                            filter: filters[index],
+                                            onPlaylistTap: change_main_status,
+                                            key: Key(filters[index].toString()),
+                                          );
+                                        },
+                                      );
+                                    })),
+                                  ],
+                                ));
+                              };
+                              break;
+                            default:
+                              builder = (context_in_1) => Scaffold(
+                                    appBar: AppBar(title: Text('Default Page')),
+                                    body: Center(
+                                        child:
+                                            Text('This is the default page')),
+                                  );
+                              break;
+                          }
+                          return MaterialPageRoute(builder: builder);
+                        },
                       ),
-                    )
+                    ),
                   ]),
                   bottomNavigationBar: Play(
                     onPlaylistTap: change_main_status,

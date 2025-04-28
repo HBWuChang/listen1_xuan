@@ -303,7 +303,7 @@ class _PlaylistState extends State<Playlist> {
                       : 3, // 每行显示的列数
                   crossAxisSpacing: 5.0, // 列间距
                   mainAxisSpacing: 5.0, // 行间距
-                  childAspectRatio: 0.75, // 子项宽高比
+                  childAspectRatio: 0.8, // 子项宽高比
                 ),
                 itemCount: _playlists.length,
                 itemBuilder: (BuildContext context, int index) {
@@ -323,13 +323,21 @@ class _PlaylistState extends State<Playlist> {
                     child: Column(
                       children: [
                         Container(
-                          width: MediaQuery.of(context).size.width /
+                          width: (MediaQuery.of(context).size.width -
+                                      (MediaQuery.of(context).size.width >
+                                              MediaQuery.of(context).size.height
+                                          ? 200
+                                          : 0)) /
                                   (MediaQuery.of(context).size.width >
                                           MediaQuery.of(context).size.height
                                       ? 6
                                       : 3) -
                               10,
-                          height: MediaQuery.of(context).size.width /
+                          height: (MediaQuery.of(context).size.width -
+                                      (MediaQuery.of(context).size.width >
+                                              MediaQuery.of(context).size.height
+                                          ? 200
+                                          : 0)) /
                                   (MediaQuery.of(context).size.width >
                                           MediaQuery.of(context).size.height
                                       ? 6
