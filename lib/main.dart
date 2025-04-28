@@ -371,6 +371,8 @@ class _MyHomePageState extends State<MyHomePage>
       print("global_horizon: $global_horizon");
       if (global_horizon) {
         _selectedIndex = 2;
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge,
+            overlays: [SystemUiOverlay.bottom]);
         _pageController = PreloadPageController(
             initialPage: _selectedIndex - 1); // 初始化 PageController
       } else {

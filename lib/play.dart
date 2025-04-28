@@ -505,7 +505,7 @@ Future<void> setNotification() async {
       cacheManager: null,
     );
     await fresh_playmode();
-
+    update_playmode_to_audio_service();
     final track = await getnowplayingsong();
     if (track['index'] != -1) {
       await playsong(track['track'], false);
@@ -514,6 +514,7 @@ Future<void> setNotification() async {
 }
 
 var playmode_setstate;
+bool change_p = false;
 
 class Play extends StatefulWidget {
   final Function(String, {bool is_my, String search_text}) onPlaylistTap;
@@ -1176,12 +1177,35 @@ Future<void> global_skipToNext() async {
   await onPlaybackCompleted(true);
 }
 
-Future<void> global_change_play_mode() async {
+Future<void> update_playmode_to_audio_service() async {
+  try {
+    switch (playmode) {
+      case 0:
+        await _audioHandler.setRepeatMode(AudioServiceRepeatMode.all);
+        break;
+      case 1:
+        await _audioHandler.setRepeatMode(AudioServiceRepeatMode.group);
+        break;
+      case 2:
+        await _audioHandler.setRepeatMode(AudioServiceRepeatMode.one);
+        break;
+      default:
+        break;
+    }
+  } catch (e) {
+    print(e);
+  }
+}
+
+Future<int> global_change_play_mode() async {
+  change_p = true;
   await fresh_playmode();
   playmode_setstate(() {
     playmode = (playmode + 1) % 3;
   });
   await set_player_settings("playmode", playmode);
+  update_playmode_to_audio_service();
+  return playmode;
 }
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
@@ -1246,8 +1270,17 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   //   await global_change_play_mode();
   // }
 
+  // @override
+  // Future<void> stop() => global_change_play_mode();
   @override
-  Future<void> stop() => global_change_play_mode();
+  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
+    if (change_p) {
+      change_p = false;
+      return;
+    }
+    // await music_player.setRepeatMode(repeatMode);
+    await global_change_play_mode();
+  }
 
   /// Transform a just_audio event into an audio_service state.
   ///
