@@ -303,7 +303,7 @@ class _PlaylistState extends State<Playlist> {
                       : 3, // 每行显示的列数
                   crossAxisSpacing: 5.0, // 列间距
                   mainAxisSpacing: 5.0, // 行间距
-                  childAspectRatio: 0.8, // 子项宽高比
+                  childAspectRatio: 0.75, // 子项宽高比
                 ),
                 itemCount: _playlists.length,
                 itemBuilder: (BuildContext context, int index) {
@@ -340,12 +340,15 @@ class _PlaylistState extends State<Playlist> {
                             fit: BoxFit.cover,
                           ),
                         ),
-                        Text(
-                          playlist['title'],
-                          style: TextStyle(fontSize: 12), // 可选：设置字体大小
-                          maxLines: 2, // 可选：限制最大行数
-                          overflow: TextOverflow.ellipsis, // 可选：超出部分显示省略号
-                        ),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            playlist['title'],
+                            style: TextStyle(fontSize: 14), // 可选：设置字体大小
+                            maxLines: 2, // 可选：限制最大行数
+                            overflow: TextOverflow.ellipsis, // 可选：超出部分显示省略号
+                          ),
+                        )
                       ],
                     ),
                   );
@@ -436,31 +439,6 @@ class _MyPlaylistState extends State<MyPlaylist> {
     var result_ne2 = await netease
         .get_user_favorite_playlist("/get_user_favorite_playlist?user_id=$uid");
     try {
-      // setState(() {
-      //   for (var i = 0; i < result_ne['data']["playlists"].length; i++) {
-      //     _playlists_ne.add({
-      //       "info": {
-      //         'cover_img_url': result_ne['data']["playlists"][i]
-      //             ['cover_img_url'],
-      //         'title': result_ne['data']["playlists"][i]['title'],
-      //         'id': result_ne['data']["playlists"][i]['id'],
-      //         'source_url': result_ne['data']["playlists"][i]['source_url']
-      //       }
-      //     });
-      //   }
-      //   for (var i = 0; i < result_ne2['data']["playlists"].length; i++) {
-      //     _playlists_ne.add({
-      //       "info": {
-      //         'cover_img_url': result_ne2['data']["playlists"][i]
-      //             ['cover_img_url'],
-      //         'title': result_ne2['data']["playlists"][i]['title'],
-      //         'id': result_ne2['data']["playlists"][i]['id'],
-      //         'source_url': result_ne2['data']["playlists"][i]['source_url']
-      //       }
-      //     });
-      //   }
-      //   _isNeDataLoaded = true;
-      // });
       bool tflag1 = false;
       bool tflag2 = false;
       void check() {
@@ -516,31 +494,6 @@ class _MyPlaylistState extends State<MyPlaylist> {
     var result_qq2 = await qq
         .get_user_favorite_playlist("/get_user_favorite_playlist?user_id=$uid");
     try {
-      // setState(() {
-      //   for (var i = 0; i < result_qq['data']["playlists"].length; i++) {
-      //     _playlists_qq.add({
-      //       "info": {
-      //         'cover_img_url': result_qq['data']["playlists"][i]
-      //             ['cover_img_url'],
-      //         'title': result_qq['data']["playlists"][i]['title'],
-      //         'id': result_qq['data']["playlists"][i]['id'],
-      //         'source_url': result_qq['data']["playlists"][i]['source_url']
-      //       }
-      //     });
-      //   }
-      //   for (var i = 0; i < result_qq2['data']["playlists"].length; i++) {
-      //     _playlists_qq.add({
-      //       "info": {
-      //         'cover_img_url': result_qq2['data']["playlists"][i]
-      //             ['cover_img_url'],
-      //         'title': result_qq2['data']["playlists"][i]['title'],
-      //         'id': result_qq2['data']["playlists"][i]['id'],
-      //         'source_url': result_qq2['data']["playlists"][i]['source_url']
-      //       }
-      //     });
-      //   }
-      //   _isQqDataLoaded = true;
-      // });
       bool tflag1 = false;
       bool tflag2 = false;
       void check() {
@@ -596,6 +549,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
             : SingleChildScrollView(
                 child: Column(children: [
                   ExpansionPanelList(
+                    materialGapSize: 0,
                     expansionCallback: (int index, bool isExpanded) {
                       setState(() {
                         if (index == 0) {
@@ -618,7 +572,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                         headerBuilder: (BuildContext context, bool isExpanded) {
                           return ListTile(
                             leading: Icon(Icons.library_music),
-                            title: Text('我创建的歌单'),
+                            title: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '我创建的歌单',
+                                style: TextStyle(fontSize: 20.0),
+                              ),
+                            ),
                             onTap: () {
                               setState(() {
                                 _isExpandedMy = !_isExpandedMy;
@@ -641,10 +601,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                       height: 50,
                                       fit: BoxFit.cover,
                                     ),
-                              title: Text(playlist['info']['title']),
+                              title: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(playlist['info']['title'])),
                               onTap: () async {
+                                clean_top_context();
                                 var ret = await Navigator.push(
-                                  context,
+                                  top_context.last,
                                   MaterialPageRoute(
                                     builder: (context) => PlaylistInfo(
                                       listId: playlist['info']['id'],
@@ -668,7 +631,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                         headerBuilder: (BuildContext context, bool isExpanded) {
                           return ListTile(
                             leading: Icon(Icons.star),
-                            title: Text('我收藏的歌单'),
+                            title: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '我收藏的歌单',
+                                style: TextStyle(fontSize: 20.0),
+                              ),
+                            ),
                             onTap: () {
                               setState(() {
                                 _isExpandedFav = !_isExpandedFav;
@@ -690,10 +659,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                       height: 50,
                                       fit: BoxFit.cover,
                                     ),
-                                    title: Text(playlist['info']['title']),
+                                    title: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(playlist['info']['title'])),
                                     onTap: () async {
+                                      clean_top_context();
                                       var ret = await Navigator.push(
-                                        context,
+                                        top_context.last,
                                         MaterialPageRoute(
                                           builder: (context) => PlaylistInfo(
                                             listId: playlist['info']['id'],
@@ -718,7 +690,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                           return ListTile(
                             leading: SvgPicture.string(
                                 '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" class="zhuzhan-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.73252 2.67094C3.33229 2.28484 3.33229 1.64373 3.73252 1.25764C4.11291 0.890684 4.71552 0.890684 5.09591 1.25764L7.21723 3.30403C7.27749 3.36218 7.32869 3.4261 7.37081 3.49407H10.5789C10.6211 3.4261 10.6723 3.36218 10.7325 3.30403L12.8538 1.25764C13.2342 0.890684 13.8368 0.890684 14.2172 1.25764C14.6175 1.64373 14.6175 2.28484 14.2172 2.67094L13.364 3.49407H14C16.2091 3.49407 18 5.28493 18 7.49407V12.9996C18 15.2087 16.2091 16.9996 14 16.9996H4C1.79086 16.9996 0 15.2087 0 12.9996V7.49406C0 5.28492 1.79086 3.49407 4 3.49407H4.58579L3.73252 2.67094ZM4 5.42343C2.89543 5.42343 2 6.31886 2 7.42343V13.0702C2 14.1748 2.89543 15.0702 4 15.0702H14C15.1046 15.0702 16 14.1748 16 13.0702V7.42343C16 6.31886 15.1046 5.42343 14 5.42343H4ZM5 9.31747C5 8.76519 5.44772 8.31747 6 8.31747C6.55228 8.31747 7 8.76519 7 9.31747V10.2115C7 10.7638 6.55228 11.2115 6 11.2115C5.44772 11.2115 5 10.7638 5 10.2115V9.31747ZM12 8.31747C11.4477 8.31747 11 8.76519 11 9.31747V10.2115C11 10.7638 11.4477 11.2115 12 11.2115C12.5523 11.2115 13 10.7638 13 10.2115V9.31747C13 8.76519 12.5523 8.31747 12 8.31747Z" fill="gray"></path></svg>'),
-                            title: Text('我的哔哩哔哩收藏'),
+                            title: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '我的哔哩哔哩收藏',
+                                style: TextStyle(fontSize: 20.0),
+                              ),
+                            ),
                             onTap: () {
                               setState(() {
                                 _isExpandedBl = !_isExpandedBl;
@@ -740,10 +718,14 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                         height: 50,
                                         fit: BoxFit.cover,
                                       ),
-                                      title: Text(playlist['info']['title']),
+                                      title: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child:
+                                              Text(playlist['info']['title'])),
                                       onTap: () async {
+                                        clean_top_context();
                                         var ret = await Navigator.push(
-                                          context,
+                                          top_context.last,
                                           MaterialPageRoute(
                                             builder: (context) => PlaylistInfo(
                                               listId: playlist['info']['id'],
@@ -771,7 +753,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                     "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
                                 width: 18,
                                 height: 18),
-                            title: Text('我的网易云歌单'),
+                            title: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '我的网易云歌单',
+                                style: TextStyle(fontSize: 20.0),
+                              ),
+                            ),
                             onTap: () {
                               setState(() {
                                 _isExpandedNe = !_isExpandedNe;
@@ -793,10 +781,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                       height: 50,
                                       fit: BoxFit.cover,
                                     ),
-                                    title: Text(playlist['info']['title']),
+                                    title: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(playlist['info']['title'])),
                                     onTap: () async {
+                                      clean_top_context();
                                       var ret = await Navigator.push(
-                                        context,
+                                        top_context.last,
                                         MaterialPageRoute(
                                           builder: (context) => PlaylistInfo(
                                             listId: playlist['info']['id'],
@@ -824,7 +815,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                     "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
                                 width: 18,
                                 height: 18),
-                            title: Text('我的QQ歌单'),
+                            title: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '我的QQ歌单',
+                                style: TextStyle(fontSize: 20.0),
+                              ),
+                            ),
                             onTap: () {
                               setState(() {
                                 _isExpandedQq = !_isExpandedQq;
@@ -848,10 +845,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                       errorWidget: (context, url, error) =>
                                           Container(), // 如果加载出错则返回空的Container
                                     ),
-                                    title: Text(playlist['info']['title']),
+                                    title: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(playlist['info']['title'])),
                                     onTap: () async {
+                                      clean_top_context();
                                       var ret = await Navigator.push(
-                                        context,
+                                        top_context.last,
                                         MaterialPageRoute(
                                           builder: (context) => PlaylistInfo(
                                             listId: playlist['info']['id'],
@@ -1473,7 +1473,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   List<Map<String, dynamic>> tracks = [];
   Map<String, dynamic> result = {};
   String source = 'netease';
-  String lastsource= 'netease';
+  String lastsource = 'netease';
   int curpage = 1;
   final ScrollController _scrollController = ScrollController();
   String lastquery = "";
@@ -1538,7 +1538,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   void _filterTracks() async {
     String query = widget.input_text_Controller.text.toLowerCase();
     change_source();
-    if (query == '' || (query == lastquery&&lastsource==source)){
+    if (query == '' || (query == lastquery && lastsource == source)) {
       return;
     }
     lastquery = query;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:loading_animations/loading_animations.dart';
 import 'package:animations/animations.dart';
 
+
 Widget global_loading_anime = LoadingBouncingGrid.square(
   backgroundColor: Colors.indigo,
 );

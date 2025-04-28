@@ -1205,7 +1205,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ]),
             SizedBox(
-              height: 1000,
+              height: MediaQuery.of(context).size.height - 200,
               child: StatefulBuilder(
                 builder: (BuildContext context, StateSetter setState) {
                   _readmeContent_setstate = setState;
