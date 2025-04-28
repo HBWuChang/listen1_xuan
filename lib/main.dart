@@ -209,8 +209,7 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     super.initState();
     main_showVolumeSlider = showVolumeSlider;
-    _pageController = PreloadPageController(
-        initialPage: _selectedIndex); // 初始化 PageController
+
     download_receiveport.listen((message) {
       if (message is SendPort) {
         print('download_sendport初始化');
@@ -246,7 +245,7 @@ class _MyHomePageState extends State<MyHomePage>
     animationController.forward(from: 0.0);
   }
 
-  int _selectedIndex = 0;
+  late int _selectedIndex;
   List<int> offsets = List.generate(sources.length, (i) => 0);
   bool main_is_my = false;
   String source = 'myplaylist';
@@ -368,10 +367,18 @@ class _MyHomePageState extends State<MyHomePage>
     _main_context = main_context;
     return OrientationBuilder(builder: (context, orientation) {
       global_horizon = orientation == Orientation.landscape;
+      top_context.clear();
       print("global_horizon: $global_horizon");
       if (global_horizon) {
-        _selectedIndex = 1;
-      } else {}
+        _selectedIndex = 2;
+        _pageController = PreloadPageController(
+            initialPage: _selectedIndex - 1); // 初始化 PageController
+      } else {
+        _selectedIndex = 0;
+        _pageController = PreloadPageController(
+            initialPage: _selectedIndex); // 初始化 PageController
+      }
+
       if (orientation == Orientation.portrait) {
         // 竖屏逻辑
         print("当前为竖屏模式");
