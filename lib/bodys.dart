@@ -15,186 +15,225 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'animations.dart';
 
-Future<dynamic> song_dialog(BuildContext context, Map<String, dynamic> track,
-    Function? change_main_status,
-    [bool is_my = false,
-    Map<String, dynamic> nowplaylistinfo = const {},
-    Function? deltrack]) async {
+Future<dynamic> song_dialog(
+  BuildContext context,
+  Map<String, dynamic> track, {
+  Function? change_main_status,
+  bool is_my = false,
+  Map<String, dynamic> nowplaylistinfo = const {},
+  Function? deltrack,
+  Offset? position,
+}) async {
+  final screenSize = MediaQuery.of(context).size;
+  final dialogWidth = screenSize.width * 0.5;
+  final dialogHeight = screenSize.height * 1;
+  bool horizon = screenSize.height > screenSize.width ? false : true;
+  print("horizon:$horizon");
+  print("position:$position");
   return await showDialog(
     context: context,
     builder: (BuildContext context) {
-      return AlertDialog(
-          title: GestureDetector(
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: track['title'] ?? '未知标题'));
-              Fluttertoast.showToast(msg: '标题已复制到剪切板');
-            },
-            child: SelectableText(
-              track['title'] ?? '未知标题',
-              style: TextStyle(fontSize: 16),
-            ),
+      // 根据手指按下的位置动态调整弹窗位置和大小
+
+      double left = position != null ? position.dx - dialogWidth / 2 : 0;
+      double top = position != null ? position.dy - dialogHeight / 2 : 0;
+
+      // 确保弹窗不会超出屏幕边界
+      left = left < 0
+          ? 0
+          : (left + dialogWidth > screenSize.width
+              ? screenSize.width - dialogWidth
+              : left);
+      top = top < 0
+          ? 0
+          : (top + dialogHeight > screenSize.height
+              ? screenSize.height - dialogHeight
+              : top);
+      Widget dialog = AlertDialog(
+        title: GestureDetector(
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: track['title'] ?? '未知标题'));
+            Fluttertoast.showToast(msg: '标题已复制到剪切板');
+          },
+          child: SelectableText(
+            track['title'] ?? '未知标题',
+            style: TextStyle(fontSize: 16),
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    Clipboard.setData(
-                        ClipboardData(text: track['title'] ?? '未知标题'));
-                    Fluttertoast.showToast(msg: '标题已复制到剪切板');
-                  },
-                  onLongPress: () {
-                    Clipboard.setData(
-                        ClipboardData(text: track['img_url'] ?? '未知封面'));
-                    Fluttertoast.showToast(msg: '封面链接已复制到剪切板');
-                  },
-                  child: track['img_url'] == null
-                      ? Container()
-                      : CachedNetworkImage(
-                          imageUrl: track['img_url'],
-                          errorWidget: (context, url, error) =>
-                              Icon(Icons.error),
-                        ),
-                ),
-                ListTile(
-                  title: Text('搜索此音乐'),
-                  onTap: () {
-                    if (change_main_status != null) {
-                      Navigator.of(context).pop();
-                      change_main_status!("", search_text: track['title']);
-                    }
-                  },
-                  onLongPress: () {
-                    Clipboard.setData(
-                        ClipboardData(text: track['artist'] ?? '未知艺术家'));
-                    Fluttertoast.showToast(msg: '作者已复制到剪切板');
-                  },
-                ),
-                ListTile(
-                  title: Text('作者：${track['artist'] ?? '未知艺术家'}'),
-                  onTap: () {
-                    if (change_main_status != null) {
-                      Navigator.of(context).pop();
-                      change_main_status!(track['artist_id'] ?? '');
-                    }
-                  },
-                  onLongPress: () {
-                    Clipboard.setData(
-                        ClipboardData(text: track['artist'] ?? '未知艺术家'));
-                    Fluttertoast.showToast(msg: '作者已复制到剪切板');
-                  },
-                ),
-                if (track['album'] != null)
-                  ListTile(
-                    title: Text('专辑：${track['album']}'),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      change_main_status!(track['album_id']);
-                    },
-                    onLongPress: () {
-                      Clipboard.setData(ClipboardData(text: track['album']));
-                      Fluttertoast.showToast(msg: '专辑已复制到剪切板');
-                    },
-                  ),
-                ListTile(
-                  title: Text('歌曲链接'),
-                  onTap: () {
-                    launchUrl(Uri.parse(track['source_url']));
-                  },
-                  onLongPress: () {
-                    Clipboard.setData(ClipboardData(text: track['source_url']));
-                    Fluttertoast.showToast(msg: '歌曲链接已复制到剪切板');
-                  },
-                ),
-                ListTile(
-                  title: Text('添加到当前播放列表'),
-                  onTap: () {
-                    add_current_playing([track]);
-                    Fluttertoast.showToast(
-                      msg: '已添加到当前播放列表',
-                    );
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  Clipboard.setData(
+                      ClipboardData(text: track['title'] ?? '未知标题'));
+                  Fluttertoast.showToast(msg: '标题已复制到剪切板');
+                },
+                onLongPress: () {
+                  Clipboard.setData(
+                      ClipboardData(text: track['img_url'] ?? '未知封面'));
+                  Fluttertoast.showToast(msg: '封面链接已复制到剪切板');
+                },
+                child: track['img_url'] == null
+                    ? Container()
+                    : CachedNetworkImage(
+                        imageUrl: track['img_url'],
+                        errorWidget: (context, url, error) => Icon(Icons.error),
+                      ),
+              ),
+              ListTile(
+                title: Text('搜索此音乐'),
+                onTap: () {
+                  if (change_main_status != null) {
                     Navigator.of(context).pop();
-                  },
-                ),
+                    change_main_status!("", search_text: track['title']);
+                  }
+                },
+                onLongPress: () {
+                  Clipboard.setData(
+                      ClipboardData(text: track['artist'] ?? '未知艺术家'));
+                  Fluttertoast.showToast(msg: '作者已复制到剪切板');
+                },
+              ),
+              ListTile(
+                title: Text('作者：${track['artist'] ?? '未知艺术家'}'),
+                onTap: () {
+                  if (change_main_status != null) {
+                    Navigator.of(context).pop();
+                    change_main_status!(track['artist_id'] ?? '');
+                  }
+                },
+                onLongPress: () {
+                  Clipboard.setData(
+                      ClipboardData(text: track['artist'] ?? '未知艺术家'));
+                  Fluttertoast.showToast(msg: '作者已复制到剪切板');
+                },
+              ),
+              if (track['album'] != null)
                 ListTile(
-                  title: Text('添加到歌单'),
+                  title: Text('专辑：${track['album']}'),
                   onTap: () {
-                    if (nowplaylistinfo.isNotEmpty) {
-                      myplaylist.Add_to_my_playlist(
-                        context,
-                        [track],
-                        nowplaylistinfo['title'],
-                        nowplaylistinfo['cover_img_url'],
-                      );
-                    } else {
-                      myplaylist.Add_to_my_playlist(
-                        context,
-                        [track],
-                      );
-                    }
+                    Navigator.of(context).pop();
+                    change_main_status!(track['album_id']);
+                  },
+                  onLongPress: () {
+                    Clipboard.setData(ClipboardData(text: track['album']));
+                    Fluttertoast.showToast(msg: '专辑已复制到剪切板');
                   },
                 ),
+              ListTile(
+                title: Text('歌曲链接'),
+                onTap: () {
+                  launchUrl(Uri.parse(track['source_url']));
+                },
+                onLongPress: () {
+                  Clipboard.setData(ClipboardData(text: track['source_url']));
+                  Fluttertoast.showToast(msg: '歌曲链接已复制到剪切板');
+                },
+              ),
+              ListTile(
+                title: Text('添加到当前播放列表'),
+                onTap: () {
+                  add_current_playing([track]);
+                  Fluttertoast.showToast(
+                    msg: '已添加到当前播放列表',
+                  );
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                title: Text('添加到歌单'),
+                onTap: () {
+                  if (nowplaylistinfo.isNotEmpty) {
+                    myplaylist.Add_to_my_playlist(
+                      context,
+                      [track],
+                      nowplaylistinfo['title'],
+                      nowplaylistinfo['cover_img_url'],
+                    );
+                  } else {
+                    myplaylist.Add_to_my_playlist(
+                      context,
+                      [track],
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                title: Text('添加到下载队列'),
+                onTap: () async {
+                  final ok = await add_to_download_tasks([track['id']]);
+                  if (ok) {
+                    Fluttertoast.showToast(
+                      msg: '已添加到下载队列',
+                    );
+                  } else {
+                    Fluttertoast.showToast(
+                      msg: '添加失败',
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                title: Text('删除本地缓存'),
+                onTap: () async {
+                  await clean_local_cache(false, track['id']);
+                },
+              ),
+              if (is_my)
                 ListTile(
-                  title: Text('添加到下载队列'),
-                  onTap: () async {
-                    final ok = await add_to_download_tasks([track['id']]);
-                    if (ok) {
-                      Fluttertoast.showToast(
-                        msg: '已添加到下载队列',
-                      );
-                    } else {
-                      Fluttertoast.showToast(
-                        msg: '添加失败',
-                      );
-                    }
+                  title: Text('删除歌曲'),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text('删除歌曲'),
+                          content: Text('确定要删除这首歌曲吗？'),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text('取消'),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                await myplaylist.removeTrackFromMyPlaylist(
+                                    // widget.listId, track['id']);
+                                    nowplaylistinfo['id'],
+                                    track['id']);
+                                Navigator.of(context).pop();
+                                if (deltrack != null) {
+                                  deltrack(track);
+                                }
+                              },
+                              child: Text('确定'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
                   },
                 ),
-                ListTile(
-                  title: Text('删除本地缓存'),
-                  onTap: () async {
-                    await clean_local_cache(false, track['id']);
-                  },
-                ),
-                if (is_my)
-                  ListTile(
-                    title: Text('删除歌曲'),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text('删除歌曲'),
-                            content: Text('确定要删除这首歌曲吗？'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: Text('取消'),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  await myplaylist.removeTrackFromMyPlaylist(
-                                      // widget.listId, track['id']);
-                                      nowplaylistinfo['id'],
-                                      track['id']);
-                                  Navigator.of(context).pop();
-                                  if (deltrack != null) {
-                                    deltrack(track);
-                                  }
-                                },
-                                child: Text('确定'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                  ),
+            ],
+          ),
+        ),
+      );
+
+      return horizon
+          ? Stack(
+              children: [
+                Positioned(
+                    left: left,
+                    top: top,
+                    width: dialogWidth,
+                    height: dialogHeight,
+                    child: dialog),
               ],
-            ),
-          ));
+            )
+          : dialog;
     },
   );
 }
@@ -1329,8 +1368,9 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                         onReorder: _onReorder,
                         scrollController: inner_scrollController,
                         children: tracks.map((track) {
+                          var _key = GlobalKey();
                           return ListTile(
-                            key: ValueKey(track['id']),
+                            key: _key,
                             title: Text(track['title'] ?? '未知标题'),
                             subtitle: Text(
                                 '${track['artist'] ?? '未知艺术家'} - ${track['album'] ?? '未知专辑'}'),
@@ -1338,12 +1378,18 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                               icon: Icon(Icons.more_vert),
                               onPressed: () async {
                                 var ret = await song_dialog(
-                                    context_PlaylistInfo,
-                                    track,
-                                    widget.onPlaylistTap,
-                                    widget.is_my,
-                                    result['info'],
-                                    deltrack);
+                                    context_PlaylistInfo, track,
+                                    change_main_status: widget.onPlaylistTap,
+                                    is_my: widget.is_my,
+                                    nowplaylistinfo: result['info'],
+                                    deltrack: deltrack,
+                                    position: Offset(
+                                        MediaQuery.of(context).size.width,
+                                        (_key.currentContext!.findRenderObject()
+                                                as RenderBox)
+                                            .localToGlobal(Offset.zero)
+                                            .dy));
+
                                 if (ret != null) {
                                   if (ret["pop"] == true) {
                                     Navigator.of(context_PlaylistInfo).pop();
@@ -1648,15 +1694,24 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                       physics: NeverScrollableScrollPhysics(),
                       itemCount: tracks.length,
                       itemBuilder: (context, index) {
+                        var _key = GlobalKey();
                         final track = tracks[index];
                         return ListTile(
                           title: Text(track['title']),
                           subtitle:
                               Text('${track['artist']} - ${track['album']}'),
                           trailing: IconButton(
+                            key: _key,
                             icon: Icon(Icons.more_vert),
                             onPressed: () {
-                              song_dialog(context, track, widget.onPlaylistTap);
+                              song_dialog(context, track,
+                                  change_main_status: widget.onPlaylistTap,
+                                  position: Offset(
+                                      MediaQuery.of(context).size.width,
+                                      (_key.currentContext!.findRenderObject()
+                                              as RenderBox)
+                                          .localToGlobal(Offset.zero)
+                                          .dy));
                             },
                           ),
                           onTap: () {

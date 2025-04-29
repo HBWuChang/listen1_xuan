@@ -557,6 +557,8 @@ class _PlayState extends State<Play> {
     super.dispose();
   }
 
+  late Offset position;
+  final GlobalKey _buttonKey = GlobalKey();
   @override
   Widget build(BuildContext context) {
     // return PlayerWidget(player: player);
@@ -569,13 +571,17 @@ class _PlayState extends State<Play> {
           return Center(child: Text('Error initializing audio handler'));
         } else {
           return GestureDetector(
+              onTapDown: (TapDownDetails details) {
+                position = details.globalPosition;
+              },
               onTap: () async {
                 if (!widget.horizon) {
                   main_showVolumeSlider();
                 }
                 final track = await getnowplayingsong();
-                var ret = await song_dialog(
-                    context, track['track'], widget.onPlaylistTap);
+                var ret = await song_dialog(context, track['track'],
+                    change_main_status: widget.onPlaylistTap,
+                    position: position);
                 if (ret != null) {
                   if (ret["push"] != null) {
                     clean_top_context();
@@ -830,11 +836,20 @@ class _PlayState extends State<Play> {
                                       ],
                                     )),
                                 IconButton(
+                                  key: _buttonKey,
                                   icon: Icon(Icons.list),
                                   onPressed: () async {
                                     final track = await getnowplayingsong();
-                                    var ret = await song_dialog(context,
-                                        track['track'], widget.onPlaylistTap);
+
+                                    var ret = await song_dialog(
+                                        context, track['track'],
+                                        change_main_status:
+                                            widget.onPlaylistTap,
+                                        position: (_buttonKey.currentContext!
+                                                    .findRenderObject()
+                                                as RenderBox)
+                                            .localToGlobal(Offset.zero),
+                                        );
                                     if (ret != null) {
                                       if (ret["push"] != null) {
                                         clean_top_context();
