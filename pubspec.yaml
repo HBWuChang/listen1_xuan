@@ -46,6 +46,10 @@ dependencies:
   system_info3: ^4.0.1
   animations: ^2.0.11
   loading_animations: ^2.2.0
+  just_audio_media_kit: ^2.1.0
+  media_kit_libs_windows_audio: ^1.0.9
+  media_kit: ^1.1.11 # Primary package.
+  media_kit_libs_audio: ^1.0.5 # Native audio dependencies.
 dev_dependencies:
   flutter_test:
     sdk: flutter

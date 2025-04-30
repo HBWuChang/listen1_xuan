@@ -21,7 +21,7 @@ import 'package:vibration/vibration.dart';
 import 'package:logger/logger.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:math';
-import 'animations.dart';
+import 'global_settings_animations.dart';
 
 class FileLogOutput extends LogOutput {
   final File file;
@@ -333,7 +333,9 @@ Future<void> change_playback_state(dynamic track) async {
       id: track['id'],
       title: track['title'],
       artist: track['artist'],
-      artUri: Uri.parse(track['img_url']),
+      artUri: Uri.parse(track['img_url']==null?
+          'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0':
+          track['img_url']),
       duration: _duration,
     );
     (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);

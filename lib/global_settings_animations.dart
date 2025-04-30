@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:loading_animations/loading_animations.dart';
 import 'package:animations/animations.dart';
+import 'package:universal_io/io.dart' as universal_io;
 
+final bool is_windows = universal_io.Platform.isWindows;
 
 Widget global_loading_anime = LoadingBouncingGrid.square(
   backgroundColor: Colors.indigo,

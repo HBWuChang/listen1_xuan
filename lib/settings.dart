@@ -24,7 +24,7 @@ import 'dart:async';
 import 'package:archive/archive.dart';
 import 'package:install_plugin/install_plugin.dart';
 import 'package:system_info3/system_info3.dart';
-import 'animations.dart';
+import 'global_settings_animations.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
 Future<Map<String, dynamic>> outputAllSettingsToFile(

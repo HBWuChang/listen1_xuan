@@ -13,7 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'animations.dart';
+import 'global_settings_animations.dart';
 
 Future<dynamic> song_dialog(
   BuildContext context,

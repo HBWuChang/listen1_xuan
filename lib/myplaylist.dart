@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'lowebutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:math';
-import 'animations.dart';
+import 'global_settings_animations.dart';
 
 class MyPlaylist {
   Future<void> arrayMove(List<dynamic> arr, int oldIndex, int newIndex) async {

@@ -12,7 +12,7 @@ import 'settings.dart';
 import 'loweb.dart';
 import 'bodys.dart';
 import 'play.dart';
-import 'animations.dart';
+import 'global_settings_animations.dart';
 import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter_isolate/flutter_isolate.dart';
@@ -22,6 +22,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:flutter/foundation.dart';
+import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 
 final dio_with_cookie_manager = Dio();
 List<BuildContext> top_context = List.empty(growable: true);
@@ -104,7 +105,12 @@ void downloadtasks_background(SendPort mainPort) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 框架已初始化
-
+  if (is_windows)
+    JustAudioMediaKit.ensureInitialized(
+      linux: false, // default: true  - dependency: media_kit_libs_linux
+      windows:
+          true, // default: true  - dependency: media_kit_libs_windows_audio
+    );
   Map<String, dynamic> settings = await settings_getsettings();
   bool useHttpOverrides = false;
   if (settings["useHttpOverrides"] == null) {
@@ -216,8 +222,9 @@ class _MyHomePageState extends State<MyHomePage>
         download_sendport = message;
       }
     });
-    FlutterIsolate.spawn(
-        downloadtasks_background, download_receiveport.sendPort);
+    if (!is_windows)
+      FlutterIsolate.spawn(
+          downloadtasks_background, download_receiveport.sendPort);
 
     animationController = AnimationController(
       vsync: this,
