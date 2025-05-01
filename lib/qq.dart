@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:listen1_xuan/loweb.dart';
+import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -13,6 +14,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:math';
 import 'dart:typed_data';
+import 'global_settings_animations.dart';
 
 final qq = QQ();
 
@@ -24,23 +26,10 @@ class QQ {
 
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
     final dio = Dio();
-    // final tempDir = await getApplicationDocumentsDirectory ();
-    // final tempPath = tempDir.path;
-    // dio.interceptors.add(CookieManager(PersistCookieJar(
-    //   ignoreExpires: true,
-    //   storage: FileStorage(tempPath + "/.cookies/"),
-    // )));
     try {
       final sets = await settings_getsettings();
       final qq_cookie = sets['qq'];
       final res = await dio.get(url,
-          // referer: https://y.qq.com/
-          // origin: https://y.qq.com
-          // priority: u=1, i
-          // sec-ch-ua-platform: "Windows"
-          // user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0
-          // accept: application/json, text/plain, */*
-          // sec-ch-ua: "Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"
           options: Options(headers: {
             'cookie': qq_cookie,
             'referer': 'https://y.qq.com/',
@@ -63,22 +52,10 @@ class QQ {
   Future<dynamic> dio_post_with_cookie_and_csrf(
       String url, dynamic data) async {
     print("dio_post_with_cookie_and_csrf");
-    try {
-      final dio = Dio();
-      final tempDir = await getApplicationDocumentsDirectory();
-      final tempPath = tempDir.path;
-      dio.interceptors.add(CookieManager(PersistCookieJar(
-        ignoreExpires: true,
-        storage: FileStorage(tempPath + "/.cookies/"),
-      )));
-
-      return await dio.post(
-        url,
-        data: data,
-      );
-    } catch (e) {
-      return await Dio().post(url, data: FormData.fromMap(data));
-    }
+    return await dio_with_cookie_manager.post(
+      url,
+      data: data,
+    );
   }
 
   Future<Map<String, dynamic>> qq_show_toplist([int offset = 0]) async {
@@ -489,7 +466,7 @@ class QQ {
   Future<void> bootstrap_track(
       Map<String, dynamic> track, Function success, Function failure) async {
     Map<String, dynamic> settings = await settings_getsettings();
-    String qqcookie = settings['qq'];
+    String qqcookie = settings['qq'] ?? '';
     // print(qqcookie);
 
     var sound = {};
@@ -558,7 +535,6 @@ class QQ {
         'cv': 0,
       },
     };
-    // var response = await Dio().post(target_url, data: FormData.fromMap(reqData));
     var response = await dio_post_with_cookie_and_csrf(target_url, reqData);
     var data = jsonDecode(response.data);
     var purl = data['req_1']['data']['midurlinfo'][0]['purl'];

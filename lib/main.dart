@@ -23,6 +23,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:bot_toast/bot_toast.dart';
 
 final dio_with_cookie_manager = Dio();
 List<BuildContext> top_context = List.empty(growable: true);
@@ -124,8 +125,13 @@ void main() async {
     HttpOverrides.global = MyHttpOverrides();
   }
   final appDocDir = await getApplicationDocumentsDirectory();
-  final cookiePath = '${appDocDir.path}/.cookies/';
-
+  final cookiePath = is_windows
+      ? '${appDocDir.path}\\.cookies\\'
+      : '${appDocDir.path}/.cookies/';
+  final cookieDir = Directory(cookiePath);
+  if (!await cookieDir.exists()) {
+    await cookieDir.create(recursive: true);
+  }
   // 创建 PersistCookieJar 实例
   final cookieJar =
       PersistCookieJar(storage: FileStorage(cookiePath), ignoreExpires: true);
@@ -138,6 +144,38 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    if (is_windows) {
+      return MaterialApp(
+        title: 'Listen1',
+        builder: BotToastInit(), //1.调用BotToastInit
+        navigatorObservers: [BotToastNavigatorObserver()], //2.注册路由观察者
+        theme: ThemeData(
+            primarySwatch: Colors.indigo,
+            useMaterial3: true,
+            primaryColor: Colors.indigo,
+            pageTransitionsTheme: const PageTransitionsTheme(builders: {
+              TargetPlatform.android: SharedAxisPageTransitionsBuilder(
+                transitionType: SharedAxisTransitionType.scaled,
+              ),
+              TargetPlatform.iOS: SharedAxisPageTransitionsBuilder(
+                transitionType: SharedAxisTransitionType.scaled,
+              ),
+            })),
+        darkTheme: ThemeData.dark(),
+        themeMode: ThemeMode.system,
+        localizationsDelegates: [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [
+          const Locale('zh', 'CN'), // 中文简体
+          // 其他支持的语言
+        ],
+        locale: const Locale('zh', 'CN'), // 设置默认语言为中文
+        home: MyHomePage(),
+      );
+    }
     return MaterialApp(
       title: 'Listen1',
       theme: ThemeData(
@@ -361,7 +399,7 @@ class _MyHomePageState extends State<MyHomePage>
       animationController.dispose();
     } catch (e) {
       // print(e);
-    }
+    } 
     super.dispose();
   }
 
@@ -371,6 +409,44 @@ class _MyHomePageState extends State<MyHomePage>
   int last_pop_time = 0;
   bool left_to_right_reverse = true;
   AnimationStatus lastStatus = AnimationStatus.forward;
+  void _pop() {
+    print("didPop: didPop,");
+    if (clean_top_context()) {
+      Navigator.of(top_context.last).pop(); // 触发嵌套 Navigator 的 pop
+      top_context.removeLast();
+      return;
+    }
+    if (_isSearchActive) {
+      _onSearchBackTapped();
+      return;
+    }
+    if (_Mainpage) {
+      if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
+        if (kDebugMode) {
+          print("exit(0)");
+        } else {
+          exit(0);
+        }
+      } else {
+        xuan_toast(
+          msg: "再按一次退出",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black54,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+        last_pop_time = DateTime.now().millisecondsSinceEpoch;
+      }
+    } else {
+      change_main_status("");
+      if (_isSearchActive) {
+        _onSearchBackTapped();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext main_context) {
     _main_context = main_context;
@@ -401,42 +477,7 @@ class _MyHomePageState extends State<MyHomePage>
       return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, result) {
-            print("didPop: didPop,");
-            if (clean_top_context()) {
-              Navigator.of(top_context.last).pop(); // 触发嵌套 Navigator 的 pop
-              top_context.removeLast();
-              return;
-            }
-            if (_isSearchActive) {
-              _onSearchBackTapped();
-              return;
-            }
-            if (_Mainpage) {
-              if (DateTime.now().millisecondsSinceEpoch - last_pop_time <
-                  1000) {
-                if (kDebugMode) {
-                  print("exit(0)");
-                } else {
-                  exit(0);
-                }
-              } else {
-                Fluttertoast.showToast(
-                  msg: "再按一次退出",
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.BOTTOM,
-                  timeInSecForIosWeb: 1,
-                  backgroundColor: Colors.black54,
-                  textColor: Colors.white,
-                  fontSize: 16.0,
-                );
-                last_pop_time = DateTime.now().millisecondsSinceEpoch;
-              }
-            } else {
-              change_main_status("");
-              if (_isSearchActive) {
-                _onSearchBackTapped();
-              }
-            }
+            _pop();
           },
           child: global_horizon
               ? Scaffold(
@@ -596,7 +637,9 @@ class _MyHomePageState extends State<MyHomePage>
                                                               ))),
                                                       if (show_filter)
                                                         Positioned(
-                                                          top: -5,
+                                                          top: is_windows
+                                                              ? 5
+                                                              : -5,
                                                           right: 20,
                                                           child: TextButton(
                                                             child: Text(filters[
@@ -686,6 +729,14 @@ class _MyHomePageState extends State<MyHomePage>
                     onPlaylistTap: change_main_status,
                     horizon: true,
                   ),
+                  floatingActionButton: is_windows
+                      ? FloatingActionButton(
+                          onPressed: () {
+                            _pop();
+                          },
+                          child: Icon(Icons.arrow_back),
+                        )
+                      : null,
                 )
               : Scaffold(
                   body: Navigator(
@@ -917,6 +968,14 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   bottomNavigationBar: Play(onPlaylistTap: change_main_status),
+                  floatingActionButton: is_windows
+                      ? FloatingActionButton(
+                          onPressed: () {
+                            _pop();
+                          },
+                          child: Icon(Icons.arrow_back),
+                        )
+                      : null,
                 ));
     });
   }

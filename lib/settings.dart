@@ -25,6 +25,7 @@ import 'package:archive/archive.dart';
 import 'package:install_plugin/install_plugin.dart';
 import 'package:system_info3/system_info3.dart';
 import 'global_settings_animations.dart';
+import 'package:webview_windows/webview_windows.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
 Future<Map<String, dynamic>> outputAllSettingsToFile(
@@ -44,7 +45,7 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
         settings[key] = prefs.getStringList(key);
         break;
       case 'settings':
-        continue;
+        if (toJsonString) continue;
       case 'local-cache-list':
         continue;
       default:
@@ -63,15 +64,11 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
   if (await Permission.storage.request().isGranted) {
     try {
       // 确保路径存在
-      final downloadDir = Directory('/storage/emulated/0/Download/Listen1');
-      if (!await downloadDir.exists()) {
-        await downloadDir.create(recursive: true);
-      }
-      final outputPath = '/storage/emulated/0/Download/Listen1/settings.json';
+      final outputPath = await xuan_getdownloadDirectory('settings.json');
       final file = File(outputPath);
       // 将设置写入 JSON 文件
       await file.writeAsString(jsonEncode(settings));
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: 'Settings saved to $outputPath',
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
@@ -81,7 +78,7 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
         fontSize: 16.0,
       );
     } catch (e) {
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: '保存设置时出错: $e',
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
@@ -92,7 +89,7 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
       );
     }
   } else {
-    Fluttertoast.showToast(
+    xuan_toast(
       msg: '存储权限未授予',
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.CENTER,
@@ -131,7 +128,7 @@ Future<void> importSettingsFromFile(
       }
     }
 
-    Fluttertoast.showToast(
+    xuan_toast(
       msg: 'Settings imported successfully',
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.CENTER,
@@ -163,7 +160,7 @@ Future<void> importSettingsFromFile(
 
         await _sets(settings);
       } else {
-        Fluttertoast.showToast(
+        xuan_toast(
           msg: '未选择文件',
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.CENTER,
@@ -174,7 +171,7 @@ Future<void> importSettingsFromFile(
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: '导入设置时出错: $e',
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
@@ -185,7 +182,7 @@ Future<void> importSettingsFromFile(
       );
     }
   } else {
-    Fluttertoast.showToast(
+    xuan_toast(
       msg: '存储权限未授予',
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.CENTER,
@@ -206,12 +203,13 @@ Future<void> setSaveCookie({
   final tempPath = tempDir.path;
   await PersistCookieJar(
     ignoreExpires: true,
-    storage: FileStorage(tempPath + "/.cookies/"),
+    storage: FileStorage(
+        is_windows ? '${tempPath}\\.cookies\\' : '${tempPath}/.cookies/'),
   ).delete(Uri.parse(url));
   await PersistCookieJar(
     ignoreExpires: true,
-    // storage: FileStorage(appDocPath + "/.cookies/"),
-    storage: FileStorage(tempPath + "/.cookies/"),
+    storage: FileStorage(
+        is_windows ? '${tempPath}\\.cookies\\' : '${tempPath}/.cookies/'),
   ).saveFromResponse(Uri.parse(url), cookies);
 }
 
@@ -525,7 +523,7 @@ class _SettingsPageState extends State<SettingsPage> {
     Map<String, dynamic> settings = await settings_getsettings();
     settings["useHttpOverrides"] = value;
     await settings_setsettings(settings);
-    Fluttertoast.showToast(
+    xuan_toast(
       msg: '重启应用后生效',
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.CENTER,
@@ -546,20 +544,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> init_apkfilepath() async {
     // 确保路径存在
-    final downloadDir = Directory('/storage/emulated/0/Download/Listen1');
-    if (!await downloadDir.exists()) {
-      await downloadDir.create(recursive: true);
-    }
-    final tempPath = '/storage/emulated/0/Download/Listen1';
     switch (SysInfo.kernelArchitecture.name) {
       case "ARM64":
-        apkfile_name = '$tempPath/app-arm64-v8a-release.apk';
+        apkfile_name = await xuan_getdownloadDirectory('arm64-v8a-release.apk');
       case "ARM":
-        apkfile_name = '$tempPath/app-armeabi-v7a-release.apk';
+        apkfile_name =
+            await xuan_getdownloadDirectory('armeabi-v7a-release.apk');
       case "X86_64":
-        apkfile_name = '$tempPath/app-x86_64-release.apk';
+        apkfile_name = await xuan_getdownloadDirectory('x86_64-release.apk');
       default:
-        apkfile_name = '$tempPath/app-release.apk';
+        apkfile_name = await xuan_getdownloadDirectory('app-release.apk');
     }
   }
 
@@ -747,7 +741,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                       subtitle: Text(playlist['description']),
                                       onTap: () async {
                                         try {
-                                          Fluttertoast.showToast(
+                                          xuan_toast(
                                             msg: '正在导出',
                                           );
                                           final settings =
@@ -760,12 +754,12 @@ class _SettingsPageState extends State<SettingsPage> {
                                             playlist['id'],
                                             playlist['public'],
                                           );
-                                          Fluttertoast.showToast(
+                                          xuan_toast(
                                             msg: '导出成功',
                                           );
                                           Navigator.of(context).pop();
                                         } catch (e) {
-                                          Fluttertoast.showToast(
+                                          xuan_toast(
                                             msg: '导出失败$e',
                                           );
                                         }
@@ -778,7 +772,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 TextButton(
                                   onPressed: () async {
                                     try {
-                                      Fluttertoast.showToast(
+                                      xuan_toast(
                                         msg: '正在导出',
                                       );
                                       final settings =
@@ -789,12 +783,12 @@ class _SettingsPageState extends State<SettingsPage> {
                                         null,
                                         true,
                                       );
-                                      Fluttertoast.showToast(
+                                      xuan_toast(
                                         msg: '导出成功',
                                       );
                                       Navigator.of(context).pop();
                                     } catch (e) {
-                                      Fluttertoast.showToast(
+                                      xuan_toast(
                                         msg: '导出失败$e',
                                       );
                                     }
@@ -804,7 +798,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 TextButton(
                                   onPressed: () async {
                                     try {
-                                      Fluttertoast.showToast(
+                                      xuan_toast(
                                         msg: '正在导出',
                                       );
                                       final settings =
@@ -815,12 +809,12 @@ class _SettingsPageState extends State<SettingsPage> {
                                         null,
                                         false,
                                       );
-                                      Fluttertoast.showToast(
+                                      xuan_toast(
                                         msg: '导出成功',
                                       );
                                       Navigator.of(context).pop();
                                     } catch (e) {
-                                      Fluttertoast.showToast(
+                                      xuan_toast(
                                         msg: '导出失败$e',
                                       );
                                     }
@@ -839,7 +833,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         );
                       } catch (e) {
                         // print(e);
-                        Fluttertoast.showToast(
+                        xuan_toast(
                           msg: '添加失败${e}',
                         );
                       }
@@ -878,7 +872,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                       subtitle: Text(playlist['description']),
                                       onTap: () async {
                                         try {
-                                          Fluttertoast.showToast(
+                                          xuan_toast(
                                             msg: '正在导入',
                                           );
 
@@ -890,12 +884,12 @@ class _SettingsPageState extends State<SettingsPage> {
                                               await Github.gist2json(jsfile);
                                           await importSettingsFromFile(
                                               true, settings);
-                                          Fluttertoast.showToast(
+                                          xuan_toast(
                                             msg: '导出成功',
                                           );
                                           Navigator.of(context).pop();
                                         } catch (e) {
-                                          Fluttertoast.showToast(
+                                          xuan_toast(
                                             msg: '导出失败$e',
                                           );
                                         }
@@ -917,173 +911,196 @@ class _SettingsPageState extends State<SettingsPage> {
                         );
                       } catch (e) {
                         // print(e);
-                        Fluttertoast.showToast(
+                        xuan_toast(
                           msg: '添加失败${e}',
                         );
                       }
                     },
                     child: const Text('从Github Gist导入歌单'),
                   ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      try {
-                        final tempPath = '/storage/emulated/0/Download/Listen1';
+                  if (!is_windows)
+                    ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          final tempPath =
+                              '/storage/emulated/0/Download/Listen1';
 
-                        final apkFile = File(apkfile_name);
-                        if (await apkFile.exists()) {
-                          try {
-                            InstallPlugin.installApk(apkfile_name)
-                                .then((result) {
-                              print('install apk $result');
-                            }).catchError((error) {
-                              print('install apk error: $error');
-                            });
-                            return;
-                          } catch (e) {
-                            print('安装APK失败: $e');
+                          final apkFile = File(apkfile_name);
+                          if (await apkFile.exists()) {
+                            try {
+                              InstallPlugin.installApk(apkfile_name)
+                                  .then((result) {
+                                print('install apk $result');
+                              }).catchError((error) {
+                                print('install apk error: $error');
+                              });
+                              return;
+                            } catch (e) {
+                              print('安装APK失败: $e');
+                              return;
+                            }
+                          }
+                          final filePath = '$tempPath/canary.zip';
+
+                          final url_list =
+                              'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
+                          final prefs = await SharedPreferences.getInstance();
+                          final token = prefs.getString('githubOauthAccessKey');
+                          if (token == null) {
+                            xuan_toast(
+                              msg: '请先登录Github',
+                              toastLength: Toast.LENGTH_SHORT,
+                              gravity: ToastGravity.CENTER,
+                              timeInSecForIosWeb: 1,
+                              backgroundColor: Colors.red,
+                              textColor: Colors.white,
+                              fontSize: 16.0,
+                            );
                             return;
                           }
-                        }
-                        final filePath = '$tempPath/canary.zip';
+                          final response = await Dio().get(url_list,
+                              options: Options(headers: {
+                                'accept': 'application/vnd.github.v3+json',
+                                'authorization': 'Bearer ' + token,
+                                'x-github-api-version': '2022-11-28',
+                              }));
+                          print(
+                              'Kernel architecture: ${SysInfo.kernelArchitecture.name}');
+                          late var art;
 
-                        final url_list =
-                            'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
-                        final prefs = await SharedPreferences.getInstance();
-                        final token = prefs.getString('githubOauthAccessKey');
-                        if (token == null) {
-                          Fluttertoast.showToast(
-                            msg: '请先登录Github',
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.CENTER,
-                            timeInSecForIosWeb: 1,
-                            backgroundColor: Colors.red,
-                            textColor: Colors.white,
-                            fontSize: 16.0,
+                          switch (SysInfo.kernelArchitecture.name) {
+                            case "ARM64":
+                              for (var i in response.data["artifacts"]) {
+                                if (i['name'].indexOf("arm64") > 0) {
+                                  art = i;
+                                  break;
+                                }
+                              }
+                            case "ARM":
+                              for (var i in response.data["artifacts"]) {
+                                if (i['name'].indexOf("armeabi") > 0) {
+                                  art = i;
+                                  break;
+                                }
+                              }
+                            case "X86_64":
+                              for (var i in response.data["artifacts"]) {
+                                if (i['name'].indexOf("x86_64") > 0) {
+                                  art = i;
+                                  break;
+                                }
+                              }
+                            default:
+                              art = response.data["artifacts"][0];
+                          }
+                          final download_url = art["archive_download_url"];
+                          final created_at = art["created_at"];
+                          double total = art["size_in_bytes"].toDouble();
+                          double received = 0;
+                          final StreamController<double>
+                              progressStreamController =
+                              StreamController<double>();
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return PopScope(
+                                canPop: false,
+                                onPopInvokedWithResult: (didPop, result) => {},
+                                child: StatefulBuilder(
+                                  builder: (BuildContext context,
+                                      StateSetter setState) {
+                                    return AlertDialog(
+                                      title: Text('下载进度: ${created_at}'),
+                                      content: StreamBuilder<double>(
+                                        stream: progressStreamController.stream,
+                                        builder: (context, snapshot) {
+                                          double progress = snapshot.data ?? 0;
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              LinearProgressIndicator(
+                                                  value: progress),
+                                              SizedBox(height: 20),
+                                              Text(
+                                                  '${(progress * total / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB'),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
                           );
-                          return;
-                        }
-                        final response = await Dio().get(url_list,
+                          await Dio().download(
+                            download_url,
+                            filePath,
                             options: Options(headers: {
                               'accept': 'application/vnd.github.v3+json',
                               'authorization': 'Bearer ' + token,
                               'x-github-api-version': '2022-11-28',
-                            }));
-                        print(
-                            'Kernel architecture: ${SysInfo.kernelArchitecture.name}');
-                        late var art;
+                            }),
+                            onReceiveProgress: (receivedBytes, totalBytes) {
+                              received = receivedBytes.toDouble();
+                              double progress = received / total;
+                              progressStreamController.add(progress);
+                            },
+                          );
 
-                        switch (SysInfo.kernelArchitecture.name) {
-                          case "ARM64":
-                            for (var i in response.data["artifacts"]) {
-                              if (i['name'].indexOf("arm64") > 0) {
-                                art = i;
-                                break;
-                              }
-                            }
-                          case "ARM":
-                            for (var i in response.data["artifacts"]) {
-                              if (i['name'].indexOf("armeabi") > 0) {
-                                art = i;
-                                break;
-                              }
-                            }
-                          case "X86_64":
-                            for (var i in response.data["artifacts"]) {
-                              if (i['name'].indexOf("x86_64") > 0) {
-                                art = i;
-                                break;
-                              }
-                            }
-                          default:
-                            art = response.data["artifacts"][0];
-                        }
-                        final download_url = art["archive_download_url"];
-                        final created_at = art["created_at"];
-                        double total = art["size_in_bytes"].toDouble();
-                        double received = 0;
-                        final StreamController<double>
-                            progressStreamController =
-                            StreamController<double>();
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (BuildContext context) {
-                            return PopScope(
-                              canPop: false,
-                              onPopInvokedWithResult: (didPop, result) => {},
-                              child: StatefulBuilder(
-                                builder: (BuildContext context,
-                                    StateSetter setState) {
-                                  return AlertDialog(
-                                    title: Text('下载进度: ${created_at}'),
-                                    content: StreamBuilder<double>(
-                                      stream: progressStreamController.stream,
-                                      builder: (context, snapshot) {
-                                        double progress = snapshot.data ?? 0;
-                                        return Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            LinearProgressIndicator(
-                                                value: progress),
-                                            SizedBox(height: 20),
-                                            Text(
-                                                '${(progress * total / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB'),
-                                          ],
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        );
-                        await Dio().download(
-                          download_url,
-                          filePath,
-                          options: Options(headers: {
-                            'accept': 'application/vnd.github.v3+json',
-                            'authorization': 'Bearer ' + token,
-                            'x-github-api-version': '2022-11-28',
-                          }),
-                          onReceiveProgress: (receivedBytes, totalBytes) {
-                            received = receivedBytes.toDouble();
-                            double progress = received / total;
-                            progressStreamController.add(progress);
-                          },
-                        );
+                          Navigator.of(context).pop(); // 关闭进度条对话框
+                          // 解压 ZIP 文件
+                          final bytes = File(filePath).readAsBytesSync();
+                          final archive = ZipDecoder().decodeBytes(bytes);
 
-                        Navigator.of(context).pop(); // 关闭进度条对话框
-                        // 解压 ZIP 文件
-                        final bytes = File(filePath).readAsBytesSync();
-                        final archive = ZipDecoder().decodeBytes(bytes);
-
-                        for (final file in archive) {
-                          final filename = file.name;
-                          if (file.isFile) {
-                            final data = file.content as List<int>;
-                            File('$tempPath/$filename')
-                              ..createSync(recursive: true)
-                              ..writeAsBytesSync(data);
+                          for (final file in archive) {
+                            final filename = file.name;
+                            if (file.isFile) {
+                              final data = file.content as List<int>;
+                              File('$tempPath/$filename')
+                                ..createSync(recursive: true)
+                                ..writeAsBytesSync(data);
+                            } else {
+                              Directory('$filePath/$filename')
+                                  .create(recursive: true);
+                            }
+                          }
+                          if (await apkFile.exists()) {
+                            try {
+                              InstallPlugin.installApk(apkfile_name)
+                                  .then((result) {
+                                print('install apk $result');
+                              }).catchError((error) {
+                                print('install apk error: $error');
+                              });
+                            } catch (e) {
+                              print('安装APK失败: $e');
+                            }
                           } else {
-                            Directory('$filePath/$filename')
-                                .create(recursive: true);
+                            xuan_toast(
+                              msg: 'APK 文件未找到',
+                              toastLength: Toast.LENGTH_SHORT,
+                              gravity: ToastGravity.CENTER,
+                              timeInSecForIosWeb: 1,
+                              backgroundColor: Colors.red,
+                              textColor: Colors.white,
+                              fontSize: 16.0,
+                            );
                           }
-                        }
-                        if (await apkFile.exists()) {
-                          try {
-                            InstallPlugin.installApk(apkfile_name)
-                                .then((result) {
-                              print('install apk $result');
-                            }).catchError((error) {
-                              print('install apk error: $error');
-                            });
-                          } catch (e) {
-                            print('安装APK失败: $e');
-                          }
-                        } else {
-                          Fluttertoast.showToast(
-                            msg: 'APK 文件未找到',
+                          xuan_toast(
+                            msg: '下载成功',
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.CENTER,
+                            timeInSecForIosWeb: 1,
+                            backgroundColor: Colors.blue,
+                            textColor: Colors.white,
+                            fontSize: 16.0,
+                          );
+                        } catch (e) {
+                          Navigator.of(context).pop(); // 关闭进度条对话框
+                          xuan_toast(
+                            msg: '下载失败$e',
                             toastLength: Toast.LENGTH_SHORT,
                             gravity: ToastGravity.CENTER,
                             timeInSecForIosWeb: 1,
@@ -1092,8 +1109,63 @@ class _SettingsPageState extends State<SettingsPage> {
                             fontSize: 16.0,
                           );
                         }
-                        Fluttertoast.showToast(
-                          msg: '下载成功',
+                      },
+                      child: const Text('下载最新测试版'),
+                    ),
+                  if (!is_windows)
+                    ElevatedButton(
+                      onPressed: () async {
+                        final tempDir =
+                            await getApplicationDocumentsDirectory();
+                        var tempPath = tempDir.path;
+                        var filePath = '$tempPath/canary.zip';
+
+                        var file = File(filePath);
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-arm64-v8a-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-armeabi-v7a-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-x86_64-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        tempPath = '/storage/emulated/0/Download/Listen1';
+                        filePath = '$tempPath/canary.zip';
+
+                        file = File(filePath);
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-arm64-v8a-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-armeabi-v7a-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-x86_64-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+
+                        xuan_toast(
+                          msg: '清理成功',
                           toastLength: Toast.LENGTH_SHORT,
                           gravity: ToastGravity.CENTER,
                           timeInSecForIosWeb: 1,
@@ -1101,83 +1173,9 @@ class _SettingsPageState extends State<SettingsPage> {
                           textColor: Colors.white,
                           fontSize: 16.0,
                         );
-                      } catch (e) {
-                        Navigator.of(context).pop(); // 关闭进度条对话框
-                        Fluttertoast.showToast(
-                          msg: '下载失败$e',
-                          toastLength: Toast.LENGTH_SHORT,
-                          gravity: ToastGravity.CENTER,
-                          timeInSecForIosWeb: 1,
-                          backgroundColor: Colors.red,
-                          textColor: Colors.white,
-                          fontSize: 16.0,
-                        );
-                      }
-                    },
-                    child: const Text('下载最新测试版'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final tempDir = await getApplicationDocumentsDirectory();
-                      var tempPath = tempDir.path;
-                      var filePath = '$tempPath/canary.zip';
-
-                      var file = File(filePath);
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-                      file = File('$tempPath/app-arm64-v8a-release.apk');
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-                      file = File('$tempPath/app-armeabi-v7a-release.apk');
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-                      file = File('$tempPath/app-x86_64-release.apk');
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-                      file = File('$tempPath/app-release.apk');
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-                      tempPath = '/storage/emulated/0/Download/Listen1';
-                      filePath = '$tempPath/canary.zip';
-
-                      file = File(filePath);
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-                      file = File('$tempPath/app-arm64-v8a-release.apk');
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-                      file = File('$tempPath/app-armeabi-v7a-release.apk');
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-                      file = File('$tempPath/app-x86_64-release.apk');
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-                      file = File('$tempPath/app-release.apk');
-                      if (await file.exists()) {
-                        await file.delete();
-                      }
-
-                      Fluttertoast.showToast(
-                        msg: '清理成功',
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.CENTER,
-                        timeInSecForIosWeb: 1,
-                        backgroundColor: Colors.blue,
-                        textColor: Colors.white,
-                        fontSize: 16.0,
-                      );
-                    },
-                    child: const Text('清除安装包缓存'),
-                  ),
+                      },
+                      child: const Text('清除安装包缓存'),
+                    ),
                   ElevatedButton(
                     onPressed: () => clean_local_cache(),
                     child: const Text('清除未在配置文件中的歌曲缓存'),

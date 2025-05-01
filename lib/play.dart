@@ -13,7 +13,6 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:marquee/marquee.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'loweb.dart';
 import 'myplaylist.dart';
@@ -37,11 +36,6 @@ class FileLogOutput extends LogOutput {
   }
 }
 
-final Logger playlogger = Logger(
-    level: Level.all,
-    output: FileLogOutput(
-        File('/data/user/0/com.xiebian.listen1_xuan/cache/app.log')));
-
 final music_player = AudioPlayer();
 late AudioHandler _audioHandler;
 int playmode = 0;
@@ -57,8 +51,8 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
 
   final current_playing = await get_current_playing();
   final nowplaying_track = await getnowplayingsong();
-  playlogger.d('onPlaybackCompleted');
-  playlogger.d(nowplaying_track);
+  debugPrint('onPlaybackCompleted');
+  debugPrint(nowplaying_track.toString());
   if (current_playing.length == 1 && force_next) {
     return;
   }
@@ -111,9 +105,11 @@ Future<String> get_local_cache(String id) async {
   if (local_cache_list_json != null) {
     final local_cache_list = jsonDecode(local_cache_list_json);
     if (local_cache_list[id] != null) {
-      final tempDir = await getApplicationDocumentsDirectory();
+      var tempDir = await xuan_getdataDirectory();
+
       final tempPath = tempDir.path;
-      final filePath = '$tempPath/${local_cache_list[id]}';
+      var filePath = '$tempPath/${local_cache_list[id]}';
+      if (is_windows) filePath = '$tempPath\\${local_cache_list[id]}';
       if (await File(filePath).exists()) return filePath;
     }
   }
@@ -140,12 +136,12 @@ Future<void> clean_local_cache([bool all = false, String id = '']) async {
     String path = await get_local_cache(id);
     if (path != '') {
       await File(path).delete();
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: '已清理',
       );
       return;
     }
-    Fluttertoast.showToast(
+    xuan_toast(
       msg: '没有可清理的缓存文件',
     );
     return;
@@ -156,33 +152,44 @@ Future<void> clean_local_cache([bool all = false, String id = '']) async {
   ];
   final prefs = await SharedPreferences.getInstance();
   final local_cache_list_json = prefs.getString('local-cache-list');
-  final tempDir = await getApplicationDocumentsDirectory();
+  final tempDir = await xuan_getdataDirectory();
   final tempPath = tempDir.path;
 
   // 列出文件夹下的所有文件
   final filesanddirs = Directory(tempPath).listSync();
   List<String> files = [];
   for (var file in filesanddirs) {
-    if (file is File && !without.contains(file.path.split('/').last)) {
+    if (file is File &&
+        !without.contains(file.path.split(is_windows ? "\\" : '/').last)) {
       files.add(file.path);
     }
   }
   int count = 0;
+  List<String> jump_list = ['.json', '.apk', '.zip', '.log'];
   if (local_cache_list_json != null) {
     final local_cache_list = jsonDecode(local_cache_list_json);
     for (var file in files) {
+      bool jump_flag = false;
+      for (var jump in jump_list) {
+        if (file.split(is_windows ? "\\" : '/').last.endsWith(jump)) {
+          jump_flag = true;
+          break;
+        }
+      }
+      if (jump_flag) continue;
       if (all) {
         await File(file).delete();
         count++;
       } else {
         bool flag = true;
         for (var key in local_cache_list.keys) {
-          if (local_cache_list[key] == file.split('/').last) {
+          if (local_cache_list[key] ==
+              file.split(is_windows ? "\\" : '/').last) {
             flag = false;
             break;
           }
         }
-        print(file.split('/').last);
+        print(file.split(is_windows ? "\\" : '/').last);
         if (flag) {
           await File(file).delete();
           count++;
@@ -196,11 +203,11 @@ Future<void> clean_local_cache([bool all = false, String id = '']) async {
     }
   }
   if (count > 0) {
-    Fluttertoast.showToast(
+    xuan_toast(
       msg: '清理了$count个缓存文件',
     );
   } else {
-    Fluttertoast.showToast(
+    xuan_toast(
       msg: '没有可清理的缓存文件',
     );
   }
@@ -210,7 +217,9 @@ Future<void> clean_local_cache([bool all = false, String id = '']) async {
     if (local_cache_list_json != null) {
       final local_cache_list = jsonDecode(local_cache_list_json);
       for (var key in local_cache_list.keys) {
-        if (!files.contains('$tempPath/${local_cache_list[key]}')) {
+        if (!files.contains(is_windows
+            ? '$tempPath\\${local_cache_list[key]}'
+            : '$tempPath/${local_cache_list[key]}')) {
           local_cache_list.remove(key);
         }
       }
@@ -267,17 +276,17 @@ Future<void> set_player_settings(String key, dynamic value) async {
   if (key == 'playmode') {
     switch (value) {
       case 0:
-        Fluttertoast.showToast(
+        xuan_toast(
           msg: '循环',
         );
         break;
       case 1:
-        Fluttertoast.showToast(
+        xuan_toast(
           msg: '随机',
         );
         break;
       case 2:
-        Fluttertoast.showToast(
+        xuan_toast(
           msg: '单曲',
         );
         break;
@@ -312,7 +321,7 @@ Future<Map<String, dynamic>> getnowplayingsong() async {
 
 Future<void> change_playback_state(dynamic track) async {
   try {
-    playlogger.d('开始更新播放状态');
+    debugPrint('开始更新播放状态');
     // 使用 Completer 来等待 _duration 被赋值
     final Completer<void> completer = Completer<void>();
     music_player.durationStream.listen((duration) {
@@ -333,16 +342,16 @@ Future<void> change_playback_state(dynamic track) async {
       id: track['id'],
       title: track['title'],
       artist: track['artist'],
-      artUri: Uri.parse(track['img_url']==null?
-          'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0':
-          track['img_url']),
+      artUri: Uri.parse(track['img_url'] == null
+          ? 'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0'
+          : track['img_url']),
       duration: _duration,
     );
     (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
-    playlogger.d('更新播放状态成功');
+    debugPrint('更新播放状态成功');
   } catch (e) {
-    playlogger.e('更新播放状态失败');
-    playlogger.e(e);
+    debugPrint('更新播放状态失败');
+    debugPrint(e.toString());
   }
 }
 
@@ -357,9 +366,9 @@ Future<void> playsong(Map<String, dynamic> track,
     await set_player_settings("nowplaying_track_id", track['id']);
     await add_current_playing([track]);
     final tdir = await get_local_cache(track['id']);
-    playlogger.d('playsong');
-    playlogger.d(track);
-    playlogger.d(tdir);
+    debugPrint('playsong');
+    debugPrint(track.toString());
+    debugPrint(tdir);
     if (tdir == "") {
       MediaService.bootstrapTrack(
           track, playerSuccessCallback, playerFailCallback);
@@ -379,21 +388,15 @@ Future<void> playsong(Map<String, dynamic> track,
     }
     await change_playback_state(track);
   } catch (e, stackTrace) {
-    playlogger.e('播放失败!!!!');
-    playlogger.e(e);
-    playlogger.e(stackTrace);
+    debugPrint('播放失败!!!!');
+    debugPrint(e.toString());
+    debugPrint(stackTrace.toString());
   }
 }
 
 Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
-  print('playerSuccessCallback');
-  print(res);
-  print(track);
-  playlogger.d('playerSuccessCallback');
-  playlogger.d(res);
-  playlogger.d(track);
   try {
-    final tempDir = await getApplicationDocumentsDirectory();
+    var tempDir = await xuan_getdataDirectory();
     final tempPath = tempDir.path;
     final _local_cache = await get_local_cache(track['id']);
     if (_local_cache == '') {
@@ -414,7 +417,7 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
       // 若本地已经存在该文件，则直接播放
       switch (res["platform"]) {
         case "bilibili":
-          final dio = Dio();
+          final dio = dio_with_cookie_manager;
           await dio.download(
             res['url'],
             filePath,
@@ -432,10 +435,10 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
             }),
           );
         case "netease":
-          final dio = Dio();
+          final dio = dio_with_cookie_manager;
           await dio.download(res['url'], filePath);
         default:
-          await Dio().download(res['url'], filePath);
+          await dio_with_cookie_manager.download(res['url'], filePath);
       }
       await set_local_cache(track['id'], fileName);
     }
@@ -443,7 +446,7 @@ Future<void> playerSuccessCallback(dynamic res, dynamic track) async {
     return;
   } catch (e) {
     print('Error downloading or playing audio: $e');
-    playlogger.e('Error downloading or playing audio: $e');
+    debugPrint('Error downloading or playing audio: $e');
     playerFailCallback(track);
   }
 }
@@ -452,23 +455,23 @@ Future<void> playerFailCallback(dynamic track) async {
   print('playerFailCallback');
   print(track);
   // {id: netrack_2084034562, title: Anytime Anywhere, artist: milet, artist_id: neartist_31464106, album: Anytime Anywhere, album_id: nealbum_175250775, source: netease, source_url: https://music.163.com/#/song?id=2084034562, img_url: https://p1.music.126.net/11p2mKi5CMKJvAS43ulraQ==/109951168930518368.jpg, sourceName: 网易, $$hashKey: object:2884, disabled: false, index: 365, playNow: true, bitrate: 320kbps, platform: netease, platformText: 网易}
-  playlogger.e('playerFailCallback');
-  Fluttertoast.showToast(
+  debugPrint('playerFailCallback');
+  xuan_toast(
     msg: '播放失败：${track['title']}',
   );
   if (await get_player_settings("nowplaying_track_id") != track['id']) {
     return;
   }
   var connectivityResult = await (Connectivity().checkConnectivity());
-  playlogger.d(connectivityResult);
+  debugPrint(connectivityResult.toString());
   while (connectivityResult == ConnectivityResult.none) {
     connectivityResult = await (Connectivity().checkConnectivity());
-    playlogger.d(connectivityResult);
+    debugPrint(connectivityResult.toString());
     // 等待三秒
     await Future.delayed(Duration(seconds: 3));
   }
   if (playmode == 1) {
-    playlogger.d(randommodetemplist);
+    debugPrint(randommodetemplist.toString());
     if (randommodetemplist.length - 1 > 0) {
       randommodetemplist.removeAt(randommodetemplist.length - 1);
     }
@@ -844,14 +847,13 @@ class _PlayState extends State<Play> {
                                     final track = await getnowplayingsong();
 
                                     var ret = await song_dialog(
-                                        context, track['track'],
-                                        change_main_status:
-                                            widget.onPlaylistTap,
-                                        position: (_buttonKey.currentContext!
-                                                    .findRenderObject()
-                                                as RenderBox)
-                                            .localToGlobal(Offset.zero),
-                                        );
+                                      context,
+                                      track['track'],
+                                      change_main_status: widget.onPlaylistTap,
+                                      position: (_buttonKey.currentContext!
+                                              .findRenderObject() as RenderBox)
+                                          .localToGlobal(Offset.zero),
+                                    );
                                     if (ret != null) {
                                       if (ret["push"] != null) {
                                         clean_top_context();

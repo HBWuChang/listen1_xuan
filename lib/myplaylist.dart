@@ -58,7 +58,7 @@ class MyPlaylist {
                                 await addTrackToMyPlaylist(playlistId, track);
                               }
                               Navigator.of(context).pop();
-                              Fluttertoast.showToast(
+                              xuan_toast(
                                 msg: '添加成功',
                               );
                             },
@@ -113,7 +113,7 @@ class MyPlaylist {
                                   cover_img_url ?? "images/mycover.jpg");
                               Navigator.of(context).pop();
                               Navigator.of(context).pop();
-                              Fluttertoast.showToast(
+                              xuan_toast(
                                 msg: '添加成功',
                               );
                             },
@@ -145,7 +145,7 @@ class MyPlaylist {
       );
     } catch (e) {
       // print(e);
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: '添加失败${e}',
       );
     }

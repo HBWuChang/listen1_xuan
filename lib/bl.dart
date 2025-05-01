@@ -10,6 +10,7 @@ import 'package:html/parser.dart' show parse;
 import 'lowebutil.dart';
 import 'package:marquee/marquee.dart';
 import 'main.dart';
+import 'global_settings_animations.dart';
 
 final bilibili = Bilibili();
 
@@ -96,7 +97,7 @@ class Bilibili {
       return [];
     } catch (e) {
       print('未知错误: $e');
-      Fluttertoast.showToast(msg: '未知错误: $e');
+      xuan_toast(msg: '未知错误: $e');
       return [];
     }
   }

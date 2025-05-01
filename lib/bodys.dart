@@ -53,7 +53,7 @@ Future<dynamic> song_dialog(
         title: GestureDetector(
           onTap: () {
             Clipboard.setData(ClipboardData(text: track['title'] ?? '未知标题'));
-            Fluttertoast.showToast(msg: '标题已复制到剪切板');
+            xuan_toast(msg: '标题已复制到剪切板');
           },
           child: SelectableText(
             track['title'] ?? '未知标题',
@@ -68,12 +68,12 @@ Future<dynamic> song_dialog(
                 onTap: () {
                   Clipboard.setData(
                       ClipboardData(text: track['title'] ?? '未知标题'));
-                  Fluttertoast.showToast(msg: '标题已复制到剪切板');
+                  xuan_toast(msg: '标题已复制到剪切板');
                 },
                 onLongPress: () {
                   Clipboard.setData(
                       ClipboardData(text: track['img_url'] ?? '未知封面'));
-                  Fluttertoast.showToast(msg: '封面链接已复制到剪切板');
+                  xuan_toast(msg: '封面链接已复制到剪切板');
                 },
                 child: track['img_url'] == null
                     ? Container()
@@ -93,7 +93,7 @@ Future<dynamic> song_dialog(
                 onLongPress: () {
                   Clipboard.setData(
                       ClipboardData(text: track['artist'] ?? '未知艺术家'));
-                  Fluttertoast.showToast(msg: '作者已复制到剪切板');
+                  xuan_toast(msg: '作者已复制到剪切板');
                 },
               ),
               ListTile(
@@ -107,7 +107,7 @@ Future<dynamic> song_dialog(
                 onLongPress: () {
                   Clipboard.setData(
                       ClipboardData(text: track['artist'] ?? '未知艺术家'));
-                  Fluttertoast.showToast(msg: '作者已复制到剪切板');
+                  xuan_toast(msg: '作者已复制到剪切板');
                 },
               ),
               if (track['album'] != null)
@@ -119,7 +119,7 @@ Future<dynamic> song_dialog(
                   },
                   onLongPress: () {
                     Clipboard.setData(ClipboardData(text: track['album']));
-                    Fluttertoast.showToast(msg: '专辑已复制到剪切板');
+                    xuan_toast(msg: '专辑已复制到剪切板');
                   },
                 ),
               ListTile(
@@ -129,14 +129,14 @@ Future<dynamic> song_dialog(
                 },
                 onLongPress: () {
                   Clipboard.setData(ClipboardData(text: track['source_url']));
-                  Fluttertoast.showToast(msg: '歌曲链接已复制到剪切板');
+                  xuan_toast(msg: '歌曲链接已复制到剪切板');
                 },
               ),
               ListTile(
                 title: Text('添加到当前播放列表'),
                 onTap: () {
                   add_current_playing([track]);
-                  Fluttertoast.showToast(
+                  xuan_toast(
                     msg: '已添加到当前播放列表',
                   );
                   Navigator.of(context).pop();
@@ -165,11 +165,11 @@ Future<dynamic> song_dialog(
                 onTap: () async {
                   final ok = await add_to_download_tasks([track['id']]);
                   if (ok) {
-                    Fluttertoast.showToast(
+                    xuan_toast(
                       msg: '已添加到下载队列',
                     );
                   } else {
-                    Fluttertoast.showToast(
+                    xuan_toast(
                       msg: '添加失败',
                     );
                   }
@@ -442,7 +442,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
         _loading = false;
       });
     } catch (e) {
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: '我的歌单加载失败',
       );
     }
@@ -457,7 +457,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
         _isFavDataLoaded = true;
       });
     } catch (e) {
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: '收藏歌单加载失败',
       );
     }
@@ -524,7 +524,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
         check();
       });
     } catch (e) {
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: '网易云音乐歌单加载失败',
       );
     }
@@ -579,7 +579,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
         check();
       });
     } catch (e) {
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: 'QQ音乐歌单加载失败',
       );
     }
@@ -1020,13 +1020,13 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
 
   void _onReorder(int oldIndex, int newIndex) {
     if (!widget.is_my) {
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: '只有自己创建的歌单才能排序',
       );
       return;
     }
     if (_searchController.text.toLowerCase().isNotEmpty) {
-      Fluttertoast.showToast(
+      xuan_toast(
         msg: '搜索状态下无法排序',
       );
       return;
@@ -1181,7 +1181,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                           List<Map<String, dynamic>>.from(
                                               tracks);
                                       await add_current_playing(trackList);
-                                      Fluttertoast.showToast(
+                                      xuan_toast(
                                         msg: '已添加到当前播放列表',
                                       );
                                     },
@@ -1218,7 +1218,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                     .pop({"refresh": true});
                               } catch (e) {
                                 // print(e);
-                                Fluttertoast.showToast(
+                                xuan_toast(
                                   msg: '添加失败${e}',
                                 );
                               }
@@ -1321,7 +1321,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                                 _titleController.text,
                                                 _coverImgUrlController.text,
                                               );
-                                              Fluttertoast.showToast(
+                                              xuan_toast(
                                                 msg: '编辑成功',
                                               );
                                               Navigator.of(context_dialog)
@@ -1348,14 +1348,14 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                     await myplaylist.removeMyPlaylist(
                                         'favorite', widget.listId);
                                     check_fav();
-                                    Fluttertoast.showToast(
+                                    xuan_toast(
                                       msg: '已取消收藏',
                                     );
                                   } else {
                                     await myplaylist.saveMyPlaylist(
                                         'favorite', result);
                                     check_fav();
-                                    Fluttertoast.showToast(
+                                    xuan_toast(
                                       msg: '已添加到我的收藏',
                                     );
                                   }
@@ -1422,7 +1422,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                               },
                             ),
                             onTap: () {
-                              Fluttertoast.showToast(
+                              xuan_toast(
                                 msg: '尝试播放：${track['title']}',
                               );
                               playsong(track);
@@ -1715,7 +1715,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                             },
                           ),
                           onTap: () {
-                            Fluttertoast.showToast(
+                            xuan_toast(
                               msg: '尝试播放：${track['title']}',
                             );
                             playsong(track);
