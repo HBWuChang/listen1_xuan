@@ -431,10 +431,11 @@ class _MyPlaylistState extends State<MyPlaylist> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    My_loadData();
+    My_playlist_loaddata = My_loadData;
   }
 
-  void _loadData() async {
+  void My_loadData() async {
     Map<String, dynamic> result_my = await myplaylist.show_myplaylist('my');
     try {
       setState(() {
@@ -464,8 +465,8 @@ class _MyPlaylistState extends State<MyPlaylist> {
   }
 
   void _loadBlData() async {
-    var result_bl = await bilibili.Xuan_get_bl_playlist();
     try {
+      var result_bl = await bilibili.Xuan_get_bl_playlist();
       setState(() {
         _playlists_bl = result_bl;
         _isBlDataLoaded = true;
@@ -476,13 +477,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
   }
 
   void _loadNeData() async {
-    var _neuserinfo = await Netease().get_user();
-    var uid = _neuserinfo['result']["user_id"];
-    var result_ne = await netease
-        .get_user_created_playlist("/get_user_favorite_playlist?user_id=$uid");
-    var result_ne2 = await netease
-        .get_user_favorite_playlist("/get_user_favorite_playlist?user_id=$uid");
     try {
+      var _neuserinfo = await Netease().get_user();
+      var uid = _neuserinfo['result']["user_id"];
+      var result_ne = await netease.get_user_created_playlist(
+          "/get_user_favorite_playlist?user_id=$uid");
+      var result_ne2 = await netease.get_user_favorite_playlist(
+          "/get_user_favorite_playlist?user_id=$uid");
       bool tflag1 = false;
       bool tflag2 = false;
       void check() {
@@ -531,13 +532,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
   }
 
   void _loadQqData() async {
-    var _neuserinfo = await QQ().get_user();
-    var uid = _neuserinfo['data']["user_id"];
-    var result_qq = await qq
-        .get_user_created_playlist("/get_user_favorite_playlist?user_id=$uid");
-    var result_qq2 = await qq
-        .get_user_favorite_playlist("/get_user_favorite_playlist?user_id=$uid");
     try {
+      var _neuserinfo = await QQ().get_user();
+      var uid = _neuserinfo['data']["user_id"];
+      var result_qq = await qq.get_user_created_playlist(
+          "/get_user_favorite_playlist?user_id=$uid");
+      var result_qq2 = await qq.get_user_favorite_playlist(
+          "/get_user_favorite_playlist?user_id=$uid");
       bool tflag1 = false;
       bool tflag2 = false;
       void check() {
@@ -608,6 +609,16 @@ class _MyPlaylistState extends State<MyPlaylist> {
                           if (_isExpandedBl && !_isBlDataLoaded) {
                             _loadBlData();
                           }
+                        } else if (index == 3) {
+                          _isExpandedNe = !_isExpandedNe;
+                          if (_isExpandedNe && !_isNeDataLoaded) {
+                            _loadNeData();
+                          }
+                        } else if (index == 4) {
+                          _isExpandedQq = !_isExpandedQq;
+                          if (_isExpandedQq && !_isQqDataLoaded) {
+                            _loadQqData();
+                          }
                         }
                       });
                     },
@@ -664,7 +675,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                 );
                                 if (ret != null) {
                                   if (ret["refresh"] == true) {
-                                    _loadData();
+                                    My_loadData();
                                   }
                                 }
                               },
@@ -723,7 +734,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                       );
                                       if (ret != null) {
                                         if (ret["refresh"] == true) {
-                                          _loadData();
+                                          My_loadData();
                                         }
                                       }
                                     },
@@ -766,6 +777,8 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                         width: 50,
                                         height: 50,
                                         fit: BoxFit.cover,
+                                        errorWidget: (context, url, error) =>
+                                            Icon(Icons.help_outline), // 添加错误处理
                                       ),
                                       title: FittedBox(
                                           fit: BoxFit.scaleDown,
@@ -786,7 +799,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                         );
                                         if (ret != null) {
                                           if (ret["refresh"] == true) {
-                                            _loadData();
+                                            My_loadData();
                                           }
                                         }
                                       });
@@ -849,7 +862,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                       );
                                       if (ret != null) {
                                         if (ret["refresh"] == true) {
-                                          _loadData();
+                                          My_loadData();
                                         }
                                       }
                                     },
@@ -915,7 +928,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                       );
                                       if (ret != null) {
                                         if (ret["refresh"] == true) {
-                                          _loadData();
+                                          My_loadData();
                                         }
                                       }
                                     },
@@ -1141,7 +1154,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                         background: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(height: 80), // 添加一个空的SizedBox来调整位置
+                            // SizedBox(height: 80), // 添加一个空的SizedBox来调整位置
                             CachedNetworkImage(
                               imageUrl: result['info']['cover_img_url'],
                               width: 150,

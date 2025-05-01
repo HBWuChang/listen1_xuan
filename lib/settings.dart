@@ -26,6 +26,10 @@ import 'package:install_plugin/install_plugin.dart';
 import 'package:system_info3/system_info3.dart';
 import 'global_settings_animations.dart';
 import 'package:webview_windows/webview_windows.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:async';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
 Future<Map<String, dynamic>> outputAllSettingsToFile(
@@ -289,7 +293,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class login_webview extends StatefulWidget {
-  final WebViewController controller;
+  final dynamic controller;
   final String config_key;
   final String open_url;
   const login_webview(
@@ -301,29 +305,50 @@ class login_webview extends StatefulWidget {
   _login_webviewState createState() => _login_webviewState();
 }
 
+final navigatorKey = GlobalKey<NavigatorState>();
+
 class _login_webviewState extends State<login_webview> {
+  final List<StreamSubscription> _subscriptions = [];
+  late String nowurl;
   void get__cookie() async {
     switch (widget.config_key) {
       case 'github':
-        final url = await widget.controller.currentUrl();
+        final url = is_windows ? nowurl : await widget.controller.currentUrl();
+        if (url == null) {
+          _msg('获取cookie失败', 3.0);
+          return;
+        }
         print(url);
         final code = url?.split('code=')[1];
         Github.handleCallback(code ?? '', context);
         break;
       default:
-        final cookieManager = WebviewCookieManager();
+        if (is_windows) {
+          var t = jsonDecode(await widget.controller.getCookies())["cookies"];
 
-        final gotCookies = await cookieManager.getCookies(widget.open_url);
-        for (var item in gotCookies) {
-          print(item);
+          print(t);
+          String cookies = "";
+          for (var item in t) {
+            cookies += "${item['name']}=${Uri.decodeComponent(item['value'])};";
+          }
+          cookies = cookies.substring(0, cookies.length - 1);
+          await _saveToken(widget.config_key, cookies);
+          _msg('设置成功$cookies', 3.0);
+        } else {
+          final cookieManager = WebviewCookieManager();
+
+          final gotCookies = await cookieManager.getCookies(widget.open_url);
+          for (var item in gotCookies) {
+            print(item);
+          }
+          String cookies = "";
+          for (var item in gotCookies) {
+            cookies += "${item.name}=${Uri.decodeComponent(item.value)};";
+          }
+          cookies = cookies.substring(0, cookies.length - 1);
+          await _saveToken(widget.config_key, cookies);
+          _msg('设置成功$cookies', 3.0);
         }
-        String cookies = "";
-        for (var item in gotCookies) {
-          cookies += "${item.name}=${Uri.decodeComponent(item.value)};";
-        }
-        cookies = cookies.substring(0, cookies.length - 1);
-        await _saveToken(widget.config_key, cookies);
-        _msg('设置成功$cookies', 3.0);
     }
   }
 
@@ -334,6 +359,118 @@ class _login_webviewState extends State<login_webview> {
         duration: Duration(milliseconds: (showtime * 1000).toInt()),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (is_windows) initPlatformState();
+  }
+
+  Future<void> initPlatformState() async {
+    try {
+      await widget.controller.initialize();
+      _subscriptions.add(widget.controller.url.listen((url) {
+        nowurl = url;
+      }));
+      await widget.controller.setBackgroundColor(Colors.transparent);
+      await widget.controller
+          .setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
+      await widget.controller.loadUrl(widget.open_url);
+
+      if (!mounted) return;
+      setState(() {});
+    } on PlatformException catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+                  title: Text('Error'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Code: ${e.code}'),
+                      Text('Message: ${e.message}'),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      child: Text('Continue'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    )
+                  ],
+                ));
+      });
+    }
+  }
+
+  Widget compositeView() {
+    if (!widget.controller.value.isInitialized) {
+      return const Text(
+        'Not Initialized',
+        style: TextStyle(
+          fontSize: 24.0,
+          fontWeight: FontWeight.w900,
+        ),
+      );
+    } else {
+      return Card(
+          color: Colors.transparent,
+          elevation: 0,
+          clipBehavior: Clip.antiAliasWithSaveLayer,
+          child: Stack(
+            children: [
+              Webview(
+                widget.controller,
+                permissionRequested: _onPermissionRequested,
+              ),
+              StreamBuilder<LoadingState>(
+                  stream: widget.controller.loadingState,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData &&
+                        snapshot.data == LoadingState.loading) {
+                      return LinearProgressIndicator();
+                    } else {
+                      return SizedBox();
+                    }
+                  }),
+            ],
+          ));
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscriptions.forEach((s) => s.cancel());
+    super.dispose();
+  }
+
+  Future<WebviewPermissionDecision> _onPermissionRequested(
+      String url, WebviewPermissionKind kind, bool isUserInitiated) async {
+    final decision = await showDialog<WebviewPermissionDecision>(
+      context: navigatorKey.currentContext!,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('WebView permission requested'),
+        content: Text('WebView has requested permission \'$kind\''),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context, WebviewPermissionDecision.deny),
+            child: const Text('Deny'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context, WebviewPermissionDecision.allow),
+            child: const Text('Allow'),
+          ),
+        ],
+      ),
+    );
+
+    return decision ?? WebviewPermissionDecision.none;
   }
 
   @override
@@ -367,8 +504,9 @@ class _login_webviewState extends State<login_webview> {
           ),
         ],
       ),
-      // body: WebViewWidget(controller: controller),
-      body: WebViewWidget(controller: widget.controller),
+      body: is_windows
+          ? compositeView()
+          : WebViewWidget(controller: widget.controller),
     );
   }
 }
@@ -441,29 +579,27 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void open_netease_login() async {
-    final controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-            // Update loading bar.
-          },
-          onPageStarted: (String url) {},
-          onPageFinished: (String url) {},
-          onHttpError: (HttpResponseError error) {},
-          onWebResourceError: (WebResourceError error) {},
-          // onNavigationRequest: (NavigationRequest request) {
-          //   if (request.url.startsWith('https://www.youtube.com/')) {
-          //     return NavigationDecision.prevent;
-          //   }
-          //   return NavigationDecision.navigate;
-          // },
-        ),
-      )
-      ..setUserAgent(
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
-      ..loadRequest(Uri.parse('https://music.163.com/'));
-
+    var controller;
+    if (is_windows) {
+      controller = WebviewController();
+    } else {
+      controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onProgress: (int progress) {
+              // Update loading bar.
+            },
+            onPageStarted: (String url) {},
+            onPageFinished: (String url) {},
+            onHttpError: (HttpResponseError error) {},
+            onWebResourceError: (WebResourceError error) {},
+          ),
+        )
+        ..setUserAgent(
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
+        ..loadRequest(Uri.parse('https://music.163.com/'));
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -476,29 +612,27 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void open_qq_login() async {
-    final controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-            // Update loading bar.
-          },
-          onPageStarted: (String url) {},
-          onPageFinished: (String url) {},
-          onHttpError: (HttpResponseError error) {},
-          onWebResourceError: (WebResourceError error) {},
-          // onNavigationRequest: (NavigationRequest request) {
-          //   if (request.url.startsWith('https://www.youtube.com/')) {
-          //     return NavigationDecision.prevent;
-          //   }
-          //   return NavigationDecision.navigate;
-          // },
-        ),
-      )
-      ..setUserAgent(
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
-      ..loadRequest(Uri.parse('https://y.qq.com/'));
-
+    var controller;
+    if (is_windows) {
+      controller = WebviewController();
+    } else {
+      controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onProgress: (int progress) {
+              // Update loading bar.
+            },
+            onPageStarted: (String url) {},
+            onPageFinished: (String url) {},
+            onHttpError: (HttpResponseError error) {},
+            onWebResourceError: (WebResourceError error) {},
+          ),
+        )
+        ..setUserAgent(
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
+        ..loadRequest(Uri.parse('https://y.qq.com/'));
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -885,12 +1019,13 @@ class _SettingsPageState extends State<SettingsPage> {
                                           await importSettingsFromFile(
                                               true, settings);
                                           xuan_toast(
-                                            msg: '导出成功',
+                                            msg: '导入成功',
                                           );
                                           Navigator.of(context).pop();
+                                          My_playlist_loaddata();
                                         } catch (e) {
                                           xuan_toast(
-                                            msg: '导出失败$e',
+                                            msg: '导入成功$e',
                                           );
                                         }
                                       },
@@ -1280,23 +1415,26 @@ class Github {
     status = 1;
     final url =
         '$OAUTH_URL/authorize?client_id=$clientId&scope=gist,public_repo';
-    // Open URL in browser
-    // window.open(url, '_blank');
-    final controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-            // Update loading bar.
-          },
-          onPageStarted: (String url) {},
-          onPageFinished: (String url) {},
-          onHttpError: (HttpResponseError error) {},
-          onWebResourceError: (WebResourceError error) {},
-        ),
-      )
-      ..loadRequest(Uri.parse(url));
 
+    var controller;
+    if (is_windows) {
+      controller = WebviewController();
+    } else {
+      controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onProgress: (int progress) {
+              // Update loading bar.
+            },
+            onPageStarted: (String url) {},
+            onPageFinished: (String url) {},
+            onHttpError: (HttpResponseError error) {},
+            onWebResourceError: (WebResourceError error) {},
+          ),
+        )
+        ..loadRequest(Uri.parse(url));
+    }
     Navigator.push(
       context,
       MaterialPageRoute(

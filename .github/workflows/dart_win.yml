@@ -1,4 +1,4 @@
-name: apk
+name: win
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    if: "contains(github.event.head_commit.message, 'apk')"
+    if: "contains(github.event.head_commit.message, 'win')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -65,39 +65,11 @@ jobs:
             KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       # - run: cat android/app/xuan.jks
 
-      - name: flutter build apk --split-per-abi
-        run: flutter build apk --release --split-per-abi
-        env:
-            KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-            KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-            KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      - uses: microsoft/setup-msstore-cli@v1
 
-        # 上传分平台生成的 APK 文件
-        
-      - name: Upload arm64-v8a APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-arm64-v8a-release.apk
-          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-      - name: Upload armeabi-v7a APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-armeabi-v7a-release.apk
-          path: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-      - name: Upload x86_64 APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-x86_64-release.apk
-          path: build/app/outputs/flutter-apk/app-x86_64-release.apk
-
-      - name: flutter build apk
-        run: flutter build apk --release
-        env:
-            KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-            KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-            KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release.apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+      - name: Configure the Microsoft Store CLI
+        run: msstore reconfigure --tenantId $ --clientId $ --clientSecret $ --sellerId $
+      
+      - name: Create MSIX package
+        run: msstore package .
+      
