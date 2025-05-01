@@ -138,6 +138,11 @@ class Webview
 {
 public:
   friend class WebviewHost;
+  using CookiesReceivedCallback = std::function<void(const std::string &)>;
+  void OnCookiesReceived(CookiesReceivedCallback callback)
+  {
+    cookies_received_callback_ = std::move(callback);
+  }
 
   typedef std::function<void(const std::string &)> UrlChangedCallback;
   typedef std::function<void(WebviewLoadingState)> LoadingStateChangedCallback;
@@ -192,7 +197,7 @@ public:
                      ScriptExecutedCallback callback);
   bool PostWebMessage(const std::string &json);
   bool ClearCookies();
-  bool GetCookies(std::string &cookies);
+  bool GetCookies();
   bool ClearCache();
   bool SetCacheDisabled(bool disabled);
   void SetPopupWindowPolicy(WebviewPopupWindowPolicy policy);
@@ -270,6 +275,7 @@ public:
   }
 
 private:
+  CookiesReceivedCallback cookies_received_callback_;
   HWND hwnd_;
   bool owns_window_;
   bool is_valid_ = false;

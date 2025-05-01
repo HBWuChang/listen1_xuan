@@ -5,6 +5,8 @@
 #include <format>
 #include <iostream>
 
+#include <condition_variable>
+#include <mutex>
 #include "util/composition.desktop.interop.h"
 #include "util/string_converter.h"
 #include "webview_host.h"
@@ -475,23 +477,32 @@ bool Webview::ClearCookies()
   return webview_->CallDevToolsProtocolMethod(L"Network.clearBrowserCookies",
                                               L"{}", nullptr) == S_OK;
 }
-bool Webview::GetCookies(std::string &cookies)
+
+bool Webview::GetCookies()
 {
   if (!IsValid())
   {
+    std::cerr << "Webview is not valid." << std::endl;
     return false;
   }
 
   auto handler = Microsoft::WRL::Callback<ICoreWebView2CallDevToolsProtocolMethodCompletedHandler>(
-      [&cookies](HRESULT error_code, LPCWSTR result_json) -> HRESULT
+      [this](HRESULT error_code, LPCWSTR result_json) -> HRESULT
       {
         if (SUCCEEDED(error_code) && result_json)
         {
-          cookies = util::Utf8FromUtf16(result_json); 
+          std::string cookies = util::Utf8FromUtf16(result_json);
+          // std::cout << "Cookies retrieved: " << cookies << std::endl;
+
+          if (cookies_received_callback_)
+          {
+            cookies_received_callback_(cookies);
+          }
         }
         else
         {
-          std::cerr << "Failed to retrieve cookies. Error code: " << error_code << std::endl;
+          std::cerr << "Failed to retrieve cookies. Error code: " << error_code
+                    << ", result_json: " << (result_json ? util::Utf8FromUtf16(result_json) : "null") << std::endl;
         }
         return S_OK;
       });
@@ -502,8 +513,13 @@ bool Webview::GetCookies(std::string &cookies)
     std::cerr << "CallDevToolsProtocolMethod failed. HRESULT: " << hr << std::endl;
     return false;
   }
+
   return true;
 }
+// bool Webview::GetCookies(std::string &cookies) {
+//   cookies = "test_cookie=value; another_cookie=12345";
+//   return true;
+// }
 bool Webview::ClearCache()
 {
   if (!IsValid())

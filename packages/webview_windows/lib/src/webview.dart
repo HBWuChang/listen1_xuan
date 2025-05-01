@@ -63,6 +63,23 @@ class WebviewValue {
 
 /// Controls a WebView and provides streams for various change events.
 class WebviewController extends ValueNotifier<WebviewValue> {
+  // 添加一个 StreamController 用于管理 cookies 队列
+  final StreamController<String> _cookiesStreamController =
+      StreamController<String>.broadcast();
+
+  /// 获取 cookies 队列的 Stream
+  Stream<String> get cookiesStream => _cookiesStreamController.stream;
+
+  /// 添加 cookies 到队列
+  void addCookies(String cookies) {
+    _cookiesStreamController.add(cookies);
+  }
+
+  /// 等待队列中有 cookies 数据并返回
+  Future<String> waitForCookies() async {
+    return cookiesStream.first; // 阻塞直到有数据
+  }
+
   /// Explicitly initializes the underlying WebView environment
   /// using  an optional [browserExePath], an optional [userDataPath]
   /// and optional Chromium command line arguments [additionalArguments].
@@ -203,6 +220,10 @@ class WebviewController extends ValueNotifier<WebviewValue> {
           case 'cursorChanged':
             _cursorStreamController.add(getCursorByName(map['value']));
             break;
+          case 'cookiesReceived':
+            final cookies = map['value'] as String;
+            addCookies(cookies); // 将 cookies 添加到队列
+            break;
           case 'webMessageReceived':
             try {
               final message = json.decode(map['value']);
@@ -270,6 +291,7 @@ class WebviewController extends ValueNotifier<WebviewValue> {
       await _eventStreamSubscription?.cancel();
       await _pluginChannel.invokeMethod('dispose', _textureId);
     }
+    await _cookiesStreamController.close();
     super.dispose();
   }
 
@@ -403,7 +425,8 @@ class WebviewController extends ValueNotifier<WebviewValue> {
       return;
     }
     assert(value.isInitialized);
-    return _methodChannel.invokeMethod('getCookies');
+    _methodChannel.invokeMethod<String>('getCookies');
+    return await waitForCookies();
   }
 
   /// Clears browser cache.

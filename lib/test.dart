@@ -176,7 +176,6 @@ class _ExampleBrowser extends State<ExampleBrowser> {
         tooltip: _isWebviewSuspended ? 'Resume webview' : 'Suspend webview',
         onPressed: () async {
           print(await _controller.getCookies());
-          // print(await _controller.clearCookies());
           setState(() {
             _isWebviewSuspended = !_isWebviewSuspended;
           });

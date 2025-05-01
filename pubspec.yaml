@@ -48,7 +48,9 @@ dependencies:
   animations: ^2.0.11
   loading_animations: ^2.2.0
   just_audio_media_kit: ^2.1.0
-  media_kit: ^1.1.10
+  media_kit_libs_windows_audio: ^1.0.9
+  media_kit: ^1.1.11 # Primary package.
+  media_kit_libs_audio: ^1.0.5 # Native audio dependencies.
   window_manager: ^0.4.2
   webview_windows:
     path: packages/webview_windows
