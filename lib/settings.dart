@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/play.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,6 +32,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:charset_converter/charset_converter.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
 Future<Map<String, dynamic>> outputAllSettingsToFile(
@@ -283,6 +285,63 @@ Future<void> _saveToken(String platform, String token) async {
       await setSaveCookie(url: 'https://u.y.qq.com', cookies: cookies);
       break;
     default:
+  }
+}
+
+Future<void> createAndRunBatFile(String tempPath, String executableDir) async {
+  // 定义文件夹路径
+  final folderA = executableDir;
+  final folderB = '$tempPath\\canary';
+
+  // 定义 .bat 文件路径
+  final batFilePath = '$tempPath\\script.bat';
+
+  // 创建 .bat 文件内容，使用 \r\n 作为换行符
+  String batContent = '''
+@echo off\r
+:: Check if running as administrator\r
+net session >nul 2>&1\r
+if %errorlevel% neq 0 (\r
+    echo Requesting administrator privileges...\r
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"\r
+    exit /b\r
+)\r
+\r
+:: Terminate listen1_xuan.exe process\r
+echo Terminating listen1_xuan.exe process...\r
+taskkill /F /IM listen1_xuan.exe >nul 2>&1\r
+\r
+:: Wait for 5 seconds\r
+echo Waiting for 5 seconds before proceeding...\r
+timeout /t 5 /nobreak >nul\r
+\r
+:: Delete all data in folder A\r
+echo Deleting all data in folder A...\r
+rmdir /S /Q "$folderA"\r
+\r
+:: Copy all data from folder B to folder A\r
+echo Copying all data from folder B to folder A...\r
+xcopy "$folderB\\*" "$folderA\\" /E /H /C /I\r
+\r
+:: Start the specified program in folder A\r
+echo Starting the program...\r
+start "" "$folderA\\listen1_xuan.exe"\r
+\r
+''';
+
+// 将内容转换为 GBK 编码的字节
+  Uint8List gbkBytes = await CharsetConverter.encode("gb2312", batContent);
+
+  // 写入文件
+  File file = File(batFilePath);
+  await file.writeAsBytes(gbkBytes, flush: true);
+
+  // 像双击一样运行 .bat 文件
+  try {
+    await Process.run('cmd', ['/c', batFilePath], runInShell: true);
+    print('Script executed successfully');
+  } catch (e) {
+    print('Error while executing script: $e');
   }
 }
 
@@ -1055,11 +1114,181 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
                     child: const Text('从Github Gist导入歌单'),
                   ),
-                  if (!is_windows)
-                    ElevatedButton(
-                      onPressed: () async {
+                  ElevatedButton(
+                    onPressed: () async {
+                      var dia_context;
+
+                      if (is_windows) {
                         try {
-                          final tempPath = (await xuan_getdownloadDirectory()).path;
+                          final tempPath =
+                              (await xuan_getdownloadDirectory()).path;
+
+                          final filePath = '$tempPath\\canary.zip';
+                          final url_list =
+                              'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
+                          final prefs = await SharedPreferences.getInstance();
+                          final token = prefs.getString('githubOauthAccessKey');
+                          if (token == null) {
+                            xuan_toast(
+                              msg: '请先登录Github',
+                              toastLength: Toast.LENGTH_SHORT,
+                              gravity: ToastGravity.CENTER,
+                              timeInSecForIosWeb: 1,
+                              backgroundColor: Colors.red,
+                              textColor: Colors.white,
+                              fontSize: 16.0,
+                            );
+                            return;
+                          }
+                          final response = await Dio().get(url_list,
+                              options: Options(headers: {
+                                'accept': 'application/vnd.github.v3+json',
+                                'authorization': 'Bearer ' + token,
+                                'x-github-api-version': '2022-11-28',
+                              }));
+                          late var art;
+
+                          for (var i in response.data["artifacts"]) {
+                            if (i['name'].indexOf("windows") >= 0) {
+                              art = i;
+                              break;
+                            }
+                          }
+                          bool flag = true;
+                          if (await File(filePath).exists()) {
+                            // 获取sha256值
+                            var sha256 = await Process.run(
+                                'certutil', ['-hashfile', filePath, 'SHA256']);
+                            var sha256_str =
+                                sha256.stdout.toString().split('\n')[1].trim();
+                            print('sha256: $sha256_str');
+                            String r_sha256 =
+                                art["digest"].replaceAll("sha256:", "").trim();
+                            if (sha256_str == r_sha256) {
+                              flag = false;
+                            }
+                          }
+                          if (flag) {
+                            final download_url = art["archive_download_url"];
+                            final created_at = art["created_at"];
+                            double total = art["size_in_bytes"].toDouble();
+                            double received = 0;
+                            final StreamController<double>
+                                progressStreamController =
+                                StreamController<double>();
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (BuildContext context) {
+                                dia_context = context;
+                                return PopScope(
+                                  canPop: false,
+                                  onPopInvokedWithResult: (didPop, result) =>
+                                      {},
+                                  child: StatefulBuilder(
+                                    builder: (BuildContext context,
+                                        StateSetter setState) {
+                                      return AlertDialog(
+                                        title: Text('下载进度: ${created_at}'),
+                                        content: StreamBuilder<double>(
+                                          stream:
+                                              progressStreamController.stream,
+                                          builder: (context, snapshot) {
+                                            double progress =
+                                                snapshot.data ?? 0;
+                                            return Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                LinearProgressIndicator(
+                                                    value: progress),
+                                                SizedBox(height: 20),
+                                                Text(
+                                                    '${(progress * total / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB'),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            );
+                            await Dio().download(
+                              download_url,
+                              filePath,
+                              options: Options(headers: {
+                                'accept': 'application/vnd.github.v3+json',
+                                'authorization': 'Bearer ' + token,
+                                'x-github-api-version': '2022-11-28',
+                              }),
+                              onReceiveProgress: (receivedBytes, totalBytes) {
+                                received = receivedBytes.toDouble();
+                                double progress = received / total;
+                                progressStreamController.add(progress);
+                              },
+                            );
+                            try {
+                              Navigator.of(dia_context).pop(); // 关闭进度条对话框
+                            } catch (e) {
+                              print('关闭进度条对话框失败: $e');
+                            }
+                          }
+                          xuan_toast(
+                            msg: '下载成功',
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.CENTER,
+                            timeInSecForIosWeb: 1,
+                            backgroundColor: Colors.blue,
+                            textColor: Colors.white,
+                            fontSize: 16.0,
+                          );
+
+                          // 解压 ZIP 文件
+                          final bytes = File(filePath).readAsBytesSync();
+                          final archive = ZipDecoder().decodeBytes(bytes);
+                          // 删除canary文件夹
+                          final canaryDir = Directory('$tempPath\\canary');
+                          if (await canaryDir.exists()) {
+                            await canaryDir.delete(recursive: true);
+                          }
+                          for (final file in archive) {
+                            final filename = file.name;
+                            if (file.isFile) {
+                              final data = file.content as List<int>;
+                              File('$tempPath\\canary\\$filename')
+                                ..createSync(recursive: true)
+                                ..writeAsBytesSync(data);
+                            } else {
+                              Directory('$filePath\\canary\\$filename')
+                                  .create(recursive: true);
+                            }
+                          }
+                          String executablePath = Platform.resolvedExecutable;
+                          String executableDir =
+                              File(executablePath).parent.path;
+                          print(executableDir);
+                          createAndRunBatFile(tempPath, executableDir);
+                        } catch (e) {
+                          try {
+                            Navigator.of(dia_context).pop(); // 关闭进度条对话框
+                          } catch (e) {
+                            print('关闭进度条对话框失败: $e');
+                          }
+                          xuan_toast(
+                            msg: '下载失败$e',
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.CENTER,
+                            timeInSecForIosWeb: 1,
+                            backgroundColor: Colors.red,
+                            textColor: Colors.white,
+                            fontSize: 16.0,
+                          );
+                        }
+                      } else {
+                        try {
+                          final tempPath =
+                              (await xuan_getdownloadDirectory()).path;
 
                           final apkFile = File(apkfile_name);
                           print('apkFile: $apkFile');
@@ -1141,6 +1370,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             context: context,
                             barrierDismissible: false,
                             builder: (BuildContext context) {
+                              dia_context = context;
                               return PopScope(
                                 canPop: false,
                                 onPopInvokedWithResult: (didPop, result) => {},
@@ -1186,7 +1416,11 @@ class _SettingsPageState extends State<SettingsPage> {
                             },
                           );
 
-                          Navigator.of(context).pop(); // 关闭进度条对话框
+                          try {
+                            Navigator.of(dia_context).pop(); // 关闭进度条对话框
+                          } catch (e) {
+                            print('关闭进度条对话框失败: $e');
+                          }
                           // 解压 ZIP 文件
                           final bytes = File(filePath).readAsBytesSync();
                           final archive = ZipDecoder().decodeBytes(bytes);
@@ -1235,7 +1469,11 @@ class _SettingsPageState extends State<SettingsPage> {
                             fontSize: 16.0,
                           );
                         } catch (e) {
-                          Navigator.of(context).pop(); // 关闭进度条对话框
+                          try {
+                            Navigator.of(dia_context).pop(); // 关闭进度条对话框
+                          } catch (e) {
+                            print('关闭进度条对话框失败: $e');
+                          }
                           xuan_toast(
                             msg: '下载失败$e',
                             toastLength: Toast.LENGTH_SHORT,
@@ -1246,9 +1484,10 @@ class _SettingsPageState extends State<SettingsPage> {
                             fontSize: 16.0,
                           );
                         }
-                      },
-                      child: const Text('下载最新测试版'),
-                    ),
+                      }
+                    },
+                    child: const Text('下载最新测试版'),
+                  ),
                   if (!is_windows)
                     ElevatedButton(
                       onPressed: () async {

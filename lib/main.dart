@@ -557,9 +557,13 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                           windowManager.hide();
                           windowManager.setSkipTaskbar(true);
                         }
+                        if (event.kind == PointerDeviceKind.mouse &&
+                            event.buttons == kMiddleMouseButton) {
+                          exit(0);
+                        }
                       },
                       child: Tooltip(
-                        message: '右键以最小化',
+                        message: '右键以最小化,中键以关闭',
                         child: Text(
                           'Listen1',
                           style: TextStyle(fontSize: 24),
