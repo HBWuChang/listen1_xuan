@@ -13,6 +13,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:marquee/marquee.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:window_manager/window_manager.dart';
 import 'loweb.dart';
 import 'package:vibration/vibration.dart';
 import 'package:logger/logger.dart';
@@ -562,10 +563,10 @@ class _PlayState extends State<Play> {
 
   late Offset position;
   final GlobalKey _buttonKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
-    // return PlayerWidget(player: player);
-    return FutureBuilder<void>(
+    Widget ctx_bu = FutureBuilder<void>(
       future: setNotification(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -573,551 +574,530 @@ class _PlayState extends State<Play> {
         } else if (snapshot.hasError) {
           return Center(child: Text('Error initializing audio handler'));
         } else {
-          return GestureDetector(
-              onTapDown: (TapDownDetails details) {
-                position = details.globalPosition;
-              },
-              onTap: () async {
-                if (!widget.horizon) {
-                  main_showVolumeSlider();
-                }
-                final track = await getnowplayingsong();
-                var ret = await song_dialog(context, track['track'],
-                    change_main_status: widget.onPlaylistTap,
-                    position: position);
-                if (ret != null) {
-                  if (ret["push"] != null) {
-                    clean_top_context();
-                    Navigator.of(top_context.last).push(
-                      MaterialPageRoute(
-                        builder: (context) => PlaylistInfo(
-                          listId: ret["push"],
-                          onPlaylistTap: widget.onPlaylistTap,
-                          is_my: false,
-                        ),
-                      ),
-                    );
-                  }
-                }
-              },
-              onDoubleTap: () {
-                // if (_player.playing) MediaControl.pause else MediaControl.play,
-                Vibration.vibrate(duration: 100);
-                if (music_player.playing) {
-                  // (_audioHandler as AudioPlayerHandler).pause();
-                  global_pause();
-                } else {
-                  // (_audioHandler as AudioPlayerHandler).play();
-                  global_play();
-                }
-              },
-              onLongPress: () {
-                Vibration.vibrate(duration: 100);
-                global_change_play_mode();
-              },
-              onHorizontalDragEnd: (details) {
-                if (details.primaryVelocity != null) {
-                  Vibration.vibrate(duration: 100);
-
-                  if (details.primaryVelocity! > 0) {
-                    // _playPrevious(); // 向右滑动，播放上一首
-                    // (_audioHandler as AudioPlayerHandler).skipToPrevious();
-                    global_skipToPrevious();
-                  } else if (details.primaryVelocity! < 0) {
-                    // _playNext(); // 向左滑动，播放下一首
-                    // (_audioHandler as AudioPlayerHandler).skipToNext();
-                    global_skipToNext();
-                  }
-                }
-              },
-              child: Container(
-                height: widget.horizon ? 60 : 80,
-                child: widget.horizon
-                    ? Center(
-                        child: StreamBuilder<bool>(
-                          stream: _audioHandler.playbackState
-                              .map((state) => state.playing)
-                              .distinct(),
-                          builder: (context, snapshot) {
-                            final playing = snapshot.data ?? false;
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  child: Center(
-                                    // 上一首
-                                    child: _button(Icons.skip_previous, () {
-                                      global_skipToPrevious();
-                                    }),
-                                  ),
-                                ),
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  child: Center(
-                                    child: playing
-                                        ? _button(Icons.pause, () {
-                                            if (music_player.playing) {
-                                              global_pause();
-                                            } else {
-                                              global_play();
-                                            }
-                                          })
-                                        : _button(Icons.play_arrow, () {
-                                            if (music_player.playing) {
-                                              global_pause();
-                                            } else {
-                                              global_play();
-                                            }
-                                          }),
-                                  ),
-                                ),
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  child: Center(
-                                    // 上一首
-                                    child: _button(Icons.skip_next, () {
-                                      global_skipToNext();
-                                    }),
-                                  ),
-                                ),
-                                // Show media item title
-                                StreamBuilder<MediaItem?>(
-                                  stream: _audioHandler.mediaItem,
-                                  builder: (context, snapshot) {
-                                    final mediaItem = snapshot.data;
-                                    // return Text(mediaItem?.title ?? '');
-                                    if (mediaItem == null) {
-                                      return Container(
-                                        width: 50,
-                                        height: 50,
-                                      );
-                                    }
-                                    return Container(
-                                      width: 50,
-                                      height: 50,
-                                      child: CachedNetworkImage(
-                                        imageUrl: mediaItem.artUri.toString(),
-                                        fit: BoxFit.cover,
-                                        errorWidget: (context, url, error) =>
-                                            Icon(
-                                          Icons.music_note,
-                                          size: 50,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                Container(
-                                    width: (MediaQuery.of(context).size.width -
-                                        500),
+          Widget t_w = Container(
+            height: widget.horizon ? 60 : 80,
+            child: widget.horizon
+                ? Center(
+                    child: StreamBuilder<bool>(
+                      stream: _audioHandler.playbackState
+                          .map((state) => state.playing)
+                          .distinct(),
+                      builder: (context, snapshot) {
+                        final playing = snapshot.data ?? false;
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              width: 50,
+                              height: 50,
+                              child: Center(
+                                // 上一首
+                                child: _button(Icons.skip_previous, () {
+                                  global_skipToPrevious();
+                                }),
+                              ),
+                            ),
+                            Container(
+                              width: 50,
+                              height: 50,
+                              child: Center(
+                                child: playing
+                                    ? _button(Icons.pause, () {
+                                        if (music_player.playing) {
+                                          global_pause();
+                                        } else {
+                                          global_play();
+                                        }
+                                      })
+                                    : _button(Icons.play_arrow, () {
+                                        if (music_player.playing) {
+                                          global_pause();
+                                        } else {
+                                          global_play();
+                                        }
+                                      }),
+                              ),
+                            ),
+                            Container(
+                              width: 50,
+                              height: 50,
+                              child: Center(
+                                // 上一首
+                                child: _button(Icons.skip_next, () {
+                                  global_skipToNext();
+                                }),
+                              ),
+                            ),
+                            // Show media item title
+                            StreamBuilder<MediaItem?>(
+                              stream: _audioHandler.mediaItem,
+                              builder: (context, snapshot) {
+                                final mediaItem = snapshot.data;
+                                // return Text(mediaItem?.title ?? '');
+                                if (mediaItem == null) {
+                                  return Container(
+                                    width: 50,
                                     height: 50,
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          height: 20,
-                                          child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Expanded(
-                                                  flex: 5,
-                                                  child:
-                                                      StreamBuilder<MediaItem?>(
-                                                    stream:
-                                                        _audioHandler.mediaItem,
-                                                    builder:
-                                                        (context, snapshot) {
-                                                      final mediaItem =
-                                                          snapshot.data;
-                                                      return Marquee(
-                                                        text: (mediaItem
-                                                                    ?.title ??
-                                                                'null') +
-                                                            '  -  ' +
-                                                            (mediaItem
-                                                                    ?.artist ??
-                                                                'null'),
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                        blankSpace: 20.0,
-                                                        velocity: 50.0,
-                                                        pauseAfterRound:
-                                                            Duration(
-                                                                seconds: 1),
-                                                        startPadding: 10.0,
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                                Container(
-                                                  width: 120,
-                                                  child:
-                                                      StreamBuilder<MediaState>(
-                                                    stream: _mediaStateStream,
-                                                    builder:
-                                                        (context, snapshot) {
-                                                      final mediaItem =
-                                                          snapshot.data;
-                                                      return Center(
-                                                          child: FittedBox(
-                                                        fit: BoxFit.scaleDown,
-                                                        child: Text(
-                                                          (formatDuration(mediaItem
-                                                                      ?.position ??
-                                                                  Duration
-                                                                      .zero) +
-                                                              ' / ' +
-                                                              formatDuration(mediaItem
-                                                                      ?.mediaItem
-                                                                      ?.duration ??
-                                                                  Duration
-                                                                      .zero)),
-                                                          style: TextStyle(
-                                                              fontSize: 20.0),
-                                                        ),
-                                                      ));
-                                                    },
-                                                  ),
-                                                ),
-                                              ]),
-                                        ),
-                                        StreamBuilder<MediaState>(
-                                          stream: _mediaStateStream,
-                                          builder: (context, snapshot) {
-                                            final mediaState = snapshot.data;
-
-                                            return Container(
-                                                height: 20,
-                                                child: Slider(
-                                                  value: (mediaState
-                                                                  ?.position.inMilliseconds
-                                                                  .toDouble() ??
-                                                              0.0) >
-                                                          (mediaState
+                                  );
+                                }
+                                return Container(
+                                  width: 50,
+                                  height: 50,
+                                  child: CachedNetworkImage(
+                                    imageUrl: mediaItem.artUri.toString(),
+                                    fit: BoxFit.cover,
+                                    errorWidget: (context, url, error) => Icon(
+                                      Icons.music_note,
+                                      size: 50,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            Container(
+                                width:
+                                    (MediaQuery.of(context).size.width - 500),
+                                height: 50,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      height: 20,
+                                      child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Expanded(
+                                              flex: 5,
+                                              child: StreamBuilder<MediaItem?>(
+                                                stream: _audioHandler.mediaItem,
+                                                builder: (context, snapshot) {
+                                                  final mediaItem =
+                                                      snapshot.data;
+                                                  return Marquee(
+                                                    text: (mediaItem?.title ??
+                                                            'null') +
+                                                        '  -  ' +
+                                                        (mediaItem?.artist ??
+                                                            'null'),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    blankSpace: 20.0,
+                                                    velocity: 50.0,
+                                                    pauseAfterRound:
+                                                        Duration(seconds: 1),
+                                                    startPadding: 10.0,
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            Container(
+                                              width: 120,
+                                              child: StreamBuilder<MediaState>(
+                                                stream: _mediaStateStream,
+                                                builder: (context, snapshot) {
+                                                  final mediaItem =
+                                                      snapshot.data;
+                                                  return Center(
+                                                      child: FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    child: Text(
+                                                      (formatDuration(mediaItem
+                                                                  ?.position ??
+                                                              Duration.zero) +
+                                                          ' / ' +
+                                                          formatDuration(mediaItem
                                                                   ?.mediaItem
-                                                                  ?.duration
-                                                                  ?.inMilliseconds
-                                                                  .toDouble() ??
-                                                              1.0)
-                                                      ? (mediaState
+                                                                  ?.duration ??
+                                                              Duration.zero)),
+                                                      style: TextStyle(
+                                                          fontSize: 20.0),
+                                                    ),
+                                                  ));
+                                                },
+                                              ),
+                                            ),
+                                          ]),
+                                    ),
+                                    StreamBuilder<MediaState>(
+                                      stream: _mediaStateStream,
+                                      builder: (context, snapshot) {
+                                        final mediaState = snapshot.data;
+
+                                        return Container(
+                                            height: 20,
+                                            child: Slider(
+                                              value: (mediaState?.position
+                                                              .inMilliseconds
+                                                              .toDouble() ??
+                                                          0.0) >
+                                                      (mediaState
                                                               ?.mediaItem
                                                               ?.duration
                                                               ?.inMilliseconds
                                                               .toDouble() ??
                                                           1.0)
-                                                      : (mediaState?.position
-                                                              .inMilliseconds
-                                                              .toDouble() ??
-                                                          0.0),
-                                                  max: mediaState
+                                                  ? (mediaState
                                                           ?.mediaItem
                                                           ?.duration
                                                           ?.inMilliseconds
                                                           .toDouble() ??
-                                                      1.0,
-                                                  onChanged: (value) {
-                                                    global_seek(Duration(
-                                                        milliseconds:
-                                                            value.toInt()));
-                                                  },
-                                                ));
+                                                      1.0)
+                                                  : (mediaState?.position
+                                                          .inMilliseconds
+                                                          .toDouble() ??
+                                                      0.0),
+                                              max: mediaState?.mediaItem
+                                                      ?.duration?.inMilliseconds
+                                                      .toDouble() ??
+                                                  1.0,
+                                              onChanged: (value) {
+                                                global_seek(Duration(
+                                                    milliseconds:
+                                                        value.toInt()));
+                                              },
+                                            ));
 
-                                            // return Text(
-                                            //   '${mediaState?.position.inSeconds} / ${mediaState?.mediaItem?.duration?.inSeconds}',
-                                            // );
-                                          },
-                                        ),
-                                      ],
-                                    )),
-                                IconButton(
-                                  key: _buttonKey,
-                                  icon: Icon(Icons.list),
-                                  onPressed: () async {
-                                    final track = await getnowplayingsong();
-
-                                    var ret = await song_dialog(
-                                      context,
-                                      track['track'],
-                                      change_main_status: widget.onPlaylistTap,
-                                      position: (_buttonKey.currentContext!
-                                              .findRenderObject() as RenderBox)
-                                          .localToGlobal(Offset.zero),
-                                    );
-                                    if (ret != null) {
-                                      if (ret["push"] != null) {
-                                        clean_top_context();
-                                        Navigator.of(top_context.last).push(
-                                          MaterialPageRoute(
-                                            builder: (context) => PlaylistInfo(
-                                              listId: ret["push"],
-                                              onPlaylistTap:
-                                                  widget.onPlaylistTap,
-                                              is_my: false,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    }
-                                  },
-                                ),
-                                StatefulBuilder(
-                                  builder: (context, setState) {
-                                    playmode_setstate = setState;
-                                    return IconButton(
-                                      icon: switch (playmode) {
-                                        0 => Icon(Icons.repeat),
-                                        1 => Icon(Icons.shuffle),
-                                        2 => Icon(Icons.repeat_one),
-                                        _ => Icon(Icons.error), // 默认情况
-                                      },
-                                      onPressed: () {
-                                        setState(() {
-                                          global_change_play_mode();
-                                        });
-                                      },
-                                    );
-                                  },
-                                ),
-                                Stack(
-                                  children: [
-                                    // 强行移动的图标
-                                    Positioned(
-                                      top: 18, // 距离顶部 50 像素
-                                      left: 0, // 距离左侧 100 像素
-                                      child: Icon(
-                                        Icons.volume_up,
-                                        size: 24, // 图标大小
-                                      ),
-                                    ),
-                                    // 其他控件
-                                    StatefulBuilder(
-                                      builder: (context, setState) {
-                                        return Slider(
-                                          value: _currentVolume,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _currentVolume = value;
-                                            });
-                                            set_player_settings(
-                                                "volume", value * 100);
-                                            music_player.setVolume(value);
-                                          },
-                                        );
+                                        // return Text(
+                                        //   '${mediaState?.position.inSeconds} / ${mediaState?.mediaItem?.duration?.inSeconds}',
+                                        // );
                                       },
                                     ),
                                   ],
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: StreamBuilder<bool>(
-                          stream: _audioHandler.playbackState
-                              .map((state) => state.playing)
-                              .distinct(),
-                          builder: (context, snapshot) {
-                            final playing = snapshot.data ?? false;
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Show media item title
-                                StreamBuilder<MediaItem?>(
-                                  stream: _audioHandler.mediaItem,
-                                  builder: (context, snapshot) {
-                                    final mediaItem = snapshot.data;
-                                    // return Text(mediaItem?.title ?? '');
-                                    if (mediaItem == null) {
-                                      return Container(
-                                        width: 50,
-                                        height: 50,
-                                      );
-                                    }
-                                    return Container(
-                                      width: 50,
-                                      height: 50,
-                                      child: CachedNetworkImage(
-                                        imageUrl: mediaItem.artUri.toString(),
-                                        fit: BoxFit.cover,
-                                        errorWidget: (context, url, error) =>
-                                            Icon(
-                                          Icons.music_note,
-                                          size: 50,
+                                )),
+                            IconButton(
+                              key: _buttonKey,
+                              icon: Icon(Icons.list),
+                              onPressed: () async {
+                                final track = await getnowplayingsong();
+
+                                var ret = await song_dialog(
+                                  context,
+                                  track['track'],
+                                  change_main_status: widget.onPlaylistTap,
+                                  position: (_buttonKey.currentContext!
+                                          .findRenderObject() as RenderBox)
+                                      .localToGlobal(Offset.zero),
+                                );
+                                if (ret != null) {
+                                  if (ret["push"] != null) {
+                                    clean_top_context();
+                                    Navigator.of(top_context.last).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => PlaylistInfo(
+                                          listId: ret["push"],
+                                          onPlaylistTap: widget.onPlaylistTap,
+                                          is_my: false,
                                         ),
                                       ),
                                     );
+                                  }
+                                }
+                              },
+                            ),
+                            StatefulBuilder(
+                              builder: (context, setState) {
+                                playmode_setstate = setState;
+                                return IconButton(
+                                  icon: switch (playmode) {
+                                    0 => Icon(Icons.repeat),
+                                    1 => Icon(Icons.shuffle),
+                                    2 => Icon(Icons.repeat_one),
+                                    _ => Icon(Icons.error), // 默认情况
+                                  },
+                                  onPressed: () {
+                                    setState(() {
+                                      global_change_play_mode();
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                            Stack(
+                              children: [
+                                // 强行移动的图标
+                                Positioned(
+                                  top: 18, // 距离顶部 50 像素
+                                  left: 0, // 距离左侧 100 像素
+                                  child: Icon(
+                                    Icons.volume_up,
+                                    size: 24, // 图标大小
+                                  ),
+                                ),
+                                // 其他控件
+                                StatefulBuilder(
+                                  builder: (context, setState) {
+                                    return Slider(
+                                      value: _currentVolume,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _currentVolume = value;
+                                        });
+                                        set_player_settings(
+                                            "volume", value * 100);
+                                        music_player.setVolume(value);
+                                      },
+                                    );
                                   },
                                 ),
-                                Container(
-                                    // width: MediaQuery.of(context).size.width - 100,
-                                    width: (MediaQuery.of(context).size.width -
-                                        100),
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  )
+                : Center(
+                    child: StreamBuilder<bool>(
+                      stream: _audioHandler.playbackState
+                          .map((state) => state.playing)
+                          .distinct(),
+                      builder: (context, snapshot) {
+                        final playing = snapshot.data ?? false;
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Show media item title
+                            StreamBuilder<MediaItem?>(
+                              stream: _audioHandler.mediaItem,
+                              builder: (context, snapshot) {
+                                final mediaItem = snapshot.data;
+                                // return Text(mediaItem?.title ?? '');
+                                if (mediaItem == null) {
+                                  return Container(
+                                    width: 50,
                                     height: 50,
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          height: 20,
-                                          child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Expanded(
-                                                  flex: 5,
-                                                  child:
-                                                      StreamBuilder<MediaItem?>(
-                                                    stream:
-                                                        _audioHandler.mediaItem,
-                                                    builder:
-                                                        (context, snapshot) {
-                                                      final mediaItem =
-                                                          snapshot.data;
-                                                      return Marquee(
-                                                        text: (mediaItem
-                                                                    ?.title ??
-                                                                'null') +
-                                                            '  -  ' +
-                                                            (mediaItem
-                                                                    ?.artist ??
-                                                                'null'),
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                        blankSpace: 20.0,
-                                                        velocity: 50.0,
-                                                        pauseAfterRound:
-                                                            Duration(
-                                                                seconds: 1),
-                                                        startPadding: 10.0,
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                                Container(
-                                                  width: 150,
-                                                  child:
-                                                      StreamBuilder<MediaState>(
-                                                    stream: _mediaStateStream,
-                                                    builder:
-                                                        (context, snapshot) {
-                                                      final mediaItem =
-                                                          snapshot.data;
-                                                      return Center(
-                                                          child: FittedBox(
-                                                        fit: BoxFit.scaleDown,
-                                                        child: Text(
-                                                          (formatDuration(mediaItem
-                                                                      ?.position ??
-                                                                  Duration
-                                                                      .zero) +
-                                                              ' / ' +
-                                                              formatDuration(mediaItem
-                                                                      ?.mediaItem
-                                                                      ?.duration ??
-                                                                  Duration
-                                                                      .zero)),
-                                                          style: TextStyle(
-                                                              fontSize: 20.0),
-                                                        ),
-                                                      ));
-                                                    },
-                                                  ),
-                                                ),
-                                              ]),
-                                        ),
-                                        StreamBuilder<MediaState>(
-                                          stream: _mediaStateStream,
-                                          builder: (context, snapshot) {
-                                            final mediaState = snapshot.data;
-
-                                            return Container(
-                                                height: 20,
-                                                child: Slider(
-                                                  value: (mediaState
-                                                                  ?.position.inMilliseconds
-                                                                  .toDouble() ??
-                                                              0.0) >
-                                                          (mediaState
+                                  );
+                                }
+                                return Container(
+                                  width: 50,
+                                  height: 50,
+                                  child: CachedNetworkImage(
+                                    imageUrl: mediaItem.artUri.toString(),
+                                    fit: BoxFit.cover,
+                                    errorWidget: (context, url, error) => Icon(
+                                      Icons.music_note,
+                                      size: 50,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            Container(
+                                // width: MediaQuery.of(context).size.width - 100,
+                                width:
+                                    (MediaQuery.of(context).size.width - 100),
+                                height: 50,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      height: 20,
+                                      child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Expanded(
+                                              flex: 5,
+                                              child: StreamBuilder<MediaItem?>(
+                                                stream: _audioHandler.mediaItem,
+                                                builder: (context, snapshot) {
+                                                  final mediaItem =
+                                                      snapshot.data;
+                                                  return Marquee(
+                                                    text: (mediaItem?.title ??
+                                                            'null') +
+                                                        '  -  ' +
+                                                        (mediaItem?.artist ??
+                                                            'null'),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                    blankSpace: 20.0,
+                                                    velocity: 50.0,
+                                                    pauseAfterRound:
+                                                        Duration(seconds: 1),
+                                                    startPadding: 10.0,
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            Container(
+                                              width: 150,
+                                              child: StreamBuilder<MediaState>(
+                                                stream: _mediaStateStream,
+                                                builder: (context, snapshot) {
+                                                  final mediaItem =
+                                                      snapshot.data;
+                                                  return Center(
+                                                      child: FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    child: Text(
+                                                      (formatDuration(mediaItem
+                                                                  ?.position ??
+                                                              Duration.zero) +
+                                                          ' / ' +
+                                                          formatDuration(mediaItem
                                                                   ?.mediaItem
-                                                                  ?.duration
-                                                                  ?.inMilliseconds
-                                                                  .toDouble() ??
-                                                              1.0)
-                                                      ? (mediaState
+                                                                  ?.duration ??
+                                                              Duration.zero)),
+                                                      style: TextStyle(
+                                                          fontSize: 20.0),
+                                                    ),
+                                                  ));
+                                                },
+                                              ),
+                                            ),
+                                          ]),
+                                    ),
+                                    StreamBuilder<MediaState>(
+                                      stream: _mediaStateStream,
+                                      builder: (context, snapshot) {
+                                        final mediaState = snapshot.data;
+
+                                        return Container(
+                                            height: 20,
+                                            child: Slider(
+                                              value: (mediaState?.position
+                                                              .inMilliseconds
+                                                              .toDouble() ??
+                                                          0.0) >
+                                                      (mediaState
                                                               ?.mediaItem
                                                               ?.duration
                                                               ?.inMilliseconds
                                                               .toDouble() ??
                                                           1.0)
-                                                      : (mediaState?.position
-                                                              .inMilliseconds
-                                                              .toDouble() ??
-                                                          0.0),
-                                                  max: mediaState
+                                                  ? (mediaState
                                                           ?.mediaItem
                                                           ?.duration
                                                           ?.inMilliseconds
                                                           .toDouble() ??
-                                                      1.0,
-                                                  onChanged: (value) {
-                                                    global_seek(Duration(
-                                                        milliseconds:
-                                                            value.toInt()));
-                                                  },
-                                                ));
+                                                      1.0)
+                                                  : (mediaState?.position
+                                                          .inMilliseconds
+                                                          .toDouble() ??
+                                                      0.0),
+                                              max: mediaState?.mediaItem
+                                                      ?.duration?.inMilliseconds
+                                                      .toDouble() ??
+                                                  1.0,
+                                              onChanged: (value) {
+                                                global_seek(Duration(
+                                                    milliseconds:
+                                                        value.toInt()));
+                                              },
+                                            ));
 
-                                            // return Text(
-                                            //   '${mediaState?.position.inSeconds} / ${mediaState?.mediaItem?.duration?.inSeconds}',
-                                            // );
-                                          },
-                                        ),
-                                      ],
-                                    )),
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  child: Center(
-                                    child: playing
-                                        // ? _button(Icons.pause, global_pause)
-                                        // : _button(Icons.play_arrow, global_play),
-                                        ? _button(Icons.pause, () {
-                                            if (music_player.playing) {
-                                              global_pause();
-                                            } else {
-                                              global_play();
-                                            }
-                                          })
-                                        : _button(Icons.play_arrow, () {
-                                            if (music_player.playing) {
-                                              global_pause();
-                                            } else {
-                                              global_play();
-                                            }
-                                          }),
-                                  ),
-                                )
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-              ));
+                                        // return Text(
+                                        //   '${mediaState?.position.inSeconds} / ${mediaState?.mediaItem?.duration?.inSeconds}',
+                                        // );
+                                      },
+                                    ),
+                                  ],
+                                )),
+                            Container(
+                              width: 50,
+                              height: 50,
+                              child: Center(
+                                child: playing
+                                    // ? _button(Icons.pause, global_pause)
+                                    // : _button(Icons.play_arrow, global_play),
+                                    ? _button(Icons.pause, () {
+                                        if (music_player.playing) {
+                                          global_pause();
+                                        } else {
+                                          global_play();
+                                        }
+                                      })
+                                    : _button(Icons.play_arrow, () {
+                                        if (music_player.playing) {
+                                          global_pause();
+                                        } else {
+                                          global_play();
+                                        }
+                                      }),
+                              ),
+                            )
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+          );
+
+          return is_windows
+              ? t_w
+              : GestureDetector(
+                  onTapDown: (TapDownDetails details) {
+                    position = details.globalPosition;
+                  },
+                  onTap: () async {
+                    if (!widget.horizon) {
+                      main_showVolumeSlider();
+                    }
+                    final track = await getnowplayingsong();
+                    var ret = await song_dialog(context, track['track'],
+                        change_main_status: widget.onPlaylistTap,
+                        position: position);
+                    if (ret != null) {
+                      if (ret["push"] != null) {
+                        clean_top_context();
+                        Navigator.of(top_context.last).push(
+                          MaterialPageRoute(
+                            builder: (context) => PlaylistInfo(
+                              listId: ret["push"],
+                              onPlaylistTap: widget.onPlaylistTap,
+                              is_my: false,
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  onDoubleTap: () {
+                    // if (_player.playing) MediaControl.pause else MediaControl.play,
+                    Vibration.vibrate(duration: 100);
+                    if (music_player.playing) {
+                      // (_audioHandler as AudioPlayerHandler).pause();
+                      global_pause();
+                    } else {
+                      // (_audioHandler as AudioPlayerHandler).play();
+                      global_play();
+                    }
+                  },
+                  onLongPress: () {
+                    Vibration.vibrate(duration: 100);
+                    global_change_play_mode();
+                  },
+                  onHorizontalDragEnd: (details) {
+                    if (details.primaryVelocity != null) {
+                      Vibration.vibrate(duration: 100);
+
+                      if (details.primaryVelocity! > 0) {
+                        // _playPrevious(); // 向右滑动，播放上一首
+                        // (_audioHandler as AudioPlayerHandler).skipToPrevious();
+                        global_skipToPrevious();
+                      } else if (details.primaryVelocity! < 0) {
+                        // _playNext(); // 向左滑动，播放下一首
+                        // (_audioHandler as AudioPlayerHandler).skipToNext();
+                        global_skipToNext();
+                      }
+                    }
+                  },
+                  child: t_w);
         }
       },
     );
+
+    return is_windows ? DragToMoveArea(child: ctx_bu) : ctx_bu;
   }
 
   Stream<MediaState> get _mediaStateStream =>
@@ -1140,7 +1120,13 @@ class MediaState {
 
   MediaState(this.mediaItem, this.position);
 }
-
+Future<void> global_play_or_pause() async {
+  if (music_player.playing) {
+    await music_player.pause();
+  } else {
+    await music_player.play();
+  }
+}
 Future<void> global_play() async {
   music_player.play();
 }

@@ -30,6 +30,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'package:hotkey_manager/hotkey_manager.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
 Future<Map<String, dynamic>> outputAllSettingsToFile(
@@ -1319,6 +1320,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onPressed: () => clean_local_cache(true),
                     child: const Text('清除所有歌曲缓存'),
                   ),
+                  ...create_hotkey_btns(context, _msg),
                   StatefulBuilder(
                     builder: (BuildContext context, StateSetter setState) {
                       useHttpOverrides_setstate = setState;

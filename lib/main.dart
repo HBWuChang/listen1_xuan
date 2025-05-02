@@ -24,6 +24,10 @@ import 'package:preload_page_view/preload_page_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'package:flutter/gestures.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 
 final dio_with_cookie_manager = Dio();
 List<BuildContext> top_context = List.empty(growable: true);
@@ -106,12 +110,27 @@ void downloadtasks_background(SendPort mainPort) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 框架已初始化
-  if (is_windows)
+  if (is_windows) {
     JustAudioMediaKit.ensureInitialized(
       linux: false, // default: true  - dependency: media_kit_libs_linux
       windows:
           true, // default: true  - dependency: media_kit_libs_windows_audio
     );
+    // Must add this line.
+    await windowManager.ensureInitialized();
+    await hotKeyManager.unregisterAll();
+    WindowOptions windowOptions = WindowOptions(
+      size: Size(1000, 700),
+      minimumSize: Size(400, 700),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.hidden,
+    );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+    });
+  }
   Map<String, dynamic> settings = await settings_getsettings();
   bool useHttpOverrides = false;
   if (settings["useHttpOverrides"] == null) {
@@ -202,8 +221,22 @@ class MyApp extends StatelessWidget {
         // 其他支持的语言
       ],
       locale: const Locale('zh', 'CN'), // 设置默认语言为中文
-      home: MyHomePage(),
+      home: is_windows ? MyHomePage_with_TrayListener() : MyHomePage(),
     );
+  }
+}
+
+class MyHomePage_with_TrayListener extends StatefulWidget {
+  @override
+  _MyHomePage_with_TrayListenerState createState() =>
+      _MyHomePage_with_TrayListenerState();
+}
+
+class _MyHomePage_with_TrayListenerState
+    extends State<MyHomePage_with_TrayListener> with TrayListener {
+  @override
+  Widget build(BuildContext context) {
+    return MyHomePage();
   }
 }
 
@@ -232,14 +265,12 @@ bool clean_top_context() {
 
 var main_showVolumeSlider;
 
-class _MyHomePageState extends State<MyHomePage>
-    with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage> with TrayListener {
   final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
   bool _isSearchActive = false;
   TextEditingController input_text_Controller = TextEditingController();
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
-  late AnimationController animationController;
   bool _Mainpage = true;
   String _playlist_id = "bilibili";
   late PreloadPageController _pageController; // 声明 PageController
@@ -251,8 +282,14 @@ class _MyHomePageState extends State<MyHomePage>
   bool volumeSliderVisible = false;
   @override
   void initState() {
+    trayManager.addListener(this);
     super.initState();
+
     main_showVolumeSlider = showVolumeSlider;
+    if (is_windows) {
+      _init();
+      init_hotkeys();
+    }
 
     download_receiveport.listen((message) {
       if (message is SendPort) {
@@ -264,19 +301,51 @@ class _MyHomePageState extends State<MyHomePage>
       FlutterIsolate.spawn(
           downloadtasks_background, download_receiveport.sendPort);
 
-    animationController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 300),
-      animationBehavior: AnimationBehavior.preserve,
-    );
-
-    animationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && _isSearchActive) {
-        _focusNode2.requestFocus();
-      }
-    });
-    animationController.forward(from: 0.0);
     init_playlist_filters();
+  }
+
+  void _init() async {
+    await trayManager.setIcon('assets/images/flutter_logo.ico');
+    await trayManager.setToolTip('Listen1_xuan');
+    await trayManager.setContextMenu(Menu(items: [
+      MenuItem(key: 'show_window', label: '显示窗口'),
+      MenuItem(key: 'exit_app', label: '退出应用'),
+    ]));
+  }
+
+  @override
+  void onTrayIconMouseDown() {
+    print('onTrayIconMouseDown');
+    // do something, for example pop up the menu
+    windowManager.show();
+    windowManager.setSkipTaskbar(false);
+    windowManager.setAlwaysOnTop(true);
+    windowManager.setAlwaysOnTop(false);
+  }
+
+  @override
+  void onTrayIconRightMouseDown() {
+    print('onTrayIconRightMouseDown');
+    // do something, for example pop up the menu
+    trayManager.popUpContextMenu();
+  }
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) {
+    print('onTrayMenuItemClick: ${menuItem.key}');
+    if (menuItem.key == 'show_window') {
+      windowManager.show();
+      windowManager.setSkipTaskbar(false);
+      windowManager.setAlwaysOnTop(true);
+      windowManager.setAlwaysOnTop(false);
+    } else if (menuItem.key == 'exit_app') {
+      // do something
+      if (kDebugMode) {
+        print('exit(0)');
+      } else {
+        exit(0);
+      }
+    }
   }
 
   void _onSearchBackTapped() {
@@ -287,7 +356,6 @@ class _MyHomePageState extends State<MyHomePage>
         _focusNode.unfocus();
       }
     });
-    animationController.forward(from: 0.0);
   }
 
   late int _selectedIndex;
@@ -370,7 +438,6 @@ class _MyHomePageState extends State<MyHomePage>
                 return Searchlistinfo(
                   input_text_Controller: input_text_Controller,
                   onPlaylistTap: change_main_status,
-                  animationController: animationController,
                 );
               },
               transitionsBuilder: (context, animation, secondaryAnimation,
@@ -391,15 +458,15 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void dispose() {
+    trayManager.removeListener(this);
+
     _focusNode.dispose();
     _timer?.cancel();
     _focusNode2.dispose();
     _pageController.dispose(); // 销毁 PageController
-    try {
-      animationController.dispose();
-    } catch (e) {
+    try {} catch (e) {
       // print(e);
-    } 
+    }
     super.dispose();
   }
 
@@ -422,6 +489,11 @@ class _MyHomePageState extends State<MyHomePage>
     }
     if (_Mainpage) {
       if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
+        if (is_windows) {
+          windowManager.hide();
+          windowManager.setSkipTaskbar(true);
+          return;
+        }
         if (kDebugMode) {
           print("exit(0)");
         } else {
@@ -429,7 +501,7 @@ class _MyHomePageState extends State<MyHomePage>
         }
       } else {
         xuan_toast(
-          msg: "再按一次退出",
+          msg: is_windows ? "再按一次以最小化" : "再按一次退出",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           timeInSecForIosWeb: 1,
@@ -474,6 +546,94 @@ class _MyHomePageState extends State<MyHomePage>
         // 横屏逻辑
         print("当前为横屏模式");
       }
+      Widget sized_box = SizedBox(
+          width: 197,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 10,
+              ),
+              is_windows
+                  ? Listener(
+                      onPointerDown: (event) {
+                        if (event.kind == PointerDeviceKind.mouse &&
+                            event.buttons == kSecondaryMouseButton) {
+                          windowManager.hide();
+                          windowManager.setSkipTaskbar(true);
+                        }
+                      },
+                      child: Tooltip(
+                        message: '右键以最小化',
+                        child: Text(
+                          'Listen1',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                      ))
+                  : Text(
+                      'Listen1',
+                      style: TextStyle(fontSize: 24),
+                    ),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: '请输入歌曲名，歌手或专辑',
+                  border: InputBorder.none,
+                ),
+                controller: input_text_Controller,
+                readOnly: true,
+                onTap: () async {
+                  clean_top_context();
+                  await Navigator.of(top_context.last).push(
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) {
+                        top_context.add(context);
+                        return Searchlistinfo(
+                          input_text_Controller: input_text_Controller,
+                          onPlaylistTap: change_main_status,
+                        );
+                      },
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) =>
+                              search_Animation(
+                                  animation: animation,
+                                  secondaryAnimation: secondaryAnimation,
+                                  child: child,
+                                  axis: Axis.vertical),
+                      transitionDuration:
+                          Duration(milliseconds: 300), // 延长动画时间到 1000ms
+                    ),
+                  );
+                },
+              ),
+              Expanded(
+                  child: MyPlaylist(
+                onPlaylistTap: change_main_status,
+              )),
+              IconButton(
+                icon: Icon(Icons.settings),
+                onPressed: () {
+                  clean_top_context();
+                  Navigator.push(
+                    top_context.last,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) {
+                        top_context.add(context);
+                        return SettingsPage();
+                      },
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) =>
+                              SharedAxisTransition(
+                        animation: animation,
+                        secondaryAnimation: secondaryAnimation,
+                        transitionType: SharedAxisTransitionType.horizontal,
+                        child: child,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ));
+
       return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, result) {
@@ -482,84 +642,7 @@ class _MyHomePageState extends State<MyHomePage>
           child: global_horizon
               ? Scaffold(
                   body: Row(children: [
-                    SizedBox(
-                        width: 197,
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              height: 10,
-                            ),
-                            Text(
-                              'Listen1',
-                              style: TextStyle(fontSize: 24),
-                            ),
-                            TextField(
-                              decoration: InputDecoration(
-                                labelText: '请输入歌曲名，歌手或专辑',
-                                border: InputBorder.none,
-                              ),
-                              controller: input_text_Controller,
-                              readOnly: true,
-                              onTap: () async {
-                                clean_top_context();
-                                await Navigator.of(top_context.last).push(
-                                  PageRouteBuilder(
-                                    pageBuilder: (context, animation,
-                                        secondaryAnimation) {
-                                      top_context.add(context);
-                                      return Searchlistinfo(
-                                        input_text_Controller:
-                                            input_text_Controller,
-                                        onPlaylistTap: change_main_status,
-                                        animationController:
-                                            animationController,
-                                      );
-                                    },
-                                    transitionsBuilder: (context, animation,
-                                            secondaryAnimation, child) =>
-                                        search_Animation(
-                                            animation: animation,
-                                            secondaryAnimation:
-                                                secondaryAnimation,
-                                            child: child,
-                                            axis: Axis.vertical),
-                                    transitionDuration: Duration(
-                                        milliseconds: 300), // 延长动画时间到 1000ms
-                                  ),
-                                );
-                              },
-                            ),
-                            Expanded(
-                                child: MyPlaylist(
-                              onPlaylistTap: change_main_status,
-                            )),
-                            IconButton(
-                              icon: Icon(Icons.settings),
-                              onPressed: () {
-                                clean_top_context();
-                                Navigator.push(
-                                  top_context.last,
-                                  PageRouteBuilder(
-                                    pageBuilder: (context, animation,
-                                        secondaryAnimation) {
-                                      top_context.add(context);
-                                      return SettingsPage();
-                                    },
-                                    transitionsBuilder: (context, animation,
-                                            secondaryAnimation, child) =>
-                                        SharedAxisTransition(
-                                      animation: animation,
-                                      secondaryAnimation: secondaryAnimation,
-                                      transitionType:
-                                          SharedAxisTransitionType.horizontal,
-                                      child: child,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        )),
+                    is_windows ? DragToMoveArea(child: sized_box) : sized_box,
                     RotatedBox(
                         quarterTurns: -1,
                         child: Divider(
@@ -568,6 +651,13 @@ class _MyHomePageState extends State<MyHomePage>
                           color: Colors.grey[300],
                         )),
                     Expanded(
+                        child: Listener(
+                      onPointerDown: (event) {
+                        if (event.kind == PointerDeviceKind.mouse &&
+                            event.buttons == kSecondaryMouseButton) {
+                          _pop();
+                        }
+                      },
                       child: Navigator(
                         initialRoute: '/',
                         onGenerateRoute: (RouteSettings settings) {
@@ -723,20 +813,12 @@ class _MyHomePageState extends State<MyHomePage>
                           return MaterialPageRoute(builder: builder);
                         },
                       ),
-                    ),
+                    )),
                   ]),
                   bottomNavigationBar: Play(
                     onPlaylistTap: change_main_status,
                     horizon: true,
                   ),
-                  floatingActionButton: is_windows
-                      ? FloatingActionButton(
-                          onPressed: () {
-                            _pop();
-                          },
-                          child: Icon(Icons.arrow_back),
-                        )
-                      : null,
                 )
               : Scaffold(
                   body: Navigator(
@@ -751,108 +833,88 @@ class _MyHomePageState extends State<MyHomePage>
                             return Scaffold(
                                 appBar: _Mainpage
                                     ? AppBar(
-                                        title: AnimatedBuilder(
-                                          animation: animationController,
-                                          builder: (context_app_bar, child) {
-                                            return SizeTransition(
-                                              sizeFactor: animationController,
-                                              axis: Axis.horizontal,
-                                              axisAlignment: -1,
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Text('Listen1'),
-                                                  SizedBox(width: 10),
-                                                  Expanded(
-                                                    child: TextField(
-                                                      decoration:
-                                                          InputDecoration(
-                                                        hintText:
-                                                            '请输入歌曲名，歌手或专辑',
-                                                        border:
-                                                            InputBorder.none,
-                                                      ),
-                                                      controller:
-                                                          input_text_Controller,
-                                                      readOnly: true,
-                                                      onTap: () async {
-                                                        clean_top_context();
-                                                        await Navigator.of(
-                                                                top_context
-                                                                    .last)
-                                                            .push(
-                                                          PageRouteBuilder(
-                                                            pageBuilder: (context,
-                                                                animation,
-                                                                secondaryAnimation) {
-                                                              top_context
-                                                                  .add(context);
-                                                              return Searchlistinfo(
-                                                                input_text_Controller:
-                                                                    input_text_Controller,
-                                                                onPlaylistTap:
-                                                                    change_main_status,
-                                                                animationController:
-                                                                    animationController,
-                                                              );
-                                                            },
-                                                            transitionsBuilder: (context,
-                                                                    animation,
-                                                                    secondaryAnimation,
-                                                                    child) =>
-                                                                search_Animation(
-                                                                    animation:
-                                                                        animation,
-                                                                    secondaryAnimation:
-                                                                        secondaryAnimation,
-                                                                    child:
-                                                                        child,
-                                                                    axis: Axis
-                                                                        .vertical),
-                                                            transitionDuration:
-                                                                Duration(
-                                                                    milliseconds:
-                                                                        300), // 延长动画时间到 1000ms
-                                                          ),
+                                        title: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text('Listen1'),
+                                            SizedBox(width: 10),
+                                            Expanded(
+                                              child: TextField(
+                                                decoration: InputDecoration(
+                                                  hintText: '请输入歌曲名，歌手或专辑',
+                                                  border: InputBorder.none,
+                                                ),
+                                                controller:
+                                                    input_text_Controller,
+                                                readOnly: true,
+                                                onTap: () async {
+                                                  clean_top_context();
+                                                  await Navigator.of(
+                                                          top_context.last)
+                                                      .push(
+                                                    PageRouteBuilder(
+                                                      pageBuilder: (context,
+                                                          animation,
+                                                          secondaryAnimation) {
+                                                        top_context
+                                                            .add(context);
+                                                        return Searchlistinfo(
+                                                          input_text_Controller:
+                                                              input_text_Controller,
+                                                          onPlaylistTap:
+                                                              change_main_status,
                                                         );
                                                       },
+                                                      transitionsBuilder: (context,
+                                                              animation,
+                                                              secondaryAnimation,
+                                                              child) =>
+                                                          search_Animation(
+                                                              animation:
+                                                                  animation,
+                                                              secondaryAnimation:
+                                                                  secondaryAnimation,
+                                                              child: child,
+                                                              axis: Axis
+                                                                  .vertical),
+                                                      transitionDuration: Duration(
+                                                          milliseconds:
+                                                              300), // 延长动画时间到 1000ms
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: Icon(Icons.settings),
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  main_context,
+                                                  PageRouteBuilder(
+                                                    pageBuilder: (context,
+                                                        animation,
+                                                        secondaryAnimation) {
+                                                      return SettingsPage();
+                                                    },
+                                                    transitionsBuilder: (context,
+                                                            animation,
+                                                            secondaryAnimation,
+                                                            child) =>
+                                                        SharedAxisTransition(
+                                                      animation: animation,
+                                                      secondaryAnimation:
+                                                          secondaryAnimation,
+                                                      transitionType:
+                                                          SharedAxisTransitionType
+                                                              .horizontal,
+                                                      child: child,
                                                     ),
                                                   ),
-                                                  IconButton(
-                                                    icon: Icon(Icons.settings),
-                                                    onPressed: () {
-                                                      Navigator.push(
-                                                        main_context,
-                                                        PageRouteBuilder(
-                                                          pageBuilder: (context,
-                                                              animation,
-                                                              secondaryAnimation) {
-                                                            return SettingsPage();
-                                                          },
-                                                          transitionsBuilder: (context,
-                                                                  animation,
-                                                                  secondaryAnimation,
-                                                                  child) =>
-                                                              SharedAxisTransition(
-                                                            animation:
-                                                                animation,
-                                                            secondaryAnimation:
-                                                                secondaryAnimation,
-                                                            transitionType:
-                                                                SharedAxisTransitionType
-                                                                    .horizontal,
-                                                            child: child,
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
+                                                );
+                                              },
+                                            ),
+                                          ],
                                         ),
                                       )
                                     : null,
@@ -968,14 +1030,6 @@ class _MyHomePageState extends State<MyHomePage>
                     },
                   ),
                   bottomNavigationBar: Play(onPlaylistTap: change_main_status),
-                  floatingActionButton: is_windows
-                      ? FloatingActionButton(
-                          onPressed: () {
-                            _pop();
-                          },
-                          child: Icon(Icons.arrow_back),
-                        )
-                      : null,
                 ));
     });
   }

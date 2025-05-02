@@ -1529,11 +1529,10 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
 class Searchlistinfo extends StatefulWidget {
   TextEditingController input_text_Controller;
   final Function(String) onPlaylistTap;
-  final AnimationController animationController;
-  Searchlistinfo(
-      {required this.input_text_Controller,
-      required this.onPlaylistTap,
-      required this.animationController});
+  Searchlistinfo({
+    required this.input_text_Controller,
+    required this.onPlaylistTap,
+  });
 
   @override
   _SearchlistinfoState createState() => _SearchlistinfoState();
@@ -1652,47 +1651,36 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: AnimatedBuilder(
-          animation: widget.animationController,
-          builder: (context_app_bar, child) {
-            return SizeTransition(
-              sizeFactor: widget.animationController,
-              axis: Axis.horizontal,
-              axisAlignment: -1,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: '请输入歌曲名，歌手或专辑',
-                        border: InputBorder.none,
-                      ),
-                      controller: widget.input_text_Controller,
-                      autofocus: true,
-                    ),
-                  ),
-                  DropdownButton<String>(
-                    value: selectedOption,
-                    icon: Icon(Icons.arrow_downward),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedOption = newValue!;
-                        selectedOptionNotifier.value = newValue;
-                      });
-                    },
-                    items:
-                        _options.map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                ],
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: '请输入歌曲名，歌手或专辑',
+                  border: InputBorder.none,
+                ),
+                controller: widget.input_text_Controller,
+                autofocus: true,
               ),
-            );
-          },
+            ),
+            DropdownButton<String>(
+              value: selectedOption,
+              icon: Icon(Icons.arrow_downward),
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedOption = newValue!;
+                  selectedOptionNotifier.value = newValue;
+                });
+              },
+              items: _options.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+          ],
         ),
       ),
       body: Center(

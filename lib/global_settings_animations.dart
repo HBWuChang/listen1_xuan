@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:listen1_xuan/play.dart';
 import 'package:loading_animations/loading_animations.dart';
 import 'package:animations/animations.dart';
 import 'package:universal_io/io.dart' as universal_io;
@@ -6,7 +7,12 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:hotkey_manager/hotkey_manager.dart';
+import 'settings.dart';
+import 'play.dart';
+
 var My_playlist_loaddata;
+
 Future<Directory> xuan_getdataDirectory() async {
   var tempDir = is_windows
       ? await getDownloadsDirectory()
@@ -91,6 +97,159 @@ dynamic xuan_toast({
     webPosition: webPosition,
     webShowClose: webShowClose,
   );
+}
+
+void init_hotkeys() async {
+  var settings = await settings_getsettings();
+  var hotskeys = settings["hotkeys"];
+  if (hotskeys == null) {
+    hotskeys = {
+      "enable": false,
+      "play_pause": null,
+      "next": null,
+      "previous": null,
+    };
+    settings["hotkeys"] = hotskeys;
+    await settings_setsettings(settings);
+  }
+  enable_hotkey = hotskeys["enable"];
+  if (hotskeys["play_pause"] != null) {
+    set_hotkey(null, HotKey.fromJson(hotskeys["play_pause"]), "play_pause");
+  }
+  if (hotskeys["next"] != null) {
+    set_hotkey(null, HotKey.fromJson(hotskeys["next"]), "next");
+  }
+  if (hotskeys["previous"] != null) {
+    set_hotkey(null, HotKey.fromJson(hotskeys["previous"]), "previous");
+  }
+}
+
+Future<void> set_hotkey(
+  s_hotkey,
+  hotkey,
+  name,
+) async {
+  if (s_hotkey != null) {
+    await hotKeyManager.unregister(s_hotkey);
+  }
+  if (hotkey != null) {
+    switch (name) {
+      case "play_pause":
+        await hotKeyManager.register(
+          hotkey,
+          keyDownHandler: (hotKey) async {
+            // 处理播放/暂停的逻辑
+            if (enable_hotkey) global_play_or_pause();
+          },
+        );
+        break;
+      case "next":
+        await hotKeyManager.register(
+          hotkey,
+          keyDownHandler: (hotKey) async {
+            // 处理下一首的逻辑
+            if (enable_hotkey) global_skipToNext();
+          },
+        );
+        break;
+      case "previous":
+        await hotKeyManager.register(
+          hotkey,
+          keyDownHandler: (hotKey) async {
+            // 处理上一首的逻辑
+            if (enable_hotkey) global_skipToPrevious();
+          },
+        );
+        break;
+    }
+  }
+}
+
+var enable_hotkey_setstate;
+var enable_hotkey;
+List<Widget> create_hotkey_btns(context, _msg) {
+  if (!is_windows) return [];
+  var s_hotkeys = [
+    {
+      "name": "播放/暂停",
+      "hotkey": "play_pause",
+    },
+    {
+      "name": "下一首",
+      "hotkey": "next",
+    },
+    {
+      "name": "上一首",
+      "hotkey": "previous",
+    },
+  ];
+  return <Widget>[
+    StatefulBuilder(
+      builder: (BuildContext context, StateSetter setState) {
+        enable_hotkey_setstate = setState;
+        return SwitchListTile(
+          title: const Text('启用热键'),
+          value: enable_hotkey,
+          onChanged: (bool value) async {
+            enable_hotkey = value;
+            var settings = await settings_getsettings();
+            var hotkeys = settings['hotkeys'];
+            hotkeys['enable'] = value;
+            settings['hotkeys'] = hotkeys;
+            await settings_setsettings(settings);
+            try {
+              setState(() {
+                enable_hotkey = value;
+              });
+            } catch (e) {}
+          },
+        );
+      },
+    ),
+    ...s_hotkeys.map((_hotkey) {
+      return TextButton(
+          onPressed: () async {
+            var settings = await settings_getsettings();
+            var hotkeys = settings['hotkeys'];
+            var hotkeyData = hotkeys[_hotkey['hotkey']];
+            var hotkey =
+                hotkeyData == null ? null : HotKey.fromJson(hotkeyData);
+            var s_hotkey = hotkey;
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('设置${_hotkey['name']}热键'),
+                  content: HotKeyRecorder(
+                    initalHotKey: hotkey,
+                    onHotKeyRecorded: (hotKey) {
+                      print(hotKey.toJson());
+                      hotkey = hotKey;
+                    },
+                  ),
+                  actions: <Widget>[
+                    TextButton(
+                      child: const Text('确定'),
+                      onPressed: () async {
+                        if (hotkey == null) {
+                          _msg('请设置热键', 1.0);
+                          return;
+                        }
+                        hotkeys[_hotkey['hotkey']] = hotkey!.toJson();
+                        settings['hotkeys'] = hotkeys;
+                        await settings_setsettings(settings);
+                        await set_hotkey(s_hotkey, hotkey, _hotkey['hotkey']);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+          child: Text("设置 " + (_hotkey['name'] as String) + " 热键"));
+    }).toList()
+  ];
 }
 
 Widget global_loading_anime = LoadingBouncingGrid.square(
