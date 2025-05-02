@@ -36,9 +36,9 @@ DisableProgramGroupPage=yes
 ; Remove the following line to run in administrative install mode (install for all users).
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputDir=E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner
+OutputDir=D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner
 OutputBaseFilename=listen1_xuan
-SetupIconFile=E:\HB_WuChang\code\flutter\listen1_xuan\assets\images\flutter_logo.ico
+SetupIconFile=D:\a\listen1_xuan\listen1_xuan\assets\images\flutter_logo.ico
 SolidCompression=yes
 WizardStyle=modern
 
@@ -49,21 +49,21 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\audioplayers_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\connectivity_plus_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\flutter_windows.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\hotkey_manager_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\libmpv-2.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\media_kit_libs_windows_audio_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\permission_handler_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\screen_retriever_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\tray_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\url_launcher_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\webview_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\window_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\HB_WuChang\code\flutter\listen1_xuan\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\audioplayers_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\connectivity_plus_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\flutter_windows.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\hotkey_manager_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\libmpv-2.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\media_kit_libs_windows_audio_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\permission_handler_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\screen_retriever_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\tray_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\url_launcher_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\webview_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\window_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\a\listen1_xuan\listen1_xuan\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Registry]
