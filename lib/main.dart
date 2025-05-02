@@ -340,11 +340,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
       windowManager.setAlwaysOnTop(false);
     } else if (menuItem.key == 'exit_app') {
       // do something
-      if (kDebugMode) {
-        print('exit(0)');
-      } else {
-        exit(0);
-      }
+      exit(0);
     }
   }
 
@@ -656,6 +652,11 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                         if (event.kind == PointerDeviceKind.mouse &&
                             event.buttons == kSecondaryMouseButton) {
                           _pop();
+                        }
+                        if (event.kind == PointerDeviceKind.mouse &&
+                            event.buttons == kMiddleMouseButton) {
+                          windowManager.hide();
+                          windowManager.setSkipTaskbar(true);
                         }
                       },
                       child: Navigator(

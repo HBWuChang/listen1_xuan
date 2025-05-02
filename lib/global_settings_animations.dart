@@ -9,7 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'settings.dart';
-import 'play.dart';
+import 'package:window_manager/window_manager.dart';
 
 var My_playlist_loaddata;
 
@@ -35,10 +35,12 @@ Future<Directory> xuan_getdataDirectory() async {
   return tempDir;
 }
 
-Future<dynamic> xuan_getdownloadDirectory(
+Future<dynamic> xuan_getdownloadDirectory({
   String? path,
-) async {
-  var tempDir = await getDownloadsDirectory();
+}) async {
+  var tempDir = is_windows
+      ? await getDownloadsDirectory()
+      : Directory('/storage/emulated/0/Download');
   if (tempDir == null)
     tempDir = await getApplicationDocumentsDirectory();
   else {
@@ -108,6 +110,7 @@ void init_hotkeys() async {
       "play_pause": null,
       "next": null,
       "previous": null,
+      "show": null,
     };
     settings["hotkeys"] = hotskeys;
     await settings_setsettings(settings);
@@ -121,6 +124,9 @@ void init_hotkeys() async {
   }
   if (hotskeys["previous"] != null) {
     set_hotkey(null, HotKey.fromJson(hotskeys["previous"]), "previous");
+  }
+  if (hotskeys["show"] != null) {
+    set_hotkey(null, HotKey.fromJson(hotskeys["show"]), "show");
   }
 }
 
@@ -161,6 +167,20 @@ Future<void> set_hotkey(
           },
         );
         break;
+      case "show":
+        await hotKeyManager.register(
+          hotkey,
+          keyDownHandler: (hotKey) async {
+            // 处理显示的逻辑
+            if (enable_hotkey) {
+              windowManager.show();
+              windowManager.setSkipTaskbar(false);
+              windowManager.setAlwaysOnTop(true);
+              windowManager.setAlwaysOnTop(false);
+            }
+          },
+        );
+        break;
     }
   }
 }
@@ -181,6 +201,10 @@ List<Widget> create_hotkey_btns(context, _msg) {
     {
       "name": "上一首",
       "hotkey": "previous",
+    },
+    {
+      "name": "显示",
+      "hotkey": "show",
     },
   ];
   return <Widget>[

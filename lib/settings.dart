@@ -69,7 +69,7 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
   if (await Permission.storage.request().isGranted) {
     try {
       // 确保路径存在
-      final outputPath = await xuan_getdownloadDirectory('settings.json');
+      final outputPath = await xuan_getdownloadDirectory(path:'settings.json');
       final file = File(outputPath);
       // 将设置写入 JSON 文件
       await file.writeAsString(jsonEncode(settings));
@@ -681,14 +681,14 @@ class _SettingsPageState extends State<SettingsPage> {
     // 确保路径存在
     switch (SysInfo.kernelArchitecture.name) {
       case "ARM64":
-        apkfile_name = await xuan_getdownloadDirectory('arm64-v8a-release.apk');
+        apkfile_name = await xuan_getdownloadDirectory(path: 'app-arm64-v8a-release.apk');
       case "ARM":
         apkfile_name =
-            await xuan_getdownloadDirectory('armeabi-v7a-release.apk');
+            await xuan_getdownloadDirectory(path:'app-armeabi-v7a-release.apk');
       case "X86_64":
-        apkfile_name = await xuan_getdownloadDirectory('x86_64-release.apk');
+        apkfile_name = await xuan_getdownloadDirectory(path:'app-x86_64-release.apk');
       default:
-        apkfile_name = await xuan_getdownloadDirectory('app-release.apk');
+        apkfile_name = await xuan_getdownloadDirectory(path:'app-release.apk');
     }
   }
 
@@ -1058,10 +1058,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     ElevatedButton(
                       onPressed: () async {
                         try {
-                          final tempPath =
-                              '/storage/emulated/0/Download/Listen1';
+                          final tempPath =xuan_getdownloadDirectory();
 
                           final apkFile = File(apkfile_name);
+                          print('apkFile: $apkFile');
                           if (await apkFile.exists()) {
                             try {
                               InstallPlugin.installApk(apkfile_name)
