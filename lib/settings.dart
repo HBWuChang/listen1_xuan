@@ -1060,7 +1060,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ElevatedButton(
                       onPressed: () async {
                         try {
-                          final tempPath = await xuan_getdownloadDirectory();
+                          final tempPath = (await xuan_getdownloadDirectory()).path;
 
                           final apkFile = File(apkfile_name);
                           print('apkFile: $apkFile');
