@@ -14,9 +14,8 @@ import 'package:window_manager/window_manager.dart';
 var My_playlist_loaddata;
 
 Future<Directory> xuan_getdataDirectory() async {
-  var tempDir = is_windows
-      ? await getDownloadsDirectory()
-      : await getApplicationDocumentsDirectory();
+  if (!is_windows) return await getApplicationDocumentsDirectory();
+  var tempDir = await getDownloadsDirectory();
   if (tempDir == null)
     tempDir = await getApplicationDocumentsDirectory();
   else {
