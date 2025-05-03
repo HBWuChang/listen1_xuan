@@ -1667,7 +1667,7 @@ class Github {
       'client_secret': clientSecret,
       'code': code,
     };
-    final response = await dio_with_cookie_manager.post(
+    final response = await dio_with_ProxyAdapter.post(
       url,
       queryParameters: params,
     );
@@ -1733,7 +1733,7 @@ class Github {
     if (accessToken == null) {
       status = 0;
     } else {
-      final response = await dio_with_cookie_manager.get('$API_URL/user',
+      final response = await dio_with_ProxyAdapter.get('$API_URL/user',
           options: Options(headers: {
             'Authorization': 'token $accessToken',
           }));
@@ -1799,7 +1799,7 @@ class Github {
       final url = gistFiles['listen1_backup.json']['raw_url'];
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('githubOauthAccessKey');
-      final response = await dio_with_cookie_manager.get(url,
+      final response = await dio_with_ProxyAdapter.get(url,
           options: Options(headers: {
             'Authorization': 'token $accessToken',
           }));
@@ -1810,7 +1810,7 @@ class Github {
   static Future<List<dynamic>> listExistBackup() async {
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    final response = await dio_with_cookie_manager.get('$API_URL/gists',
+    final response = await dio_with_ProxyAdapter.get('$API_URL/gists',
         options: Options(headers: {
           'Authorization': 'token $accessToken',
         }));
@@ -1834,7 +1834,7 @@ class Github {
     }
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    await dio_with_cookie_manager.request(
+    await dio_with_ProxyAdapter.request(
       url,
       options: Options(method: method, headers: {
         'Authorization': 'token $accessToken',
@@ -1852,7 +1852,7 @@ class Github {
       String gistId) async {
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    final response = await dio_with_cookie_manager.get('$API_URL/gists/$gistId',
+    final response = await dio_with_ProxyAdapter.get('$API_URL/gists/$gistId',
         options: Options(headers: {
           'Authorization': 'token $accessToken',
         }));

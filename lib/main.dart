@@ -32,6 +32,7 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:native_dio_adapter/native_dio_adapter.dart';
 
 final dio_with_cookie_manager = Dio();
+final dio_with_ProxyAdapter = Dio();
 List<BuildContext> top_context = List.empty(growable: true);
 
 class MyHttpOverrides extends HttpOverrides {
@@ -155,11 +156,11 @@ void main() async {
     await cookieDir.create(recursive: true);
   }
   if (!is_windows)
-    dio_with_cookie_manager.httpClientAdapter = NativeAdapter();
+    dio_with_ProxyAdapter.httpClientAdapter = NativeAdapter();
   else {
     var proxyaddr = await get_windows_proxy_addr();
     if (proxyaddr != "") {
-      dio_with_cookie_manager.httpClientAdapter = IOHttpClientAdapter(
+      dio_with_ProxyAdapter.httpClientAdapter = IOHttpClientAdapter(
         createHttpClient: () {
           final client = HttpClient();
           client.findProxy = (uri) {
