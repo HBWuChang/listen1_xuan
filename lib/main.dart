@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -28,6 +29,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:flutter/gestures.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:native_dio_adapter/native_dio_adapter.dart';
 
 final dio_with_cookie_manager = Dio();
 List<BuildContext> top_context = List.empty(growable: true);
@@ -143,6 +145,7 @@ void main() async {
   if (useHttpOverrides) {
     HttpOverrides.global = MyHttpOverrides();
   }
+
   final appDocDir = await getApplicationDocumentsDirectory();
   final cookiePath = is_windows
       ? '${appDocDir.path}\\.cookies\\'
@@ -151,12 +154,31 @@ void main() async {
   if (!await cookieDir.exists()) {
     await cookieDir.create(recursive: true);
   }
+  if (!is_windows)
+    dio_with_cookie_manager.httpClientAdapter = NativeAdapter();
+  else {
+    var proxyaddr = await get_windows_proxy_addr();
+    if (proxyaddr != "") {
+      dio_with_cookie_manager.httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () {
+          final client = HttpClient();
+          client.findProxy = (uri) {
+            // 将请求代理至 localhost:8888。
+            // 请注意，代理会在你正在运行应用的设备上生效，而不是在宿主平台生效。
+            return 'PROXY $proxyaddr';
+          };
+          return client;
+        },
+      );
+    }
+  }
   // 创建 PersistCookieJar 实例
   final cookieJar =
       PersistCookieJar(storage: FileStorage(cookiePath), ignoreExpires: true);
 
   // 将 PersistCookieJar 添加到 Dio 的拦截器中
   dio_with_cookie_manager.interceptors.add(CookieManager(cookieJar));
+
   runApp(MyApp());
 }
 

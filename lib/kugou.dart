@@ -904,24 +904,29 @@ class Kugou {
     final target_url = 'https://m.kugou.com/plist/index&json=true&page=$page';
     return {
       'success': (fn) async {
-        final response = await dio_with_cookie_manager.get(target_url);
-        final data = jsonDecode(response.data);
-        // const total = data.plist.total;
-        final result = data['plist']['list']['info']
-            .map((item) => ({
-                  'cover_img_url': item['imgurl'] != null
-                      ? item['imgurl']
-                          .replaceAll('{size}', '400') // 使用 replaceAll
-                      : '',
-                  'title': item['specialname'],
-                  'id': 'kgplaylist_${item['specialid']}',
-                  'source_url':
-                      'https://www.kugou.com/yy/special/single/${item['specialid']}.html',
-                }))
-            .toList();
-        return fn(
-          result,
-        );
+        try {
+          final response = await dio_with_cookie_manager.get(target_url);
+          final data = jsonDecode(response.data);
+          // const total = data.plist.total;
+          final result = data['plist']['list']['info']
+              .map((item) => ({
+                    'cover_img_url': item['imgurl'] != null
+                        ? item['imgurl']
+                            .replaceAll('{size}', '400') // 使用 replaceAll
+                        : '',
+                    'title': item['specialname'],
+                    'id': 'kgplaylist_${item['specialid']}',
+                    'source_url':
+                        'https://www.kugou.com/yy/special/single/${item['specialid']}.html',
+                  }))
+              .toList();
+          return fn(
+            result,
+          );
+        } catch (e) {
+          print('Error fetching playlist: $e');
+          return fn([]); // 返回空列表或处理错误
+        }
       },
     };
   }

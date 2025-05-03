@@ -12,6 +12,16 @@ import 'settings.dart';
 import 'package:window_manager/window_manager.dart';
 
 var My_playlist_loaddata;
+Future<String> get_windows_proxy_addr() async {
+  var settings = await settings_getsettings();
+  var proxy = settings["proxy"];
+  if (proxy == null) {
+    settings["proxy"] = "";
+    await settings_setsettings(settings);
+    return "";
+  }
+  return proxy;
+}
 
 Future<Directory> xuan_getdataDirectory() async {
   if (!is_windows) return await getApplicationDocumentsDirectory();
