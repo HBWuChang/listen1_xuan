@@ -1771,7 +1771,6 @@ class Github {
   ) async {
     if (!gistFiles['listen1_backup.json']['truncated']) {
       final jsonString = gistFiles['listen1_backup.json']['content'];
-      // callback(json.decode(jsonString));
       return json.decode(jsonString);
     } else {
       final url = gistFiles['listen1_backup.json']['raw_url'];
@@ -1781,8 +1780,7 @@ class Github {
           options: Options(headers: {
             'Authorization': 'token $accessToken',
           }));
-      // callback(response.data);
-      return response.data;
+      return json.decode(response.data);
     }
   }
 
