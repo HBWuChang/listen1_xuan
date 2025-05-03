@@ -1637,6 +1637,7 @@ class Github {
   static String username = '';
 
   static Future<void> handleCallback(String code, BuildContext context) async {
+    _msg('正在向Github请求信息', context, 1.0);
     final url = '$OAUTH_URL/access_token';
     final params = {
       'client_id': clientId,
