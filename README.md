@@ -1,7 +1,7 @@
 # listen1_xuan
 
 本软件为flutter重写的Listen1
--
+-https://www.bilibili.com/video/BV133VHzaEPt/
 flutter version 3.27.4
 # 第一次使用
 - 请在设置页面登录各平台账号以确保相应平台可用

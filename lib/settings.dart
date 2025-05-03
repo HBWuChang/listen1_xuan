@@ -380,7 +380,7 @@ class _login_webviewState extends State<login_webview> {
         }
         print(url);
         final code = url?.split('code=')[1];
-        Github.handleCallback(code ?? '', context);
+        await Github.handleCallback(code ?? '', context);
         break;
       default:
         if (is_windows) {
