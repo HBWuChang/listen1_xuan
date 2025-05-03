@@ -68,7 +68,7 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
     return settings;
   }
   // 申请所有文件访问权限
-  if (await Permission.storage.request().isGranted) {
+  if (await Permission.manageExternalStorage.request().isGranted) {
     try {
       // 确保路径存在
       final outputPath = await xuan_getdownloadDirectory(path: 'settings.json');
@@ -153,7 +153,7 @@ Future<void> importSettingsFromFile(
     return;
   }
   // 申请所有文件访问权限
-  if (await Permission.storage.request().isGranted) {
+  if (await Permission.manageExternalStorage.request().isGranted) {
     try {
       // 弹出系统文件选择器选择文件
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -1087,7 +1087,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                           My_playlist_loaddata();
                                         } catch (e) {
                                           xuan_toast(
-                                            msg: '导入成功$e',
+                                            msg: '导入失败$e',
                                           );
                                         }
                                       },
