@@ -1714,25 +1714,31 @@ class Github {
 
   static Future<void> handleCallback(String code, BuildContext context) async {
     _msg('正在向Github请求信息', context, 1.0);
-    final url = '$OAUTH_URL/access_token';
-    final params = {
-      'client_id': clientId,
-      'client_secret': clientSecret,
-      'code': code,
-    };
-    final response = await dio_with_ProxyAdapter.post(
-      url,
-      queryParameters: params,
-      options: Options(
-        headers: {
-          'Accept': 'application/json',
-        },
-      ),
-    );
-    final accessToken = response.data['access_token'];
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setString('githubOauthAccessKey', accessToken);
-    _msg('设置成功', context, 1.0);
+    try {
+      final url = '$OAUTH_URL/access_token';
+      final params = {
+        'client_id': clientId,
+        'client_secret': clientSecret,
+        'code': code,
+      };
+      final response = await dio_with_ProxyAdapter.post(
+        url,
+        queryParameters: params,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      final accessToken = response.data['access_token'];
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setString('githubOauthAccessKey', accessToken);
+
+      _msg('设置成功', context, 1.0);
+    } catch (e) {
+      Clipboard.setData(ClipboardData(text: e.toString()));
+      _msg('设置失败，错误信息已复制到剪切板$e', context, 1.0);
+    }
   }
 
   static void openAuthUrl(BuildContext context) {
