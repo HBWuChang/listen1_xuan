@@ -39,7 +39,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
       - name: Debug Get Latest Release
-        run: echo "Release Upload URL: ${{ steps.get_latest_release.outputs.upload_url }}"
+        run: echo "${{ steps.get_latest_release.outputs.upload_url }}"
 
       # # 删除现有的资产（如果存在）
       # - name: Delete Existing Asset
