@@ -101,3 +101,24 @@ jobs:
         with:
           name: app-release.apk
           path: build/app/outputs/flutter-apk/app-release.apk
+      # 从 pubspec.yaml 提取版本号
+      - name: Extract Version from pubspec.yaml
+        id: extract_version
+        run: |
+          $version = (Select-String -Path pubspec.yaml -Pattern '^version:' | ForEach-Object { $_.Line -replace 'version:\s*', '' }).Trim()
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+        shell: pwsh
+      - name: Debug Version
+        run: echo "${{ env.VERSION }}"
+      # 上传新的资产到最新 Release
+      - name: Upload New Asset to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-x86_64-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
