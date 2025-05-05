@@ -553,9 +553,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
         show_filter = true;
       } else {
         _selectedIndex = 0;
-        SystemChrome.setEnabledSystemUIMode(
-          SystemUiMode.edgeToEdge,
-        );
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
         _pageController = PreloadPageController(
             initialPage: _selectedIndex); // 初始化 PageController
       }
