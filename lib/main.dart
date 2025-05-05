@@ -553,7 +553,9 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
         show_filter = true;
       } else {
         _selectedIndex = 0;
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+        SystemChrome.setEnabledSystemUIMode(
+          SystemUiMode.edgeToEdge,
+        );
         _pageController = PreloadPageController(
             initialPage: _selectedIndex); // 初始化 PageController
       }
@@ -1057,7 +1059,11 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                       return MaterialPageRoute(builder: builder);
                     },
                   ),
-                  bottomNavigationBar: Play(onPlaylistTap: change_main_status),
+                  bottomNavigationBar: Padding(
+                    padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).padding.bottom),
+                    child: Play(onPlaylistTap: change_main_status),
+                  ),
                 ));
     });
   }
