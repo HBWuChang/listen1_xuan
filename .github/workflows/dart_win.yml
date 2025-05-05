@@ -34,7 +34,6 @@ jobs:
       # 上传新的资产到最新 Release
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2
-        if: github.ref_type == 'tag'
         with:
           files: build/windows-build-artifact.zip
         env:
