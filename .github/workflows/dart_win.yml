@@ -31,19 +31,10 @@ jobs:
         run: |
           powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact.zip
 
-      # 获取最新的 Release 信息
-      - name: Get Latest Release
-        id: get_latest_release
-        uses: pozetroninc/github-action-get-latest-release@master
-        with:
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-      - name: Debug Get Latest Release
-        run: echo "${{ steps.get_latest_release.outputs.upload_url }}"
-
       # 上传新的资产到最新 Release
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
         with:
           files: build/windows-build-artifact.zip
         env:
