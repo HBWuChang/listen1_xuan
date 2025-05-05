@@ -68,7 +68,8 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
     return settings;
   }
   // 申请所有文件访问权限
-  if (await Permission.manageExternalStorage.request().isGranted) {
+  if (await Permission.manageExternalStorage.request().isGranted ||
+      await Permission.storage.request().isGranted) {
     try {
       // 确保路径存在
       final outputPath = await xuan_getdownloadDirectory(path: 'settings.json');
@@ -153,7 +154,8 @@ Future<void> importSettingsFromFile(
     return;
   }
   // 申请所有文件访问权限
-  if (await Permission.manageExternalStorage.request().isGranted) {
+  if (await Permission.manageExternalStorage.request().isGranted ||
+      await Permission.storage.request().isGranted) {
     try {
       // 弹出系统文件选择器选择文件
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -1312,8 +1314,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       } else {
                         try {
                           if (await Permission.manageExternalStorage
-                              .request()
-                              .isGranted) {
+                                  .request()
+                                  .isGranted ||
+                              await Permission.storage.request().isGranted) {
                             final tempPath =
                                 (await xuan_getdownloadDirectory()).path;
 
@@ -1526,8 +1529,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     ElevatedButton(
                       onPressed: () async {
                         if (await Permission.manageExternalStorage
-                            .request()
-                            .isGranted) {
+                                .request()
+                                .isGranted ||
+                            await Permission.storage.request().isGranted) {
                           final tempDir =
                               await getApplicationDocumentsDirectory();
                           var tempPath = tempDir.path;

@@ -34,8 +34,9 @@ jobs:
       - name: Extract Version from pubspec.yaml
         id: extract_version
         run: |
-          version=$(grep '^version:' pubspec.yaml | sed 's/version: //')
-          echo "VERSION=$version" >> $GITHUB_ENV
+          $version = Select-String -Path pubspec.yaml -Pattern '^version:' | ForEach-Object { $_ -replace 'version:\s*', '' }
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+        shell: pwsh
       # 上传新的资产到最新 Release
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2
