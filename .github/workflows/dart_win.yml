@@ -14,22 +14,22 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          flutter-version: '3.27.4'
-      - run: flutter --version
-      - run: flutter pub get
-      - run: flutter build windows
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-              name: windows-build-artifact
-              path: build/windows/x64/runner/Release/**
-         # 打包构建产物为 ZIP 文件
-      - name: Compress Build Artifacts
-        run: |
-          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact.zip
+      # - uses: subosito/flutter-action@v2
+      #   with:
+      #     channel: 'stable'
+      #     flutter-version: '3.27.4'
+      # - run: flutter --version
+      # - run: flutter pub get
+      # - run: flutter build windows
+      # - name: Upload Build Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #         name: windows-build-artifact
+      #         path: build/windows/x64/runner/Release/**
+      #    # 打包构建产物为 ZIP 文件
+      # - name: Compress Build Artifacts
+      #   run: |
+      #     powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact.zip
       # 从 pubspec.yaml 提取版本号
       - name: Extract Version from pubspec.yaml
         id: extract_version
@@ -37,12 +37,14 @@ jobs:
           $version = Select-String -Path pubspec.yaml -Pattern '^version:' | ForEach-Object { $_ -replace 'version:\s*', '' }
           echo "VERSION=$version" >> $env:GITHUB_ENV
         shell: pwsh
-      # 上传新的资产到最新 Release
-      - name: Upload New Asset to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.VERSION }}
-          files: build/windows-build-artifact.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Debug Version
+        run: echo "${{ env.VERSION }}"
+      # # 上传新的资产到最新 Release
+      # - name: Upload New Asset to Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     tag_name: ${{ env.VERSION }}
+      #     files: build/windows-build-artifact.zip
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
