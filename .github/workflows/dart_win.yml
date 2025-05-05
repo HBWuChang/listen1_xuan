@@ -13,23 +13,23 @@ jobs:
     if: "contains(github.event.head_commit.message, 'win')"
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          flutter-version: '3.27.4'
-      - run: flutter --version
-      - run: flutter pub get
-      - run: flutter build windows
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-              name: windows-build-artifact
-              path: build/windows/x64/runner/Release/**
-         # 打包构建产物为 ZIP 文件
-      - name: Compress Build Artifacts
-        run: |
-          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact.zip
+      # - uses: actions/checkout@v3
+      # - uses: subosito/flutter-action@v2
+      #   with:
+      #     channel: 'stable'
+      #     flutter-version: '3.27.4'
+      # - run: flutter --version
+      # - run: flutter pub get
+      # - run: flutter build windows
+      # - name: Upload Build Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #         name: windows-build-artifact
+      #         path: build/windows/x64/runner/Release/**
+      #    # 打包构建产物为 ZIP 文件
+      # - name: Compress Build Artifacts
+      #   run: |
+      #     powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact.zip
 
       # 获取最新的 Release 信息
       - name: Get Latest Release
@@ -38,34 +38,36 @@ jobs:
         with:
           owner: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
+      - name: Debug Get Latest Release
+        run: echo "Release Upload URL: ${{ steps.get_latest_release.outputs.upload_url }}"
 
-      # 删除现有的资产（如果存在）
-      - name: Delete Existing Asset
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const releaseId = ${{ steps.get_latest_release.outputs.id }};
-            const assets = await github.rest.repos.listReleaseAssets({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: releaseId
-            });
-            for (const asset of assets.data) {
-              if (asset.name === 'windows-build-artifact.zip') { // 替换为你的文件名
-                await github.rest.repos.deleteReleaseAsset({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  asset_id: asset.id
-                });
-                console.log(`Deleted asset: ${asset.name}`);
-              }
-            }
+      # # 删除现有的资产（如果存在）
+      # - name: Delete Existing Asset
+      #   uses: actions/github-script@v6
+      #   with:
+      #     script: |
+      #       const releaseId = ${{ steps.get_latest_release.outputs.id }};
+      #       const assets = await github.rest.repos.listReleaseAssets({
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         release_id: releaseId
+      #       });
+      #       for (const asset of assets.data) {
+      #         if (asset.name === 'windows-build-artifact.zip') { // 替换为你的文件名
+      #           await github.rest.repos.deleteReleaseAsset({
+      #             owner: context.repo.owner,
+      #             repo: context.repo.repo,
+      #             asset_id: asset.id
+      #           });
+      #           console.log(`Deleted asset: ${asset.name}`);
+      #         }
+      #       }
 
-      # 上传新的资产到最新 Release
-      - name: Upload New Asset
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.get_latest_release.outputs.upload_url }}
-          asset_path: build/windows-build-artifact.zip
-          asset_name: windows-build-artifact.zip
-          asset_content_type: application/zip
+      # # 上传新的资产到最新 Release
+      # - name: Upload New Asset
+      #   uses: actions/upload-release-asset@v1
+      #   with:
+      #     upload_url: ${{ steps.get_latest_release.outputs.upload_url }}
+      #     asset_path: build/windows-build-artifact.zip
+      #     asset_name: windows-build-artifact.zip
+      #     asset_content_type: application/zip
