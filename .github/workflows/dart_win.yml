@@ -30,11 +30,18 @@ jobs:
       - name: Compress Build Artifacts
         run: |
           powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact.zip
-
+      # 从 pubspec.yaml 提取版本号
+      - name: Extract Version from pubspec.yaml
+        id: extract_version
+        run: |
+          version=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+          echo "VERSION=$version" >> $GITHUB_ENV
       # 上传新的资产到最新 Release
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.VERSION }}
           files: build/windows-build-artifact.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
