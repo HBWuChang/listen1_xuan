@@ -212,7 +212,7 @@ class Bilibili {
     }
   }
 
-  Future<Map<String, dynamic>> _getsettings() async {
+  static Future<Map<String, dynamic>> _getsettings() async {
     final prefs = await SharedPreferences.getInstance();
     String? jsonString = prefs.getString('settings');
     print("jsonString: $jsonString");
@@ -380,23 +380,38 @@ class Bilibili {
     return '$queryString&w_rid=$wbiSign';
   }
 
-  static Future<Response> wrap_wbi_request(
+  static Future<dynamic> wrap_wbi_request(
       String url, Map<String, dynamic> params) async {
-    try {
-      final queryString = await encWbi(params);
-      final targetUrl = '$url?$queryString';
-      return await Dio().get(targetUrl);
-      // return await dio_get_with_cookie_and_csrf(targetUrl);
-    } catch (e) {
-      clearWbiKey();
-      try {
-        final queryString = await encWbi(params);
-        final targetUrl = '$url?$queryString';
-        return await Dio().get(targetUrl);
-      } catch (e) {
-        return Future.error('Request failed');
-      }
+    final queryString = await encWbi(params);
+    final targetUrl = '$url?$queryString';
+    String cookie = '';
+    Map<String, dynamic> settings = await _getsettings();
+    if (settings.containsKey('bl') && settings['bl'] != '') {
+      cookie = settings['bl'];
+    } else {
+      cookie = 'buvid3=0';
     }
+    var t = await Dio().get(targetUrl,
+        options: Options(
+          headers: {
+            "User-Agent":
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
+            "Connection": "keep-alive",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "accept-language": "zh-CN",
+            "referer": "https://www.bilibili.com/",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            'cookie': cookie,
+          },
+          validateStatus: (status) {
+            // 允许 412 状态码不抛出异常
+            return status != null && status < 500;
+          },
+        ));
+    return t;
   }
 
   static Map<String, dynamic> bi_convert_song(Map<String, dynamic> songInfo) {
@@ -558,6 +573,13 @@ class Bilibili {
             'id': 'biartist_$artistId',
             'source_url': 'https://space.bilibili.com/$artistId/#/audio',
           };
+          String cookie = '';
+          Map<String, dynamic> settings = await _getsettings();
+          if (settings.containsKey('bl') && settings['bl'] != '') {
+            cookie = settings['bl'];
+          } else {
+            cookie = 'buvid3=0';
+          }
           if (getParameterByName('list_id', url)?.split('_').length == 3) {
             final res = await wrap_wbi_request(
                 'https://api.bilibili.com/x/space/wbi/arc/search', {
@@ -574,7 +596,10 @@ class Bilibili {
           } else {
             targetUrl =
                 'https://api.bilibili.com/audio/music-service-c/web/song/upper?pn=1&ps=0&order=2&uid=$artistId';
-            final res = await Dio().get(targetUrl);
+            final res = await Dio().get(targetUrl,
+                options: Options(headers: {
+                  'cookie': cookie,
+                }));
             final tracks = res.data['data']['data'].map((item) {
               return bi_convert_song(item);
             }).toList();
