@@ -576,8 +576,16 @@ class _SettingsPageState extends State<SettingsPage> {
   late StateSetter _readmeContent_setstate;
   bool useHttpOverrides = false;
   late StateSetter useHttpOverrides_setstate;
-
+  final FocusNode _focusNode = FocusNode();
+  final FocusNode _focusNode2 = FocusNode();
   late String apkfile_name;
+
+  @override
+  void dispose() {
+    _focusNode.dispose(); // 释放 FocusNode
+    _focusNode2.dispose(); // 释放 FocusNode
+    super.dispose();
+  }
 
   void open_bl_login() async {
     TextEditingController blCookieController = TextEditingController();
@@ -615,6 +623,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: const Text('点击打开B站cookie获取页面'),
                   ),
                   TextField(
+                    focusNode: _focusNode,
                     decoration: const InputDecoration(
                       labelText: '请输入B站cookie',
                     ),
@@ -734,6 +743,21 @@ class _SettingsPageState extends State<SettingsPage> {
     get_useHttpOverrides();
     _loadReadme();
     init_apkfilepath();
+    // 监听焦点变化
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        set_inapp_hotkey(false);
+      } else {
+        set_inapp_hotkey(true);
+      }
+    });
+    _focusNode2.addListener(() {
+      if (_focusNode2.hasFocus) {
+        set_inapp_hotkey(false);
+      } else {
+        set_inapp_hotkey(true);
+      }
+    });
   }
 
   Future<void> init_apkfilepath() async {
@@ -1613,6 +1637,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           return global_loading_anime;
                         } else {
                           return TextField(
+                            focusNode: _focusNode2,
                             controller: TextEditingController(
                               text: snapshot.data,
                             ),

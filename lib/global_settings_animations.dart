@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:listen1_xuan/play.dart';
 import 'package:loading_animations/loading_animations.dart';
 import 'package:animations/animations.dart';
@@ -110,6 +111,7 @@ dynamic xuan_toast({
   );
 }
 
+var volume_setState;
 void init_hotkeys() async {
   var settings = await settings_getsettings();
   var hotskeys = settings["hotkeys"];
@@ -137,7 +139,82 @@ void init_hotkeys() async {
   if (hotskeys["show"] != null) {
     set_hotkey(null, HotKey.fromJson(hotskeys["show"]), "show");
   }
+  set_inapp_hotkey(true);
 }
+
+Map<String, HotKey> inapp_hotkeys = {
+  "space": HotKey(
+    key: PhysicalKeyboardKey.space,
+    scope: HotKeyScope.inapp,
+  ),
+  "arrowLeft": HotKey(
+    key: PhysicalKeyboardKey.keyA,
+    scope: HotKeyScope.inapp,
+  ),
+  "arrowRight": HotKey(
+    key: PhysicalKeyboardKey.keyD,
+    scope: HotKeyScope.inapp,
+  ),
+  "arrowUp": HotKey(
+    key: PhysicalKeyboardKey.keyW,
+    scope: HotKeyScope.inapp,
+  ),
+  "arrowDown": HotKey(
+    key: PhysicalKeyboardKey.keyS,
+    scope: HotKeyScope.inapp,
+  ),
+  "next": HotKey(
+    key: PhysicalKeyboardKey.keyE,
+    scope: HotKeyScope.inapp,
+  ),
+  "previous": HotKey(
+    key: PhysicalKeyboardKey.keyQ,
+    scope: HotKeyScope.inapp,
+  ),
+};
+Future<void> set_inapp_hotkey(bool enable) async {
+  if (!is_windows) return;
+  if (enable) {
+    inapp_hotkeys.forEach((key, hotkey) async {
+      await hotKeyManager.register(
+        hotkey,
+        keyDownHandler: (hotKey) async {
+          // 处理播放/暂停的逻辑
+          switch (key) {
+            case "space":
+              global_play_or_pause();
+              break;
+            case "previous":
+              global_skipToPrevious();
+              break;
+            case "next":
+              global_skipToNext();
+              break;
+            case "arrowUp":
+              global_volume_up();
+              break;
+            case "arrowDown":
+              global_volume_down();
+              break;
+            case "arrowLeft":
+              global_seek_to_previous();
+              break;
+            case "arrowRight":
+              global_seek_to_next();
+              break;
+          }
+        },
+      );
+    });
+  } else {
+    // await hotKeyManager.unregister(inapp_space);
+    inapp_hotkeys.forEach((key, hotkey) async {
+      await hotKeyManager.unregister(hotkey);
+    });
+  }
+}
+
+double global_currentVolume = 0.5;
 
 Future<void> set_hotkey(
   s_hotkey,

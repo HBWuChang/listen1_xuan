@@ -539,8 +539,6 @@ class _PlayState extends State<Play> {
         : '${twoDigits(minutes)}:${twoDigits(seconds)}';
   }
 
-  double _currentVolume = 0.5;
-
   @override
   void initState() {
     super.initState();
@@ -549,11 +547,11 @@ class _PlayState extends State<Play> {
 
   void get_vo() async {
     try {
-      _currentVolume = await get_player_settings("volume");
+      global_currentVolume = await get_player_settings("volume");
     } catch (e) {
-      _currentVolume = 50;
+      global_currentVolume = 50;
     }
-    _currentVolume = _currentVolume / 100;
+    global_currentVolume = global_currentVolume / 100;
   }
 
   @override
@@ -831,11 +829,12 @@ class _PlayState extends State<Play> {
                                 // 其他控件
                                 StatefulBuilder(
                                   builder: (context, setState) {
+                                    volume_setState = setState;
                                     return Slider(
-                                      value: _currentVolume,
+                                      value: global_currentVolume,
                                       onChanged: (value) {
                                         setState(() {
-                                          _currentVolume = value;
+                                          global_currentVolume = value;
                                         });
                                         set_player_settings(
                                             "volume", value * 100);
@@ -1120,6 +1119,7 @@ class MediaState {
 
   MediaState(this.mediaItem, this.position);
 }
+
 Future<void> global_play_or_pause() async {
   if (music_player.playing) {
     await music_player.pause();
@@ -1127,6 +1127,7 @@ Future<void> global_play_or_pause() async {
     await music_player.play();
   }
 }
+
 Future<void> global_play() async {
   music_player.play();
 }
@@ -1137,6 +1138,50 @@ Future<void> global_pause() async {
 
 Future<void> global_seek(Duration position) async {
   music_player.seek(position);
+}
+
+Future<void> global_seek_to_next(
+    {Duration time = const Duration(seconds: 3)}) async {
+  var now_pos = music_player.position;
+  var next_pos = now_pos + time;
+  var max_pos = music_player.duration ?? now_pos;
+  if (next_pos > max_pos) {
+    next_pos = max_pos;
+  }
+  music_player.seek(next_pos);
+}
+
+Future<void> global_seek_to_previous(
+    {Duration time = const Duration(seconds: 3)}) async {
+  var now_pos = music_player.position;
+  var next_pos = now_pos < time ? Duration.zero : now_pos - time;
+  music_player.seek(next_pos);
+}
+
+Future<void> global_volume_up({double step = 0.05}) async {
+  var now_pos = music_player.volume;
+  var next_pos = now_pos + step;
+  if (next_pos > 1) {
+    next_pos = 1;
+  }
+  volume_setState(() {
+    global_currentVolume = next_pos;
+    music_player.setVolume(next_pos);
+  });
+  set_player_settings("volume", next_pos * 100);
+}
+
+Future<void> global_volume_down({double step = 0.05}) async {
+  var now_pos = music_player.volume;
+  var next_pos = now_pos - step;
+  if (next_pos < 0) {
+    next_pos = 0;
+  }
+  volume_setState(() {
+    global_currentVolume = next_pos;
+    music_player.setVolume(next_pos);
+  });
+  set_player_settings("volume", next_pos * 100);
 }
 
 Future<void> global_skipToPrevious() async {

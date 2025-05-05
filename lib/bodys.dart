@@ -977,6 +977,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
   StateSetter? scroll_bar_setState; // 添加这个变量
   bool last_move_is_up = false;
   bool on_drag_slider = false;
+  final FocusNode _focusNode = FocusNode(); // 创建 FocusNode
   @override
   void initState() {
     super.initState();
@@ -984,6 +985,13 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
     _loadData();
     _searchController.addListener(_filterTracks);
     inner_scrollController.addListener(_onInnerScroll);
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        set_inapp_hotkey(false);
+      } else {
+        set_inapp_hotkey(true);
+      }
+    });
   }
 
   void check_fav() async {
@@ -1105,6 +1113,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
   @override
   void dispose() {
     _searchController.dispose();
+    _focusNode.dispose();
     inner_scrollController.dispose();
     super.dispose();
   }
@@ -1204,6 +1213,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                 Expanded(
                                   flex: 4,
                                   child: TextField(
+                                    focusNode: _focusNode,
                                     controller: _searchController,
                                     decoration: InputDecoration(
                                       hintText: '搜索',
@@ -1284,9 +1294,10 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                         widget.is_my
                             ? IconButton(
                                 icon: Icon(Icons.edit),
-                                onPressed: () {
+                                onPressed: () async {
+                                  await set_inapp_hotkey(false);
                                   // 编辑按钮点击事件
-                                  showDialog(
+                                  await showDialog(
                                     context: context_PlaylistInfo,
                                     builder: (BuildContext context_dialog) {
                                       final TextEditingController
@@ -1348,6 +1359,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                       );
                                     },
                                   );
+                                  await set_inapp_hotkey(true);
                                 },
                               )
                             : IconButton(
@@ -1550,11 +1562,19 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   int curpage = 1;
   final ScrollController _scrollController = ScrollController();
   String lastquery = "";
+  final FocusNode _focusNode = FocusNode(); // 创建 FocusNode
   @override
   void initState() {
     super.initState();
     widget.input_text_Controller.addListener(_filterTracks);
     _scrollController.addListener(_onScroll);
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        set_inapp_hotkey(false);
+      } else {
+        set_inapp_hotkey(true);
+      }
+    });
     _filterTracks();
     selectedOptionNotifier.addListener(_filterTracks);
   }
@@ -1639,6 +1659,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _focusNode.dispose();
     selectedOptionNotifier.removeListener(_filterTracks);
     super.dispose();
   }
@@ -1656,6 +1677,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
           children: [
             Expanded(
               child: TextField(
+                focusNode: _focusNode,
                 decoration: InputDecoration(
                   hintText: '请输入歌曲名，歌手或专辑',
                   border: InputBorder.none,
