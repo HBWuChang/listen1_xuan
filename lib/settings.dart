@@ -1719,6 +1719,11 @@ class Github {
     final response = await dio_with_ProxyAdapter.post(
       url,
       queryParameters: params,
+      options: Options(
+        headers: {
+          'Accept': 'application/json',
+        },
+      ),
     );
     final accessToken = response.data['access_token'];
     final prefs = await SharedPreferences.getInstance();
@@ -1785,6 +1790,7 @@ class Github {
       final response = await dio_with_ProxyAdapter.get('$API_URL/user',
           options: Options(headers: {
             'Authorization': 'token $accessToken',
+            'Accept': 'application/json',
           }));
       final data = response.data;
       if (data['login'] == null) {
@@ -1851,6 +1857,7 @@ class Github {
       final response = await dio_with_ProxyAdapter.get(url,
           options: Options(headers: {
             'Authorization': 'token $accessToken',
+            'Accept': 'application/json',
           }));
       return json.decode(response.data);
     }
@@ -1862,6 +1869,7 @@ class Github {
     final response = await dio_with_ProxyAdapter.get('$API_URL/gists',
         options: Options(headers: {
           'Authorization': 'token $accessToken',
+          'Accept': 'application/vnd.github.v3+json',
         }));
     final result = response.data;
     return result.where((backupObject) {
@@ -1887,6 +1895,7 @@ class Github {
       url,
       options: Options(method: method, headers: {
         'Authorization': 'token $accessToken',
+        'Accept': 'application/json',
       }),
       data: {
         'description':
@@ -1904,6 +1913,7 @@ class Github {
     final response = await dio_with_ProxyAdapter.get('$API_URL/gists/$gistId',
         options: Options(headers: {
           'Authorization': 'token $accessToken',
+          'Accept': 'application/json',
         }));
     return response.data['files'];
   }
