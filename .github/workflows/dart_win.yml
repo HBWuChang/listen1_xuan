@@ -29,7 +29,6 @@ jobs:
          # 打包构建产物为 ZIP 文件
       - name: Compress Build Artifacts
         run: |
-          mkdir build/windows/x64/runner/Release
           powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact.zip
 
       # 获取最新的 Release 信息
