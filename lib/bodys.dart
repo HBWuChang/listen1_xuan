@@ -1562,6 +1562,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   int curpage = 1;
   final ScrollController _scrollController = ScrollController();
   String lastquery = "";
+  bool searchPlayList = false;
   final FocusNode _focusNode = FocusNode(); // 创建 FocusNode
   @override
   void initState() {

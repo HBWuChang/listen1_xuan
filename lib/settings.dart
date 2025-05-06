@@ -794,7 +794,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadReadme() async {
-    final treadmeContent = await Dio().get(
+    final treadmeContent = await dio_with_ProxyAdapter.get(
       'https://api.github.com/repos/HBWuChang/listen1_xuan/readme',
     );
     String decodeBase64(String data) {
@@ -1180,7 +1180,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             );
                             return;
                           }
-                          final response = await Dio().get(url_list,
+                          final response = await dio_with_ProxyAdapter.get(url_list,
                               options: Options(headers: {
                                 'accept': 'application/vnd.github.v3+json',
                                 'authorization': 'Bearer ' + token,
@@ -1254,7 +1254,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 );
                               },
                             );
-                            await Dio().download(
+                            await dio_with_ProxyAdapter.download(
                               download_url,
                               filePath,
                               options: Options(headers: {
@@ -1369,7 +1369,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               );
                               return;
                             }
-                            final response = await Dio().get(url_list,
+                            final response = await dio_with_ProxyAdapter.get(url_list,
                                 options: Options(headers: {
                                   'accept': 'application/vnd.github.v3+json',
                                   'authorization': 'Bearer ' + token,
@@ -1449,7 +1449,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 );
                               },
                             );
-                            await Dio().download(
+                            await dio_with_ProxyAdapter.download(
                               download_url,
                               filePath,
                               options: Options(headers: {
@@ -1661,7 +1661,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             decoration: InputDecoration(
                               labelText:
-                                  'Windows代理地址,例如：localhost:7890,留空表示不使用,回车以保存',
+                                  'Windows代理地址,仅适用于Github,例如：localhost:7890,留空表示不使用,回车以保存',
                             ),
                             onSubmitted: (value) async {
                               var settings = await settings_getsettings();
