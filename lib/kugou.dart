@@ -137,9 +137,28 @@ class Kugou {
     // Add singer img
     final url =
         'https://www.kugou.com/yy/index.php?r=play/getdata&hash=${track['lyric_url']}';
-    final response = await dio_with_cookie_manager.get(url);
+    final response = await dio_with_cookie_manager.get(url,
+        options: Options(
+          headers: {
+            "User-Agent":
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30",
+            "Connection": "keep-alive",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "accept-language": "zh-CN",
+            "origin": "https://www.kugou.com/",
+            "referer": "https://www.kugou.com/",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site"
+          },
+        ));
     final data = response.data;
-    track['img_url'] = data['data']['img'];
+    try {
+      track['img_url'] = data['data']['img'];
+    } catch (e) {
+      track['img_url'] = '';
+    }
     callback(null, track);
   }
 

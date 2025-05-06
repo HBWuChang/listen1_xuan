@@ -1597,8 +1597,6 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   }
 
   void _onScroll() {
-    // print(widget.selectedOption);
-    // print(_scrollController.position.pixels);
     if (_scrollController.position.pixels ==
         _scrollController.position.maxScrollExtent) {
       _loadMoreData();
@@ -1615,10 +1613,6 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
       'curpage': curpage,
       'type': song_or_playlist ? 1 : 0
     });
-    // setState(() {
-    //   tracks.addAll(List<Map<String, dynamic>>.from(result['result']));
-    //   // _loading = false;
-    // });
     ret["success"]((data) {
       result = data;
       setState(() {
