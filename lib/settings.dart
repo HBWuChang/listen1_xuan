@@ -1449,7 +1449,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 );
                               },
                             );
-                            await dio_with_ProxyAdapter.download(
+                            await Dio().download(
                               download_url,
                               filePath,
                               options: Options(headers: {
