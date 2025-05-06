@@ -541,152 +541,344 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   @override
   Widget build(BuildContext main_context) {
     _main_context = main_context;
-    return OrientationBuilder(builder: (context, orientation) {
-      global_horizon = orientation == Orientation.landscape;
-      top_context.clear();
-      print("global_horizon: $global_horizon");
-      if (global_horizon) {
-        _selectedIndex = 2;
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-        _pageController = PreloadPageController(
-            initialPage: _selectedIndex - 1); // 初始化 PageController
-        show_filter = true;
-      } else {
-        _selectedIndex = 0;
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-        _pageController = PreloadPageController(
-            initialPage: _selectedIndex); // 初始化 PageController
-      }
+    return Focus(
+        autofocus: true,
+        onKeyEvent: (FocusNode node, KeyEvent event) {
+          // 动态判断是否启用热键
+          if (!enable_inapp_hotkey) {
+            return KeyEventResult.ignored; // 将按键事件传递给下一个处理器
+          }
 
-      if (orientation == Orientation.portrait) {
-        // 竖屏逻辑
-        print("当前为竖屏模式");
-      } else {
-        // 横屏逻辑
-        print("当前为横屏模式");
-      }
-      Widget sized_box = SizedBox(
-          width: 197,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 10,
-              ),
-              is_windows
-                  ? Listener(
-                      onPointerDown: (event) {
-                        if (event.kind == PointerDeviceKind.mouse &&
-                            event.buttons == kSecondaryMouseButton) {
-                          windowManager.hide();
-                          windowManager.setSkipTaskbar(true);
-                        }
-                        if (event.kind == PointerDeviceKind.mouse &&
-                            event.buttons == kMiddleMouseButton) {
-                          exit(0);
-                        }
-                      },
-                      child: Tooltip(
-                        message: '右键以最小化,中键以关闭',
-                        child: Text(
+          // 若为按下或重复事件
+          if (event is KeyDownEvent || event is KeyRepeatEvent) {
+            inappShortcuts.forEach((key, value) {
+              if (event.logicalKey == key) {
+                value();
+              }
+            });
+          }
+          return KeyEventResult.handled; // 其他按键继续传递
+        },
+        child: OrientationBuilder(builder: (context, orientation) {
+          global_horizon = orientation == Orientation.landscape;
+          top_context.clear();
+          print("global_horizon: $global_horizon");
+          if (global_horizon) {
+            _selectedIndex = 2;
+            SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+            _pageController = PreloadPageController(
+                initialPage: _selectedIndex - 1); // 初始化 PageController
+            show_filter = true;
+          } else {
+            _selectedIndex = 0;
+            SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+            _pageController = PreloadPageController(
+                initialPage: _selectedIndex); // 初始化 PageController
+          }
+
+          if (orientation == Orientation.portrait) {
+            // 竖屏逻辑
+            print("当前为竖屏模式");
+          } else {
+            // 横屏逻辑
+            print("当前为横屏模式");
+          }
+          Widget sized_box = SizedBox(
+              width: 197,
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 10,
+                  ),
+                  is_windows
+                      ? Listener(
+                          onPointerDown: (event) {
+                            if (event.kind == PointerDeviceKind.mouse &&
+                                event.buttons == kSecondaryMouseButton) {
+                              windowManager.hide();
+                              windowManager.setSkipTaskbar(true);
+                            }
+                            if (event.kind == PointerDeviceKind.mouse &&
+                                event.buttons == kMiddleMouseButton) {
+                              exit(0);
+                            }
+                          },
+                          child: Tooltip(
+                            message: '右键以最小化,中键以关闭',
+                            child: Text(
+                              'Listen1',
+                              style: TextStyle(fontSize: 24),
+                            ),
+                          ))
+                      : Text(
                           'Listen1',
                           style: TextStyle(fontSize: 24),
                         ),
-                      ))
-                  : Text(
-                      'Listen1',
-                      style: TextStyle(fontSize: 24),
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: '请输入歌曲名，歌手或专辑',
+                      border: InputBorder.none,
                     ),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: '请输入歌曲名，歌手或专辑',
-                  border: InputBorder.none,
-                ),
-                controller: input_text_Controller,
-                readOnly: true,
-                onTap: () async {
-                  clean_top_context();
-                  await Navigator.of(top_context.last).push(
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) {
-                        top_context.add(context);
-                        return Searchlistinfo(
-                          input_text_Controller: input_text_Controller,
-                          onPlaylistTap: change_main_status,
-                        );
-                      },
-                      transitionsBuilder:
-                          (context, animation, secondaryAnimation, child) =>
-                              search_Animation(
-                                  animation: animation,
-                                  secondaryAnimation: secondaryAnimation,
-                                  child: child,
-                                  axis: Axis.vertical),
-                      transitionDuration:
-                          Duration(milliseconds: 300), // 延长动画时间到 1000ms
-                    ),
-                  );
-                },
-              ),
-              Expanded(
-                  child: MyPlaylist(
-                onPlaylistTap: change_main_status,
-              )),
-              IconButton(
-                icon: Icon(Icons.settings),
-                onPressed: () {
-                  clean_top_context();
-                  Navigator.push(
-                    top_context.last,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) {
-                        top_context.add(context);
-                        return SettingsPage();
-                      },
-                      transitionsBuilder:
-                          (context, animation, secondaryAnimation, child) =>
-                              SharedAxisTransition(
-                        animation: animation,
-                        secondaryAnimation: secondaryAnimation,
-                        transitionType: SharedAxisTransitionType.horizontal,
-                        child: child,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ));
+                    controller: input_text_Controller,
+                    readOnly: true,
+                    onTap: () async {
+                      clean_top_context();
+                      await Navigator.of(top_context.last).push(
+                        PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) {
+                            top_context.add(context);
+                            return Searchlistinfo(
+                              input_text_Controller: input_text_Controller,
+                              onPlaylistTap: change_main_status,
+                            );
+                          },
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) =>
+                                  search_Animation(
+                                      animation: animation,
+                                      secondaryAnimation: secondaryAnimation,
+                                      child: child,
+                                      axis: Axis.vertical),
+                          transitionDuration:
+                              Duration(milliseconds: 300), // 延长动画时间到 1000ms
+                        ),
+                      );
+                    },
+                  ),
+                  Expanded(
+                      child: MyPlaylist(
+                    onPlaylistTap: change_main_status,
+                  )),
+                  IconButton(
+                    icon: Icon(Icons.settings),
+                    onPressed: () {
+                      clean_top_context();
+                      Navigator.push(
+                        top_context.last,
+                        PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) {
+                            top_context.add(context);
+                            return SettingsPage();
+                          },
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) =>
+                                  SharedAxisTransition(
+                            animation: animation,
+                            secondaryAnimation: secondaryAnimation,
+                            transitionType: SharedAxisTransitionType.horizontal,
+                            child: child,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ));
 
-      return PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (didPop, result) {
-            _pop();
-          },
-          child: global_horizon
-              ? Scaffold(
-                  body: Row(children: [
-                    is_windows ? DragToMoveArea(child: sized_box) : sized_box,
-                    RotatedBox(
-                        quarterTurns: -1,
-                        child: Divider(
-                          height: 1,
-                          thickness: 2,
-                          color: Colors.grey[300],
+          return PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, result) {
+                _pop();
+              },
+              child: global_horizon
+                  ? Scaffold(
+                      body: Row(children: [
+                        is_windows
+                            ? DragToMoveArea(child: sized_box)
+                            : sized_box,
+                        RotatedBox(
+                            quarterTurns: -1,
+                            child: Divider(
+                              height: 1,
+                              thickness: 2,
+                              color: Colors.grey[300],
+                            )),
+                        Expanded(
+                            child: Listener(
+                          onPointerDown: (event) {
+                            if (event.kind == PointerDeviceKind.mouse &&
+                                event.buttons == kSecondaryMouseButton) {
+                              _pop();
+                            }
+                            if (event.kind == PointerDeviceKind.mouse &&
+                                event.buttons == kMiddleMouseButton) {
+                              windowManager.hide();
+                              windowManager.setSkipTaskbar(true);
+                            }
+                          },
+                          child: Navigator(
+                            initialRoute: '/',
+                            onGenerateRoute: (RouteSettings settings) {
+                              WidgetBuilder builder;
+                              switch (settings.name) {
+                                case '/':
+                                  // 在函数内部定义默认页面
+                                  builder = (context_in_1) {
+                                    top_context.add(context_in_1);
+                                    return Scaffold(
+                                        body: Column(
+                                      children: [
+                                        Container(
+                                            height: 40,
+                                            child: StatefulBuilder(
+                                                builder: (context, setState) {
+                                              buttons_setstate = setState;
+                                              return Container(
+                                                  width: MediaQuery.of(context)
+                                                          .size
+                                                          .width -
+                                                      200,
+                                                  child: Row(children: [
+                                                    Container(
+                                                        width: MediaQuery.of(
+                                                                    context)
+                                                                .size
+                                                                .width -
+                                                            200,
+                                                        child: Stack(children: [
+                                                          Positioned(
+                                                              top: -5,
+                                                              child: Container(
+                                                                  height: 70,
+                                                                  width: MediaQuery.of(
+                                                                              context)
+                                                                          .size
+                                                                          .width -
+                                                                      300,
+                                                                  child:
+                                                                      NavigationBar(
+                                                                    selectedIndex:
+                                                                        _selectedIndex - 1 <
+                                                                                0
+                                                                            ? 0
+                                                                            : _selectedIndex -
+                                                                                1,
+                                                                    destinations: platforms
+                                                                        .sublist(
+                                                                            1)
+                                                                        .map(
+                                                                            (platform) {
+                                                                      return NavigationDestination(
+                                                                        label:
+                                                                            '',
+                                                                        icon: Text(
+                                                                            platform),
+                                                                      );
+                                                                    }).toList(),
+                                                                    onDestinationSelected:
+                                                                        (index) {
+                                                                      _onItemTapped(
+                                                                          index +
+                                                                              1);
+                                                                    },
+                                                                  ))),
+                                                          if (show_filter)
+                                                            Positioned(
+                                                              top: is_windows
+                                                                  ? 5
+                                                                  : -5,
+                                                              right: 20,
+                                                              child: TextButton(
+                                                                child: Text(filters[
+                                                                        sources.indexOf(
+                                                                            source)]
+                                                                    ['name']),
+                                                                onPressed: () {
+                                                                  Map<String,
+                                                                          dynamic>
+                                                                      tfilter =
+                                                                      {};
+                                                                  tfilter[
+                                                                      "推荐"] = filter_details[
+                                                                          _selectedIndex]
+                                                                      [
+                                                                      "recommend"];
+                                                                  for (var item
+                                                                      in filter_details[
+                                                                              _selectedIndex]
+                                                                          [
+                                                                          "all"]) {
+                                                                    tfilter[item[
+                                                                            "category"]] =
+                                                                        item[
+                                                                            "filters"];
+                                                                  }
+                                                                  _showFilterSelection(
+                                                                      context_in_1,
+                                                                      tfilter,
+                                                                      filters[sources
+                                                                              .indexOf(source)]
+                                                                          [
+                                                                          'id'],
+                                                                      change_fliter);
+                                                                },
+                                                              ),
+                                                            )
+                                                        ])),
+                                                  ]));
+                                            })),
+                                        Expanded(child: StatefulBuilder(
+                                            builder: (context, setState) {
+                                          play_list_setstate = setState;
+                                          return PreloadPageView.builder(
+                                            physics: BouncingScrollPhysics(),
+                                            controller:
+                                                _pageController, // 使用 PageController
+                                            itemCount:
+                                                sources.length - 1, // 页面数量
+                                            preloadPagesCount:
+                                                sources.length - 1,
+                                            onPageChanged: (index) {
+                                              index = index + 1;
+                                              source = sources[index];
+                                              show_filter = show_filters[index];
+                                              buttons_setstate(() {
+                                                _selectedIndex = index;
+                                              });
+                                            },
+                                            itemBuilder: (context, index) {
+                                              index = index + 1;
+                                              // 其他页面：动态生成
+                                              return Playlist(
+                                                source: sources[index],
+                                                offset: offsets[index],
+                                                filter: filters[index],
+                                                onPlaylistTap:
+                                                    change_main_status,
+                                                key: Key(
+                                                    filters[index].toString()),
+                                              );
+                                            },
+                                          );
+                                        })),
+                                      ],
+                                    ));
+                                  };
+                                  break;
+                                default:
+                                  builder = (context_in_1) => Scaffold(
+                                        appBar:
+                                            AppBar(title: Text('Default Page')),
+                                        body: Center(
+                                            child: Text(
+                                                'This is the default page')),
+                                      );
+                                  break;
+                              }
+                              return MaterialPageRoute(builder: builder);
+                            },
+                          ),
                         )),
-                    Expanded(
-                        child: Listener(
-                      onPointerDown: (event) {
-                        if (event.kind == PointerDeviceKind.mouse &&
-                            event.buttons == kSecondaryMouseButton) {
-                          _pop();
-                        }
-                        if (event.kind == PointerDeviceKind.mouse &&
-                            event.buttons == kMiddleMouseButton) {
-                          windowManager.hide();
-                          windowManager.setSkipTaskbar(true);
-                        }
-                      },
-                      child: Navigator(
+                      ]),
+                      bottomNavigationBar: Play(
+                        onPlaylistTap: change_main_status,
+                        horizon: true,
+                      ),
+                    )
+                  : Scaffold(
+                      body: Navigator(
                         initialRoute: '/',
                         onGenerateRoute: (RouteSettings settings) {
                           WidgetBuilder builder;
@@ -696,139 +888,203 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                               builder = (context_in_1) {
                                 top_context.add(context_in_1);
                                 return Scaffold(
+                                    appBar: _Mainpage
+                                        ? AppBar(
+                                            title: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Text('Listen1'),
+                                                SizedBox(width: 10),
+                                                Expanded(
+                                                  child: TextField(
+                                                    decoration: InputDecoration(
+                                                      hintText: '请输入歌曲名，歌手或专辑',
+                                                      border: InputBorder.none,
+                                                    ),
+                                                    controller:
+                                                        input_text_Controller,
+                                                    readOnly: true,
+                                                    onTap: () async {
+                                                      clean_top_context();
+                                                      await Navigator.of(
+                                                              top_context.last)
+                                                          .push(
+                                                        PageRouteBuilder(
+                                                          pageBuilder: (context,
+                                                              animation,
+                                                              secondaryAnimation) {
+                                                            top_context
+                                                                .add(context);
+                                                            return Searchlistinfo(
+                                                              input_text_Controller:
+                                                                  input_text_Controller,
+                                                              onPlaylistTap:
+                                                                  change_main_status,
+                                                            );
+                                                          },
+                                                          transitionsBuilder: (context,
+                                                                  animation,
+                                                                  secondaryAnimation,
+                                                                  child) =>
+                                                              search_Animation(
+                                                                  animation:
+                                                                      animation,
+                                                                  secondaryAnimation:
+                                                                      secondaryAnimation,
+                                                                  child: child,
+                                                                  axis: Axis
+                                                                      .vertical),
+                                                          transitionDuration:
+                                                              Duration(
+                                                                  milliseconds:
+                                                                      300), // 延长动画时间到 1000ms
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                                IconButton(
+                                                  icon: Icon(Icons.settings),
+                                                  onPressed: () {
+                                                    Navigator.push(
+                                                      main_context,
+                                                      PageRouteBuilder(
+                                                        pageBuilder: (context,
+                                                            animation,
+                                                            secondaryAnimation) {
+                                                          return SettingsPage();
+                                                        },
+                                                        transitionsBuilder: (context,
+                                                                animation,
+                                                                secondaryAnimation,
+                                                                child) =>
+                                                            SharedAxisTransition(
+                                                          animation: animation,
+                                                          secondaryAnimation:
+                                                              secondaryAnimation,
+                                                          transitionType:
+                                                              SharedAxisTransitionType
+                                                                  .horizontal,
+                                                          child: child,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : null,
                                     body: Column(
-                                  children: [
-                                    Container(
-                                        height: 40,
-                                        child: StatefulBuilder(
+                                      children: [
+                                        Container(
+                                            height: 45,
+                                            child: StatefulBuilder(
+                                                builder: (context, setState) {
+                                              buttons_setstate = setState;
+                                              return Row(children: [
+                                                Expanded(
+                                                    child: NavigationBar(
+                                                  labelBehavior:
+                                                      NavigationDestinationLabelBehavior
+                                                          .alwaysHide,
+                                                  selectedIndex: _selectedIndex,
+                                                  destinations:
+                                                      platforms.map((platform) {
+                                                    return NavigationDestination(
+                                                      icon: Center(
+                                                          child:
+                                                              Text(platform)),
+                                                      label: '',
+                                                    );
+                                                  }).toList(),
+                                                  onDestinationSelected:
+                                                      (index) {
+                                                    _onItemTapped(index);
+                                                  },
+                                                )),
+                                                if (show_filter)
+                                                  TextButton(
+                                                    child: Text(filters[sources
+                                                            .indexOf(source)]
+                                                        ['name']),
+                                                    onPressed: () {
+                                                      Map<String, dynamic>
+                                                          tfilter = {};
+                                                      tfilter["推荐"] =
+                                                          filter_details[
+                                                                  _selectedIndex]
+                                                              ["recommend"];
+                                                      for (var item
+                                                          in filter_details[
+                                                                  _selectedIndex]
+                                                              ["all"]) {
+                                                        tfilter[item[
+                                                                "category"]] =
+                                                            item["filters"];
+                                                      }
+                                                      _showFilterSelection(
+                                                          context_in_1,
+                                                          tfilter,
+                                                          filters[sources
+                                                                  .indexOf(
+                                                                      source)]
+                                                              ['id'],
+                                                          change_fliter);
+                                                    },
+                                                  ),
+                                              ]);
+                                            })),
+                                        // 长灰色细分割线
+                                        Divider(
+                                          height: 1,
+                                          color: Colors.grey[300],
+                                        ),
+                                        Expanded(child: StatefulBuilder(
                                             builder: (context, setState) {
-                                          buttons_setstate = setState;
-                                          return Container(
-                                              width: MediaQuery.of(context)
-                                                      .size
-                                                      .width -
-                                                  200,
-                                              child: Row(children: [
-                                                Container(
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width -
-                                                            200,
-                                                    child: Stack(children: [
-                                                      Positioned(
-                                                          top: -5,
-                                                          child: Container(
-                                                              height: 70,
-                                                              width: MediaQuery.of(
-                                                                          context)
-                                                                      .size
-                                                                      .width -
-                                                                  300,
-                                                              child:
-                                                                  NavigationBar(
-                                                                selectedIndex:
-                                                                    _selectedIndex -
-                                                                                1 <
-                                                                            0
-                                                                        ? 0
-                                                                        : _selectedIndex -
-                                                                            1,
-                                                                destinations:
-                                                                    platforms
-                                                                        .sublist(
-                                                                            1)
-                                                                        .map(
-                                                                            (platform) {
-                                                                  return NavigationDestination(
-                                                                    label: '',
-                                                                    icon: Text(
-                                                                        platform),
-                                                                  );
-                                                                }).toList(),
-                                                                onDestinationSelected:
-                                                                    (index) {
-                                                                  _onItemTapped(
-                                                                      index +
-                                                                          1);
-                                                                },
-                                                              ))),
-                                                      if (show_filter)
-                                                        Positioned(
-                                                          top: is_windows
-                                                              ? 5
-                                                              : -5,
-                                                          right: 20,
-                                                          child: TextButton(
-                                                            child: Text(filters[
-                                                                    sources.indexOf(
-                                                                        source)]
-                                                                ['name']),
-                                                            onPressed: () {
-                                                              Map<String,
-                                                                      dynamic>
-                                                                  tfilter = {};
-                                                              tfilter["推荐"] =
-                                                                  filter_details[
-                                                                          _selectedIndex]
-                                                                      [
-                                                                      "recommend"];
-                                                              for (var item
-                                                                  in filter_details[
-                                                                          _selectedIndex]
-                                                                      ["all"]) {
-                                                                tfilter[item[
-                                                                        "category"]] =
-                                                                    item[
-                                                                        "filters"];
-                                                              }
-                                                              _showFilterSelection(
-                                                                  context_in_1,
-                                                                  tfilter,
-                                                                  filters[sources
-                                                                      .indexOf(
-                                                                          source)]['id'],
-                                                                  change_fliter);
-                                                            },
-                                                          ),
-                                                        )
-                                                    ])),
-                                              ]));
-                                        })),
-                                    Expanded(child: StatefulBuilder(
-                                        builder: (context, setState) {
-                                      play_list_setstate = setState;
-                                      return PreloadPageView.builder(
-                                        physics: BouncingScrollPhysics(),
-                                        controller:
-                                            _pageController, // 使用 PageController
-                                        itemCount: sources.length - 1, // 页面数量
-                                        preloadPagesCount: sources.length - 1,
-                                        onPageChanged: (index) {
-                                          index = index + 1;
-                                          source = sources[index];
-                                          show_filter = show_filters[index];
-                                          buttons_setstate(() {
-                                            _selectedIndex = index;
-                                          });
-                                        },
-                                        itemBuilder: (context, index) {
-                                          index = index + 1;
-                                          // 其他页面：动态生成
-                                          return Playlist(
-                                            source: sources[index],
-                                            offset: offsets[index],
-                                            filter: filters[index],
-                                            onPlaylistTap: change_main_status,
-                                            key: Key(filters[index].toString()),
+                                          play_list_setstate = setState;
+                                          return PreloadPageView.builder(
+                                            physics: BouncingScrollPhysics(),
+                                            controller:
+                                                _pageController, // 使用 PageController
+                                            itemCount: sources.length, // 页面数量
+                                            preloadPagesCount: sources.length,
+                                            onPageChanged: (index) {
+                                              source = sources[index];
+                                              show_filter = show_filters[index];
+                                              buttons_setstate(() {
+                                                _selectedIndex = index;
+                                              });
+                                            },
+                                            itemBuilder: (context, index) {
+                                              if (index == 0) {
+                                                // 第一个页面：我的歌单
+                                                return MyPlaylist(
+                                                  onPlaylistTap:
+                                                      change_main_status,
+                                                );
+                                              } else {
+                                                // 其他页面：动态生成
+                                                return Playlist(
+                                                  source: sources[index],
+                                                  offset: offsets[index],
+                                                  filter: filters[index],
+                                                  onPlaylistTap:
+                                                      change_main_status,
+                                                  key: Key(filters[index]
+                                                      .toString()),
+                                                );
+                                              }
+                                            },
                                           );
-                                        },
-                                      );
-                                    })),
-                                  ],
-                                ));
+                                        }))
+                                      ],
+                                    ));
                               };
                               break;
+
                             default:
                               builder = (context_in_1) => Scaffold(
                                     appBar: AppBar(title: Text('Default Page')),
@@ -841,229 +1097,13 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                           return MaterialPageRoute(builder: builder);
                         },
                       ),
-                    )),
-                  ]),
-                  bottomNavigationBar: Play(
-                    onPlaylistTap: change_main_status,
-                    horizon: true,
-                  ),
-                )
-              : Scaffold(
-                  body: Navigator(
-                    initialRoute: '/',
-                    onGenerateRoute: (RouteSettings settings) {
-                      WidgetBuilder builder;
-                      switch (settings.name) {
-                        case '/':
-                          // 在函数内部定义默认页面
-                          builder = (context_in_1) {
-                            top_context.add(context_in_1);
-                            return Scaffold(
-                                appBar: _Mainpage
-                                    ? AppBar(
-                                        title: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text('Listen1'),
-                                            SizedBox(width: 10),
-                                            Expanded(
-                                              child: TextField(
-                                                decoration: InputDecoration(
-                                                  hintText: '请输入歌曲名，歌手或专辑',
-                                                  border: InputBorder.none,
-                                                ),
-                                                controller:
-                                                    input_text_Controller,
-                                                readOnly: true,
-                                                onTap: () async {
-                                                  clean_top_context();
-                                                  await Navigator.of(
-                                                          top_context.last)
-                                                      .push(
-                                                    PageRouteBuilder(
-                                                      pageBuilder: (context,
-                                                          animation,
-                                                          secondaryAnimation) {
-                                                        top_context
-                                                            .add(context);
-                                                        return Searchlistinfo(
-                                                          input_text_Controller:
-                                                              input_text_Controller,
-                                                          onPlaylistTap:
-                                                              change_main_status,
-                                                        );
-                                                      },
-                                                      transitionsBuilder: (context,
-                                                              animation,
-                                                              secondaryAnimation,
-                                                              child) =>
-                                                          search_Animation(
-                                                              animation:
-                                                                  animation,
-                                                              secondaryAnimation:
-                                                                  secondaryAnimation,
-                                                              child: child,
-                                                              axis: Axis
-                                                                  .vertical),
-                                                      transitionDuration: Duration(
-                                                          milliseconds:
-                                                              300), // 延长动画时间到 1000ms
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: Icon(Icons.settings),
-                                              onPressed: () {
-                                                Navigator.push(
-                                                  main_context,
-                                                  PageRouteBuilder(
-                                                    pageBuilder: (context,
-                                                        animation,
-                                                        secondaryAnimation) {
-                                                      return SettingsPage();
-                                                    },
-                                                    transitionsBuilder: (context,
-                                                            animation,
-                                                            secondaryAnimation,
-                                                            child) =>
-                                                        SharedAxisTransition(
-                                                      animation: animation,
-                                                      secondaryAnimation:
-                                                          secondaryAnimation,
-                                                      transitionType:
-                                                          SharedAxisTransitionType
-                                                              .horizontal,
-                                                      child: child,
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                    : null,
-                                body: Column(
-                                  children: [
-                                    Container(
-                                        height: 45,
-                                        child: StatefulBuilder(
-                                            builder: (context, setState) {
-                                          buttons_setstate = setState;
-                                          return Row(children: [
-                                            Expanded(
-                                                child: NavigationBar(
-                                              labelBehavior:
-                                                  NavigationDestinationLabelBehavior
-                                                      .alwaysHide,
-                                              selectedIndex: _selectedIndex,
-                                              destinations:
-                                                  platforms.map((platform) {
-                                                return NavigationDestination(
-                                                  icon: Center(
-                                                      child: Text(platform)),
-                                                  label: '',
-                                                );
-                                              }).toList(),
-                                              onDestinationSelected: (index) {
-                                                _onItemTapped(index);
-                                              },
-                                            )),
-                                            if (show_filter)
-                                              TextButton(
-                                                child: Text(filters[sources
-                                                    .indexOf(source)]['name']),
-                                                onPressed: () {
-                                                  Map<String, dynamic> tfilter =
-                                                      {};
-                                                  tfilter["推荐"] =
-                                                      filter_details[
-                                                              _selectedIndex]
-                                                          ["recommend"];
-                                                  for (var item
-                                                      in filter_details[
-                                                              _selectedIndex]
-                                                          ["all"]) {
-                                                    tfilter[item["category"]] =
-                                                        item["filters"];
-                                                  }
-                                                  _showFilterSelection(
-                                                      context_in_1,
-                                                      tfilter,
-                                                      filters[sources.indexOf(
-                                                          source)]['id'],
-                                                      change_fliter);
-                                                },
-                                              ),
-                                          ]);
-                                        })),
-                                    // 长灰色细分割线
-                                    Divider(
-                                      height: 1,
-                                      color: Colors.grey[300],
-                                    ),
-                                    Expanded(child: StatefulBuilder(
-                                        builder: (context, setState) {
-                                      play_list_setstate = setState;
-                                      return PreloadPageView.builder(
-                                        physics: BouncingScrollPhysics(),
-                                        controller:
-                                            _pageController, // 使用 PageController
-                                        itemCount: sources.length, // 页面数量
-                                        preloadPagesCount: sources.length,
-                                        onPageChanged: (index) {
-                                          source = sources[index];
-                                          show_filter = show_filters[index];
-                                          buttons_setstate(() {
-                                            _selectedIndex = index;
-                                          });
-                                        },
-                                        itemBuilder: (context, index) {
-                                          if (index == 0) {
-                                            // 第一个页面：我的歌单
-                                            return MyPlaylist(
-                                              onPlaylistTap: change_main_status,
-                                            );
-                                          } else {
-                                            // 其他页面：动态生成
-                                            return Playlist(
-                                              source: sources[index],
-                                              offset: offsets[index],
-                                              filter: filters[index],
-                                              onPlaylistTap: change_main_status,
-                                              key: Key(
-                                                  filters[index].toString()),
-                                            );
-                                          }
-                                        },
-                                      );
-                                    }))
-                                  ],
-                                ));
-                          };
-                          break;
-
-                        default:
-                          builder = (context_in_1) => Scaffold(
-                                appBar: AppBar(title: Text('Default Page')),
-                                body: Center(
-                                    child: Text('This is the default page')),
-                              );
-                          break;
-                      }
-                      return MaterialPageRoute(builder: builder);
-                    },
-                  ),
-                  bottomNavigationBar: Padding(
-                    padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).padding.bottom),
-                    child: Play(onPlaylistTap: change_main_status),
-                  ),
-                ));
-    });
+                      bottomNavigationBar: Padding(
+                        padding: EdgeInsets.only(
+                            bottom: MediaQuery.of(context).padding.bottom),
+                        child: Play(onPlaylistTap: change_main_status),
+                      ),
+                    ));
+        }));
   }
 
   void showVolumeSlider() async {

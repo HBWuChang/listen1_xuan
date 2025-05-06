@@ -1295,7 +1295,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                             ? IconButton(
                                 icon: Icon(Icons.edit),
                                 onPressed: () async {
-                                  await set_inapp_hotkey(false);
+                                  set_inapp_hotkey(false);
                                   // 编辑按钮点击事件
                                   await showDialog(
                                     context: context_PlaylistInfo,
@@ -1359,7 +1359,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                       );
                                     },
                                   );
-                                  await set_inapp_hotkey(true);
+                                  set_inapp_hotkey(true);
                                 },
                               )
                             : IconButton(

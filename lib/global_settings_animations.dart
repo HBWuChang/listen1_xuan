@@ -139,7 +139,6 @@ void init_hotkeys() async {
   if (hotskeys["show"] != null) {
     set_hotkey(null, HotKey.fromJson(hotskeys["show"]), "show");
   }
-  set_inapp_hotkey(true);
 }
 
 Map<String, HotKey> inapp_hotkeys = {
@@ -172,46 +171,26 @@ Map<String, HotKey> inapp_hotkeys = {
     scope: HotKeyScope.inapp,
   ),
 };
-Future<void> set_inapp_hotkey(bool enable) async {
-  if (!is_windows) return;
-  if (enable) {
-    inapp_hotkeys.forEach((key, hotkey) async {
-      await hotKeyManager.register(
-        hotkey,
-        keyDownHandler: (hotKey) async {
-          // 处理播放/暂停的逻辑
-          switch (key) {
-            case "space":
-              global_play_or_pause();
-              break;
-            case "previous":
-              global_skipToPrevious();
-              break;
-            case "next":
-              global_skipToNext();
-              break;
-            case "arrowUp":
-              global_volume_up();
-              break;
-            case "arrowDown":
-              global_volume_down();
-              break;
-            case "arrowLeft":
-              global_seek_to_previous();
-              break;
-            case "arrowRight":
-              global_seek_to_next();
-              break;
-          }
-        },
-      );
-    });
-  } else {
-    // await hotKeyManager.unregister(inapp_space);
-    inapp_hotkeys.forEach((key, hotkey) async {
-      await hotKeyManager.unregister(hotkey);
-    });
-  }
+Map<LogicalKeyboardKey, dynamic> inappShortcuts = {
+  LogicalKeyboardKey.space: global_play_or_pause,
+  LogicalKeyboardKey.keyA: global_seek_to_previous,
+  LogicalKeyboardKey.keyD: global_seek_to_next,
+  LogicalKeyboardKey.keyW: global_volume_up,
+  LogicalKeyboardKey.keyS: global_volume_down,
+  LogicalKeyboardKey.keyE: global_skipToNext,
+  LogicalKeyboardKey.keyQ: global_skipToPrevious,
+  LogicalKeyboardKey.arrowLeft: global_seek_to_previous,
+  LogicalKeyboardKey.arrowRight: global_seek_to_next,
+  LogicalKeyboardKey.arrowUp: global_volume_up,
+  LogicalKeyboardKey.arrowDown: global_volume_down,
+  // ","
+  LogicalKeyboardKey.comma: global_skipToNext,
+  // "."
+  LogicalKeyboardKey.period: global_skipToPrevious,
+};
+bool enable_inapp_hotkey = true;
+void set_inapp_hotkey(enable) {
+  enable_inapp_hotkey = enable;
 }
 
 double global_currentVolume = 0.5;

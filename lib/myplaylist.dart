@@ -76,7 +76,6 @@ class MyPlaylist {
             actions: [
               TextButton(
                 onPressed: () async {
-                  await set_inapp_hotkey(false);
                   await showDialog(
                     context: context,
                     builder: (BuildContext context) {
@@ -130,7 +129,6 @@ class MyPlaylist {
                       );
                     },
                   );
-                  await set_inapp_hotkey(true);
                 },
                 child: Text('新建歌单'),
               ),
