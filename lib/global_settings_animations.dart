@@ -184,9 +184,9 @@ Map<LogicalKeyboardKey, dynamic> inappShortcuts = {
   LogicalKeyboardKey.arrowUp: global_volume_up,
   LogicalKeyboardKey.arrowDown: global_volume_down,
   // ","
-  LogicalKeyboardKey.comma: global_skipToNext,
+  LogicalKeyboardKey.comma: global_skipToPrevious,
   // "."
-  LogicalKeyboardKey.period: global_skipToPrevious,
+  LogicalKeyboardKey.period: global_skipToNext,
 };
 bool enable_inapp_hotkey = true;
 void set_inapp_hotkey(enable) {
