@@ -348,7 +348,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   void onTrayIconRightMouseDown() {
     print('onTrayIconRightMouseDown');
     // do something, for example pop up the menu
-    trayManager.popUpContextMenu();
+    trayManager.popUpContextMenu(bringAppToFront:true);
   }
 
   @override
