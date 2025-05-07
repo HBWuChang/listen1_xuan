@@ -164,8 +164,6 @@ void main() async {
         createHttpClient: () {
           final client = HttpClient();
           client.findProxy = (uri) {
-            // 将请求代理至 localhost:8888。
-            // 请注意，代理会在你正在运行应用的设备上生效，而不是在宿主平台生效。
             return 'PROXY $proxyaddr';
           };
           return client;
