@@ -748,7 +748,9 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                 icon: Icon(Icons.minimize,
                                                     size: 13),
                                                 onPressed: () {
-                                                  windowManager.hide();
+                                                  windowManager.minimize();
+                                                  windowManager
+                                                      .setSkipTaskbar(false);
                                                 },
                                               ),
                                               IconButton(
@@ -963,7 +965,9 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                 icon: Icon(Icons.minimize,
                                                     size: 13),
                                                 onPressed: () {
-                                                  windowManager.hide();
+                                                  windowManager.minimize();
+                                                  windowManager
+                                                      .setSkipTaskbar(false);
                                                 },
                                               ),
                                               IconButton(
