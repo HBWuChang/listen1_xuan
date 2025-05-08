@@ -1171,7 +1171,7 @@ Future<void> global_volume_up({double step = 0.02}) async {
   set_player_settings("volume", next_pos * 100);
 }
 
-Future<void> global_volume_down({double step = 0.05}) async {
+Future<void> global_volume_down({double step = 0.02}) async {
   var now_pos = music_player.volume;
   var next_pos = now_pos - step;
   if (next_pos < 0) {
