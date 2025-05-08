@@ -1158,7 +1158,7 @@ Future<void> global_seek_to_previous(
   music_player.seek(next_pos);
 }
 
-Future<void> global_volume_up({double step = 0.05}) async {
+Future<void> global_volume_up({double step = 0.02}) async {
   var now_pos = music_player.volume;
   var next_pos = now_pos + step;
   if (next_pos > 1) {
