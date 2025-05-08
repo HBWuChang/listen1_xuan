@@ -293,10 +293,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
   bool _Mainpage = true;
-  String _playlist_id = "bilibili";
   late PreloadPageController _pageController; // 声明 PageController
-
-  Key _playlistInfoKey = UniqueKey();
   OverlayEntry? _overlayEntry;
   Timer? _timer;
   double _currentVolume = 0.5;
