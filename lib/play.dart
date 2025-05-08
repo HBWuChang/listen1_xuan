@@ -306,7 +306,6 @@ Future<void> set_player_settings(String key, dynamic value) async {
   }
 }
 
-// Future<Map<String, dynamic>,int> getnowplayingsong() async {
 Future<Map<String, dynamic>> getnowplayingsong() async {
   final nowplaying_track_id = await get_player_settings("nowplaying_track_id");
   final current_playing = await get_current_playing();
@@ -836,7 +835,7 @@ class _PlayState extends State<Play> {
                                         setState(() {
                                           global_currentVolume = value;
                                         });
-                                        set_player_settings(
+                                        saveSettingsWithDebounce(
                                             "volume", value * 100);
                                         music_player.setVolume(value);
                                       },
@@ -1168,7 +1167,7 @@ Future<void> global_volume_up({double step = 0.02}) async {
     global_currentVolume = next_pos;
     music_player.setVolume(next_pos);
   });
-  set_player_settings("volume", next_pos * 100);
+  saveSettingsWithDebounce("volume", next_pos * 100);
 }
 
 Future<void> global_volume_down({double step = 0.02}) async {
@@ -1181,7 +1180,7 @@ Future<void> global_volume_down({double step = 0.02}) async {
     global_currentVolume = next_pos;
     music_player.setVolume(next_pos);
   });
-  set_player_settings("volume", next_pos * 100);
+  saveSettingsWithDebounce("volume", next_pos * 100);
 }
 
 Future<void> global_skipToPrevious() async {
@@ -1365,4 +1364,17 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       queueIndex: event.currentIndex,
     );
   }
+}
+
+Timer? _saveSettingsTimer;
+
+void saveSettingsWithDebounce(String key, dynamic value) {
+  // 取消之前的定时器
+  _saveSettingsTimer?.cancel();
+
+  // 创建一个新的定时器
+  _saveSettingsTimer = Timer(Duration(seconds: 1), () async {
+    await set_player_settings(key, value);
+    print('Settings saved: $key = $value');
+  });
 }

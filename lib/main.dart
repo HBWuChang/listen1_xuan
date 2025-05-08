@@ -1271,7 +1271,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                           _currentVolume = value;
                         });
                         // print(value);
-                        set_player_settings("volume", value * 100);
+                        saveSettingsWithDebounce("volume", value * 100);
                         music_player.setVolume(value);
                         _startAutoCloseTimer(); // 重置计时器
                       },
