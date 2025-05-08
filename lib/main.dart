@@ -429,7 +429,6 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   void change_main_status(String id,
       {bool is_my = false, String search_text = ""}) {
     main_is_my = is_my;
-    _playlistInfoKey = UniqueKey();
     if (id != "") {
       clean_top_context();
       Navigator.of(top_context.last).push(
