@@ -156,7 +156,13 @@ void main() async {
     await cookieDir.create(recursive: true);
   }
   if (!is_windows)
-    dio_with_ProxyAdapter.httpClientAdapter = NativeAdapter();
+    dio_with_ProxyAdapter.httpClientAdapter = NativeAdapter(
+      createCupertinoConfiguration: () =>
+          URLSessionConfiguration.ephemeralSessionConfiguration()
+            ..allowsCellularAccess = true
+            ..allowsConstrainedNetworkAccess = true
+            ..allowsExpensiveNetworkAccess = true,
+    );
   else {
     var proxyaddr = await get_windows_proxy_addr();
     if (proxyaddr != "") {
@@ -345,7 +351,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   void onTrayIconRightMouseDown() {
     print('onTrayIconRightMouseDown');
     // do something, for example pop up the menu
-    trayManager.popUpContextMenu(bringAppToFront:true);
+    trayManager.popUpContextMenu(bringAppToFront: true);
   }
 
   @override

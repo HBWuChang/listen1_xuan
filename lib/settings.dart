@@ -1180,12 +1180,13 @@ class _SettingsPageState extends State<SettingsPage> {
                             );
                             return;
                           }
-                          final response = await dio_with_ProxyAdapter.get(url_list,
-                              options: Options(headers: {
-                                'accept': 'application/vnd.github.v3+json',
-                                'authorization': 'Bearer ' + token,
-                                'x-github-api-version': '2022-11-28',
-                              }));
+                          final response =
+                              await dio_with_ProxyAdapter.get(url_list,
+                                  options: Options(headers: {
+                                    'accept': 'application/vnd.github.v3+json',
+                                    'authorization': 'Bearer ' + token,
+                                    'x-github-api-version': '2022-11-28',
+                                  }));
                           late var art;
 
                           for (var i in response.data["artifacts"]) {
@@ -1369,12 +1370,14 @@ class _SettingsPageState extends State<SettingsPage> {
                               );
                               return;
                             }
-                            final response = await dio_with_ProxyAdapter.get(url_list,
-                                options: Options(headers: {
-                                  'accept': 'application/vnd.github.v3+json',
-                                  'authorization': 'Bearer ' + token,
-                                  'x-github-api-version': '2022-11-28',
-                                }));
+                            final response =
+                                await dio_with_ProxyAdapter.get(url_list,
+                                    options: Options(headers: {
+                                      'accept':
+                                          'application/vnd.github.v3+json',
+                                      'authorization': 'Bearer ' + token,
+                                      'x-github-api-version': '2022-11-28',
+                                    }));
                             print(
                                 'Kernel architecture: ${SysInfo.kernelArchitecture.name}');
                             late var art;
@@ -1728,6 +1731,7 @@ class Github {
 
   static Future<void> handleCallback(String code, BuildContext context) async {
     _msg('正在向Github请求信息', context, 1.0);
+    String res = "";
     try {
       final url = '$OAUTH_URL/access_token';
       final params = {
@@ -1744,14 +1748,15 @@ class Github {
           },
         ),
       );
+      res = response.data.toString();
       final accessToken = response.data['access_token'];
       final prefs = await SharedPreferences.getInstance();
       prefs.setString('githubOauthAccessKey', accessToken);
 
       _msg('设置成功', context, 1.0);
     } catch (e) {
-      Clipboard.setData(ClipboardData(text: e.toString()));
-      _msg('设置失败，错误信息已复制到剪切板$e', context, 1.0);
+      Clipboard.setData(ClipboardData(text: e.toString() + res));
+      _msg('设置失败，错误信息已复制到剪切板$e\n网络请求返回值：$res', context, 1.0);
     }
   }
 
