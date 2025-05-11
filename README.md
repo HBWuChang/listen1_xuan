@@ -6,6 +6,7 @@ flutter version 3.27.4
 # 第一次使用
 - 请在设置页面登录各平台账号以确保相应平台可用
 - 登录Github账号后可使用Github同步歌单、一键下载最新测试版
+- 若网易、QQ、Github登录页面打不开，请尝试检查[webview2运行环境](https://github.com/jnschulze/flutter-webview-windows?tab=readme-ov-file#target-platform-requirements)
 ## ~~可能需要的~~提示
 ### Windows&Android
 - 应用内在没有获取文本框焦点时，可使用如下按键：
