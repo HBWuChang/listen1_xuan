@@ -30,6 +30,8 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:flutter/gestures.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:native_dio_adapter/native_dio_adapter.dart';
+import 'package:windows_taskbar/windows_taskbar.dart';
+import 'package:smtc_windows/smtc_windows.dart';
 
 final dio_with_cookie_manager = Dio();
 final dio_with_ProxyAdapter = Dio();
@@ -111,9 +113,49 @@ void downloadtasks_background(SendPort mainPort) async {
   });
 }
 
+void enableThumbnailToolbar() async {
+  while (true) {
+    try {
+      await WindowsTaskbar.setThumbnailToolbar(
+        [
+          ThumbnailToolbarButton(
+            ThumbnailToolbarAssetIcon(
+                'assets/images/audio_service_skip_previous.ico'),
+            '上一首',
+            () {
+              global_skipToPrevious();
+            },
+          ),
+          ThumbnailToolbarButton(
+            ThumbnailToolbarAssetIcon('assets/images/audio_service_pause.ico'),
+            '播放/暂停',
+            () {
+              global_play_or_pause();
+            },
+          ),
+          ThumbnailToolbarButton(
+            ThumbnailToolbarAssetIcon(
+                'assets/images/audio_service_skip_next.ico'),
+            '下一首',
+            () {
+              global_skipToNext();
+            },
+          ),
+        ],
+      );
+      break;
+    } catch (e) {
+      print("ThumbnailToolbar error: $e");
+      Future.delayed(Duration(seconds: 3));
+    }
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 框架已初始化
   if (is_windows) {
+    await SMTCWindows.initialize();
+    enableThumbnailToolbar();
     JustAudioMediaKit.ensureInitialized(
       linux: false, // default: true  - dependency: media_kit_libs_linux
       windows:
@@ -133,7 +175,9 @@ void main() async {
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
     });
+    enableThumbnailToolbar();
   }
+
   Map<String, dynamic> settings = await settings_getsettings();
   bool useHttpOverrides = false;
   if (settings["useHttpOverrides"] == null) {

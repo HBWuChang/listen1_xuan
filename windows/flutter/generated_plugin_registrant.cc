@@ -17,6 +17,7 @@
 #include <url_launcher_windows/url_launcher_windows.h>
 #include <webview_windows/webview_windows_plugin.h>
 #include <window_manager/window_manager_plugin.h>
+#include <windows_taskbar/windows_taskbar_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   AudioplayersWindowsPluginRegisterWithRegistrar(
@@ -41,4 +42,6 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("WebviewWindowsPlugin"));
   WindowManagerPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("WindowManagerPlugin"));
+  WindowsTaskbarPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("WindowsTaskbarPlugin"));
 }

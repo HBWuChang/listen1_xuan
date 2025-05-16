@@ -58,6 +58,8 @@ dependencies:
   hotkey_manager: ^0.2.3
   charset_converter: ^2.3.0
   native_dio_adapter: ^1.4.0
+  smtc_windows: ^1.0.0
+  windows_taskbar: ^1.1.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

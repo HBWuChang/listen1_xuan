@@ -20,6 +20,8 @@ import 'package:logger/logger.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:math';
 import 'global_settings_animations.dart';
+import 'package:smtc_windows/smtc_windows.dart';
+import 'package:windows_taskbar/windows_taskbar.dart';
 
 class FileLogOutput extends LogOutput {
   final File file;
@@ -317,6 +319,46 @@ Future<Map<String, dynamic>> getnowplayingsong() async {
   return {'track': {}, 'index': -1};
 }
 
+Future<void> bind_smtc() async {
+  try {
+    if (is_windows)
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          smtc.buttonPressStream.listen((event) {
+            switch (event) {
+              case PressedButton.play:
+                smtc.setPlaybackStatus(PlaybackStatus.playing);
+                global_play();
+                break;
+              case PressedButton.pause:
+                smtc.setPlaybackStatus(PlaybackStatus.paused);
+                global_pause();
+                break;
+              case PressedButton.next:
+                print('Next');
+                global_skipToNext();
+                break;
+              case PressedButton.previous:
+                print('Previous');
+                global_skipToPrevious();
+                break;
+              case PressedButton.stop:
+                global_change_play_mode();
+                break;
+              default:
+                break;
+            }
+          });
+        } catch (e) {
+          debugPrint("Error: $e");
+        }
+      });
+  } catch (e) {
+    debugPrint('绑定SMTC失败');
+    debugPrint(e.toString());
+  }
+}
+
 Future<void> change_playback_state(dynamic track) async {
   try {
     debugPrint('开始更新播放状态');
@@ -346,6 +388,52 @@ Future<void> change_playback_state(dynamic track) async {
       duration: _duration,
     );
     (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
+    // smtc.updateMetadata(
+    //   const MusicMetadata(
+    //     title: 'Title',
+    //     album: 'Album',
+    //     albumArtist: 'Album Artist',
+    //     artist: 'Artist',
+    //     thumbnail:
+    //         'https://media.glamour.com/photos/5f4c44e20c71c58fc210d35f/master/w_2560%2Cc_limit/mgid_ao_image_mtv.jpg',
+    //   ),
+    // );
+    if (is_windows) {
+      WindowsTaskbar.setWindowTitle(track['title']);
+      try {
+        smtc.updateMetadata(
+          MusicMetadata(
+            title: track['title'],
+            album: track['album'],
+            albumArtist: track['artist'],
+            artist: track['artist'],
+            thumbnail: track['img_url'] == null
+                ? 'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0'
+                : track['img_url'],
+          ),
+        );
+      } catch (e) {
+        smtc = SMTCWindows(
+          metadata: MusicMetadata(
+            title: track['title'],
+            album: track['album'],
+            albumArtist: track['artist'],
+            artist: track['artist'],
+            thumbnail: track['img_url'] == null
+                ? 'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0'
+                : track['img_url'],
+          ),
+          timeline: PlaybackTimeline(
+            startTimeMs: 0,
+            endTimeMs: 1000,
+            positionMs: 0,
+            minSeekTimeMs: 0,
+            maxSeekTimeMs: 1000,
+          ),
+        );
+      }
+      await bind_smtc();
+    }
     debugPrint('更新播放状态成功');
   } catch (e) {
     debugPrint('更新播放状态失败');
@@ -511,7 +599,46 @@ Future<void> setNotification() async {
     update_playmode_to_audio_service();
     final track = await getnowplayingsong();
     if (track['index'] != -1) {
+      if (is_windows) {
+        smtc = SMTCWindows(
+          metadata: MusicMetadata(
+            title: track['track']['title'],
+            album: track['track']['album'],
+            albumArtist: track['track']['artist'],
+            artist: track['track']['artist'],
+            thumbnail: track['track']['img_url'],
+          ),
+          timeline: PlaybackTimeline(
+            startTimeMs: 0,
+            endTimeMs: 1000,
+            positionMs: 0,
+            minSeekTimeMs: 0,
+            maxSeekTimeMs: 1000,
+          ),
+        );
+      }
+
       await playsong(track['track'], false);
+    } else {
+      // );
+      if (is_windows)
+        smtc = SMTCWindows(
+          metadata: MusicMetadata(
+            title: "test",
+            album: "test",
+            albumArtist: "test",
+            artist: "test",
+            thumbnail:
+                'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0',
+          ),
+          timeline: PlaybackTimeline(
+            startTimeMs: 0,
+            endTimeMs: 1000,
+            positionMs: 0,
+            minSeekTimeMs: 0,
+            maxSeekTimeMs: 1000,
+          ),
+        );
     }
   }
 }
@@ -526,6 +653,8 @@ class Play extends StatefulWidget {
   @override
   _PlayState createState() => _PlayState();
 }
+
+late SMTCWindows smtc;
 
 class _PlayState extends State<Play> {
   String formatDuration(Duration duration) {
@@ -934,6 +1063,7 @@ class _PlayState extends State<Play> {
                                                 builder: (context, snapshot) {
                                                   final mediaItem =
                                                       snapshot.data;
+
                                                   return Center(
                                                       child: FittedBox(
                                                     fit: BoxFit.scaleDown,
@@ -1100,9 +1230,18 @@ class _PlayState extends State<Play> {
 
   Stream<MediaState> get _mediaStateStream =>
       Rx.combineLatest2<MediaItem?, Duration, MediaState>(
-          _audioHandler.mediaItem,
-          AudioService.position,
-          (mediaItem, position) => MediaState(mediaItem, position));
+          _audioHandler.mediaItem, AudioService.position,
+          (mediaItem, position) {
+        if (is_windows) {
+          WindowsTaskbar.setProgress(
+              (position.inMilliseconds /
+                      (mediaItem?.duration?.inMilliseconds ?? 1) *
+                      100)
+                  .toInt(),
+              100);
+        }
+        return MediaState(mediaItem, position);
+      });
 
   IconButton _button(IconData iconData, VoidCallback onPressed) => IconButton(
         icon: Icon(iconData),
