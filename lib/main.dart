@@ -553,8 +553,8 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     if (_Mainpage) {
       if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
         if (is_windows) {
-          windowManager.hide();
-          windowManager.setSkipTaskbar(true);
+          windowManager.minimize();
+          windowManager.setSkipTaskbar(false);
           return;
         }
         if (kDebugMode) {
