@@ -38,7 +38,7 @@ final dio_with_cookie_manager = Dio();
 final dio_with_ProxyAdapter = Dio();
 
 class contextWithId {
-  final BuildContext context;
+  final Route route;
   final String id;
   contextWithId(this.context, this.id);
 }
@@ -882,7 +882,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                     break;
                                   case '/search':
                                     cleanReapeatRoute(settings.name!);
-                                    return GetPageRoute(
+                                    var route=GetPageRoute(
                                         settings: settings,
                                         page: () => Searchlistinfo(
                                             input_text_Controller:
@@ -890,13 +890,14 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                             onPlaylistTap: change_main_status),
                                         transition:
                                             Transition.rightToLeftWithFade);
+                                    return route;
                                   case '/settings':
                                     cleanReapeatRoute(settings.name!);
-                                    return GetPageRoute(
+                                    var route=GetPageRoute(
                                         settings: settings,
                                         page: () => SettingsPage(),
                                         transition: Transition.rightToLeft);
-
+                                    return route;
                                   default:
                                     builder = (context_in_1) => Scaffold(
                                           appBar: AppBar(
