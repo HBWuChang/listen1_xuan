@@ -60,6 +60,7 @@ dependencies:
   native_dio_adapter: ^1.4.0
   smtc_windows: ^1.0.0
   windows_taskbar: ^1.1.2
+  get:
 dev_dependencies:
   flutter_test:
     sdk: flutter

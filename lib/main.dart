@@ -32,10 +32,21 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:native_dio_adapter/native_dio_adapter.dart';
 import 'package:windows_taskbar/windows_taskbar.dart';
 import 'package:smtc_windows/smtc_windows.dart';
+import 'package:get/get.dart';
 
 final dio_with_cookie_manager = Dio();
 final dio_with_ProxyAdapter = Dio();
-List<BuildContext> top_context = List.empty(growable: true);
+
+class contextWithId {
+  final BuildContext context;
+  final String id;
+  contextWithId(this.context, this.id);
+}
+
+List<contextWithId> top_context = List.empty(growable: true);
+void cleanReapeatRoute(String name) {
+  Get.removeRoute();
+}
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -234,40 +245,15 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    if (is_windows) {
-      return MaterialApp(
-        title: 'Listen1',
-        builder: BotToastInit(), //1.调用BotToastInit
-        navigatorObservers: [BotToastNavigatorObserver()], //2.注册路由观察者
-        theme: ThemeData(
-            primarySwatch: Colors.indigo,
-            useMaterial3: true,
-            primaryColor: Colors.indigo,
-            pageTransitionsTheme: const PageTransitionsTheme(builders: {
-              TargetPlatform.android: SharedAxisPageTransitionsBuilder(
-                transitionType: SharedAxisTransitionType.scaled,
-              ),
-              TargetPlatform.iOS: SharedAxisPageTransitionsBuilder(
-                transitionType: SharedAxisTransitionType.scaled,
-              ),
-            })),
-        darkTheme: ThemeData.dark(),
-        themeMode: ThemeMode.system,
-        localizationsDelegates: [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: [
-          const Locale('zh', 'CN'), // 中文简体
-          // 其他支持的语言
-        ],
-        locale: const Locale('zh', 'CN'), // 设置默认语言为中文
-        home: MyHomePage(),
-      );
-    }
-    return MaterialApp(
+    return GetMaterialApp(
       title: 'Listen1',
+      builder: is_windows ? BotToastInit() : null, //1.调用BotToastInit
+      navigatorObservers: is_windows
+          ? [
+              BotToastNavigatorObserver(),
+            ]
+          : [], //2.注册路由观察者
+
       theme: ThemeData(
           primarySwatch: Colors.indigo,
           useMaterial3: true,
@@ -292,22 +278,8 @@ class MyApp extends StatelessWidget {
         // 其他支持的语言
       ],
       locale: const Locale('zh', 'CN'), // 设置默认语言为中文
-      home: is_windows ? MyHomePage_with_TrayListener() : MyHomePage(),
+      home: MyHomePage(),
     );
-  }
-}
-
-class MyHomePage_with_TrayListener extends StatefulWidget {
-  @override
-  _MyHomePage_with_TrayListenerState createState() =>
-      _MyHomePage_with_TrayListenerState();
-}
-
-class _MyHomePage_with_TrayListenerState
-    extends State<MyHomePage_with_TrayListener> with TrayListener {
-  @override
-  Widget build(BuildContext context) {
-    return MyHomePage();
   }
 }
 
@@ -322,7 +294,7 @@ List<bool> show_filters = [false, false, true, true, false];
 bool clean_top_context() {
   while (top_context.length > 1) {
     try {
-      if (Navigator.of(top_context.last).canPop()) {
+      if (Navigator.of(top_context.last.context).canPop()) {
         return true;
       } else {
         top_context.removeLast();
@@ -480,37 +452,27 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
       {bool is_my = false, String search_text = ""}) {
     main_is_my = is_my;
     if (id != "") {
-      clean_top_context();
-      Navigator.of(top_context.last).push(
-        MaterialPageRoute(
-          builder: (context) => PlaylistInfo(
-            listId: id,
-            onPlaylistTap: change_main_status,
-            is_my: false,
-          ),
-        ),
-      );
+      Get.to(() {
+        return PlaylistInfo(
+            listId: id, onPlaylistTap: change_main_status, is_my: false);
+      }, id: 1, routeName: id);
     } else {
       if (search_text != "") {
         input_text_Controller.text = search_text;
-        clean_top_context();
-        Navigator.of(top_context.last).push(
-          PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) {
-                top_context.add(context);
-                return Searchlistinfo(
-                  input_text_Controller: input_text_Controller,
-                  onPlaylistTap: change_main_status,
-                );
-              },
-              transitionsBuilder: (context, animation, secondaryAnimation,
-                      child) =>
-                  search_Animation(
-                      animation: animation,
-                      secondaryAnimation: secondaryAnimation,
-                      child: child,
-                      axis: Axis.vertical)),
-        );
+        // Get.to(
+        //     () => Searchlistinfo(
+        //         input_text_Controller: input_text_Controller,
+        //         onPlaylistTap: change_main_status),
+        //     transition: Transition.upToDown,
+        //     duration: Duration(milliseconds: 300),
+        //     id: 1,
+        //     routeName: 'Searchlistinfo');
+        Get.toNamed('/search',
+            arguments: {
+              'input_text_Controller': input_text_Controller,
+              'onPlaylistTap': change_main_status
+            },
+            id: 1);
       } else {
         setState(() {
           _Mainpage = true;
@@ -542,7 +504,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   void _pop() {
     print("didPop: didPop,");
     if (clean_top_context()) {
-      Navigator.of(top_context.last).pop(); // 触发嵌套 Navigator 的 pop
+      Navigator.of(top_context.last.context).pop(); // 触发嵌套 Navigator 的 pop
       top_context.removeLast();
       return;
     }
@@ -666,28 +628,12 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                     controller: input_text_Controller,
                     readOnly: true,
                     onTap: () async {
-                      clean_top_context();
-                      await Navigator.of(top_context.last).push(
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) {
-                            top_context.add(context);
-                            return Searchlistinfo(
-                              input_text_Controller: input_text_Controller,
-                              onPlaylistTap: change_main_status,
-                            );
+                      Get.toNamed('/search',
+                          arguments: {
+                            'input_text_Controller': input_text_Controller,
+                            'onPlaylistTap': change_main_status
                           },
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) =>
-                                  search_Animation(
-                                      animation: animation,
-                                      secondaryAnimation: secondaryAnimation,
-                                      child: child,
-                                      axis: Axis.vertical),
-                          transitionDuration:
-                              Duration(milliseconds: 300), // 延长动画时间到 1000ms
-                        ),
-                      );
+                          id: 1);
                     },
                   ),
                   Expanded(
@@ -698,24 +644,9 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                     tooltip: "设置",
                     icon: Icon(Icons.settings),
                     onPressed: () {
-                      clean_top_context();
-                      Navigator.push(
-                        top_context.last,
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) {
-                            top_context.add(context);
-                            return SettingsPage();
-                          },
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) =>
-                                  SharedAxisTransition(
-                            animation: animation,
-                            secondaryAnimation: secondaryAnimation,
-                            transitionType: SharedAxisTransitionType.horizontal,
-                            child: child,
-                          ),
-                        ),
+                      Get.toNamed(
+                        '/settings',
+                        id: 1,
                       );
                     },
                   ),
@@ -815,6 +746,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                   )),
                             Expanded(
                                 child: Navigator(
+                              key: Get.nestedKey(1),
                               initialRoute: '/',
                               onGenerateRoute: (RouteSettings settings) {
                                 WidgetBuilder builder;
@@ -822,7 +754,8 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                   case '/':
                                     // 在函数内部定义默认页面
                                     builder = (context_in_1) {
-                                      top_context.add(context_in_1);
+                                      top_context
+                                          .add(contextWithId(context_in_1, ''));
                                       return Scaffold(
                                           body: Column(
                                         children: [
@@ -947,6 +880,23 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                       ));
                                     };
                                     break;
+                                  case '/search':
+                                    cleanReapeatRoute(settings.name!);
+                                    return GetPageRoute(
+                                        settings: settings,
+                                        page: () => Searchlistinfo(
+                                            input_text_Controller:
+                                                input_text_Controller,
+                                            onPlaylistTap: change_main_status),
+                                        transition:
+                                            Transition.rightToLeftWithFade);
+                                  case '/settings':
+                                    cleanReapeatRoute(settings.name!);
+                                    return GetPageRoute(
+                                        settings: settings,
+                                        page: () => SettingsPage(),
+                                        transition: Transition.rightToLeft);
+
                                   default:
                                     builder = (context_in_1) => Scaffold(
                                           appBar: AppBar(
@@ -1032,6 +982,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                   )))
                           : null,
                       body: Navigator(
+                        key: Get.nestedKey(1),
                         initialRoute: '/',
                         onGenerateRoute: (RouteSettings settings) {
                           WidgetBuilder builder;
@@ -1039,7 +990,8 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                             case '/':
                               // 在函数内部定义默认页面
                               builder = (context_in_1) {
-                                top_context.add(context_in_1);
+                                top_context
+                                    .add(contextWithId(context_in_1, ''));
                                 return Scaffold(
                                     appBar: _Mainpage
                                         ? AppBar(
@@ -1060,41 +1012,14 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                         input_text_Controller,
                                                     readOnly: true,
                                                     onTap: () async {
-                                                      clean_top_context();
-                                                      await Navigator.of(
-                                                              top_context.last)
-                                                          .push(
-                                                        PageRouteBuilder(
-                                                          pageBuilder: (context,
-                                                              animation,
-                                                              secondaryAnimation) {
-                                                            top_context
-                                                                .add(context);
-                                                            return Searchlistinfo(
-                                                              input_text_Controller:
-                                                                  input_text_Controller,
-                                                              onPlaylistTap:
-                                                                  change_main_status,
-                                                            );
+                                                      Get.toNamed('/search',
+                                                          arguments: {
+                                                            'input_text_Controller':
+                                                                input_text_Controller,
+                                                            'onPlaylistTap':
+                                                                change_main_status
                                                           },
-                                                          transitionsBuilder: (context,
-                                                                  animation,
-                                                                  secondaryAnimation,
-                                                                  child) =>
-                                                              search_Animation(
-                                                                  animation:
-                                                                      animation,
-                                                                  secondaryAnimation:
-                                                                      secondaryAnimation,
-                                                                  child: child,
-                                                                  axis: Axis
-                                                                      .vertical),
-                                                          transitionDuration:
-                                                              Duration(
-                                                                  milliseconds:
-                                                                      300), // 延长动画时间到 1000ms
-                                                        ),
-                                                      );
+                                                          id: 1);
                                                     },
                                                   ),
                                                 ),
@@ -1102,29 +1027,13 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                   tooltip: "设置",
                                                   icon: Icon(Icons.settings),
                                                   onPressed: () {
-                                                    Navigator.push(
-                                                      main_context,
-                                                      PageRouteBuilder(
-                                                        pageBuilder: (context,
-                                                            animation,
-                                                            secondaryAnimation) {
-                                                          return SettingsPage();
-                                                        },
-                                                        transitionsBuilder: (context,
-                                                                animation,
-                                                                secondaryAnimation,
-                                                                child) =>
-                                                            SharedAxisTransition(
-                                                          animation: animation,
-                                                          secondaryAnimation:
-                                                              secondaryAnimation,
-                                                          transitionType:
-                                                              SharedAxisTransitionType
-                                                                  .horizontal,
-                                                          child: child,
-                                                        ),
-                                                      ),
-                                                    );
+                                                    Get.to(() => SettingsPage(),
+                                                        transition: Transition
+                                                            .rightToLeft,
+                                                        duration: Duration(
+                                                            milliseconds: 300),
+                                                        routeName:
+                                                            'SettingsPage');
                                                   },
                                                 ),
                                               ],

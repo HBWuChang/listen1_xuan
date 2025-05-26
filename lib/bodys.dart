@@ -14,6 +14,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'global_settings_animations.dart';
+import 'package:get/get.dart';
 
 Future<dynamic> song_dialog(
   BuildContext context,
@@ -201,9 +202,7 @@ Future<dynamic> song_dialog(
                             TextButton(
                               onPressed: () async {
                                 await myplaylist.removeTrackFromMyPlaylist(
-                                    // widget.listId, track['id']);
-                                    nowplaylistinfo['id'],
-                                    track['id']);
+                                    nowplaylistinfo['id'], track['id']);
                                 Navigator.of(context).pop();
                                 if (deltrack != null) {
                                   deltrack(track);
@@ -349,15 +348,14 @@ class _PlaylistState extends State<Playlist> {
                   final playlist = _playlists[index];
                   return GestureDetector(
                     onTap: () {
-                      Navigator.of(context_playlist).push(
-                        MaterialPageRoute(
-                          builder: (context) => PlaylistInfo(
+                      Get.to(
+                          () =>PlaylistInfo(
                             listId: playlist['id'],
                             onPlaylistTap: widget.onPlaylistTap,
                             is_my: false,
                           ),
-                        ),
-                      );
+                          routeName: playlist['id'],
+                          id: 1);
                     },
                     child: Column(
                       children: [
@@ -662,17 +660,22 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                   fit: BoxFit.scaleDown,
                                   child: Text(playlist['info']['title'])),
                               onTap: () async {
-                                clean_top_context();
-                                var ret = await Navigator.push(
-                                  top_context.last,
-                                  MaterialPageRoute(
-                                    builder: (context) => PlaylistInfo(
+                                // var ret = await Get.to(
+                                //     () =>PlaylistInfo(
+                                //       listId: playlist['info']['id'],
+                                //       onPlaylistTap: widget.onPlaylistTap,
+                                //       is_my: true,
+                                //     ),
+                                //     routeName: playlist['info']['id'],
+                                //     id: 1);
+                                 var ret = await Get.to(
+                                    () =>PlaylistInfo(
                                       listId: playlist['info']['id'],
                                       onPlaylistTap: widget.onPlaylistTap,
                                       is_my: true,
                                     ),
-                                  ),
-                                );
+                                    routeName: playlist['info']['id'],
+                                    id: 1);
                                 if (ret != null) {
                                   if (ret["refresh"] == true) {
                                     My_loadData();
@@ -722,16 +725,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                         fit: BoxFit.scaleDown,
                                         child: Text(playlist['info']['title'])),
                                     onTap: () async {
-                                      clean_top_context();
-                                      var ret = await Navigator.push(
-                                        top_context.last,
-                                        MaterialPageRoute(
-                                          builder: (context) => PlaylistInfo(
+                                      var ret = await Get.to(
+                                         () => PlaylistInfo(
                                             listId: playlist['info']['id'],
                                             onPlaylistTap: widget.onPlaylistTap,
                                           ),
-                                        ),
-                                      );
+                                          id: 1,
+                                          routeName: playlist['info']['id']);
                                       if (ret != null) {
                                         if (ret["refresh"] == true) {
                                           My_loadData();
@@ -786,17 +786,25 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                           child:
                                               Text(playlist['info']['title'])),
                                       onTap: () async {
-                                        clean_top_context();
-                                        var ret = await Navigator.push(
-                                          top_context.last,
-                                          MaterialPageRoute(
-                                            builder: (context) => PlaylistInfo(
+                                        // clean_top_context();
+                                        // var ret = await Navigator.push(
+                                        //   top_context.last.context,
+                                        //   MaterialPageRoute(
+                                        //     builder: (context) => PlaylistInfo(
+                                        //       listId: playlist['info']['id'],
+                                        //       onPlaylistTap:
+                                        //           widget.onPlaylistTap,
+                                        //     ),
+                                        //   ),
+                                        // );
+                                        var ret = await Get.to(
+                                           () => PlaylistInfo(
                                               listId: playlist['info']['id'],
                                               onPlaylistTap:
                                                   widget.onPlaylistTap,
                                             ),
-                                          ),
-                                        );
+                                            id: 1,
+                                            routeName: playlist['info']['id']);
                                         if (ret != null) {
                                           if (ret["refresh"] == true) {
                                             My_loadData();
@@ -850,16 +858,23 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                         alignment: Alignment.centerLeft,
                                         child: Text(playlist['info']['title'])),
                                     onTap: () async {
-                                      clean_top_context();
-                                      var ret = await Navigator.push(
-                                        top_context.last,
-                                        MaterialPageRoute(
-                                          builder: (context) => PlaylistInfo(
+                                      // clean_top_context();
+                                      // var ret = await Navigator.push(
+                                      //   top_context.last.context,
+                                      //   MaterialPageRoute(
+                                      //     builder: (context) => PlaylistInfo(
+                                      //       listId: playlist['info']['id'],
+                                      //       onPlaylistTap: widget.onPlaylistTap,
+                                      //     ),
+                                      //   ),
+                                      // );
+                                      var ret = await Get.to(
+                                        () =>  PlaylistInfo(
                                             listId: playlist['info']['id'],
                                             onPlaylistTap: widget.onPlaylistTap,
                                           ),
-                                        ),
-                                      );
+                                          id: 1,
+                                          routeName: playlist['info']['id']);
                                       if (ret != null) {
                                         if (ret["refresh"] == true) {
                                           My_loadData();
@@ -916,16 +931,23 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                         alignment: Alignment.centerLeft,
                                         child: Text(playlist['info']['title'])),
                                     onTap: () async {
-                                      clean_top_context();
-                                      var ret = await Navigator.push(
-                                        top_context.last,
-                                        MaterialPageRoute(
-                                          builder: (context) => PlaylistInfo(
+                                      // clean_top_context();
+                                      // var ret = await Navigator.push(
+                                      //   top_context.last.context,
+                                      //   MaterialPageRoute(
+                                      //     builder: (context) => PlaylistInfo(
+                                      //       listId: playlist['info']['id'],
+                                      //       onPlaylistTap: widget.onPlaylistTap,
+                                      //     ),
+                                      //   ),
+                                      // );
+                                      var ret = await Get.to(
+                                        () =>  PlaylistInfo(
                                             listId: playlist['info']['id'],
                                             onPlaylistTap: widget.onPlaylistTap,
                                           ),
-                                        ),
-                                      );
+                                          id: 1,
+                                          routeName: playlist['info']['id']);
                                       if (ret != null) {
                                         if (ret["refresh"] == true) {
                                           My_loadData();
@@ -1122,7 +1144,6 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
   ScrollController inner_scrollController = ScrollController();
   @override
   Widget build(BuildContext context_PlaylistInfo) {
-    top_context.add(context_PlaylistInfo);
     return Scaffold(
         body: Center(
       child: _loading
@@ -1138,7 +1159,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                       leading: IconButton(
                         icon: Icon(Icons.arrow_back),
                         onPressed: () {
-                          Navigator.pop(context_PlaylistInfo);
+                          Get.back(id:1);
                         },
                       ),
                       title: Container(
@@ -1237,8 +1258,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                     tracks,
                                     result['info']['title'],
                                     result['info']['cover_img_url']);
-                                Navigator.of(context_PlaylistInfo)
-                                    .pop({"refresh": true});
+                                Get.back(result: {"refresh": true},id:1);
                               } catch (e) {
                                 // print(e);
                                 xuan_toast(
@@ -1271,8 +1291,8 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                                   'my', widget.listId);
                                               Navigator.of(context_dialog)
                                                   .pop();
-                                              Navigator.of(context_PlaylistInfo)
-                                                  .pop({"refresh": true});
+                                              Get.back(
+                                                  result: {"refresh": true});
                                             },
                                             child: Text('确定'),
                                           ),
@@ -1350,8 +1370,8 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                               );
                                               Navigator.of(context_dialog)
                                                   .pop();
-                                              Navigator.of(context_PlaylistInfo)
-                                                  .pop({"refresh": true});
+                                              Get.back(
+                                                  result: {"refresh": true});
                                             },
                                             child: Text('确定'),
                                           ),
@@ -1417,30 +1437,17 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
 
                                 if (ret != null) {
                                   if (ret["pop"] == true) {
-                                    Navigator.of(context_PlaylistInfo).pop();
-                                  }
-                                  if (ret["replace"] != null) {
-                                    Navigator.of(context_PlaylistInfo).replace(
-                                      oldRoute: ModalRoute.of(
-                                          context_PlaylistInfo)!, // 获取当前路由
-                                      newRoute: MaterialPageRoute(
-                                        builder: (context) => PlaylistInfo(
-                                          listId: ret["replace"],
-                                          onPlaylistTap: widget.onPlaylistTap,
-                                          is_my: false,
-                                        ),
-                                      ),
-                                    );
+                                    Get.back();
                                   }
                                   if (ret["push"] != null) {
-                                    Navigator.of(context_PlaylistInfo).push(
-                                      MaterialPageRoute(
-                                        builder: (context) => PlaylistInfo(
-                                          listId: ret["push"],
-                                          onPlaylistTap: widget.onPlaylistTap,
-                                          is_my: false,
-                                        ),
+                                    Get.to(
+                                     () => PlaylistInfo(
+                                        listId: ret["push"],
+                                        onPlaylistTap: widget.onPlaylistTap,
+                                        is_my: false,
                                       ),
+                                      routeName: ret["push"],
+                                      id:1
                                     );
                                   }
                                 }

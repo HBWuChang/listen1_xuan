@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:rxdart/rxdart.dart' as rxdart;
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:marquee/marquee.dart';
@@ -22,6 +23,7 @@ import 'dart:math';
 import 'global_settings_animations.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:windows_taskbar/windows_taskbar.dart';
+import 'package:get/get.dart';
 
 class FileLogOutput extends LogOutput {
   final File file;
@@ -911,15 +913,14 @@ class _PlayState extends State<Play> {
                                 );
                                 if (ret != null) {
                                   if (ret["push"] != null) {
-                                    clean_top_context();
-                                    Navigator.of(top_context.last).push(
-                                      MaterialPageRoute(
-                                        builder: (context) => PlaylistInfo(
-                                          listId: ret["push"],
-                                          onPlaylistTap: widget.onPlaylistTap,
-                                          is_my: false,
-                                        ),
+                                    Get.to(
+                                      () => PlaylistInfo(
+                                        listId: ret["push"],
+                                        onPlaylistTap: widget.onPlaylistTap,
+                                        is_my: false,
                                       ),
+                                      id: 1,
+                                      routeName: ret["push"],
                                     );
                                   }
                                 }
@@ -1177,15 +1178,14 @@ class _PlayState extends State<Play> {
                         position: position);
                     if (ret != null) {
                       if (ret["push"] != null) {
-                        clean_top_context();
-                        Navigator.of(top_context.last).push(
-                          MaterialPageRoute(
-                            builder: (context) => PlaylistInfo(
-                              listId: ret["push"],
-                              onPlaylistTap: widget.onPlaylistTap,
-                              is_my: false,
-                            ),
+                        Get.to(
+                          () => PlaylistInfo(
+                            listId: ret["push"],
+                            onPlaylistTap: widget.onPlaylistTap,
+                            is_my: false,
                           ),
+                          id: 1,
+                          routeName: ret["push"],
                         );
                       }
                     }
@@ -1229,7 +1229,7 @@ class _PlayState extends State<Play> {
   }
 
   Stream<MediaState> get _mediaStateStream =>
-      Rx.combineLatest2<MediaItem?, Duration, MediaState>(
+      rxdart.Rx.combineLatest2<MediaItem?, Duration, MediaState>(
           _audioHandler.mediaItem, AudioService.position,
           (mediaItem, position) {
         if (is_windows) {
