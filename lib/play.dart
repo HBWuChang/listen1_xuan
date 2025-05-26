@@ -913,15 +913,12 @@ class _PlayState extends State<Play> {
                                 );
                                 if (ret != null) {
                                   if (ret["push"] != null) {
-                                    Get.to(
-                                      () => PlaylistInfo(
-                                        listId: ret["push"],
-                                        onPlaylistTap: widget.onPlaylistTap,
-                                        is_my: false,
-                                      ),
-                                      id: 1,
-                                      routeName: ret["push"],
-                                    );
+                                    Get.toNamed(ret["push"],
+                                        arguments: {
+                                          'listId': ret["push"],
+                                          'is_my': false,
+                                        },
+                                        id: 1);
                                   }
                                 }
                               },
@@ -1178,15 +1175,12 @@ class _PlayState extends State<Play> {
                         position: position);
                     if (ret != null) {
                       if (ret["push"] != null) {
-                        Get.to(
-                          () => PlaylistInfo(
-                            listId: ret["push"],
-                            onPlaylistTap: widget.onPlaylistTap,
-                            is_my: false,
-                          ),
-                          id: 1,
-                          routeName: ret["push"],
-                        );
+                        Get.toNamed(ret["push"],
+                            arguments: {
+                              'listId': ret["push"],
+                              'is_my': false,
+                            },
+                            id: 1);
                       }
                     }
                   },

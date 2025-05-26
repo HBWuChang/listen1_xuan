@@ -794,20 +794,23 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadReadme() async {
-    final treadmeContent = await dio_with_ProxyAdapter.get(
-      'https://api.github.com/repos/HBWuChang/listen1_xuan/readme',
-    );
-    String decodeBase64(String data) {
-      return utf8.decode(base64Decode(data));
-    }
-
-    // 使用base64对content进行解码
     try {
+      final treadmeContent = await dio_with_ProxyAdapter.get(
+        'https://api.github.com/repos/HBWuChang/listen1_xuan/readme',
+      );
+      String decodeBase64(String data) {
+        return utf8.decode(base64Decode(data));
+      }
+
+      // 使用base64对content进行解码
       _readmeContent_setstate(() {
         _readmeContent =
             decodeBase64(treadmeContent.data['content'].replaceAll("\n", ''));
       });
-    } catch (e) {}
+    } catch (e) {_readmeContent_setstate(() {
+        _readmeContent =
+           '加载失败';
+      });}
   }
 
   @override

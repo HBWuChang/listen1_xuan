@@ -37,15 +37,40 @@ import 'package:get/get.dart';
 final dio_with_cookie_manager = Dio();
 final dio_with_ProxyAdapter = Dio();
 
-class contextWithId {
-  final Route route;
-  final String id;
-  contextWithId(this.context, this.id);
+int disposedByClean = 0;
+
+class ListenPopMiddleware extends GetMiddleware {
+  @override
+  void onPageDispose() {
+    if (disposedByClean > 0) {
+      disposedByClean--;
+    } else {
+      top_routeWithName.removeLast();
+    }
+  }
 }
 
-List<contextWithId> top_context = List.empty(growable: true);
-void cleanReapeatRoute(String name) {
-  Get.removeRoute();
+class routeWithName {
+  final Route route;
+  final String name;
+  routeWithName(this.route, this.name);
+}
+
+List<routeWithName> top_routeWithName = List.empty(growable: true);
+
+void addAndCleanReapeatRoute(Route route, String name) {
+  if (top_routeWithName.isNotEmpty) {
+    // 清除重复的路由
+    top_routeWithName.removeWhere((r) {
+      if (r.route.settings.name == route.settings.name) {
+        disposedByClean++;
+        Get.removeRoute(r.route, id: 1);
+        return true;
+      }
+      return false;
+    });
+  }
+  top_routeWithName.add(routeWithName(route, name));
 }
 
 class MyHttpOverrides extends HttpOverrides {
@@ -291,21 +316,6 @@ class MyHomePage extends StatefulWidget {
 List<String> sources = ['myplaylist', 'bilibili', 'netease', 'qq', 'kugou'];
 List<bool> show_filters = [false, false, true, true, false];
 
-bool clean_top_context() {
-  while (top_context.length > 1) {
-    try {
-      if (Navigator.of(top_context.last.context).canPop()) {
-        return true;
-      } else {
-        top_context.removeLast();
-      }
-    } catch (e) {
-      top_context.removeLast();
-    }
-  }
-  return false;
-}
-
 var main_showVolumeSlider;
 
 class _MyHomePageState extends State<MyHomePage> with TrayListener {
@@ -314,7 +324,6 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   TextEditingController input_text_Controller = TextEditingController();
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
-  bool _Mainpage = true;
   late PreloadPageController _pageController; // 声明 PageController
   OverlayEntry? _overlayEntry;
   Timer? _timer;
@@ -384,16 +393,6 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     }
   }
 
-  void _onSearchBackTapped() {
-    // _animationController.reverse(from: 1.0);
-    setState(() {
-      _isSearchActive = false;
-      if (!_isSearchActive) {
-        _focusNode.unfocus();
-      }
-    });
-  }
-
   late int _selectedIndex;
   List<int> offsets = List.generate(sources.length, (i) => 0);
   bool main_is_my = false;
@@ -452,31 +451,16 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
       {bool is_my = false, String search_text = ""}) {
     main_is_my = is_my;
     if (id != "") {
-      Get.to(() {
-        return PlaylistInfo(
-            listId: id, onPlaylistTap: change_main_status, is_my: false);
-      }, id: 1, routeName: id);
+      Get.toNamed(id, arguments: {'listId': id, 'is_my': is_my}, id: 1);
     } else {
       if (search_text != "") {
         input_text_Controller.text = search_text;
-        // Get.to(
-        //     () => Searchlistinfo(
-        //         input_text_Controller: input_text_Controller,
-        //         onPlaylistTap: change_main_status),
-        //     transition: Transition.upToDown,
-        //     duration: Duration(milliseconds: 300),
-        //     id: 1,
-        //     routeName: 'Searchlistinfo');
         Get.toNamed('/search',
             arguments: {
               'input_text_Controller': input_text_Controller,
               'onPlaylistTap': change_main_status
             },
             id: 1);
-      } else {
-        setState(() {
-          _Mainpage = true;
-        });
       }
     }
   }
@@ -503,44 +487,33 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   AnimationStatus lastStatus = AnimationStatus.forward;
   void _pop() {
     print("didPop: didPop,");
-    if (clean_top_context()) {
-      Navigator.of(top_context.last.context).pop(); // 触发嵌套 Navigator 的 pop
-      top_context.removeLast();
+    if (top_routeWithName.isNotEmpty) {
+      Get.back(id: 1);
       return;
     }
-    if (_isSearchActive) {
-      _onSearchBackTapped();
-      return;
-    }
-    if (_Mainpage) {
-      if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
-        if (is_windows) {
-          windowManager.minimize();
-          windowManager.setSkipTaskbar(false);
-          return;
-        }
-        if (kDebugMode) {
-          print("exit(0)");
-        } else {
-          exit(0);
-        }
+
+    if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
+      if (is_windows) {
+        windowManager.minimize();
+        windowManager.setSkipTaskbar(false);
+        return;
+      }
+      if (kDebugMode) {
+        print("exit(0)");
       } else {
-        xuan_toast(
-          msg: is_windows ? "再按一次以最小化" : "再按一次退出",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.black54,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-        last_pop_time = DateTime.now().millisecondsSinceEpoch;
+        exit(0);
       }
     } else {
-      change_main_status("");
-      if (_isSearchActive) {
-        _onSearchBackTapped();
-      }
+      xuan_toast(
+        msg: is_windows ? "再按一次以最小化" : "再按一次退出",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.black54,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      last_pop_time = DateTime.now().millisecondsSinceEpoch;
     }
   }
 
@@ -567,7 +540,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
         },
         child: OrientationBuilder(builder: (context, orientation) {
           global_horizon = orientation == Orientation.landscape;
-          top_context.clear();
+          top_routeWithName.clear();
           print("global_horizon: $global_horizon");
           if (global_horizon) {
             _selectedIndex = 2;
@@ -754,8 +727,6 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                   case '/':
                                     // 在函数内部定义默认页面
                                     builder = (context_in_1) {
-                                      top_context
-                                          .add(contextWithId(context_in_1, ''));
                                       return Scaffold(
                                           body: Column(
                                         children: [
@@ -881,32 +852,41 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                     };
                                     break;
                                   case '/search':
-                                    cleanReapeatRoute(settings.name!);
-                                    var route=GetPageRoute(
-                                        settings: settings,
-                                        page: () => Searchlistinfo(
-                                            input_text_Controller:
-                                                input_text_Controller,
-                                            onPlaylistTap: change_main_status),
-                                        transition:
-                                            Transition.rightToLeftWithFade);
+                                    var route = GetPageRoute(
+                                      settings: settings,
+                                      page: () => Searchlistinfo(
+                                          input_text_Controller:
+                                              input_text_Controller,
+                                          onPlaylistTap: change_main_status),
+                                      transition: Transition.upToDown,
+                                      middlewares: [ListenPopMiddleware()],
+                                    );
+                                    addAndCleanReapeatRoute(route, '/search');
                                     return route;
                                   case '/settings':
-                                    cleanReapeatRoute(settings.name!);
-                                    var route=GetPageRoute(
+                                    var route = GetPageRoute(
                                         settings: settings,
                                         page: () => SettingsPage(),
-                                        transition: Transition.rightToLeft);
+                                        middlewares: [ListenPopMiddleware()]);
+                                    addAndCleanReapeatRoute(route, '/settings');
                                     return route;
                                   default:
-                                    builder = (context_in_1) => Scaffold(
-                                          appBar: AppBar(
-                                              title: Text('Default Page')),
-                                          body: Center(
-                                              child: Text(
-                                                  'This is the default page')),
-                                        );
-                                    break;
+                                    var route = GetPageRoute(
+                                        settings: settings,
+                                        page: () {
+                                          final args = settings.arguments
+                                                  as Map<String, dynamic>? ??
+                                              {};
+                                          return PlaylistInfo(
+                                            listId: args['listId'],
+                                            onPlaylistTap: change_main_status,
+                                            is_my: args['is_my'] ?? false,
+                                          );
+                                        },
+                                        middlewares: [ListenPopMiddleware()]);
+                                    addAndCleanReapeatRoute(
+                                        route, settings.name!);
+                                    return route;
                                 }
                                 return MaterialPageRoute(builder: builder);
                               },
@@ -991,56 +971,47 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                             case '/':
                               // 在函数内部定义默认页面
                               builder = (context_in_1) {
-                                top_context
-                                    .add(contextWithId(context_in_1, ''));
                                 return Scaffold(
-                                    appBar: _Mainpage
-                                        ? AppBar(
-                                            title: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Text('Listen1'),
-                                                SizedBox(width: 10),
-                                                Expanded(
-                                                  child: TextField(
-                                                    decoration: InputDecoration(
-                                                      hintText: '请输入歌曲名，歌手或专辑',
-                                                      border: InputBorder.none,
-                                                    ),
-                                                    controller:
-                                                        input_text_Controller,
-                                                    readOnly: true,
-                                                    onTap: () async {
-                                                      Get.toNamed('/search',
-                                                          arguments: {
-                                                            'input_text_Controller':
-                                                                input_text_Controller,
-                                                            'onPlaylistTap':
-                                                                change_main_status
-                                                          },
-                                                          id: 1);
+                                    appBar: AppBar(
+                                      title: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text('Listen1'),
+                                          SizedBox(width: 10),
+                                          Expanded(
+                                            child: TextField(
+                                              decoration: InputDecoration(
+                                                hintText: '请输入歌曲名，歌手或专辑',
+                                                border: InputBorder.none,
+                                              ),
+                                              controller: input_text_Controller,
+                                              readOnly: true,
+                                              onTap: () async {
+                                                Get.toNamed('/search',
+                                                    arguments: {
+                                                      'input_text_Controller':
+                                                          input_text_Controller,
+                                                      'onPlaylistTap':
+                                                          change_main_status
                                                     },
-                                                  ),
-                                                ),
-                                                IconButton(
-                                                  tooltip: "设置",
-                                                  icon: Icon(Icons.settings),
-                                                  onPressed: () {
-                                                    Get.to(() => SettingsPage(),
-                                                        transition: Transition
-                                                            .rightToLeft,
-                                                        duration: Duration(
-                                                            milliseconds: 300),
-                                                        routeName:
-                                                            'SettingsPage');
-                                                  },
-                                                ),
-                                              ],
+                                                    id: 1);
+                                              },
                                             ),
-                                          )
-                                        : null,
+                                          ),
+                                          IconButton(
+                                            tooltip: "设置",
+                                            icon: Icon(Icons.settings),
+                                            onPressed: () {
+                                              Get.toNamed(
+                                                '/settings',
+                                                id: 1,
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                     body: Column(
                                       children: [
                                         Container(

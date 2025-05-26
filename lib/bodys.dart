@@ -348,14 +348,14 @@ class _PlaylistState extends State<Playlist> {
                   final playlist = _playlists[index];
                   return GestureDetector(
                     onTap: () {
-                      Get.to(
-                          () =>PlaylistInfo(
-                            listId: playlist['id'],
-                            onPlaylistTap: widget.onPlaylistTap,
-                            is_my: false,
-                          ),
-                          routeName: playlist['id'],
-                          id: 1);
+                      Get.toNamed(
+                        playlist['id'],
+                        arguments: {
+                          'listId': playlist['id'],
+                          'is_my': false,
+                        },
+                        id: 1,
+                      );
                     },
                     child: Column(
                       children: [
@@ -660,22 +660,15 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                   fit: BoxFit.scaleDown,
                                   child: Text(playlist['info']['title'])),
                               onTap: () async {
-                                // var ret = await Get.to(
-                                //     () =>PlaylistInfo(
-                                //       listId: playlist['info']['id'],
-                                //       onPlaylistTap: widget.onPlaylistTap,
-                                //       is_my: true,
-                                //     ),
-                                //     routeName: playlist['info']['id'],
-                                //     id: 1);
-                                 var ret = await Get.to(
-                                    () =>PlaylistInfo(
-                                      listId: playlist['info']['id'],
-                                      onPlaylistTap: widget.onPlaylistTap,
-                                      is_my: true,
-                                    ),
-                                    routeName: playlist['info']['id'],
-                                    id: 1);
+                                var ret = await Get.toNamed(
+                                  playlist['info']['id'],
+                                  arguments: {
+                                    'listId': playlist['info']['id'],
+                                    'is_my': true,
+                                  },
+                                  id: 1,
+                                );
+
                                 if (ret != null) {
                                   if (ret["refresh"] == true) {
                                     My_loadData();
@@ -725,13 +718,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                         fit: BoxFit.scaleDown,
                                         child: Text(playlist['info']['title'])),
                                     onTap: () async {
-                                      var ret = await Get.to(
-                                         () => PlaylistInfo(
-                                            listId: playlist['info']['id'],
-                                            onPlaylistTap: widget.onPlaylistTap,
-                                          ),
-                                          id: 1,
-                                          routeName: playlist['info']['id']);
+                                      var ret = await Get.toNamed(
+                                        playlist['info']['id'],
+                                        arguments: {
+                                          'listId': playlist['info']['id'],
+                                        },
+                                        id: 1,
+                                      );
                                       if (ret != null) {
                                         if (ret["refresh"] == true) {
                                           My_loadData();
@@ -797,14 +790,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                         //     ),
                                         //   ),
                                         // );
-                                        var ret = await Get.to(
-                                           () => PlaylistInfo(
-                                              listId: playlist['info']['id'],
-                                              onPlaylistTap:
-                                                  widget.onPlaylistTap,
-                                            ),
-                                            id: 1,
-                                            routeName: playlist['info']['id']);
+                                        var ret = await Get.toNamed(
+                                          playlist['info']['id'],
+                                          arguments: {
+                                            'listId': playlist['info']['id'],
+                                          },
+                                          id: 1,
+                                        );
                                         if (ret != null) {
                                           if (ret["refresh"] == true) {
                                             My_loadData();
@@ -858,23 +850,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                         alignment: Alignment.centerLeft,
                                         child: Text(playlist['info']['title'])),
                                     onTap: () async {
-                                      // clean_top_context();
-                                      // var ret = await Navigator.push(
-                                      //   top_context.last.context,
-                                      //   MaterialPageRoute(
-                                      //     builder: (context) => PlaylistInfo(
-                                      //       listId: playlist['info']['id'],
-                                      //       onPlaylistTap: widget.onPlaylistTap,
-                                      //     ),
-                                      //   ),
-                                      // );
-                                      var ret = await Get.to(
-                                        () =>  PlaylistInfo(
-                                            listId: playlist['info']['id'],
-                                            onPlaylistTap: widget.onPlaylistTap,
-                                          ),
-                                          id: 1,
-                                          routeName: playlist['info']['id']);
+                                      var ret = await Get.toNamed(
+                                        playlist['info']['id'],
+                                        arguments: {
+                                          'listId': playlist['info']['id'],
+                                        },
+                                        id: 1,
+                                      );
                                       if (ret != null) {
                                         if (ret["refresh"] == true) {
                                           My_loadData();
@@ -941,13 +923,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                       //     ),
                                       //   ),
                                       // );
-                                      var ret = await Get.to(
-                                        () =>  PlaylistInfo(
-                                            listId: playlist['info']['id'],
-                                            onPlaylistTap: widget.onPlaylistTap,
-                                          ),
-                                          id: 1,
-                                          routeName: playlist['info']['id']);
+                                      var ret = await Get.toNamed(
+                                        playlist['info']['id'],
+                                        arguments: {
+                                          'listId': playlist['info']['id'],
+                                        },
+                                        id: 1,
+                                      );
                                       if (ret != null) {
                                         if (ret["refresh"] == true) {
                                           My_loadData();
@@ -1159,7 +1141,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                       leading: IconButton(
                         icon: Icon(Icons.arrow_back),
                         onPressed: () {
-                          Get.back(id:1);
+                          Get.back(id: 1);
                         },
                       ),
                       title: Container(
@@ -1258,7 +1240,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                     tracks,
                                     result['info']['title'],
                                     result['info']['cover_img_url']);
-                                Get.back(result: {"refresh": true},id:1);
+                                Get.back(result: {"refresh": true}, id: 1);
                               } catch (e) {
                                 // print(e);
                                 xuan_toast(
@@ -1440,14 +1422,12 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                     Get.back();
                                   }
                                   if (ret["push"] != null) {
-                                    Get.to(
-                                     () => PlaylistInfo(
-                                        listId: ret["push"],
-                                        onPlaylistTap: widget.onPlaylistTap,
-                                        is_my: false,
-                                      ),
-                                      routeName: ret["push"],
-                                      id:1
+                                    Get.toNamed(
+                                      ret["push"],
+                                      arguments: {
+                                        'listId': ret["push"],
+                                      },
+                                      id: 1,
                                     );
                                   }
                                 }
