@@ -1274,7 +1274,8 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                               Navigator.of(context_dialog)
                                                   .pop();
                                               Get.back(
-                                                  result: {"refresh": true},id:1);
+                                                  result: {"refresh": true},
+                                                  id: 1);
                                             },
                                             child: Text('确定'),
                                           ),
@@ -1420,7 +1421,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
 
                                 if (ret != null) {
                                   if (ret["pop"] == true) {
-                                    Get.back(id:1);
+                                    Get.back(id: 1);
                                   }
                                   if (ret["push"] != null) {
                                     Get.toNamed(
