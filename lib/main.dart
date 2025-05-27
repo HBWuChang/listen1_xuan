@@ -42,6 +42,7 @@ int disposedByClean = 0;
 class ListenPopMiddleware extends GetMiddleware {
   @override
   void onPageDispose() {
+    print("onPageDispose: ${Get.currentRoute}");
     if (disposedByClean > 0) {
       disposedByClean--;
     } else {
@@ -49,6 +50,8 @@ class ListenPopMiddleware extends GetMiddleware {
     }
   }
 }
+
+int last_dir = 0;
 
 class routeWithName {
   final Route route;
@@ -324,7 +327,8 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   TextEditingController input_text_Controller = TextEditingController();
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
-  late PreloadPageController _pageController; // 声明 PageController
+  late PreloadPageController _pageControllerPortrait; // 声明 PageController
+  late PreloadPageController _pageControllerHorizon; // 声明 PageController
   OverlayEntry? _overlayEntry;
   Timer? _timer;
   double _currentVolume = 0.5;
@@ -333,7 +337,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   void initState() {
     trayManager.addListener(this);
     super.initState();
-
+    updatePageControllers();
     main_showVolumeSlider = showVolumeSlider;
     if (is_windows) {
       _init();
@@ -351,6 +355,17 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
           downloadtasks_background, download_receiveport.sendPort);
 
     init_playlist_filters();
+  }
+
+  void updatePageControllers() {
+    try {
+      _pageControllerPortrait.dispose(); // 销毁旧的 PageController
+    } catch (e) {}
+    try {
+      _pageControllerHorizon.dispose(); // 销毁旧的 PageController
+    } catch (e) {}
+    _pageControllerPortrait = PreloadPageController(initialPage: 1);
+    _pageControllerHorizon = PreloadPageController(initialPage: 0);
   }
 
   void _init() async {
@@ -415,6 +430,15 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   }
 
   var buttons_setstate;
+  void change_buttons_setstate(
+      void Function(void Function()) setState, String info) {
+    print("change_buttons_setstate: $info");
+    if ((global_horizon && info == "Horizon") ||
+        (!global_horizon && info == "Portrait")) {
+      buttons_setstate = setState;
+    }
+  }
+
   var play_list_setstate;
   void _onItemTapped(int index) async {
     if (index == _selectedIndex) {
@@ -426,13 +450,22 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
       buttons_setstate(() {
         _selectedIndex = index;
       });
-      _pageController.animateToPage(
-        // 通知 PageController 切换页面
-        // index,
-        global_horizon ? index - 1 : index,
-        duration: Duration(milliseconds: 150),
-        curve: Curves.easeInOut,
-      );
+      if (global_horizon) {
+        _pageControllerPortrait.animateToPage(
+          // 通知 PageController 切换页面
+          // index,
+          index - 1,
+          duration: Duration(milliseconds: 150),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        _pageControllerHorizon.animateToPage(
+          // 通知 PageController 切换页面
+          index,
+          duration: Duration(milliseconds: 150),
+          curve: Curves.easeInOut,
+        );
+      }
     } catch (e) {
       print(e);
     }
@@ -472,7 +505,8 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     _focusNode.dispose();
     _timer?.cancel();
     _focusNode2.dispose();
-    _pageController.dispose(); // 销毁 PageController
+    _pageControllerPortrait.dispose(); // 销毁 PageController
+    _pageControllerHorizon.dispose();
     try {} catch (e) {
       // print(e);
     }
@@ -484,7 +518,6 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   late BuildContext _main_context;
   int last_pop_time = 0;
   bool left_to_right_reverse = true;
-  AnimationStatus lastStatus = AnimationStatus.forward;
   void _pop() {
     print("didPop: didPop,");
     if (top_routeWithName.isNotEmpty) {
@@ -528,39 +561,49 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
             return KeyEventResult.ignored; // 将按键事件传递给下一个处理器
           }
 
-          // 若为按下或重复事件
+          bool flag = false;
           if (event is KeyDownEvent || event is KeyRepeatEvent) {
             inappShortcuts.forEach((key, value) {
               if (event.logicalKey == key) {
                 value();
+                flag = true;
               }
             });
           }
-          return KeyEventResult.handled; // 其他按键继续传递
+          if (flag) return KeyEventResult.handled;
+          return KeyEventResult.ignored;
         },
         child: OrientationBuilder(builder: (context, orientation) {
           global_horizon = orientation == Orientation.landscape;
-          top_routeWithName.clear();
           print("global_horizon: $global_horizon");
           if (global_horizon) {
             _selectedIndex = 2;
             SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-            _pageController = PreloadPageController(
-                initialPage: _selectedIndex - 1); // 初始化 PageController
+
             show_filter = true;
           } else {
             _selectedIndex = 0;
             SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-            _pageController = PreloadPageController(
-                initialPage: _selectedIndex); // 初始化 PageController
           }
-
+          bool flag = false;
           if (orientation == Orientation.portrait) {
             // 竖屏逻辑
             print("当前为竖屏模式");
+            if (last_dir == 2) {
+              flag = true;
+            }
+            last_dir = 1;
           } else {
             // 横屏逻辑
             print("当前为横屏模式");
+            if (last_dir == 1) {
+              flag = true;
+            }
+            last_dir = 2;
+          }
+          if (flag) {
+            Get.offAllNamed('/', id: 1);
+            updatePageControllers();
           }
           Widget sized_box = SizedBox(
               width: 197,
@@ -631,200 +674,350 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
               onPopInvokedWithResult: (didPop, result) {
                 _pop();
               },
-              child: global_horizon
-                  ? Scaffold(
-                      body: Row(children: [
-                        is_windows
-                            ? DragToMoveArea(child: sized_box)
-                            : sized_box,
-                        RotatedBox(
-                            quarterTurns: -1,
-                            child: Divider(
-                              height: 1,
-                              thickness: 2,
-                              color: Colors.grey[300],
-                            )),
-                        Expanded(
-                            child: Listener(
-                          onPointerDown: (event) {
-                            if (event.kind == PointerDeviceKind.mouse &&
-                                event.buttons == kSecondaryMouseButton) {
-                              _pop();
-                            }
-                            if (event.kind == PointerDeviceKind.mouse &&
-                                event.buttons == kMiddleMouseButton) {
-                              windowManager.hide();
-                              windowManager.setSkipTaskbar(true);
-                            }
-                          },
-                          child: Column(children: [
-                            if (is_windows)
-                              Container(
-                                  height: 25,
-                                  child: DragToMoveArea(
+              child: Scaffold(
+                body: Row(children: [
+                  if (global_horizon)
+                    is_windows ? DragToMoveArea(child: sized_box) : sized_box,
+                  if (global_horizon)
+                    RotatedBox(
+                        quarterTurns: -1,
+                        child: Divider(
+                          height: 1,
+                          thickness: 2,
+                          color: Colors.grey[300],
+                        )),
+                  Expanded(
+                      child: Listener(
+                    onPointerDown: (event) {
+                      if (event.kind == PointerDeviceKind.mouse &&
+                          event.buttons == kSecondaryMouseButton) {
+                        _pop();
+                      }
+                      if (event.kind == PointerDeviceKind.mouse &&
+                          event.buttons == kMiddleMouseButton) {
+                        windowManager.hide();
+                        windowManager.setSkipTaskbar(true);
+                      }
+                    },
+                    child: Column(children: [
+                      if (is_windows)
+                        Container(
+                            height: 25,
+                            child: DragToMoveArea(
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  IconButton(
+                                      tooltip: "返回",
+                                      onPressed: () {
+                                        _pop();
+                                      },
+                                      icon: Icon(
+                                        Icons.arrow_back_ios_new,
+                                        size: 13,
+                                      )),
+                                  Container(
+                                    width: 120,
                                     child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         IconButton(
-                                            tooltip: "返回",
-                                            onPressed: () {
-                                              _pop();
-                                            },
-                                            icon: Icon(
-                                              Icons.arrow_back_ios_new,
-                                              size: 13,
-                                            )),
-                                        Container(
-                                          width: 120,
-                                          child: Row(
-                                            children: [
-                                              IconButton(
-                                                tooltip: "隐藏到托盘",
-                                                icon: Icon(
-                                                    Icons
-                                                        .close_fullscreen_rounded,
-                                                    size: 13),
-                                                onPressed: () {
-                                                  windowManager.hide();
-                                                  windowManager
-                                                      .setSkipTaskbar(true);
-                                                },
-                                              ),
-                                              IconButton(
-                                                tooltip: "最小化",
-                                                icon: Icon(Icons.minimize,
-                                                    size: 13),
-                                                onPressed: () {
-                                                  windowManager.minimize();
-                                                  windowManager
-                                                      .setSkipTaskbar(false);
-                                                },
-                                              ),
-                                              IconButton(
-                                                tooltip: "关闭",
-                                                icon: Icon(
-                                                  Icons.close,
-                                                  size: 13,
-                                                ),
-                                                onPressed: () {
-                                                  exit(0);
-                                                },
-                                              ),
-                                            ],
+                                          tooltip: "隐藏到托盘",
+                                          icon: Icon(
+                                              Icons.close_fullscreen_rounded,
+                                              size: 13),
+                                          onPressed: () {
+                                            windowManager.hide();
+                                            windowManager.setSkipTaskbar(true);
+                                          },
+                                        ),
+                                        IconButton(
+                                          tooltip: "最小化",
+                                          icon: Icon(Icons.minimize, size: 13),
+                                          onPressed: () {
+                                            windowManager.minimize();
+                                            windowManager.setSkipTaskbar(false);
+                                          },
+                                        ),
+                                        IconButton(
+                                          tooltip: "关闭",
+                                          icon: Icon(
+                                            Icons.close,
+                                            size: 13,
                                           ),
-                                        )
+                                          onPressed: () {
+                                            exit(0);
+                                          },
+                                        ),
                                       ],
                                     ),
-                                  )),
-                            Expanded(
-                                child: Navigator(
-                              key: Get.nestedKey(1),
-                              initialRoute: '/',
-                              onGenerateRoute: (RouteSettings settings) {
-                                WidgetBuilder builder;
-                                switch (settings.name) {
-                                  case '/':
-                                    // 在函数内部定义默认页面
-                                    builder = (context_in_1) {
-                                      return Scaffold(
-                                          body: Column(
-                                        children: [
-                                          Container(
-                                              height: 40,
-                                              child: StatefulBuilder(
-                                                  builder: (context, setState) {
-                                                buttons_setstate = setState;
-                                                return Container(
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width -
-                                                            200,
-                                                    child: Row(children: [
-                                                      Container(
-                                                          width: MediaQuery.of(
-                                                                      context)
+                                  )
+                                ],
+                              ),
+                            )),
+                      Expanded(
+                          child: Navigator(
+                        key: Get.nestedKey(1),
+                        initialRoute: '/',
+                        onGenerateRoute: (RouteSettings settings) {
+                          WidgetBuilder builder;
+                          switch (settings.name) {
+                            case '/':
+                              // 在函数内部定义默认页面
+                              if (global_horizon) {
+                                builder = (context_in_1) {
+                                  return Scaffold(
+                                      body: Column(
+                                    children: [
+                                      Container(
+                                          height: 40,
+                                          child: StatefulBuilder(
+                                              builder: (context, setState_H) {
+                                            change_buttons_setstate(
+                                                setState_H, "Horizon");
+                                            return Container(
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width -
+                                                    200,
+                                                child: Row(children: [
+                                                  Container(
+                                                      width:
+                                                          MediaQuery.of(context)
                                                                   .size
                                                                   .width -
                                                               200,
-                                                          child: Stack(
-                                                              children: [
-                                                                Positioned(
-                                                                    top: -5,
-                                                                    child: Container(
-                                                                        height: 70,
-                                                                        width: MediaQuery.of(context).size.width - 300,
-                                                                        child: NavigationBar(
-                                                                          selectedIndex: _selectedIndex - 1 < 0
-                                                                              ? 0
-                                                                              : _selectedIndex - 1,
-                                                                          destinations: platforms
-                                                                              .sublist(1)
-                                                                              .map((platform) {
-                                                                            return NavigationDestination(
-                                                                              label: '',
-                                                                              icon: Text(platform),
-                                                                            );
-                                                                          }).toList(),
-                                                                          onDestinationSelected:
-                                                                              (index) {
-                                                                            _onItemTapped(index +
-                                                                                1);
-                                                                          },
-                                                                        ))),
-                                                                if (show_filter)
-                                                                  Positioned(
-                                                                    top: is_windows
-                                                                        ? 5
-                                                                        : -5,
-                                                                    right: 20,
-                                                                    child:
-                                                                        TextButton(
-                                                                      child: Text(
-                                                                          filters[sources.indexOf(source)]
-                                                                              [
-                                                                              'name']),
-                                                                      onPressed:
-                                                                          () {
-                                                                        Map<String,
-                                                                                dynamic>
-                                                                            tfilter =
-                                                                            {};
-                                                                        tfilter[
-                                                                            "推荐"] = filter_details[
-                                                                                _selectedIndex]
-                                                                            [
-                                                                            "recommend"];
-                                                                        for (var item
-                                                                            in filter_details[_selectedIndex]["all"]) {
-                                                                          tfilter[item["category"]] =
-                                                                              item["filters"];
-                                                                        }
-                                                                        _showFilterSelection(
-                                                                            context_in_1,
-                                                                            tfilter,
-                                                                            filters[sources.indexOf(source)]['id'],
-                                                                            change_fliter);
-                                                                      },
-                                                                    ),
-                                                                  )
-                                                              ])),
-                                                    ]));
+                                                      child: Stack(children: [
+                                                        Positioned(
+                                                            top: -5,
+                                                            child: Container(
+                                                                height: 70,
+                                                                width: MediaQuery.of(
+                                                                            context)
+                                                                        .size
+                                                                        .width -
+                                                                    300,
+                                                                child:
+                                                                    NavigationBar(
+                                                                  selectedIndex:
+                                                                      _selectedIndex - 1 <
+                                                                              0
+                                                                          ? 0
+                                                                          : _selectedIndex -
+                                                                              1,
+                                                                  destinations:
+                                                                      platforms
+                                                                          .sublist(
+                                                                              1)
+                                                                          .map(
+                                                                              (platform) {
+                                                                    return NavigationDestination(
+                                                                      label: '',
+                                                                      icon: Text(
+                                                                          platform),
+                                                                    );
+                                                                  }).toList(),
+                                                                  onDestinationSelected:
+                                                                      (index) {
+                                                                    _onItemTapped(
+                                                                        index +
+                                                                            1);
+                                                                  },
+                                                                ))),
+                                                        if (show_filter)
+                                                          Positioned(
+                                                            top: is_windows
+                                                                ? 5
+                                                                : -5,
+                                                            right: 20,
+                                                            child: TextButton(
+                                                              child: Text(filters[
+                                                                      sources.indexOf(
+                                                                          source)]
+                                                                  ['name']),
+                                                              onPressed: () {
+                                                                Map<String,
+                                                                        dynamic>
+                                                                    tfilter =
+                                                                    {};
+                                                                tfilter["推荐"] =
+                                                                    filter_details[
+                                                                            _selectedIndex]
+                                                                        [
+                                                                        "recommend"];
+                                                                for (var item
+                                                                    in filter_details[
+                                                                            _selectedIndex]
+                                                                        [
+                                                                        "all"]) {
+                                                                  tfilter[item[
+                                                                          "category"]] =
+                                                                      item[
+                                                                          "filters"];
+                                                                }
+                                                                _showFilterSelection(
+                                                                    context_in_1,
+                                                                    tfilter,
+                                                                    filters[sources
+                                                                        .indexOf(
+                                                                            source)]['id'],
+                                                                    change_fliter);
+                                                              },
+                                                            ),
+                                                          )
+                                                      ])),
+                                                ]));
+                                          })),
+                                      Expanded(child: StatefulBuilder(
+                                          builder: (context, setState) {
+                                        play_list_setstate = setState;
+                                        return PreloadPageView.builder(
+                                          physics: BouncingScrollPhysics(),
+                                          controller:
+                                              _pageControllerPortrait, // 使用 PageController
+                                          itemCount: sources.length - 1, // 页面数量
+                                          preloadPagesCount: sources.length - 1,
+                                          onPageChanged: (index) {
+                                            index = index + 1;
+                                            source = sources[index];
+                                            show_filter = show_filters[index];
+                                            buttons_setstate(() {
+                                              _selectedIndex = index;
+                                            });
+                                          },
+                                          itemBuilder: (context, index) {
+                                            index = index + 1;
+                                            // 其他页面：动态生成
+                                            return Playlist(
+                                              source: sources[index],
+                                              offset: offsets[index],
+                                              filter: filters[index],
+                                              onPlaylistTap: change_main_status,
+                                              key: Key(
+                                                  filters[index].toString()),
+                                            );
+                                          },
+                                        );
+                                      })),
+                                    ],
+                                  ));
+                                };
+                                break;
+                              } else {
+                                builder = (context_in_1) {
+                                  return Scaffold(
+                                      appBar: AppBar(
+                                        title: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text('Listen1'),
+                                            SizedBox(width: 10),
+                                            Expanded(
+                                              child: TextField(
+                                                decoration: InputDecoration(
+                                                  hintText: '请输入歌曲名，歌手或专辑',
+                                                  border: InputBorder.none,
+                                                ),
+                                                controller:
+                                                    input_text_Controller,
+                                                readOnly: true,
+                                                onTap: () async {
+                                                  Get.toNamed('/search', id: 1);
+                                                },
+                                              ),
+                                            ),
+                                            IconButton(
+                                              tooltip: "设置",
+                                              icon: Icon(Icons.settings),
+                                              onPressed: () {
+                                                Get.toNamed(
+                                                  '/settings',
+                                                  id: 1,
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      body: Column(
+                                        children: [
+                                          Container(
+                                              height: 45,
+                                              child: StatefulBuilder(builder:
+                                                  (context, setState_p) {
+                                                change_buttons_setstate(
+                                                    setState_p, "Portrait");
+
+                                                return Row(children: [
+                                                  Expanded(
+                                                      child: NavigationBar(
+                                                    labelBehavior:
+                                                        NavigationDestinationLabelBehavior
+                                                            .alwaysHide,
+                                                    selectedIndex:
+                                                        _selectedIndex,
+                                                    destinations: platforms
+                                                        .map((platform) {
+                                                      return NavigationDestination(
+                                                        icon: Center(
+                                                            child:
+                                                                Text(platform)),
+                                                        label: '',
+                                                      );
+                                                    }).toList(),
+                                                    onDestinationSelected:
+                                                        (index) {
+                                                      _onItemTapped(index);
+                                                    },
+                                                  )),
+                                                  if (show_filter)
+                                                    TextButton(
+                                                      child: Text(filters[
+                                                          sources.indexOf(
+                                                              source)]['name']),
+                                                      onPressed: () {
+                                                        Map<String, dynamic>
+                                                            tfilter = {};
+                                                        tfilter["推荐"] =
+                                                            filter_details[
+                                                                    _selectedIndex]
+                                                                ["recommend"];
+                                                        for (var item
+                                                            in filter_details[
+                                                                    _selectedIndex]
+                                                                ["all"]) {
+                                                          tfilter[item[
+                                                                  "category"]] =
+                                                              item["filters"];
+                                                        }
+                                                        _showFilterSelection(
+                                                            context_in_1,
+                                                            tfilter,
+                                                            filters[sources
+                                                                    .indexOf(
+                                                                        source)]
+                                                                ['id'],
+                                                            change_fliter);
+                                                      },
+                                                    ),
+                                                ]);
                                               })),
+                                          // 长灰色细分割线
+                                          Divider(
+                                            height: 1,
+                                            color: Colors.grey[300],
+                                          ),
                                           Expanded(child: StatefulBuilder(
                                               builder: (context, setState) {
                                             play_list_setstate = setState;
                                             return PreloadPageView.builder(
                                               physics: BouncingScrollPhysics(),
                                               controller:
-                                                  _pageController, // 使用 PageController
-                                              itemCount:
-                                                  sources.length - 1, // 页面数量
-                                              preloadPagesCount:
-                                                  sources.length - 1,
+                                                  _pageControllerHorizon, // 使用 PageController
+                                              itemCount: sources.length, // 页面数量
+                                              preloadPagesCount: sources.length,
                                               onPageChanged: (index) {
-                                                index = index + 1;
                                                 source = sources[index];
                                                 show_filter =
                                                     show_filters[index];
@@ -833,311 +1026,79 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                 });
                                               },
                                               itemBuilder: (context, index) {
-                                                index = index + 1;
-                                                // 其他页面：动态生成
-                                                return Playlist(
-                                                  source: sources[index],
-                                                  offset: offsets[index],
-                                                  filter: filters[index],
-                                                  onPlaylistTap:
-                                                      change_main_status,
-                                                  key: Key(filters[index]
-                                                      .toString()),
-                                                );
+                                                if (index == 0) {
+                                                  // 第一个页面：我的歌单
+                                                  return MyPlaylist(
+                                                    onPlaylistTap:
+                                                        change_main_status,
+                                                  );
+                                                } else {
+                                                  // 其他页面：动态生成
+                                                  return Playlist(
+                                                    source: sources[index],
+                                                    offset: offsets[index],
+                                                    filter: filters[index],
+                                                    onPlaylistTap:
+                                                        change_main_status,
+                                                    key: Key(filters[index]
+                                                        .toString()),
+                                                  );
+                                                }
                                               },
                                             );
-                                          })),
+                                          }))
                                         ],
                                       ));
-                                    };
-                                    break;
-                                  case '/search':
-                                    var route = GetPageRoute(
-                                      settings: settings,
-                                      page: () => Searchlistinfo(
-                                          input_text_Controller:
-                                              input_text_Controller,
-                                          onPlaylistTap: change_main_status),
-                                      transition: Transition.upToDown,
-                                      middlewares: [ListenPopMiddleware()],
-                                    );
-                                    addAndCleanReapeatRoute(route, '/search');
-                                    return route;
-                                  case '/settings':
-                                    var route = GetPageRoute(
-                                        settings: settings,
-                                        page: () => SettingsPage(),
-                                        middlewares: [ListenPopMiddleware()]);
-                                    addAndCleanReapeatRoute(route, '/settings');
-                                    return route;
-                                  default:
-                                    var route = GetPageRoute(
-                                        settings: settings,
-                                        page: () {
-                                          final args = settings.arguments
-                                                  as Map<String, dynamic>? ??
-                                              {};
-                                          return PlaylistInfo(
-                                            listId: args['listId'],
-                                            onPlaylistTap: change_main_status,
-                                            is_my: args['is_my'] ?? false,
-                                          );
-                                        },
-                                        middlewares: [ListenPopMiddleware()]);
-                                    addAndCleanReapeatRoute(
-                                        route, settings.name!);
-                                    return route;
-                                }
-                                return MaterialPageRoute(builder: builder);
-                              },
-                            ))
-                          ]),
-                        )),
-                      ]),
-                      bottomNavigationBar: Play(
-                        onPlaylistTap: change_main_status,
-                        horizon: true,
-                      ),
-                    )
-                  : Scaffold(
-                      appBar: is_windows
-                          ? AppBar(
-                              toolbarHeight: 25,
-                              title: Container(
-                                  height: 25,
-                                  child: DragToMoveArea(
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        IconButton(
-                                            tooltip: "返回",
-                                            onPressed: () {
-                                              _pop();
-                                            },
-                                            icon: Icon(
-                                              Icons.arrow_back_ios_new,
-                                              size: 13,
-                                            )),
-                                        Container(
-                                          width: 120,
-                                          child: Row(
-                                            children: [
-                                              IconButton(
-                                                tooltip: "隐藏到托盘",
-                                                icon: Icon(
-                                                    Icons
-                                                        .close_fullscreen_rounded,
-                                                    size: 13),
-                                                onPressed: () {
-                                                  windowManager.hide();
-                                                  windowManager
-                                                      .setSkipTaskbar(true);
-                                                },
-                                              ),
-                                              IconButton(
-                                                tooltip: "最小化",
-                                                icon: Icon(Icons.minimize,
-                                                    size: 13),
-                                                onPressed: () {
-                                                  windowManager.minimize();
-                                                  windowManager
-                                                      .setSkipTaskbar(false);
-                                                },
-                                              ),
-                                              IconButton(
-                                                tooltip: "关闭",
-                                                icon: Icon(
-                                                  Icons.close,
-                                                  size: 13,
-                                                ),
-                                                onPressed: () {
-                                                  exit(0);
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                  )))
-                          : null,
-                      body: Navigator(
-                        key: Get.nestedKey(1),
-                        initialRoute: '/',
-                        onGenerateRoute: (RouteSettings settings) {
-                          WidgetBuilder builder;
-                          switch (settings.name) {
-                            case '/':
-                              // 在函数内部定义默认页面
-                              builder = (context_in_1) {
-                                return Scaffold(
-                                    appBar: AppBar(
-                                      title: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text('Listen1'),
-                                          SizedBox(width: 10),
-                                          Expanded(
-                                            child: TextField(
-                                              decoration: InputDecoration(
-                                                hintText: '请输入歌曲名，歌手或专辑',
-                                                border: InputBorder.none,
-                                              ),
-                                              controller: input_text_Controller,
-                                              readOnly: true,
-                                              onTap: () async {
-                                                Get.toNamed('/search',
-                                                    arguments: {
-                                                      'input_text_Controller':
-                                                          input_text_Controller,
-                                                      'onPlaylistTap':
-                                                          change_main_status
-                                                    },
-                                                    id: 1);
-                                              },
-                                            ),
-                                          ),
-                                          IconButton(
-                                            tooltip: "设置",
-                                            icon: Icon(Icons.settings),
-                                            onPressed: () {
-                                              Get.toNamed(
-                                                '/settings',
-                                                id: 1,
-                                              );
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    body: Column(
-                                      children: [
-                                        Container(
-                                            height: 45,
-                                            child: StatefulBuilder(
-                                                builder: (context, setState) {
-                                              buttons_setstate = setState;
-                                              return Row(children: [
-                                                Expanded(
-                                                    child: NavigationBar(
-                                                  labelBehavior:
-                                                      NavigationDestinationLabelBehavior
-                                                          .alwaysHide,
-                                                  selectedIndex: _selectedIndex,
-                                                  destinations:
-                                                      platforms.map((platform) {
-                                                    return NavigationDestination(
-                                                      icon: Center(
-                                                          child:
-                                                              Text(platform)),
-                                                      label: '',
-                                                    );
-                                                  }).toList(),
-                                                  onDestinationSelected:
-                                                      (index) {
-                                                    _onItemTapped(index);
-                                                  },
-                                                )),
-                                                if (show_filter)
-                                                  TextButton(
-                                                    child: Text(filters[sources
-                                                            .indexOf(source)]
-                                                        ['name']),
-                                                    onPressed: () {
-                                                      Map<String, dynamic>
-                                                          tfilter = {};
-                                                      tfilter["推荐"] =
-                                                          filter_details[
-                                                                  _selectedIndex]
-                                                              ["recommend"];
-                                                      for (var item
-                                                          in filter_details[
-                                                                  _selectedIndex]
-                                                              ["all"]) {
-                                                        tfilter[item[
-                                                                "category"]] =
-                                                            item["filters"];
-                                                      }
-                                                      _showFilterSelection(
-                                                          context_in_1,
-                                                          tfilter,
-                                                          filters[sources
-                                                                  .indexOf(
-                                                                      source)]
-                                                              ['id'],
-                                                          change_fliter);
-                                                    },
-                                                  ),
-                                              ]);
-                                            })),
-                                        // 长灰色细分割线
-                                        Divider(
-                                          height: 1,
-                                          color: Colors.grey[300],
-                                        ),
-                                        Expanded(child: StatefulBuilder(
-                                            builder: (context, setState) {
-                                          play_list_setstate = setState;
-                                          return PreloadPageView.builder(
-                                            physics: BouncingScrollPhysics(),
-                                            controller:
-                                                _pageController, // 使用 PageController
-                                            itemCount: sources.length, // 页面数量
-                                            preloadPagesCount: sources.length,
-                                            onPageChanged: (index) {
-                                              source = sources[index];
-                                              show_filter = show_filters[index];
-                                              buttons_setstate(() {
-                                                _selectedIndex = index;
-                                              });
-                                            },
-                                            itemBuilder: (context, index) {
-                                              if (index == 0) {
-                                                // 第一个页面：我的歌单
-                                                return MyPlaylist(
-                                                  onPlaylistTap:
-                                                      change_main_status,
-                                                );
-                                              } else {
-                                                // 其他页面：动态生成
-                                                return Playlist(
-                                                  source: sources[index],
-                                                  offset: offsets[index],
-                                                  filter: filters[index],
-                                                  onPlaylistTap:
-                                                      change_main_status,
-                                                  key: Key(filters[index]
-                                                      .toString()),
-                                                );
-                                              }
-                                            },
-                                          );
-                                        }))
-                                      ],
-                                    ));
-                              };
-                              break;
-
+                                };
+                                break;
+                              }
+                            case '/search':
+                              var route = GetPageRoute(
+                                settings: settings,
+                                page: () => Searchlistinfo(
+                                    input_text_Controller:
+                                        input_text_Controller,
+                                    onPlaylistTap: change_main_status),
+                                transition: Transition.upToDown,
+                                middlewares: [ListenPopMiddleware()],
+                              );
+                              addAndCleanReapeatRoute(route, '/search');
+                              return route;
+                            case '/settings':
+                              var route = GetPageRoute(
+                                  settings: settings,
+                                  page: () => SettingsPage(),
+                                  middlewares: [ListenPopMiddleware()]);
+                              addAndCleanReapeatRoute(route, '/settings');
+                              return route;
                             default:
-                              builder = (context_in_1) => Scaffold(
-                                    appBar: AppBar(title: Text('Default Page')),
-                                    body: Center(
-                                        child:
-                                            Text('This is the default page')),
-                                  );
-                              break;
+                              var route = GetPageRoute(
+                                  settings: settings,
+                                  page: () {
+                                    final args = settings.arguments
+                                            as Map<String, dynamic>? ??
+                                        {};
+                                    return PlaylistInfo(
+                                      listId: args['listId'],
+                                      onPlaylistTap: change_main_status,
+                                      is_my: args['is_my'] ?? false,
+                                    );
+                                  },
+                                  middlewares: [ListenPopMiddleware()]);
+                              addAndCleanReapeatRoute(route, settings.name!);
+                              return route;
                           }
                           return MaterialPageRoute(builder: builder);
                         },
-                      ),
-                      bottomNavigationBar: Padding(
-                        padding: EdgeInsets.only(
-                            bottom: MediaQuery.of(context).padding.bottom),
-                        child: Play(onPlaylistTap: change_main_status),
-                      ),
-                    ));
+                      ))
+                    ]),
+                  )),
+                ]),
+                bottomNavigationBar: Play(
+                  onPlaylistTap: change_main_status,
+                  horizon: global_horizon,
+                ),
+              ));
         }));
   }
 
