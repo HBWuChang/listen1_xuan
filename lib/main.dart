@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:listen1_xuan/controllers.dart';
 import 'package:listen1_xuan/netease.dart';
 import 'package:animations/animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -215,6 +216,9 @@ void main() async {
       await windowManager.show();
     });
     enableThumbnailToolbar();
+    SthSettingsController sthSettingsController =
+        Get.put(SthSettingsController());
+    await sthSettingsController.loadSettings();
   }
 
   Map<String, dynamic> settings = await settings_getsettings();
@@ -695,8 +699,18 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                       }
                       if (event.kind == PointerDeviceKind.mouse &&
                           event.buttons == kMiddleMouseButton) {
-                        windowManager.hide();
-                        windowManager.setSkipTaskbar(true);
+                        switch (Get.find<SthSettingsController>()
+                            .hideOrMinimize
+                            .value) {
+                          case false:
+                            windowManager.hide();
+                            windowManager.setSkipTaskbar(true);
+                            break;
+                          case true:
+                            windowManager.minimize();
+                            windowManager.setSkipTaskbar(false);
+                            break;
+                        }
                       }
                     },
                     child: Column(children: [

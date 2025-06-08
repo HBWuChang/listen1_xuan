@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:listen1_xuan/controllers.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/play.dart';
 import 'dart:io';
@@ -33,6 +34,7 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:charset_converter/charset_converter.dart';
+import 'package:get/get.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
 Future<Map<String, dynamic>> outputAllSettingsToFile(
@@ -248,6 +250,9 @@ Future<Map<String, dynamic>> settings_getsettings() async {
 
 Future<void> settings_setsettings(Map<String, dynamic> settings) async {
   final prefs = await SharedPreferences.getInstance();
+  var s_settings = await settings_getsettings();
+  // 合并现有设置和新设置
+  settings.addAll(s_settings);
   await prefs.setString('settings', jsonEncode(settings));
 }
 
@@ -595,7 +600,6 @@ class _SettingsPageState extends State<SettingsPage> {
   final FocusNode _focusNode = FocusNode();
   final FocusNode _focusNode2 = FocusNode();
   late String apkfile_name;
-
   @override
   void dispose() {
     _focusNode.dispose(); // 释放 FocusNode
@@ -739,9 +743,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void set_useHttpOverrides(bool value) async {
-    Map<String, dynamic> settings = await settings_getsettings();
-    settings["useHttpOverrides"] = value;
-    await settings_setsettings(settings);
+    await settings_setsettings({'useHttpOverrides': value});
     xuan_toast(
       msg: '重启应用后生效',
       toastLength: Toast.LENGTH_SHORT,
@@ -807,10 +809,11 @@ class _SettingsPageState extends State<SettingsPage> {
         _readmeContent =
             decodeBase64(treadmeContent.data['content'].replaceAll("\n", ''));
       });
-    } catch (e) {_readmeContent_setstate(() {
-        _readmeContent =
-           '加载失败';
-      });}
+    } catch (e) {
+      _readmeContent_setstate(() {
+        _readmeContent = '加载失败';
+      });
+    }
   }
 
   @override
@@ -1651,6 +1654,19 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
                   ),
                   if (is_windows)
+                    Obx(() => SwitchListTile(
+                          title: const Text('在右侧页面中键时隐藏/最小化主页面'),
+                          value: Get.find<SthSettingsController>()
+                              .hideOrMinimize
+                              .value,
+                          onChanged: (bool value) {
+                            Get.find<SthSettingsController>()
+                                .hideOrMinimize
+                                .value = value;
+                            _msg('设置成功', 1.0);
+                          },
+                        )),
+                  if (is_windows)
                     FutureBuilder(
                       // future: check_bl_cookie(),
                       future: get_windows_proxy_addr(),
@@ -1670,9 +1686,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                   'Windows代理地址,仅适用于Github,例如：localhost:7890,留空表示不使用,回车以保存',
                             ),
                             onSubmitted: (value) async {
-                              var settings = await settings_getsettings();
-                              settings['proxy'] = value;
-                              await settings_setsettings(settings);
+                              await settings_setsettings(
+                                {'proxy': value},
+                              );
                               _msg('设置成功$value，重启应用生效', 1.0);
                             },
                           );
