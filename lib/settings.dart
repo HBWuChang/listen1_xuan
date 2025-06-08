@@ -252,8 +252,8 @@ Future<void> settings_setsettings(Map<String, dynamic> settings) async {
   final prefs = await SharedPreferences.getInstance();
   var s_settings = await settings_getsettings();
   // 合并现有设置和新设置
-  settings.addAll(s_settings);
-  await prefs.setString('settings', jsonEncode(settings));
+  s_settings.addAll(settings);
+  await prefs.setString('settings', jsonEncode(s_settings));
 }
 
 Future<void> _saveToken(String platform, String token) async {
