@@ -1758,16 +1758,32 @@ class Github {
         'client_secret': clientSecret,
         'code': code,
       };
-      final response = await dio_with_ProxyAdapter.post(
-        url,
-        queryParameters: params,
-        options: Options(
-          headers: {
-            'Accept': 'application/json',
-          },
-        ),
-      );
-      res = response.data.toString();
+      var response;
+      try {
+        // throw Exception('使用代理适配器请求失败，尝试使用默认Dio请求');
+        response = await dio_with_ProxyAdapter.post(
+          url,
+          queryParameters: params,
+          options: Options(
+            headers: {
+              'Accept': 'application/json',
+            },
+          ),
+        );
+        res = response.data.toString();
+      } catch (e) {
+        _msg('代理适配请求失败,尝试使用默认Dio请求...', context, 1.0);
+        response = await Dio().post(
+          url,
+          queryParameters: params,
+          options: Options(
+            headers: {
+              'Accept': 'application/json',
+            },
+          ),
+        );
+        res = response.data.toString();
+      }
       final accessToken = response.data['access_token'];
       final prefs = await SharedPreferences.getInstance();
       prefs.setString('githubOauthAccessKey', accessToken);
