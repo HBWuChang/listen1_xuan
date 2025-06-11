@@ -112,7 +112,7 @@ jobs:
         run: echo "${{ env.VERSION }}"
       # 上传新的资产到最新 Release
       - name: Upload New Asset to Release
-        uses: softprops/action-gh-release@v2.3.0
+        uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ env.VERSION }}
           files: |
