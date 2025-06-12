@@ -1919,7 +1919,6 @@ class Github {
     return result;
   }
 
-  // static Future<void> gist2json(Map<String, dynamic> gistFiles,
   static Future<Map<String, dynamic>> gist2json(
     Map<String, dynamic> gistFiles,
   ) async {
