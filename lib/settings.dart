@@ -1747,6 +1747,7 @@ class Github {
 
   static int status = 0;
   static String username = '';
+  static bool usedefault = false;
 
   static Future<void> handleCallback(String code, BuildContext context) async {
     _msg('正在向Github请求信息', context, 1.0);
@@ -1851,11 +1852,22 @@ class Github {
     if (accessToken == null) {
       status = 0;
     } else {
-      final response = await dio_with_ProxyAdapter.get('$API_URL/user',
-          options: Options(headers: {
-            'Authorization': 'token $accessToken',
-            'Accept': 'application/json',
-          }));
+      var response;
+      try {
+        response = await dio_with_ProxyAdapter.get('$API_URL/user',
+            options: Options(headers: {
+              'Authorization': 'token $accessToken',
+              'Accept': 'application/json',
+            }));
+      } catch (e) {
+        usedefault = true;
+        response = await Dio().get('$API_URL/user',
+            options: Options(headers: {
+              'Authorization': 'token $accessToken',
+              'Accept': 'application/json',
+            }));
+      }
+
       final data = response.data;
       if (data['login'] == null) {
         status = 1;
@@ -1918,11 +1930,12 @@ class Github {
       final url = gistFiles['listen1_backup.json']['raw_url'];
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('githubOauthAccessKey');
-      final response = await dio_with_ProxyAdapter.get(url,
-          options: Options(headers: {
-            'Authorization': 'token $accessToken',
-            'Accept': 'application/json',
-          }));
+      final response =
+          await (usedefault ? Dio() : dio_with_ProxyAdapter).get(url,
+              options: Options(headers: {
+                'Authorization': 'token $accessToken',
+                'Accept': 'application/json',
+              }));
       return json.decode(response.data);
     }
   }
@@ -1930,11 +1943,12 @@ class Github {
   static Future<List<dynamic>> listExistBackup() async {
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    final response = await dio_with_ProxyAdapter.get('$API_URL/gists',
-        options: Options(headers: {
-          'Authorization': 'token $accessToken',
-          'Accept': 'application/vnd.github.v3+json',
-        }));
+    final response =
+        await (usedefault ? Dio() : dio_with_ProxyAdapter).get('$API_URL/gists',
+            options: Options(headers: {
+              'Authorization': 'token $accessToken',
+              'Accept': 'application/vnd.github.v3+json',
+            }));
     final result = response.data;
     return result.where((backupObject) {
       return backupObject['description'] != null &&
@@ -1955,7 +1969,7 @@ class Github {
     }
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    await dio_with_ProxyAdapter.request(
+    await (usedefault ? Dio() : dio_with_ProxyAdapter).request(
       url,
       options: Options(method: method, headers: {
         'Authorization': 'token $accessToken',
@@ -1974,11 +1988,12 @@ class Github {
       String gistId) async {
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    final response = await dio_with_ProxyAdapter.get('$API_URL/gists/$gistId',
-        options: Options(headers: {
-          'Authorization': 'token $accessToken',
-          'Accept': 'application/json',
-        }));
+    final response = await (usedefault ? Dio() : dio_with_ProxyAdapter)
+        .get('$API_URL/gists/$gistId',
+            options: Options(headers: {
+              'Authorization': 'token $accessToken',
+              'Accept': 'application/json',
+            }));
     return response.data['files'];
   }
 }
