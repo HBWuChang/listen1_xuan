@@ -35,6 +35,9 @@ import 'dart:async';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:charset_converter/charset_converter.dart';
 import 'package:get/get.dart';
+import 'package:adaptive_theme/adaptive_theme.dart';
+
+import 'theme.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
 Future<Map<String, dynamic>> outputAllSettingsToFile(
@@ -820,8 +823,8 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+          title: const Text('Settings'),
+          actions: [Text('长按设置颜色->'), ThemeToggleButton()]),
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -1458,7 +1461,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 );
                               },
                             );
-                            await Dio().download(
+                            await dio_with_ProxyAdapter.download(
                               download_url,
                               filePath,
                               options: Options(headers: {

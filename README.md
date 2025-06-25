@@ -56,6 +56,10 @@ flutter version 3.27.4
 ![alt text](readme/Screenshot_2025-04-25-21-58-19-311_com.xiebian.listen1_xuan.jpg) 
 ## 更新日志
 ---
+1.0.3+13
+- 可自选主题色
+- 播放区域添加设置播放模式按钮
+---
 1.0.1+10
 - Windows平台支持
 - 适配横屏

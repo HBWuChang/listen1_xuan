@@ -65,8 +65,8 @@ jobs:
             KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       # - run: cat android/app/xuan.jks
 
-      - name: flutter build apk --split-per-abi
-        run: flutter build apk --release --split-per-abi
+      - name: flutter build apk --split-per-abi --dart-define=cronetHttpNoPlay=true
+        run: flutter build apk --release --split-per-abi --dart-define=cronetHttpNoPlay=true
         env:
             KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
             KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -91,7 +91,7 @@ jobs:
           path: build/app/outputs/flutter-apk/app-x86_64-release.apk
 
       - name: flutter build apk
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define=cronetHttpNoPlay=true
         env:
             KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
             KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
