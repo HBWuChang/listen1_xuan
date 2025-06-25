@@ -230,7 +230,7 @@ Future<bool> saveToken(String name, String token) async {
   return true;
 }
 
-void _launchURL(Uri url) async {
+void g_launchURL(Uri url) async {
   if (await canLaunchUrl(url)) {
     await launchUrl(url);
   } else {
@@ -637,7 +637,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: <Widget>[
                   ElevatedButton(
                     onPressed: () {
-                      _launchURL(Uri.parse(
+                      g_launchURL(Uri.parse(
                           'https://mashir0-bilibili-qr-login.hf.space/'));
                     },
                     child: const Text('点击打开B站cookie获取页面'),

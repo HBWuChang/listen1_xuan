@@ -16,6 +16,8 @@ import 'package:flutter/services.dart';
 import 'global_settings_animations.dart';
 import 'package:get/get.dart';
 
+import 'settings.dart';
+
 Future<dynamic> song_dialog(
   BuildContext context,
   Map<String, dynamic> track, {
@@ -72,9 +74,12 @@ Future<dynamic> song_dialog(
                   xuan_toast(msg: '标题已复制到剪切板');
                 },
                 onLongPress: () {
-                  Clipboard.setData(
-                      ClipboardData(text: track['img_url'] ?? '未知封面'));
-                  xuan_toast(msg: '封面链接已复制到剪切板');
+                  // Clipboard.setData(
+                  //     ClipboardData(text: track['img_url'] ?? '未知封面'));
+                  // xuan_toast(msg: '封面链接已复制到剪切板');
+                  g_launchURL(Uri.parse(
+                    track['img_url'] ?? '',
+                  ));
                 },
                 child: track['img_url'] == null
                     ? Container()
