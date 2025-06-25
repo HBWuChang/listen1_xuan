@@ -34,6 +34,7 @@ import 'package:native_dio_adapter/native_dio_adapter.dart';
 import 'package:windows_taskbar/windows_taskbar.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:get/get.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 final dio_with_cookie_manager = Dio();
 final dio_with_ProxyAdapter = Dio();
@@ -277,41 +278,58 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: 'Listen1',
-      builder: is_windows ? BotToastInit() : null, //1.调用BotToastInit
-      navigatorObservers: is_windows
-          ? [
-              BotToastNavigatorObserver(),
-            ]
-          : [], //2.注册路由观察者
+    return ScreenUtilInit(
+        designSize: const Size(1200, 2670),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) {
+          return GetMaterialApp(
+            title: 'Listen1',
+            builder: (context, widget) {
+              // 先应用 BotToastInit（如果是 Windows）
+              if (is_windows) {
+                widget = BotToastInit()(context, widget);
+              }
+              // 然后应用 MediaQuery 设置
+              return MediaQuery(
+                ///设置文字大小不随系统设置改变
+                data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+                child: widget!,
+              );
+            },
+            navigatorObservers: is_windows
+                ? [
+                    BotToastNavigatorObserver(),
+                  ]
+                : [], //2.注册路由观察者
 
-      theme: ThemeData(
-          primarySwatch: Colors.indigo,
-          useMaterial3: true,
-          primaryColor: Colors.indigo,
-          pageTransitionsTheme: const PageTransitionsTheme(builders: {
-            TargetPlatform.android: SharedAxisPageTransitionsBuilder(
-              transitionType: SharedAxisTransitionType.scaled,
-            ),
-            TargetPlatform.iOS: SharedAxisPageTransitionsBuilder(
-              transitionType: SharedAxisTransitionType.scaled,
-            ),
-          })),
-      darkTheme: ThemeData.dark(),
-      themeMode: ThemeMode.system,
-      localizationsDelegates: [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: [
-        const Locale('zh', 'CN'), // 中文简体
-        // 其他支持的语言
-      ],
-      locale: const Locale('zh', 'CN'), // 设置默认语言为中文
-      home: MyHomePage(),
-    );
+            theme: ThemeData(
+                primarySwatch: Colors.indigo,
+                useMaterial3: true,
+                primaryColor: Colors.indigo,
+                pageTransitionsTheme: const PageTransitionsTheme(builders: {
+                  TargetPlatform.android: SharedAxisPageTransitionsBuilder(
+                    transitionType: SharedAxisTransitionType.scaled,
+                  ),
+                  TargetPlatform.iOS: SharedAxisPageTransitionsBuilder(
+                    transitionType: SharedAxisTransitionType.scaled,
+                  ),
+                })),
+            darkTheme: ThemeData.dark(),
+            themeMode: ThemeMode.system,
+            localizationsDelegates: [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: [
+              const Locale('zh', 'CN'), // 中文简体
+              // 其他支持的语言
+            ],
+            locale: const Locale('zh', 'CN'), // 设置默认语言为中文
+            home: MyHomePage(),
+          );
+        });
   }
 }
 
