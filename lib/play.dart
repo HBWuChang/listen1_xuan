@@ -716,7 +716,7 @@ class _PlayState extends State<Play> {
                                 // 上一首
                                 child: _button(Icons.skip_previous, () {
                                   global_skipToPrevious();
-                                }),
+                                }, h: true),
                               ),
                             ),
                             Container(
@@ -730,14 +730,14 @@ class _PlayState extends State<Play> {
                                         } else {
                                           global_play();
                                         }
-                                      })
+                                      }, h: true)
                                     : _button(Icons.play_arrow, () {
                                         if (music_player.playing) {
                                           global_pause();
                                         } else {
                                           global_play();
                                         }
-                                      }),
+                                      }, h: true),
                               ),
                             ),
                             Container(
@@ -747,7 +747,7 @@ class _PlayState extends State<Play> {
                                 // 上一首
                                 child: _button(Icons.skip_next, () {
                                   global_skipToNext();
-                                }),
+                                }, h: true),
                               ),
                             ),
                             // Show media item title
@@ -883,10 +883,6 @@ class _PlayState extends State<Play> {
                                                         value.toInt()));
                                               },
                                             ));
-
-                                        // return Text(
-                                        //   '${mediaState?.position.inSeconds} / ${mediaState?.mediaItem?.duration?.inSeconds}',
-                                        // );
                                       },
                                     ),
                                   ],
@@ -927,9 +923,7 @@ class _PlayState extends State<Play> {
                                     _ => Icon(Icons.error), // 默认情况
                                   },
                                   onPressed: () {
-                                    setState(() {
-                                      global_change_play_mode();
-                                    });
+                                    global_change_play_mode();
                                   },
                                 );
                               },
@@ -1263,9 +1257,11 @@ class _PlayState extends State<Play> {
         return MediaState(mediaItem, position);
       });
 
-  IconButton _button(IconData iconData, VoidCallback onPressed) => IconButton(
+  IconButton _button(IconData iconData, VoidCallback onPressed,
+          {bool h = false}) =>
+      IconButton(
         icon: Icon(iconData),
-        iconSize: 100.0.w,
+        iconSize: h ? 120.0.h : 100.0.w,
         alignment: Alignment.center,
         onPressed: onPressed,
       );
