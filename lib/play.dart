@@ -1115,7 +1115,6 @@ class _PlayState extends State<Play> {
                                         stream: _mediaStateStream,
                                         builder: (context, snapshot) {
                                           final mediaState = snapshot.data;
-
                                           return Container(
                                               height: 120.w,
                                               child: Slider(
@@ -1151,10 +1150,6 @@ class _PlayState extends State<Play> {
                                                           value.toInt()));
                                                 },
                                               ));
-
-                                          // return Text(
-                                          //   '${mediaState?.position.inSeconds} / ${mediaState?.mediaItem?.duration?.inSeconds}',
-                                          // );
                                         },
                                       ),
                                     )
