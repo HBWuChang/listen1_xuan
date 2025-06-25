@@ -1164,6 +1164,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: const Text('从Github Gist导入歌单'),
                   ),
                   ElevatedButton(
+                    onLongPress: () {
+                      g_launchURL(Uri.parse(
+                          'https://github.com/HBWuChang/listen1_xuan/releases'));
+                    },
                     onPressed: () async {
                       var dia_context;
 
@@ -1461,14 +1465,32 @@ class _SettingsPageState extends State<SettingsPage> {
                                 );
                               },
                             );
-                            await dio_with_ProxyAdapter.download(
+                            // 首先获取302重定向的实际下载链接
+                            final redirectResponse =
+                                await dio_with_ProxyAdapter.get(
                               download_url,
+                              options: Options(
+                                followRedirects: false,
+                                validateStatus: (status) => status! < 400,
+                                headers: {
+                                  'accept': 'application/vnd.github.v3+json',
+                                  'authorization': 'Bearer ' + token,
+                                  'x-github-api-version': '2022-11-28',
+                                },
+                              ),
+                            );
+                            String actualDownloadUrl = download_url;
+                            if (redirectResponse.statusCode == 302) {
+                              actualDownloadUrl =
+                                  redirectResponse.headers.value('location') ??
+                                      download_url;
+                            }
+
+                            // 使用实际下载链接进行下载，不添加GitHub API请求头
+                            await dio_with_ProxyAdapter.download(
+                              // await Dio().download(
+                              actualDownloadUrl,
                               filePath,
-                              options: Options(headers: {
-                                'accept': 'application/vnd.github.v3+json',
-                                'authorization': 'Bearer ' + token,
-                                'x-github-api-version': '2022-11-28',
-                              }),
                               onReceiveProgress: (receivedBytes, totalBytes) {
                                 received = receivedBytes.toDouble();
                                 double progress = received / total;

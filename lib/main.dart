@@ -246,7 +246,7 @@ void main() async {
   if (!await cookieDir.exists()) {
     await cookieDir.create(recursive: true);
   }
-  if (!is_windows)
+  if (!is_windows) {
     dio_with_ProxyAdapter.httpClientAdapter = NativeAdapter(
       createCupertinoConfiguration: () =>
           URLSessionConfiguration.ephemeralSessionConfiguration()
@@ -254,7 +254,7 @@ void main() async {
             ..allowsConstrainedNetworkAccess = true
             ..allowsExpensiveNetworkAccess = true,
     );
-  else {
+  } else {
     var proxyaddr = await get_windows_proxy_addr();
     if (proxyaddr != "") {
       dio_with_ProxyAdapter.httpClientAdapter = IOHttpClientAdapter(
