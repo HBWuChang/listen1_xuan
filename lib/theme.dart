@@ -150,6 +150,23 @@ class ThemeController extends GetxController {
     saveThemeSettings();
   }
 
+  // 设置主题模式
+  void setThemeMode(AdaptiveThemeMode mode) {
+    themeMode.value = mode;
+    switch (mode) {
+      case AdaptiveThemeMode.light:
+        AdaptiveTheme.of(Get.context!).setLight();
+        break;
+      case AdaptiveThemeMode.dark:
+        AdaptiveTheme.of(Get.context!).setDark();
+        break;
+      case AdaptiveThemeMode.system:
+        AdaptiveTheme.of(Get.context!).setSystem();
+        break;
+    }
+    saveThemeSettings();
+  }
+
   // 获取当前主题模式文本
   String getCurrentThemeModeText() {
     final currentMode = themeMode.value;
@@ -219,10 +236,9 @@ class ThemeToggleButton extends StatelessWidget {
 }
 
 class ThemeSettingsDialog extends StatelessWidget {
+  final themeController = Get.find<ThemeController>();
   @override
   Widget build(BuildContext context) {
-    final themeController = Get.find<ThemeController>();
-
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0),
@@ -401,13 +417,13 @@ class ThemeSettingsDialog extends StatelessWidget {
         if (selected) {
           switch (mode) {
             case AdaptiveThemeMode.light:
-              AdaptiveTheme.of(context).setLight();
+              themeController.setThemeMode(AdaptiveThemeMode.light);
               break;
             case AdaptiveThemeMode.dark:
-              AdaptiveTheme.of(context).setDark();
+              themeController.setThemeMode(AdaptiveThemeMode.dark);
               break;
             case AdaptiveThemeMode.system:
-              AdaptiveTheme.of(context).setSystem();
+              themeController.setThemeMode(AdaptiveThemeMode.system);
               break;
           }
         }
