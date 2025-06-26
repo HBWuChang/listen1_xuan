@@ -27,33 +27,33 @@ flutter version 3.27.4
 # 一些预览
 ## 横屏
 ### 主页、我的(各平台)歌单及各平台推荐歌单
-![alt text](<readme/屏幕截图 2025-04-29 230413.png>)
+![alt text](readme/image1.png)
 ### 歌单内容
-![alt text](<readme/屏幕截图 2025-04-29 230830.png>)
+![alt text](readme/image.png)
 ### 选择分类
-![alt text](<readme/屏幕截图 2025-04-30 000036.png>)
+![alt text](readme/image-1.png)
 ### 歌曲对话框
-![alt text](<readme/屏幕截图 2025-04-29 235908.png>)
+![alt text](readme/image-2.png)
 ### 设置页面
-![alt text](<readme/屏幕截图 2025-04-29 231155.png>)
+![alt text](readme/image-3.png)
 ## 竖屏
 ### 主页
-![alt text](readme/Screenshot_2025-04-25-21-59-30-413_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme/Screenshot_2025-06-26-23-18-32-955_com.xiebian.listen1_xuan.jpg) 
 ### 选择分类
-![alt text](readme/Screenshot_2025-04-25-21-59-10-674_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme/Screenshot_2025-06-26-23-18-44-251_com.xiebian.listen1_xuan.jpg) 
 ### 各平台歌单
 ![alt text](readme/Screenshot_2025-04-25-21-59-43-363_com.xiebian.listen1_xuan.jpg) 
 ### 歌单内容
-![alt text](readme/Screenshot_2025-04-25-22-00-01-394_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme/Screenshot_2025-06-26-23-19-05-745_com.xiebian.listen1_xuan.jpg) 
 ![alt text](readme/Screenshot_2025-04-25-21-59-56-835_com.xiebian.listen1_xuan.jpg) 
 ### 歌曲对话框
-![alt text](readme/Screenshot_2025-04-25-22-00-06-028_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme/Screenshot_2025-06-26-23-19-16-088_com.xiebian.listen1_xuan.jpg) 
 ### 搜索歌曲
 ![alt text](readme/Screenshot_2025-04-25-22-00-12-080_com.xiebian.listen1_xuan.jpg) 
 ### 歌手歌曲
 ![alt text](readme/Screenshot_2025-04-25-22-00-24-511_com.xiebian.listen1_xuan.jpg)
 ### 设置页面
-![alt text](readme/Screenshot_2025-04-25-21-58-19-311_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme/Screenshot_2025-06-26-23-19-29-460_com.xiebian.listen1_xuan.jpg) 
 ## 更新日志
 ---
 1.0.3+13
@@ -65,7 +65,7 @@ flutter version 3.27.4
 - 适配横屏
 - 修复部分bug
 ---
-1.0.1+9
+1.0.1+**9**
 - 大幅更改页面切换逻辑
 - 去除歌单的标题滚动效果，大幅提升性能
 - 发布及actions将生成分架构安装包，减小安装包体积
