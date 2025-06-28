@@ -1470,8 +1470,8 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   //   await global_change_play_mode();
   // }
 
-  @override
-  Future<void> stop() => global_change_play_mode();
+  // @override
+  // Future<void> stop() => global_change_play_mode();
   // @override
   // Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
   //   if (change_p) {
@@ -1495,7 +1495,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         // MediaControl.pause,
         MediaControl.skipToNext,
         MediaControl.skipToPrevious,
-        MediaControl.stop,
+        // MediaControl.stop,
       ],
       systemActions: const {
         MediaAction.seek,
