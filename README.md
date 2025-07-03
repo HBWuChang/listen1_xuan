@@ -2,7 +2,7 @@
 
 本软件为flutter重写的Listen1
 -https://www.bilibili.com/video/BV133VHzaEPt/
-flutter version 3.27.4
+flutter version 3.32.0
 # 第一次使用
 - 请在设置页面登录各平台账号以确保相应平台可用
 - 登录Github账号后可使用Github同步歌单、一键下载最新测试版

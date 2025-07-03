@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:listen1_xuan/bodys.dart';
@@ -943,16 +944,48 @@ class _PlayState extends State<Play> {
                                 StatefulBuilder(
                                   builder: (context, setState) {
                                     volume_setState = setState;
-                                    return Slider(
-                                      value: global_currentVolume,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          global_currentVolume = value;
-                                        });
-                                        saveSettingsWithDebounce(
-                                            "volume", value * 100);
-                                        music_player.setVolume(value);
+                                    return Listener(
+                                      onPointerSignal: (pointerSignal) {
+                                        if (pointerSignal
+                                            is PointerScrollEvent) {
+                                          // 获取滚轮的滚动方向
+                                          final scrollDelta =
+                                              pointerSignal.scrollDelta.dy;
+                                          final stepSize = 0.01; // 每次滚动的音量步长
+
+                                          double newVolume =
+                                              global_currentVolume;
+                                          if (scrollDelta > 0) {
+                                            // 向下滚动，减小音量
+                                            newVolume = (global_currentVolume -
+                                                    stepSize)
+                                                .clamp(0.0, 1.0);
+                                          } else if (scrollDelta < 0) {
+                                            // 向上滚动，增大音量
+                                            newVolume = (global_currentVolume +
+                                                    stepSize)
+                                                .clamp(0.0, 1.0);
+                                          }
+
+                                          setState(() {
+                                            global_currentVolume = newVolume;
+                                          });
+                                          saveSettingsWithDebounce(
+                                              "volume", newVolume * 100);
+                                          music_player.setVolume(newVolume);
+                                        }
                                       },
+                                      child: Slider(
+                                        value: global_currentVolume,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            global_currentVolume = value;
+                                          });
+                                          saveSettingsWithDebounce(
+                                              "volume", value * 100);
+                                          music_player.setVolume(value);
+                                        },
+                                      ),
                                     );
                                   },
                                 ),

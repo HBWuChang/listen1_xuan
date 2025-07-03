@@ -1,0 +1,45 @@
+group 'io.flutter.plugins.webview_cookie_manager'
+version '1.0'
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.5.0'
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://storage.googleapis.com/download.flutter.io" }
+    }
+}
+
+apply plugin: 'com.android.library'
+// ---添加的
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.core:core-ktx:1.3.2'
+    }
+}
+// ---
+android {
+    namespace "com.xiebian.listen1_xuan"
+    compileSdkVersion 28
+
+    defaultConfig {
+        minSdkVersion 16
+    }
+    lintOptions {
+        disable 'InvalidPackage'
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.1'
+}

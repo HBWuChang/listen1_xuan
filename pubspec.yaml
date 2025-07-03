@@ -26,11 +26,13 @@ dependencies:
   audioplayers: ^6.1.0
   path_provider: ^2.0.1
   flutter_local_notifications: ^18.0.1
-  audio_service: ^0.18.18
+  audio_service:
+    path: packages/audio_service-0.18.18
   just_audio: ^0.9.42
   encrypt: ^5.0.0
   webview_flutter: ^4.10.0
-  webview_cookie_manager: ^2.0.6
+  webview_cookie_manager:
+    path: packages/webview_cookie_manager-2.0.6
   dio_cookie_manager: ^3.1.1
   fluttertoast: ^8.2.10
   bot_toast: ^4.1.0
@@ -38,7 +40,7 @@ dependencies:
   permission_handler: ^11.3.1
   vibration: ^2.0.1
   logger: ^2.5.0
-  connectivity_plus: ^2.3.0
+  connectivity_plus: ^6.1.4
   flutter_markdown: ^0.7.4+3
   archive: ^4.0.2
   install_plugin: ^2.1.0
