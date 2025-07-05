@@ -18,7 +18,7 @@ class Track {
   String? source_url;
   String? img_url;
   String? lyric_url;
-  
+
   Track({
     required this.id,
     this.title,
@@ -34,6 +34,14 @@ class Track {
 
   // 从 JSON 创建 Track 对象
   factory Track.fromJson(Map<String, dynamic> json) {
+    String? lyric_url;
+    if (json['lyric_url'] is String) {
+      lyric_url = json['lyric_url'];
+    } else if (json['lyric_url'] != null) {
+      lyric_url = json['lyric_url'].toString();
+    } else {
+      lyric_url = null;
+    }
     return Track(
       id: json['id'] as String,
       title: json['title'] as String?,
@@ -44,7 +52,7 @@ class Track {
       source: json['source'] as String?,
       source_url: json['source_url'] as String?,
       img_url: json['img_url'] as String?,
-      lyric_url: json['lyric_url'] as String?,
+      lyric_url: lyric_url,
     );
   }
 
@@ -163,6 +171,7 @@ class PlayController extends GetxController {
       } catch (e) {}
     }
   }
+
   List<Track> get current_playing => _current_playing.toList();
   void add_current_playing(List<Track> tracks) {
     for (var track in tracks) {
@@ -171,6 +180,7 @@ class PlayController extends GetxController {
       }
     }
   }
+
   void set_current_playing(List<Track> tracks) {
     _current_playing.value = tracks;
   }
