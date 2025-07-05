@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:listen1_xuan/settings.dart';
 
+import 'controllers/settings_controller.dart';
+
 class ThemeController extends GetxController {
   // 主题颜色选项
   final Map<String, Color> themeColors = {
@@ -27,7 +29,7 @@ class ThemeController extends GetxController {
 
   // 加载主题设置
   Future<void> loadThemeSettings() async {
-    final settings = await settings_getsettings();
+    final settings = settings_getsettings();
     // 加载主题颜色
     final colorValue = settings['theme_color'];
     if (colorValue != null && colorValue is int) {
@@ -82,7 +84,7 @@ class ThemeController extends GetxController {
       'use_dynamic_color': useDynamicColor.value,
       'theme_mode': themeModeString,
     };
-    await settings_setsettings(settings);
+    Get.find<SettingsController>().setSettings(settings);
   }
 
   // 设置主题颜色
@@ -103,11 +105,13 @@ class ThemeController extends GetxController {
   Future<void> _applyTheme() async {
     final lightTheme = _buildTheme(Brightness.light);
     final darkTheme = _buildTheme(Brightness.dark);
-
-    AdaptiveTheme.of(Get.context!).setTheme(
-      light: lightTheme,
-      dark: darkTheme,
-    );
+WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 确保在框架渲染后应用主题
+      AdaptiveTheme.of(Get.context!).setTheme(
+        light: lightTheme,
+        dark: darkTheme,
+      );
+    });
   }
 
   // 构建主题

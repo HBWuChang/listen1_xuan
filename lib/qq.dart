@@ -27,7 +27,7 @@ class QQ {
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
     final dio = Dio();
     try {
-      final sets = await settings_getsettings();
+      final sets = settings_getsettings();
       final qq_cookie = sets['qq'];
       final res = await dio.get(url,
           options: Options(headers: {
@@ -465,7 +465,7 @@ class QQ {
 
   Future<void> bootstrap_track(
       Map<String, dynamic> track, Function success, Function failure) async {
-    Map<String, dynamic> settings = await settings_getsettings();
+    Map<String, dynamic> settings = settings_getsettings();
     String qqcookie = settings['qq'] ?? '';
     // print(qqcookie);
 
@@ -1319,7 +1319,7 @@ class QQ {
   //   };
   // }
   Future<Map<String, dynamic>> get_user() async {
-    final settings = await settings_getsettings();
+    final settings = settings_getsettings();
     if (settings['qq'] == null) {
       return {'status': 'fail', 'data': {}};
     }

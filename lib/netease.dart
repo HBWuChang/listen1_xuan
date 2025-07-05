@@ -22,7 +22,7 @@ import 'main.dart';
 final netease = Netease();
 
 Future<String> get_csrf() async {
-  final tokens = await settings_getsettings();
+  final tokens = settings_getsettings();
   try {
     String _cookies = tokens['ne'];
     return _cookies
@@ -39,7 +39,7 @@ class CookieInterceptors extends InterceptorsWrapper {
   @override
   void onRequest(
       RequestOptions options, RequestInterceptorHandler handler) async {
-    final tokens = await settings_getsettings();
+    final tokens = settings_getsettings();
     final _cookies = tokens['ne'];
     dynamic tcookies = _cookies.split(';');
     dynamic cookies = [];
@@ -57,7 +57,7 @@ class CookieInterceptors extends InterceptorsWrapper {
 
 class Netease {
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
-    final tokens = await settings_getsettings();
+    final tokens = settings_getsettings();
     try {
       final _cookies = tokens['ne'];
       final _csrf = _cookies
@@ -79,7 +79,7 @@ class Netease {
   Future<dynamic> dio_post_with_cookie_and_csrf(
       String url, dynamic data) async {
     print("dio_post_with_cookie_and_csrf");
-    final tokens = await settings_getsettings();
+    final tokens = settings_getsettings();
     try {
       final _cookies = tokens['ne'];
 
@@ -925,7 +925,7 @@ class Netease {
     const url = 'https://music.163.com/weapi/w/nuser/account/get';
 
     // final encryptReqData = weapi({});
-    final tokens = await settings_getsettings();
+    final tokens = settings_getsettings();
     final _cookies = tokens['ne'];
 
     final _csrf = _cookies

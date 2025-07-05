@@ -1,3 +1,4 @@
+import 'controllers/play_controller.dart';
 import 'main.dart';
 import 'package:flutter/material.dart';
 import 'package:listen1_xuan/bl.dart';
@@ -1195,7 +1196,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                           List<Map<String, dynamic>>.from(
                                               tracks);
                                       await set_current_playing(trackList);
-                                      await set_player_settings(
+                                      Get.find<PlayController>().setPlayerSetting(
                                           "nowplaying_track_id",
                                           tracks[0]['id']);
                                       await playsong(tracks[0]);

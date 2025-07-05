@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:listen1_xuan/controllers.dart';
+import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/play.dart';
 import 'dart:io';
@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'bl.dart';
+import 'controllers/settings_controller.dart';
 import 'netease.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:marquee/marquee.dart';
@@ -241,26 +242,12 @@ void g_launchURL(Uri url) async {
   }
 }
 
-Future<Map<String, dynamic>> settings_getsettings() async {
-  final prefs = await SharedPreferences.getInstance();
-  String? jsonString = prefs.getString('settings');
-  print("jsonString: $jsonString");
-  if (jsonString == null) {
-    return {};
-  }
-  return jsonDecode(jsonString);
-}
-
-Future<void> settings_setsettings(Map<String, dynamic> settings) async {
-  final prefs = await SharedPreferences.getInstance();
-  var s_settings = await settings_getsettings();
-  // 合并现有设置和新设置
-  s_settings.addAll(settings);
-  await prefs.setString('settings', jsonEncode(s_settings));
+Map<String, dynamic> settings_getsettings() {
+  return Get.find<SettingsController>().settings.value ;
 }
 
 Future<void> _saveToken(String platform, String token) async {
-  Map<String, dynamic> settings = await settings_getsettings();
+  Map<String, dynamic> settings = settings_getsettings();
   final prefs = await SharedPreferences.getInstance();
 
   settings[platform] = token;
@@ -612,7 +599,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void open_bl_login() async {
     TextEditingController blCookieController = TextEditingController();
-    Map<String, dynamic> settings = await settings_getsettings();
+    Map<String, dynamic> settings = settings_getsettings();
     if (settings.containsKey('bl')) {
       blCookieController.text = settings['bl'];
     }
@@ -737,7 +724,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void get_useHttpOverrides() async {
-    Map<String, dynamic> settings = await settings_getsettings();
+    Map<String, dynamic> settings = settings_getsettings();
     if (settings["useHttpOverrides"] != null) {
       useHttpOverrides_setstate(() {
         useHttpOverrides = settings["useHttpOverrides"];
@@ -746,7 +733,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void set_useHttpOverrides(bool value) async {
-    await settings_setsettings({'useHttpOverrides': value});
+    Get.find<SettingsController>().setSettings({'useHttpOverrides': value});
     xuan_toast(
       msg: '重启应用后生效',
       toastLength: Toast.LENGTH_SHORT,
@@ -1711,7 +1698,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   'Windows代理地址,仅适用于Github,例如：localhost:7890,留空表示不使用,回车以保存',
                             ),
                             onSubmitted: (value) async {
-                              await settings_setsettings(
+                              Get.find<SettingsController>().setSettings(
                                 {'proxy': value},
                               );
                               _msg('设置成功$value，重启应用生效', 1.0);

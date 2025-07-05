@@ -16,6 +16,8 @@ import 'package:marquee/marquee.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
+import 'controllers/audioHandler_controller.dart';
+import 'controllers/play_controller.dart';
 import 'loweb.dart';
 import 'package:vibration/vibration.dart';
 import 'package:logger/logger.dart';
@@ -41,8 +43,6 @@ class FileLogOutput extends LogOutput {
   }
 }
 
-final music_player = AudioPlayer();
-late AudioHandler _audioHandler;
 var playmode = 0.obs;
 List<Map<String, dynamic>> randommodetemplist = [];
 
@@ -90,7 +90,7 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
               : await playsong(current_playing[0]);
           break;
         }
-        await music_player.seek(Duration.zero);
+        await Get.find<PlayController>().music_player.seek(Duration.zero);
         break;
       default:
         break;
@@ -257,57 +257,9 @@ Future<List<Map<String, dynamic>>> get_current_playing() async {
   return [];
 }
 
-Future<dynamic> get_player_settings(String key) async {
-  final prefs = await SharedPreferences.getInstance();
-  final player_settings = await prefs.getString('player-settings');
-  if (player_settings != null) {
-    try {
-      final player_settings_json = jsonDecode(player_settings);
-      return player_settings_json[key];
-    } catch (e) {
-      return null;
-    }
-  }
-  return null;
-}
-
-Future<void> set_player_settings(String key, dynamic value) async {
-  if (key == 'playmode') {
-    switch (value) {
-      case 0:
-        xuan_toast(
-          msg: '循环',
-        );
-        break;
-      case 1:
-        xuan_toast(
-          msg: '随机',
-        );
-        break;
-      case 2:
-        xuan_toast(
-          msg: '单曲',
-        );
-        break;
-      default:
-        break;
-    }
-  }
-  final prefs = await SharedPreferences.getInstance();
-  final player_settings = await prefs.getString('player-settings');
-  if (player_settings != null) {
-    final player_settings_json = jsonDecode(player_settings);
-    player_settings_json[key] = value;
-    await prefs.setString('player-settings', jsonEncode(player_settings_json));
-  } else {
-    final player_settings_json = {};
-    player_settings_json[key] = value;
-    await prefs.setString('player-settings', jsonEncode(player_settings_json));
-  }
-}
-
 Future<Map<String, dynamic>> getnowplayingsong() async {
-  final nowplaying_track_id = await get_player_settings("nowplaying_track_id");
+  final nowplaying_track_id =
+      Get.find<PlayController>().getPlayerSettings("nowplaying_track_id");
   final current_playing = await get_current_playing();
   for (var track in current_playing) {
     if (track['id'] == nowplaying_track_id) {
@@ -362,7 +314,7 @@ Future<void> change_playback_state(dynamic track) async {
     debugPrint('开始更新播放状态');
     // 使用 Completer 来等待 _duration 被赋值
     final Completer<void> completer = Completer<void>();
-    music_player.durationStream.listen((duration) {
+    Get.find<PlayController>().music_player.durationStream.listen((duration) {
       if (duration != null && !completer.isCompleted) {
         // print('音频文件时长: ${duration.inSeconds}秒');
         completer.complete();
@@ -373,7 +325,7 @@ Future<void> change_playback_state(dynamic track) async {
     await completer.future;
     // 获取音频文件的时长
 
-    final _duration = await music_player.duration;
+    final _duration = await Get.find<PlayController>().music_player.duration;
     print(_duration);
     dynamic _item;
     _item = MediaItem(
@@ -385,7 +337,8 @@ Future<void> change_playback_state(dynamic track) async {
           : track['img_url']),
       duration: _duration,
     );
-    (_audioHandler as AudioPlayerHandler).change_playbackstate(_item);
+    (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
+        .change_playbackstate(_item);
     // smtc.updateMetadata(
     //   const MusicMetadata(
     //     title: 'Title',
@@ -444,10 +397,12 @@ Future<void> playsong(Map<String, dynamic> track,
     [start = true, on_playersuccesscallback = false]) async {
   try {
     if (on_playersuccesscallback &&
-        (await get_player_settings("nowplaying_track_id") != track['id'])) {
+        (Get.find<PlayController>().getPlayerSettings("nowplaying_track_id") !=
+            track['id'])) {
       return;
     }
-    await set_player_settings("nowplaying_track_id", track['id']);
+    Get.find<PlayController>()
+        .setPlayerSetting("nowplaying_track_id", track['id']);
     await add_current_playing([track]);
     final tdir = await get_local_cache(track['id']);
     debugPrint('playsong');
@@ -458,17 +413,17 @@ Future<void> playsong(Map<String, dynamic> track,
           track, playerSuccessCallback, playerFailCallback);
       return;
     }
-    await music_player.setFilePath(tdir);
+    await Get.find<PlayController>().music_player.setFilePath(tdir);
     double t_volume = 100;
     try {
-      t_volume = await get_player_settings("volume");
+      t_volume = Get.find<PlayController>().getPlayerSettings("volume");
     } catch (e) {
       t_volume = 100;
-      await set_player_settings("volume", t_volume);
+      Get.find<PlayController>().setPlayerSetting("volume", t_volume);
     }
-    music_player.setVolume(t_volume / 100);
+    Get.find<PlayController>().music_player.setVolume(t_volume / 100);
     if (start) {
-      music_player.play();
+      Get.find<PlayController>().music_player.play();
     }
     await change_playback_state(track);
   } catch (e, stackTrace) {
@@ -543,7 +498,8 @@ Future<void> playerFailCallback(dynamic track) async {
   xuan_toast(
     msg: '播放失败：${track['title']}',
   );
-  if (await get_player_settings("nowplaying_track_id") != track['id']) {
+  if (Get.find<PlayController>().getPlayerSettings("nowplaying_track_id") !=
+      track['id']) {
     return;
   }
   var connectivityResult = await (Connectivity().checkConnectivity());
@@ -566,78 +522,10 @@ Future<void> playerFailCallback(dynamic track) async {
 
 Future<void> fresh_playmode() async {
   try {
-    playmode.value = await get_player_settings("playmode");
+    playmode.value = Get.find<PlayController>().getPlayerSettings("playmode");
   } catch (e) {
     playmode.value = 0;
-    await set_player_settings("playmode", playmode.value);
-  }
-}
-
-Future<void> setNotification() async {
-  print('setNotification');
-  if (Platform.isWindows) {
-    // Windows-specific code
-  } else {
-    // Non-Windows code
-  }
-  try {
-    _audioHandler.hashCode;
-  } catch (e) {
-    _audioHandler = await AudioService.init(
-      builder: () => AudioPlayerHandler(),
-      config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
-        androidNotificationChannelName: 'Audio playback',
-        androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
-      ),
-      cacheManager: null,
-    );
-    await fresh_playmode();
-    update_playmode_to_audio_service();
-    final track = await getnowplayingsong();
-    if (track['index'] != -1) {
-      if (is_windows) {
-        smtc = SMTCWindows(
-          metadata: MusicMetadata(
-            title: track['track']['title'],
-            album: track['track']['album'],
-            albumArtist: track['track']['artist'],
-            artist: track['track']['artist'],
-            thumbnail: track['track']['img_url'],
-          ),
-          timeline: PlaybackTimeline(
-            startTimeMs: 0,
-            endTimeMs: 1000,
-            positionMs: 0,
-            minSeekTimeMs: 0,
-            maxSeekTimeMs: 1000,
-          ),
-        );
-      }
-
-      await playsong(track['track'], false);
-    } else {
-      // );
-      if (is_windows)
-        smtc = SMTCWindows(
-          metadata: MusicMetadata(
-            title: "test",
-            album: "test",
-            albumArtist: "test",
-            artist: "test",
-            thumbnail:
-                'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0',
-          ),
-          timeline: PlaybackTimeline(
-            startTimeMs: 0,
-            endTimeMs: 1000,
-            positionMs: 0,
-            minSeekTimeMs: 0,
-            maxSeekTimeMs: 1000,
-          ),
-        );
-    }
+    Get.find<PlayController>().setPlayerSetting("playmode", playmode.value);
   }
 }
 
@@ -654,6 +542,7 @@ class Play extends StatefulWidget {
 late SMTCWindows smtc;
 
 class _PlayState extends State<Play> {
+  final _playController = Get.find<PlayController>();
   String formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final hours = duration.inHours;
@@ -667,16 +556,6 @@ class _PlayState extends State<Play> {
   @override
   void initState() {
     super.initState();
-    get_vo();
-  }
-
-  void get_vo() async {
-    try {
-      global_currentVolume = await get_player_settings("volume");
-    } catch (e) {
-      global_currentVolume = 50;
-    }
-    global_currentVolume = global_currentVolume / 100;
   }
 
   @override
@@ -689,20 +568,19 @@ class _PlayState extends State<Play> {
 
   @override
   Widget build(BuildContext context) {
-    Widget ctx_bu = FutureBuilder<void>(
-      future: setNotification(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    Widget ctx_bu = GetBuilder<AudioHandlerController>(
+      builder: (controller) {
+        if (controller.loading.value) {
           return Center(child: global_loading_anime);
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error initializing audio handler'));
         } else {
           Widget t_w = Container(
             height: widget.horizon ? 60 : 256.w,
             child: widget.horizon
                 ? Center(
                     child: StreamBuilder<bool>(
-                      stream: _audioHandler.playbackState
+                      stream: Get.find<AudioHandlerController>()
+                          .audioHandler
+                          .playbackState
                           .map((state) => state.playing)
                           .distinct(),
                       builder: (context, snapshot) {
@@ -726,14 +604,18 @@ class _PlayState extends State<Play> {
                               child: Center(
                                 child: playing
                                     ? _button(Icons.pause, () {
-                                        if (music_player.playing) {
+                                        if (Get.find<PlayController>()
+                                            .music_player
+                                            .playing) {
                                           global_pause();
                                         } else {
                                           global_play();
                                         }
                                       }, h: true)
                                     : _button(Icons.play_arrow, () {
-                                        if (music_player.playing) {
+                                        if (Get.find<PlayController>()
+                                            .music_player
+                                            .playing) {
                                           global_pause();
                                         } else {
                                           global_play();
@@ -753,7 +635,9 @@ class _PlayState extends State<Play> {
                             ),
                             // Show media item title
                             StreamBuilder<MediaItem?>(
-                              stream: _audioHandler.mediaItem,
+                              stream: Get.find<AudioHandlerController>()
+                                  .audioHandler
+                                  .mediaItem,
                               builder: (context, snapshot) {
                                 final mediaItem = snapshot.data;
                                 // return Text(mediaItem?.title ?? '');
@@ -794,7 +678,10 @@ class _PlayState extends State<Play> {
                                             Expanded(
                                               flex: 5,
                                               child: StreamBuilder<MediaItem?>(
-                                                stream: _audioHandler.mediaItem,
+                                                stream: Get.find<
+                                                        AudioHandlerController>()
+                                                    .audioHandler
+                                                    .mediaItem,
                                                 builder: (context, snapshot) {
                                                   final mediaItem =
                                                       snapshot.data;
@@ -940,55 +827,36 @@ class _PlayState extends State<Play> {
                                     size: 24, // 图标大小
                                   ),
                                 ),
-                                // 其他控件
-                                StatefulBuilder(
-                                  builder: (context, setState) {
-                                    volume_setState = setState;
-                                    return Listener(
-                                      onPointerSignal: (pointerSignal) {
-                                        if (pointerSignal
-                                            is PointerScrollEvent) {
-                                          // 获取滚轮的滚动方向
-                                          final scrollDelta =
-                                              pointerSignal.scrollDelta.dy;
-                                          final stepSize = 0.01; // 每次滚动的音量步长
+                                Listener(
+                                  onPointerSignal: (pointerSignal) {
+                                    if (pointerSignal is PointerScrollEvent) {
+                                      // 获取滚轮的滚动方向
+                                      final scrollDelta =
+                                          pointerSignal.scrollDelta.dy;
+                                      final stepSize = 0.01; // 每次滚动的音量步长
 
-                                          double newVolume =
-                                              global_currentVolume;
-                                          if (scrollDelta > 0) {
-                                            // 向下滚动，减小音量
-                                            newVolume = (global_currentVolume -
-                                                    stepSize)
-                                                .clamp(0.0, 1.0);
-                                          } else if (scrollDelta < 0) {
-                                            // 向上滚动，增大音量
-                                            newVolume = (global_currentVolume +
-                                                    stepSize)
-                                                .clamp(0.0, 1.0);
-                                          }
-
-                                          setState(() {
-                                            global_currentVolume = newVolume;
-                                          });
-                                          saveSettingsWithDebounce(
-                                              "volume", newVolume * 100);
-                                          music_player.setVolume(newVolume);
-                                        }
-                                      },
-                                      child: Slider(
-                                        value: global_currentVolume,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            global_currentVolume = value;
-                                          });
-                                          saveSettingsWithDebounce(
-                                              "volume", value * 100);
-                                          music_player.setVolume(value);
-                                        },
-                                      ),
-                                    );
+                                      double newVolume =
+                                          _playController.currentVolume;
+                                      if (scrollDelta > 0) {
+                                        // 向下滚动，减小音量
+                                        newVolume = (newVolume - stepSize);
+                                      } else if (scrollDelta < 0) {
+                                        // 向上滚动，增大音量
+                                        newVolume = (newVolume + stepSize);
+                                      }
+                                      newVolume = newVolume.clamp(
+                                          0.0, 1.0); // 确保音量在 0.0 到 1.0 之间
+                                      _playController.currentVolume =
+                                          newVolume; // 更新音量
+                                    }
                                   },
-                                ),
+                                  child: Obx(() => Slider(
+                                        value: _playController.currentVolume,
+                                        onChanged: (value) {
+                                          _playController.currentVolume = value;
+                                        },
+                                      )),
+                                )
                               ],
                             ),
                           ],
@@ -998,7 +866,9 @@ class _PlayState extends State<Play> {
                   )
                 : Center(
                     child: StreamBuilder<bool>(
-                      stream: _audioHandler.playbackState
+                      stream: Get.find<AudioHandlerController>()
+                          .audioHandler
+                          .playbackState
                           .map((state) => state.playing)
                           .distinct(),
                       builder: (context, snapshot) {
@@ -1008,7 +878,9 @@ class _PlayState extends State<Play> {
                           children: [
                             // Show media item title
                             StreamBuilder<MediaItem?>(
-                              stream: _audioHandler.mediaItem,
+                              stream: Get.find<AudioHandlerController>()
+                                  .audioHandler
+                                  .mediaItem,
                               builder: (context, snapshot) {
                                 final mediaItem = snapshot.data;
                                 // return Text(mediaItem?.title ?? '');
@@ -1054,8 +926,10 @@ class _PlayState extends State<Play> {
                                                 flex: 5,
                                                 child:
                                                     StreamBuilder<MediaItem?>(
-                                                  stream:
-                                                      _audioHandler.mediaItem,
+                                                  stream: Get.find<
+                                                          AudioHandlerController>()
+                                                      .audioHandler
+                                                      .mediaItem,
                                                   builder: (context, snapshot) {
                                                     final mediaItem =
                                                         snapshot.data;
@@ -1190,14 +1064,18 @@ class _PlayState extends State<Play> {
                                     // ? _button(Icons.pause, global_pause)
                                     // : _button(Icons.play_arrow, global_play),
                                     ? _button(Icons.pause, () {
-                                        if (music_player.playing) {
+                                        if (Get.find<PlayController>()
+                                            .music_player
+                                            .playing) {
                                           global_pause();
                                         } else {
                                           global_play();
                                         }
                                       })
                                     : _button(Icons.play_arrow, () {
-                                        if (music_player.playing) {
+                                        if (Get.find<PlayController>()
+                                            .music_player
+                                            .playing) {
                                           global_pause();
                                         } else {
                                           global_play();
@@ -1240,11 +1118,11 @@ class _PlayState extends State<Play> {
                   onDoubleTap: () {
                     // if (_player.playing) MediaControl.pause else MediaControl.play,
                     Vibration.vibrate(duration: 100);
-                    if (music_player.playing) {
-                      // (_audioHandler as AudioPlayerHandler).pause();
+                    if (Get.find<PlayController>().music_player.playing) {
+                      // (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler).pause();
                       global_pause();
                     } else {
-                      // (_audioHandler as AudioPlayerHandler).play();
+                      // (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler).play();
                       global_play();
                     }
                   },
@@ -1258,11 +1136,11 @@ class _PlayState extends State<Play> {
 
                       if (details.primaryVelocity! > 0) {
                         // _playPrevious(); // 向右滑动，播放上一首
-                        // (_audioHandler as AudioPlayerHandler).skipToPrevious();
+                        // (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler).skipToPrevious();
                         global_skipToPrevious();
                       } else if (details.primaryVelocity! < 0) {
                         // _playNext(); // 向左滑动，播放下一首
-                        // (_audioHandler as AudioPlayerHandler).skipToNext();
+                        // (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler).skipToNext();
                         global_skipToNext();
                       }
                     }
@@ -1277,8 +1155,8 @@ class _PlayState extends State<Play> {
 
   Stream<MediaState> get _mediaStateStream =>
       rxdart.Rx.combineLatest2<MediaItem?, Duration, MediaState>(
-          _audioHandler.mediaItem, AudioService.position,
-          (mediaItem, position) {
+          Get.find<AudioHandlerController>().audioHandler.mediaItem,
+          AudioService.position, (mediaItem, position) {
         if (is_windows) {
           WindowsTaskbar.setProgress(
               (position.inMilliseconds /
@@ -1308,67 +1186,59 @@ class MediaState {
 }
 
 Future<void> global_play_or_pause() async {
-  if (music_player.playing) {
-    await music_player.pause();
+  if (Get.find<PlayController>().music_player.playing) {
+    await Get.find<PlayController>().music_player.pause();
   } else {
-    await music_player.play();
+    await Get.find<PlayController>().music_player.play();
   }
 }
 
 Future<void> global_play() async {
-  music_player.play();
+  Get.find<PlayController>().music_player.play();
 }
 
 Future<void> global_pause() async {
-  music_player.pause();
+  Get.find<PlayController>().music_player.pause();
 }
 
 Future<void> global_seek(Duration position) async {
-  music_player.seek(position);
+  Get.find<PlayController>().music_player.seek(position);
 }
 
 Future<void> global_seek_to_next(
     {Duration time = const Duration(seconds: 3)}) async {
-  var now_pos = music_player.position;
+  var now_pos = Get.find<PlayController>().music_player.position;
   var next_pos = now_pos + time;
-  var max_pos = music_player.duration ?? now_pos;
+  var max_pos = Get.find<PlayController>().music_player.duration ?? now_pos;
   if (next_pos > max_pos) {
     next_pos = max_pos;
   }
-  music_player.seek(next_pos);
+  Get.find<PlayController>().music_player.seek(next_pos);
 }
 
 Future<void> global_seek_to_previous(
     {Duration time = const Duration(seconds: 3)}) async {
-  var now_pos = music_player.position;
+  var now_pos = Get.find<PlayController>().music_player.position;
   var next_pos = now_pos < time ? Duration.zero : now_pos - time;
-  music_player.seek(next_pos);
+  Get.find<PlayController>().music_player.seek(next_pos);
 }
 
 Future<void> global_volume_up({double step = 0.02}) async {
-  var now_pos = music_player.volume;
+  var now_pos = Get.find<PlayController>().music_player.volume;
   var next_pos = now_pos + step;
   if (next_pos > 1) {
     next_pos = 1;
   }
-  volume_setState(() {
-    global_currentVolume = next_pos;
-    music_player.setVolume(next_pos);
-  });
-  saveSettingsWithDebounce("volume", next_pos * 100);
+  Get.find<PlayController>().currentVolume = next_pos;
 }
 
 Future<void> global_volume_down({double step = 0.02}) async {
-  var now_pos = music_player.volume;
+  var now_pos = Get.find<PlayController>().music_player.volume;
   var next_pos = now_pos - step;
   if (next_pos < 0) {
     next_pos = 0;
   }
-  volume_setState(() {
-    global_currentVolume = next_pos;
-    music_player.setVolume(next_pos);
-  });
-  saveSettingsWithDebounce("volume", next_pos * 100);
+  Get.find<PlayController>().currentVolume = next_pos;
 }
 
 Future<void> global_skipToPrevious() async {
@@ -1416,13 +1286,19 @@ Future<void> update_playmode_to_audio_service() async {
   try {
     switch (playmode.value) {
       case 0:
-        await _audioHandler.setRepeatMode(AudioServiceRepeatMode.all);
+        await Get.find<AudioHandlerController>()
+            .audioHandler
+            .setRepeatMode(AudioServiceRepeatMode.all);
         break;
       case 1:
-        await _audioHandler.setRepeatMode(AudioServiceRepeatMode.group);
+        await Get.find<AudioHandlerController>()
+            .audioHandler
+            .setRepeatMode(AudioServiceRepeatMode.group);
         break;
       case 2:
-        await _audioHandler.setRepeatMode(AudioServiceRepeatMode.one);
+        await Get.find<AudioHandlerController>()
+            .audioHandler
+            .setRepeatMode(AudioServiceRepeatMode.one);
         break;
       default:
         break;
@@ -1436,7 +1312,7 @@ Future<int> global_change_play_mode() async {
   change_p = true;
   await fresh_playmode();
   playmode.value = (playmode.value + 1) % 3;
-  await set_player_settings("playmode", playmode.value);
+  Get.find<PlayController>().setPlayerSetting("playmode", playmode.value);
   // update_playmode_to_audio_service();
   return playmode.value;
 }
@@ -1456,14 +1332,22 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // So that our clients (the Flutter UI and the system notification) know
     // what state to display, here we set up our audio handler to broadcast all
     // playback state changes as they happen via playbackState...
-    music_player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+    Get.find<PlayController>()
+        .music_player
+        .playbackEventStream
+        .map(_transformEvent)
+        .pipe(playbackState);
     // ... and also the current media item via mediaItem.
     mediaItem.add(_item);
 
     // Load the player.
-    music_player.setAudioSource(AudioSource.uri(Uri.parse(_item.id)),
-        preload: false);
-    music_player.playerStateStream.listen((playerState) {
+    Get.find<PlayController>()
+        .music_player
+        .setAudioSource(AudioSource.uri(Uri.parse(_item.id)), preload: false);
+    Get.find<PlayController>()
+        .music_player
+        .playerStateStream
+        .listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
         onPlaybackCompleted();
       }
@@ -1486,7 +1370,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   Future<void> play() => global_play();
 
   // @override
-  // Future<void> pause() => music_player.pause();
+  // Future<void> pause() => Get.find<PlayController>().music_player.pause();
   @override
   Future<void> pause() => global_pause();
 
@@ -1511,7 +1395,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   //     change_p = false;
   //     return;
   //   }
-  //   // await music_player.setRepeatMode(repeatMode);
+  //   // await Get.find<PlayController>().music_player.setRepeatMode(repeatMode);
   //   await global_change_play_mode();
   // }
 
@@ -1524,7 +1408,10 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   PlaybackState _transformEvent(PlaybackEvent event) {
     return PlaybackState(
       controls: [
-        if (music_player.playing) MediaControl.pause else MediaControl.play,
+        if (Get.find<PlayController>().music_player.playing)
+          MediaControl.pause
+        else
+          MediaControl.play,
         // MediaControl.pause,
         MediaControl.skipToNext,
         MediaControl.skipToPrevious,
@@ -1542,25 +1429,15 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         ProcessingState.buffering: AudioProcessingState.buffering,
         ProcessingState.ready: AudioProcessingState.ready,
         ProcessingState.completed: AudioProcessingState.completed,
-      }[music_player.processingState]!,
-      playing: music_player.playing,
-      updatePosition: music_player.position,
-      bufferedPosition: music_player.bufferedPosition,
-      speed: music_player.speed,
+      }[Get.find<PlayController>().music_player.processingState]!,
+      playing: Get.find<PlayController>().music_player.playing,
+      updatePosition: Get.find<PlayController>().music_player.position,
+      bufferedPosition:
+          Get.find<PlayController>().music_player.bufferedPosition,
+      speed: Get.find<PlayController>().music_player.speed,
       queueIndex: event.currentIndex,
     );
   }
 }
 
 Timer? _saveSettingsTimer;
-
-void saveSettingsWithDebounce(String key, dynamic value) {
-  // 取消之前的定时器
-  _saveSettingsTimer?.cancel();
-
-  // 创建一个新的定时器
-  _saveSettingsTimer = Timer(Duration(seconds: 1), () async {
-    await set_player_settings(key, value);
-    print('Settings saved: $key = $value');
-  });
-}

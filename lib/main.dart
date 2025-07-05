@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:listen1_xuan/controllers.dart';
+import 'package:listen1_xuan/controllers/controllers.dart';
+import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/netease.dart';
 import 'package:animations/animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
+import 'controllers/audioHandler_controller.dart';
+import 'controllers/play_controller.dart';
 import 'settings.dart';
 import 'loweb.dart';
 import 'bodys.dart';
@@ -197,6 +200,12 @@ void enableThumbnailToolbar() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 框架已初始化
+  SettingsController settingsController =
+      Get.put(SettingsController(), permanent: true);
+  Get.put(PlayController(), permanent: true);
+  await Get.find<PlayController>().loadDatas();
+  Get.put(AudioHandlerController(), permanent: true);
+  await settingsController.loadSettings();
   if (is_windows) {
     await SMTCWindows.initialize();
     enableThumbnailToolbar();
@@ -225,11 +234,11 @@ void main() async {
     await sthSettingsController.loadSettings();
   }
 
-  Map<String, dynamic> settings = await settings_getsettings();
+  Map<String, dynamic> settings = settings_getsettings();
   bool useHttpOverrides = false;
   if (settings["useHttpOverrides"] == null) {
     settings["useHttpOverrides"] = false;
-    await settings_setsettings(settings);
+    Get.find<SettingsController>().setSettings(settings);
   } else {
     useHttpOverrides = settings["useHttpOverrides"];
   }
@@ -350,9 +359,9 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   FocusNode _focusNode2 = FocusNode();
   late PreloadPageController _pageControllerPortrait; // 声明 PageController
   late PreloadPageController _pageControllerHorizon; // 声明 PageController
+  PlayController _playController = Get.find<PlayController>();
   OverlayEntry? _overlayEntry;
   Timer? _timer;
-  double _currentVolume = 0.5;
   bool volumeSliderVisible = false;
   @override
   void initState() {
@@ -1144,13 +1153,9 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   }
 
   void showVolumeSlider() async {
-    try {
-      _currentVolume = await get_player_settings("volume");
-    } catch (e) {
-      _currentVolume = 50;
-    }
-    _currentVolume = _currentVolume / 100;
     volumeSliderVisible = true;
+    _overlayEntry?.remove();
+    _overlayEntry = null;
     _overlayEntry = _createOverlayEntry();
     Overlay.of(_main_context)!.insert(_overlayEntry!);
     _startAutoCloseTimer();
@@ -1195,22 +1200,12 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
               ),
               child: RotatedBox(
                 quarterTurns: -1,
-                child: StatefulBuilder(
-                  builder: (context, setState) {
-                    return Slider(
-                      value: _currentVolume,
+                child: Obx(() => Slider(
+                      value: _playController.currentVolume,
                       onChanged: (value) {
-                        setState(() {
-                          _currentVolume = value;
-                        });
-                        // print(value);
-                        saveSettingsWithDebounce("volume", value * 100);
-                        music_player.setVolume(value);
-                        _startAutoCloseTimer(); // 重置计时器
+                        _playController.currentVolume = value;
                       },
-                    );
-                  },
-                ),
+                    )),
               ),
             ),
           ),

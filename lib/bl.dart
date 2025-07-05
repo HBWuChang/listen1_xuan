@@ -21,7 +21,7 @@ class Bilibili {
     var bilibiliData2 = [];
     b1 = false;
     String url = 'https://api.bilibili.com/x/v3/fav/folder/list4navigate';
-    final settings = await settings_getsettings();
+    final settings = settings_getsettings();
     final cookie = settings['bl'];
 
     var headers = {
@@ -114,7 +114,7 @@ class Bilibili {
     }
     try {
       if (selectmid.substring(0, 2) == 'my') {
-        final settings = await settings_getsettings();
+        final settings = settings_getsettings();
         final cookie = settings['bl'];
         var url = '';
         url =
@@ -163,7 +163,7 @@ class Bilibili {
           }
         };
       } else {
-        final settings = await settings_getsettings();
+        final settings = settings_getsettings();
         final cookie = settings['bl'];
         var url = '';
         url =

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:listen1_xuan/play.dart';
 import 'package:loading_animations/loading_animations.dart';
 import 'package:animations/animations.dart';
@@ -9,16 +10,17 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'controllers/settings_controller.dart';
 import 'settings.dart';
 import 'package:window_manager/window_manager.dart';
 
 var My_playlist_loaddata;
 Future<String> get_windows_proxy_addr() async {
-  var settings = await settings_getsettings();
+  var settings = settings_getsettings();
   var proxy = settings["proxy"];
   if (proxy == null) {
     settings["proxy"] = "";
-    await settings_setsettings(settings);
+    Get.find<SettingsController>().setSettings(settings);
     return "";
   }
   return proxy;
@@ -111,9 +113,8 @@ dynamic xuan_toast({
   );
 }
 
-var volume_setState;
 void init_hotkeys() async {
-  var settings = await settings_getsettings();
+  var settings = settings_getsettings();
   var hotskeys = settings["hotkeys"];
   if (hotskeys == null) {
     hotskeys = {
@@ -124,7 +125,7 @@ void init_hotkeys() async {
       "show": null,
     };
     settings["hotkeys"] = hotskeys;
-    await settings_setsettings(settings);
+    Get.find<SettingsController>().setSettings(settings);
   }
   enable_hotkey = hotskeys["enable"];
   if (hotskeys["play_pause"] != null) {
@@ -193,7 +194,6 @@ void set_inapp_hotkey(enable) {
   enable_inapp_hotkey = enable;
 }
 
-double global_currentVolume = 0.5;
 
 Future<void> set_hotkey(
   s_hotkey,
@@ -281,11 +281,11 @@ List<Widget> create_hotkey_btns(context, _msg) {
           value: enable_hotkey,
           onChanged: (bool value) async {
             enable_hotkey = value;
-            var settings = await settings_getsettings();
+            var settings = settings_getsettings();
             var hotkeys = settings['hotkeys'];
             hotkeys['enable'] = value;
             settings['hotkeys'] = hotkeys;
-            await settings_setsettings(settings);
+            Get.find<SettingsController>().setSettings(settings);
             try {
               setState(() {
                 enable_hotkey = value;
@@ -298,7 +298,7 @@ List<Widget> create_hotkey_btns(context, _msg) {
     ...s_hotkeys.map((_hotkey) {
       return TextButton(
           onPressed: () async {
-            var settings = await settings_getsettings();
+            var settings = settings_getsettings();
             var hotkeys = settings['hotkeys'];
             var hotkeyData = hotkeys[_hotkey['hotkey']];
             var hotkey =
@@ -326,7 +326,7 @@ List<Widget> create_hotkey_btns(context, _msg) {
                         }
                         hotkeys[_hotkey['hotkey']] = hotkey!.toJson();
                         settings['hotkeys'] = hotkeys;
-                        await settings_setsettings(settings);
+                        Get.find<SettingsController>().setSettings(settings);
                         await set_hotkey(s_hotkey, hotkey, _hotkey['hotkey']);
                         Navigator.of(context).pop();
                       },
