@@ -1,3 +1,4 @@
+import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'main.dart';
 import 'package:flutter/material.dart';
@@ -21,10 +22,10 @@ import 'settings.dart';
 
 Future<dynamic> song_dialog(
   BuildContext context,
-  Map<String, dynamic> track, {
+  Track track, {
   Function? change_main_status,
   bool is_my = false,
-  Map<String, dynamic> nowplaylistinfo = const {},
+  PlayListInfo? nowplaylistinfo,
   Function? deltrack,
   Offset? position,
 }) async {
@@ -56,11 +57,11 @@ Future<dynamic> song_dialog(
       Widget dialog = AlertDialog(
         title: GestureDetector(
           onTap: () {
-            Clipboard.setData(ClipboardData(text: track['title'] ?? '未知标题'));
+            Clipboard.setData(ClipboardData(text: track.title ?? '未知标题'));
             xuan_toast(msg: '标题已复制到剪切板');
           },
           child: SelectableText(
-            track['title'] ?? '未知标题',
+            track.title ?? '未知标题',
             style: TextStyle(fontSize: 16),
           ),
         ),
@@ -70,8 +71,7 @@ Future<dynamic> song_dialog(
             children: [
               GestureDetector(
                 onTap: () {
-                  Clipboard.setData(
-                      ClipboardData(text: track['title'] ?? '未知标题'));
+                  Clipboard.setData(ClipboardData(text: track.title ?? '未知标题'));
                   xuan_toast(msg: '标题已复制到剪切板');
                 },
                 onLongPress: () {
@@ -79,13 +79,13 @@ Future<dynamic> song_dialog(
                   //     ClipboardData(text: track['img_url'] ?? '未知封面'));
                   // xuan_toast(msg: '封面链接已复制到剪切板');
                   g_launchURL(Uri.parse(
-                    track['img_url'] ?? '',
+                    track.img_url ?? '',
                   ));
                 },
-                child: track['img_url'] == null
+                child: track.img_url == null
                     ? Container()
                     : CachedNetworkImage(
-                        imageUrl: track['img_url'],
+                        imageUrl: track.img_url!,
                         errorWidget: (context, url, error) => Icon(Icons.error),
                       ),
               ),
@@ -94,48 +94,49 @@ Future<dynamic> song_dialog(
                 onTap: () {
                   if (change_main_status != null) {
                     Navigator.of(context).pop();
-                    change_main_status!("", search_text: track['title']);
+                    change_main_status!("", search_text: track.title);
                   }
                 },
                 onLongPress: () {
                   Clipboard.setData(
-                      ClipboardData(text: track['artist'] ?? '未知艺术家'));
+                      ClipboardData(text: track.artist ?? '未知艺术家'));
                   xuan_toast(msg: '作者已复制到剪切板');
                 },
               ),
               ListTile(
-                title: Text('作者：${track['artist'] ?? '未知艺术家'}'),
+                title: Text('作者：${track.artist ?? '未知艺术家'}'),
                 onTap: () {
                   if (change_main_status != null) {
                     Navigator.of(context).pop();
-                    change_main_status!(track['artist_id'] ?? '');
+                    change_main_status!(track.artist_id ?? '');
                   }
                 },
                 onLongPress: () {
                   Clipboard.setData(
-                      ClipboardData(text: track['artist'] ?? '未知艺术家'));
+                      ClipboardData(text: track.artist ?? '未知艺术家'));
                   xuan_toast(msg: '作者已复制到剪切板');
                 },
               ),
-              if (track['album'] != null)
+              if (track.album != null)
                 ListTile(
-                  title: Text('专辑：${track['album']}'),
+                  title: Text('专辑：${track.album}'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    change_main_status!(track['album_id']);
+                    change_main_status!(track.album_id);
                   },
                   onLongPress: () {
-                    Clipboard.setData(ClipboardData(text: track['album']));
+                    Clipboard.setData(ClipboardData(text: track.album!));
                     xuan_toast(msg: '专辑已复制到剪切板');
                   },
                 ),
               ListTile(
                 title: Text('歌曲链接'),
                 onTap: () {
-                  launchUrl(Uri.parse(track['source_url']));
+                  launchUrl(Uri.parse(track.source_url ?? ''));
                 },
                 onLongPress: () {
-                  Clipboard.setData(ClipboardData(text: track['source_url']));
+                  Clipboard.setData(
+                      ClipboardData(text: track.source_url ?? ''));
                   xuan_toast(msg: '歌曲链接已复制到剪切板');
                 },
               ),
@@ -152,12 +153,12 @@ Future<dynamic> song_dialog(
               ListTile(
                 title: Text('添加到歌单'),
                 onTap: () {
-                  if (nowplaylistinfo.isNotEmpty) {
+                  if (nowplaylistinfo != null) {
                     myplaylist.Add_to_my_playlist(
                       context,
                       [track],
-                      nowplaylistinfo['title'],
-                      nowplaylistinfo['cover_img_url'],
+                      nowplaylistinfo.title,
+                      nowplaylistinfo.cover_img_url,
                     );
                   } else {
                     myplaylist.Add_to_my_playlist(
@@ -170,7 +171,7 @@ Future<dynamic> song_dialog(
               ListTile(
                 title: Text('添加到下载队列'),
                 onTap: () async {
-                  final ok = await add_to_download_tasks([track['id']]);
+                  final ok = await add_to_download_tasks([track.id]);
                   if (ok) {
                     xuan_toast(
                       msg: '已添加到下载队列',
@@ -185,7 +186,7 @@ Future<dynamic> song_dialog(
               ListTile(
                 title: Text('删除本地缓存'),
                 onTap: () async {
-                  await clean_local_cache(false, track['id']);
+                  await clean_local_cache(false, track.id);
                 },
               ),
               if (is_my)
@@ -206,9 +207,9 @@ Future<dynamic> song_dialog(
                               child: Text('取消'),
                             ),
                             TextButton(
-                              onPressed: () async {
-                                await myplaylist.removeTrackFromMyPlaylist(
-                                    nowplaylistinfo['id'], track['id']);
+                              onPressed: () {
+                                myplaylist.removeTrackFromMyPlaylist(
+                                    nowplaylistinfo!.id, track.id);
                                 Navigator.of(context).pop();
                                 if (deltrack != null) {
                                   deltrack(track);
@@ -417,11 +418,10 @@ class MyPlaylist extends StatefulWidget {
 }
 
 class _MyPlaylistState extends State<MyPlaylist> {
-  List<dynamic> _playlists_my = [];
-  List<dynamic> _playlists_fav = [];
-  List<dynamic> _playlists_bl = [];
-  List<dynamic> _playlists_ne = [];
-  List<dynamic> _playlists_qq = [];
+  List<PlayList> _playlists_fav = [];
+  List<PlayList> _playlists_bl = [];
+  List<PlayList> _playlists_ne = [];
+  List<PlayList> _playlists_qq = [];
   bool _isExpandedMy = true;
   bool _isExpandedFav = false;
   bool _isExpandedBl = false;
@@ -431,31 +431,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
   bool _isBlDataLoaded = false;
   bool _isNeDataLoaded = false;
   bool _isQqDataLoaded = false;
-  bool _loading = true;
   @override
   void initState() {
     super.initState();
-    My_loadData();
-    My_playlist_loaddata = My_loadData;
-  }
-
-  void My_loadData() async {
-    Map<String, dynamic> result_my = await myplaylist.show_myplaylist('my');
-    try {
-      setState(() {
-        _playlists_my = result_my['result'];
-        _loading = false;
-      });
-    } catch (e) {
-      xuan_toast(
-        msg: '我的歌单加载失败',
-      );
-    }
   }
 
   void _loadFavData() async {
-    Map<String, dynamic> result_fav =
-        await myplaylist.show_myplaylist('favorite');
+    Map<String, dynamic> result_fav = myplaylist.show_myplaylist('favorite');
     try {
       setState(() {
         _playlists_fav = result_fav['result'];
@@ -501,14 +483,14 @@ class _MyPlaylistState extends State<MyPlaylist> {
       result_ne['success']((data) {
         if (data["status"] != "fail")
           for (var i = 0; i < data['data']["playlists"].length; i++) {
-            _playlists_ne.add({
-              "info": {
-                'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
-                'title': data['data']["playlists"][i]['title'],
-                'id': data['data']["playlists"][i]['id'],
-                'source_url': data['data']["playlists"][i]['source_url']
-              }
-            });
+            _playlists_ne.add(PlayList(
+              info: PlayListInfo(
+                id: data['data']["playlists"][i]['id'],
+                cover_img_url: data['data']["playlists"][i]['cover_img_url'],
+                title: data['data']["playlists"][i]['title'],
+                source_url: data['data']["playlists"][i]['source_url'],
+              ),
+            ));
           }
         tflag1 = true;
         check();
@@ -516,14 +498,14 @@ class _MyPlaylistState extends State<MyPlaylist> {
       result_ne2['success']((data) {
         if (data["status"] != "fail")
           for (var i = 0; i < data['data']["playlists"].length; i++) {
-            _playlists_ne.add({
-              "info": {
-                'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
-                'title': data['data']["playlists"][i]['title'],
-                'id': data['data']["playlists"][i]['id'],
-                'source_url': data['data']["playlists"][i]['source_url']
-              }
-            });
+            _playlists_ne.add(PlayList(
+              info: PlayListInfo(
+                id: data['data']["playlists"][i]['id'],
+                cover_img_url: data['data']["playlists"][i]['cover_img_url'],
+                title: data['data']["playlists"][i]['title'],
+                source_url: data['data']["playlists"][i]['source_url'],
+              ),
+            ));
           }
         tflag2 = true;
         check();
@@ -556,14 +538,14 @@ class _MyPlaylistState extends State<MyPlaylist> {
       result_qq['success']((data) {
         if (data["status"] != "fail")
           for (var i = 0; i < data['data']["playlists"].length; i++) {
-            _playlists_qq.add({
-              "info": {
-                'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
-                'title': data['data']["playlists"][i]['title'],
-                'id': data['data']["playlists"][i]['id'],
-                'source_url': data['data']["playlists"][i]['source_url']
-              }
-            });
+            _playlists_qq.add(PlayList(
+              info: PlayListInfo(
+                cover_img_url: data['data']["playlists"][i]['cover_img_url'],
+                title: data['data']["playlists"][i]['title'],
+                id: data['data']["playlists"][i]['id'],
+                source_url: data['data']["playlists"][i]['source_url'],
+              ),
+            ));
           }
         tflag1 = true;
         check();
@@ -571,14 +553,14 @@ class _MyPlaylistState extends State<MyPlaylist> {
       result_qq2['success']((data) {
         if (data["status"] != "fail")
           for (var i = 0; i < data['data']["playlists"].length; i++) {
-            _playlists_qq.add({
-              "info": {
-                'cover_img_url': data['data']["playlists"][i]['cover_img_url'],
-                'title': data['data']["playlists"][i]['title'],
-                'id': data['data']["playlists"][i]['id'],
-                'source_url': data['data']["playlists"][i]['source_url']
-              }
-            });
+            _playlists_qq.add(PlayList(
+              info: PlayListInfo(
+                cover_img_url: data['data']["playlists"][i]['cover_img_url'],
+                title: data['data']["playlists"][i]['title'],
+                id: data['data']["playlists"][i]['id'],
+                source_url: data['data']["playlists"][i]['source_url'],
+              ),
+            ));
           }
         tflag2 = true;
         check();
@@ -593,365 +575,324 @@ class _MyPlaylistState extends State<MyPlaylist> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: _loading
-            ? global_loading_anime
-            : SingleChildScrollView(
-                child: Column(children: [
-                  ExpansionPanelList(
-                    materialGapSize: 0,
-                    expansionCallback: (int index, bool isExpanded) {
-                      setState(() {
-                        if (index == 0) {
-                          _isExpandedMy = !_isExpandedMy;
-                        } else if (index == 1) {
-                          _isExpandedFav = !_isExpandedFav;
-                          if (_isExpandedFav && !_isFavDataLoaded) {
-                            _loadFavData();
-                          }
-                        } else if (index == 2) {
-                          _isExpandedBl = !_isExpandedBl;
-                          if (_isExpandedBl && !_isBlDataLoaded) {
-                            _loadBlData();
-                          }
-                        } else if (index == 3) {
-                          _isExpandedNe = !_isExpandedNe;
-                          if (_isExpandedNe && !_isNeDataLoaded) {
-                            _loadNeData();
-                          }
-                        } else if (index == 4) {
-                          _isExpandedQq = !_isExpandedQq;
-                          if (_isExpandedQq && !_isQqDataLoaded) {
-                            _loadQqData();
-                          }
-                        }
-                      });
-                    },
-                    children: [
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: Icon(Icons.library_music),
-                            title: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                '我创建的歌单',
-                                style: TextStyle(fontSize: 20.0),
-                              ),
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _isExpandedMy = !_isExpandedMy;
-                              });
-                            },
-                          );
-                        },
-                        body: Column(
-                          children: _playlists_my.map((playlist) {
-                            return ListTile(
-                              leading: playlist['info']['cover_img_url'] == ""
-                                  ? Container(
-                                      width: 50,
-                                      height: 50,
-                                    )
-                                  : CachedNetworkImage(
-                                      imageUrl: playlist['info']
-                                          ['cover_img_url'],
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                    ),
-                              title: FittedBox(
-                                  alignment: Alignment.centerLeft,
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(playlist['info']['title'])),
-                              onTap: () async {
-                                var ret = await Get.toNamed(
-                                  playlist['info']['id'],
-                                  arguments: {
-                                    'listId': playlist['info']['id'],
-                                    'is_my': true,
-                                  },
-                                  id: 1,
-                                );
-
-                                if (ret != null) {
-                                  if (ret["refresh"] == true) {
-                                    My_loadData();
-                                  }
-                                }
-                              },
-                            );
-                          }).toList(),
-                        ),
-                        isExpanded: _isExpandedMy,
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: Icon(Icons.star),
-                            title: FittedBox(
-                              alignment: Alignment.centerLeft,
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                '我收藏的歌单',
-                                style: TextStyle(fontSize: 20.0),
-                              ),
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _isExpandedFav = !_isExpandedFav;
-                                if (_isExpandedFav && !_isFavDataLoaded) {
-                                  _loadFavData();
-                                }
-                              });
-                            },
-                          );
-                        },
-                        body: _isFavDataLoaded
-                            ? Column(
-                                children: _playlists_fav.map((playlist) {
-                                  return ListTile(
-                                    leading: CachedNetworkImage(
-                                      imageUrl: playlist['info']
-                                          ['cover_img_url'],
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                    ),
-                                    title: FittedBox(
-                                        alignment: Alignment.centerLeft,
-                                        fit: BoxFit.scaleDown,
-                                        child: Text(playlist['info']['title'])),
-                                    onTap: () async {
-                                      var ret = await Get.toNamed(
-                                        playlist['info']['id'],
-                                        arguments: {
-                                          'listId': playlist['info']['id'],
-                                        },
-                                        id: 1,
-                                      );
-                                      if (ret != null) {
-                                        if (ret["refresh"] == true) {
-                                          My_loadData();
-                                        }
-                                      }
-                                    },
-                                  );
-                                }).toList(),
-                              )
-                            : Center(child: global_loading_anime),
-                        isExpanded: _isExpandedFav,
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: SvgPicture.string(
-                                '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" class="zhuzhan-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.73252 2.67094C3.33229 2.28484 3.33229 1.64373 3.73252 1.25764C4.11291 0.890684 4.71552 0.890684 5.09591 1.25764L7.21723 3.30403C7.27749 3.36218 7.32869 3.4261 7.37081 3.49407H10.5789C10.6211 3.4261 10.6723 3.36218 10.7325 3.30403L12.8538 1.25764C13.2342 0.890684 13.8368 0.890684 14.2172 1.25764C14.6175 1.64373 14.6175 2.28484 14.2172 2.67094L13.364 3.49407H14C16.2091 3.49407 18 5.28493 18 7.49407V12.9996C18 15.2087 16.2091 16.9996 14 16.9996H4C1.79086 16.9996 0 15.2087 0 12.9996V7.49406C0 5.28492 1.79086 3.49407 4 3.49407H4.58579L3.73252 2.67094ZM4 5.42343C2.89543 5.42343 2 6.31886 2 7.42343V13.0702C2 14.1748 2.89543 15.0702 4 15.0702H14C15.1046 15.0702 16 14.1748 16 13.0702V7.42343C16 6.31886 15.1046 5.42343 14 5.42343H4ZM5 9.31747C5 8.76519 5.44772 8.31747 6 8.31747C6.55228 8.31747 7 8.76519 7 9.31747V10.2115C7 10.7638 6.55228 11.2115 6 11.2115C5.44772 11.2115 5 10.7638 5 10.2115V9.31747ZM12 8.31747C11.4477 8.31747 11 8.76519 11 9.31747V10.2115C11 10.7638 11.4477 11.2115 12 11.2115C12.5523 11.2115 13 10.7638 13 10.2115V9.31747C13 8.76519 12.5523 8.31747 12 8.31747Z" fill="gray"></path></svg>'),
-                            title: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                '我的哔哩哔哩收藏',
-                                style: TextStyle(fontSize: 20.0),
-                              ),
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _isExpandedBl = !_isExpandedBl;
-                                if (_isExpandedBl && !_isBlDataLoaded) {
-                                  _loadBlData();
-                                }
-                              });
-                            },
-                          );
-                        },
-                        body: _isBlDataLoaded
-                            ? Column(
-                                children: _playlists_bl.map((playlist) {
-                                  return ListTile(
-                                      leading: CachedNetworkImage(
-                                        imageUrl: playlist['info']
-                                            ['cover_img_url'],
-                                        width: 50,
-                                        height: 50,
-                                        fit: BoxFit.cover,
-                                        errorWidget: (context, url, error) =>
-                                            Icon(Icons.help_outline), // 添加错误处理
-                                      ),
-                                      title: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.centerLeft,
-                                          child:
-                                              Text(playlist['info']['title'])),
-                                      onTap: () async {
-                                        // clean_top_context();
-                                        // var ret = await Navigator.push(
-                                        //   top_context.last.context,
-                                        //   MaterialPageRoute(
-                                        //     builder: (context) => PlaylistInfo(
-                                        //       listId: playlist['info']['id'],
-                                        //       onPlaylistTap:
-                                        //           widget.onPlaylistTap,
-                                        //     ),
-                                        //   ),
-                                        // );
-                                        var ret = await Get.toNamed(
-                                          playlist['info']['id'],
-                                          arguments: {
-                                            'listId': playlist['info']['id'],
-                                          },
-                                          id: 1,
-                                        );
-                                        if (ret != null) {
-                                          if (ret["refresh"] == true) {
-                                            My_loadData();
-                                          }
-                                        }
-                                      });
-                                }).toList(),
-                              )
-                            : Center(child: global_loading_anime),
-                        isExpanded: _isExpandedBl,
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: CachedNetworkImage(
-                                imageUrl:
-                                    "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
-                                width: 18,
-                                height: 18),
-                            title: FittedBox(
-                              alignment: Alignment.centerLeft,
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                '我的网易云歌单',
-                                style: TextStyle(fontSize: 20.0),
-                              ),
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _isExpandedNe = !_isExpandedNe;
-                                if (_isExpandedNe && !_isNeDataLoaded) {
-                                  _loadNeData();
-                                }
-                              });
-                            },
-                          );
-                        },
-                        body: _isNeDataLoaded
-                            ? Column(
-                                children: _playlists_ne.map((playlist) {
-                                  return ListTile(
-                                    leading: CachedNetworkImage(
-                                      imageUrl: playlist['info']
-                                          ['cover_img_url'],
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                    ),
-                                    title: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(playlist['info']['title'])),
-                                    onTap: () async {
-                                      var ret = await Get.toNamed(
-                                        playlist['info']['id'],
-                                        arguments: {
-                                          'listId': playlist['info']['id'],
-                                        },
-                                        id: 1,
-                                      );
-                                      if (ret != null) {
-                                        if (ret["refresh"] == true) {
-                                          My_loadData();
-                                        }
-                                      }
-                                    },
-                                  );
-                                }).toList(),
-                              )
-                            : Center(child: global_loading_anime),
-                        isExpanded: _isExpandedNe,
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: CachedNetworkImage(
-                                imageUrl:
-                                    "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
-                                width: 18,
-                                height: 18),
-                            title: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                '我的QQ歌单',
-                                style: TextStyle(fontSize: 20.0),
-                              ),
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _isExpandedQq = !_isExpandedQq;
-                                if (_isExpandedQq && !_isQqDataLoaded) {
-                                  _loadQqData();
-                                }
-                              });
-                            },
-                          );
-                        },
-                        body: _isQqDataLoaded
-                            ? Column(
-                                children: _playlists_qq.map((playlist) {
-                                  return ListTile(
-                                    leading: CachedNetworkImage(
-                                      imageUrl: playlist['info']
-                                          ['cover_img_url'],
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                      errorWidget: (context, url, error) =>
-                                          Container(), // 如果加载出错则返回空的Container
-                                    ),
-                                    title: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(playlist['info']['title'])),
-                                    onTap: () async {
-                                      // clean_top_context();
-                                      // var ret = await Navigator.push(
-                                      //   top_context.last.context,
-                                      //   MaterialPageRoute(
-                                      //     builder: (context) => PlaylistInfo(
-                                      //       listId: playlist['info']['id'],
-                                      //       onPlaylistTap: widget.onPlaylistTap,
-                                      //     ),
-                                      //   ),
-                                      // );
-                                      var ret = await Get.toNamed(
-                                        playlist['info']['id'],
-                                        arguments: {
-                                          'listId': playlist['info']['id'],
-                                        },
-                                        id: 1,
-                                      );
-                                      if (ret != null) {
-                                        if (ret["refresh"] == true) {
-                                          My_loadData();
-                                        }
-                                      }
-                                    },
-                                  );
-                                }).toList(),
-                              )
-                            : Center(child: global_loading_anime),
-                        isExpanded: _isExpandedQq,
-                      ),
-                    ],
+        body: SingleChildScrollView(
+      child: Column(children: [
+        ExpansionPanelList(
+          materialGapSize: 0,
+          expansionCallback: (int index, bool isExpanded) {
+            setState(() {
+              if (index == 0) {
+                _isExpandedMy = !_isExpandedMy;
+              } else if (index == 1) {
+                _isExpandedFav = !_isExpandedFav;
+                if (_isExpandedFav && !_isFavDataLoaded) {
+                  _loadFavData();
+                }
+              } else if (index == 2) {
+                _isExpandedBl = !_isExpandedBl;
+                if (_isExpandedBl && !_isBlDataLoaded) {
+                  _loadBlData();
+                }
+              } else if (index == 3) {
+                _isExpandedNe = !_isExpandedNe;
+                if (_isExpandedNe && !_isNeDataLoaded) {
+                  _loadNeData();
+                }
+              } else if (index == 4) {
+                _isExpandedQq = !_isExpandedQq;
+                if (_isExpandedQq && !_isQqDataLoaded) {
+                  _loadQqData();
+                }
+              }
+            });
+          },
+          children: [
+            ExpansionPanel(
+              headerBuilder: (BuildContext context, bool isExpanded) {
+                return ListTile(
+                  leading: Icon(Icons.library_music),
+                  title: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '我创建的歌单',
+                      style: TextStyle(fontSize: 20.0),
+                    ),
                   ),
-                ]),
-              ));
+                  onTap: () {
+                    setState(() {
+                      _isExpandedMy = !_isExpandedMy;
+                    });
+                  },
+                );
+              },
+              body: Obx(() => Column(
+                    children: Get.find<MyPlayListController>()
+                        .playerlists
+                        .values
+                        .toList()
+                        .map((playlist) {
+                      return ListTile(
+                        leading: playlist.info.cover_img_url == ""
+                            ? Container(
+                                width: 50,
+                                height: 50,
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: playlist.info.cover_img_url!,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              ),
+                        title: FittedBox(
+                            alignment: Alignment.centerLeft,
+                            fit: BoxFit.scaleDown,
+                            child: Text(playlist.info.title ?? "")),
+                        onTap: () async {
+                          var ret = await Get.toNamed(
+                            playlist.info.id,
+                            arguments: {
+                              'listId': playlist.info.id,
+                              'is_my': true,
+                            },
+                            id: 1,
+                          );
+                        },
+                      );
+                    }).toList(),
+                  )),
+              isExpanded: _isExpandedMy,
+            ),
+            ExpansionPanel(
+              headerBuilder: (BuildContext context, bool isExpanded) {
+                return ListTile(
+                  leading: Icon(Icons.star),
+                  title: FittedBox(
+                    alignment: Alignment.centerLeft,
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '我收藏的歌单',
+                      style: TextStyle(fontSize: 20.0),
+                    ),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      _isExpandedFav = !_isExpandedFav;
+                      if (_isExpandedFav && !_isFavDataLoaded) {
+                        _loadFavData();
+                      }
+                    });
+                  },
+                );
+              },
+              body: _isFavDataLoaded
+                  ? Column(
+                      children: _playlists_fav.map((playlist) {
+                        return ListTile(
+                          leading: CachedNetworkImage(
+                            imageUrl: playlist.info.cover_img_url!,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          ),
+                          title: FittedBox(
+                              alignment: Alignment.centerLeft,
+                              fit: BoxFit.scaleDown,
+                              child: Text(playlist.info.title ?? "")),
+                          onTap: () async {
+                            var ret = await Get.toNamed(
+                              playlist.info.id,
+                              arguments: {
+                                'listId': playlist.info.id,
+                              },
+                              id: 1,
+                            );
+                          },
+                        );
+                      }).toList(),
+                    )
+                  : Center(child: global_loading_anime),
+              isExpanded: _isExpandedFav,
+            ),
+            ExpansionPanel(
+              headerBuilder: (BuildContext context, bool isExpanded) {
+                return ListTile(
+                  leading: SvgPicture.string(
+                      '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" class="zhuzhan-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.73252 2.67094C3.33229 2.28484 3.33229 1.64373 3.73252 1.25764C4.11291 0.890684 4.71552 0.890684 5.09591 1.25764L7.21723 3.30403C7.27749 3.36218 7.32869 3.4261 7.37081 3.49407H10.5789C10.6211 3.4261 10.6723 3.36218 10.7325 3.30403L12.8538 1.25764C13.2342 0.890684 13.8368 0.890684 14.2172 1.25764C14.6175 1.64373 14.6175 2.28484 14.2172 2.67094L13.364 3.49407H14C16.2091 3.49407 18 5.28493 18 7.49407V12.9996C18 15.2087 16.2091 16.9996 14 16.9996H4C1.79086 16.9996 0 15.2087 0 12.9996V7.49406C0 5.28492 1.79086 3.49407 4 3.49407H4.58579L3.73252 2.67094ZM4 5.42343C2.89543 5.42343 2 6.31886 2 7.42343V13.0702C2 14.1748 2.89543 15.0702 4 15.0702H14C15.1046 15.0702 16 14.1748 16 13.0702V7.42343C16 6.31886 15.1046 5.42343 14 5.42343H4ZM5 9.31747C5 8.76519 5.44772 8.31747 6 8.31747C6.55228 8.31747 7 8.76519 7 9.31747V10.2115C7 10.7638 6.55228 11.2115 6 11.2115C5.44772 11.2115 5 10.7638 5 10.2115V9.31747ZM12 8.31747C11.4477 8.31747 11 8.76519 11 9.31747V10.2115C11 10.7638 11.4477 11.2115 12 11.2115C12.5523 11.2115 13 10.7638 13 10.2115V9.31747C13 8.76519 12.5523 8.31747 12 8.31747Z" fill="gray"></path></svg>'),
+                  title: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '我的哔哩哔哩收藏',
+                      style: TextStyle(fontSize: 20.0),
+                    ),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      _isExpandedBl = !_isExpandedBl;
+                      if (_isExpandedBl && !_isBlDataLoaded) {
+                        _loadBlData();
+                      }
+                    });
+                  },
+                );
+              },
+              body: _isBlDataLoaded
+                  ? Column(
+                      children: _playlists_bl.map((playlist) {
+                        return ListTile(
+                            leading: CachedNetworkImage(
+                              imageUrl: playlist.info.cover_img_url!,
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                              errorWidget: (context, url, error) =>
+                                  Icon(Icons.help_outline), // 添加错误处理
+                            ),
+                            title: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(playlist.info.title ?? "")),
+                            onTap: () async {
+                              var ret = await Get.toNamed(
+                                playlist.info.id,
+                                arguments: {
+                                  'listId': playlist.info.id,
+                                },
+                                id: 1,
+                              );
+                            });
+                      }).toList(),
+                    )
+                  : Center(child: global_loading_anime),
+              isExpanded: _isExpandedBl,
+            ),
+            ExpansionPanel(
+              headerBuilder: (BuildContext context, bool isExpanded) {
+                return ListTile(
+                  leading: CachedNetworkImage(
+                      imageUrl:
+                          "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
+                      width: 18,
+                      height: 18),
+                  title: FittedBox(
+                    alignment: Alignment.centerLeft,
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '我的网易云歌单',
+                      style: TextStyle(fontSize: 20.0),
+                    ),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      _isExpandedNe = !_isExpandedNe;
+                      if (_isExpandedNe && !_isNeDataLoaded) {
+                        _loadNeData();
+                      }
+                    });
+                  },
+                );
+              },
+              body: _isNeDataLoaded
+                  ? Column(
+                      children: _playlists_ne.map((playlist) {
+                        return ListTile(
+                          leading: CachedNetworkImage(
+                            imageUrl: playlist.info.cover_img_url!,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          ),
+                          title: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(playlist.info.title ?? '')),
+                          onTap: () async {
+                            var ret = await Get.toNamed(
+                              playlist.info.id,
+                              arguments: {
+                                'listId': playlist.info.id,
+                              },
+                              id: 1,
+                            );
+                          },
+                        );
+                      }).toList(),
+                    )
+                  : Center(child: global_loading_anime),
+              isExpanded: _isExpandedNe,
+            ),
+            ExpansionPanel(
+              headerBuilder: (BuildContext context, bool isExpanded) {
+                return ListTile(
+                  leading: CachedNetworkImage(
+                      imageUrl:
+                          "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
+                      width: 18,
+                      height: 18),
+                  title: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '我的QQ歌单',
+                      style: TextStyle(fontSize: 20.0),
+                    ),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      _isExpandedQq = !_isExpandedQq;
+                      if (_isExpandedQq && !_isQqDataLoaded) {
+                        _loadQqData();
+                      }
+                    });
+                  },
+                );
+              },
+              body: _isQqDataLoaded
+                  ? Column(
+                      children: _playlists_qq.map((playlist) {
+                        return ListTile(
+                          leading: CachedNetworkImage(
+                            imageUrl: playlist.info.cover_img_url ?? '',
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorWidget: (context, url, error) =>
+                                Container(), // 如果加载出错则返回空的Container
+                          ),
+                          title: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(playlist.info.title ?? '')),
+                          onTap: () async {
+                            // clean_top_context();
+                            // var ret = await Navigator.push(
+                            //   top_context.last.context,
+                            //   MaterialPageRoute(
+                            //     builder: (context) => PlaylistInfo(
+                            //       listId: playlist['info']['id'],
+                            //       onPlaylistTap: widget.onPlaylistTap,
+                            //     ),
+                            //   ),
+                            // );
+                            var ret = await Get.toNamed(
+                              playlist.info.id,
+                              arguments: {
+                                'listId': playlist.info.id,
+                              },
+                              id: 1,
+                            );
+                          },
+                        );
+                      }).toList(),
+                    )
+                  : Center(child: global_loading_anime),
+              isExpanded: _isExpandedQq,
+            ),
+          ],
+        ),
+      ]),
+    ));
   }
 }
 
@@ -971,15 +912,14 @@ class PlaylistInfo extends StatefulWidget {
 }
 
 class _PlaylistInfoState extends State<PlaylistInfo> {
-  Map<String, dynamic> _playlist = {};
   bool _loading = true;
   bool _loadfailed = false;
   bool _is_fav = false;
   TextEditingController _searchController = TextEditingController();
   double lastmove = 0;
-  List<Map<String, dynamic>> _unfilteredTracks = [];
-  List<Map<String, dynamic>> tracks = [];
-  Map<String, dynamic> result = {};
+  List<Track> _unfilteredTracks = [];
+  List<Track> tracks = [];
+  late PlayList result;
   OverlayEntry? scroll_bar_overlayEntry;
   bool scroll_bar_Visible = false;
   double scroll_bar_pos = 0.5;
@@ -1014,22 +954,29 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
   void _loadData() async {
     var res = await MediaService.getPlaylist(widget.listId);
     res['success']((data) {
-      result = data;
+      try {
+        result = PlayList.fromJson(data);
+      } catch (e) {
+        print(e);
+        result = PlayList.fromJson({
+          'info': {
+            'id': widget.listId,
+          },
+        });
+      }
       setState(() {
-        _playlist = data;
-        tracks = List<Map<String, dynamic>>.from(data['tracks']);
-        _unfilteredTracks = List<Map<String, dynamic>>.from(tracks);
+        tracks = result.tracks ?? [];
+        _unfilteredTracks = tracks;
         _loading = false;
-        if (data['info']['title'] == null) {
+        if (result.info.title == null) {
           _loadfailed = true;
         }
       });
     });
   }
 
-  void deltrack(Map<String, dynamic> track) {
+  void deltrack(Track track) {
     setState(() {
-      // tracks.remove(track);
       _unfilteredTracks.remove(track);
       _filterTracks();
     });
@@ -1039,9 +986,9 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
     String query = _searchController.text.toLowerCase();
     setState(() {
       tracks = _unfilteredTracks.where((track) {
-        final title = track['title']?.toLowerCase() ?? '';
-        final artist = track['artist']?.toLowerCase() ?? '';
-        final album = track['album']?.toLowerCase() ?? '';
+        final title = track.title?.toLowerCase() ?? '';
+        final artist = track.artist?.toLowerCase() ?? '';
+        final album = track.album?.toLowerCase() ?? '';
         return title.contains(query) ||
             artist.contains(query) ||
             album.contains(query);
@@ -1153,7 +1100,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                       title: Container(
                         height: 48,
                         child: Marquee(
-                          text: result['info']['title'],
+                          text: result.info.title!,
                           style: TextStyle(fontSize: 16),
                           scrollAxis: Axis.horizontal,
                           blankSpace: 20.0,
@@ -1174,7 +1121,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                           children: [
                             // SizedBox(height: 80), // 添加一个空的SizedBox来调整位置
                             CachedNetworkImage(
-                              imageUrl: result['info']['cover_img_url'],
+                              imageUrl: result.info.cover_img_url!,
                               width: 150,
                               height: 150,
                               fit: BoxFit.cover,
@@ -1192,14 +1139,14 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                   child: ElevatedButton(
                                     onPressed: () async {
                                       // 播放全部按钮点击事件
-                                      List<Map<String, dynamic>> trackList =
-                                          List<Map<String, dynamic>>.from(
-                                              tracks);
-                                      await set_current_playing(trackList);
-                                      Get.find<PlayController>().setPlayerSetting(
-                                          "nowplaying_track_id",
-                                          tracks[0]['id']);
-                                      await playsong(tracks[0]);
+                                      List<Track> trackList =
+                                          List<Track>.from(tracks);
+                                      set_current_playing(trackList);
+                                      Get.find<PlayController>()
+                                          .setPlayerSetting(
+                                              "nowplaying_track_id",
+                                              tracks[0].id);
+                                      playsong(tracks[0]);
                                     },
                                     child: Text('播放全部（共${tracks.length}首）'),
                                   ),
@@ -1208,10 +1155,9 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                   flex: 2,
                                   child: IconButton(
                                     onPressed: () async {
-                                      List<Map<String, dynamic>> trackList =
-                                          List<Map<String, dynamic>>.from(
-                                              tracks);
-                                      await add_current_playing(trackList);
+                                      List<Track> trackList =
+                                          List<Track>.from(tracks);
+                                      add_current_playing(trackList);
                                       xuan_toast(
                                         msg: '已添加到当前播放列表',
                                       );
@@ -1244,8 +1190,8 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                 await myplaylist.Add_to_my_playlist(
                                     context_PlaylistInfo,
                                     tracks,
-                                    result['info']['title'],
-                                    result['info']['cover_img_url']);
+                                    result.info.title!,
+                                    result.info.cover_img_url!);
                                 Get.back(result: {"refresh": true}, id: 1);
                               } catch (e) {
                                 // print(e);
@@ -1275,7 +1221,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                           ),
                                           TextButton(
                                             onPressed: () async {
-                                              await myplaylist.removeMyPlaylist(
+                                              myplaylist.removeMyPlaylist(
                                                   'my', widget.listId);
                                               Navigator.of(context_dialog)
                                                   .pop();
@@ -1296,8 +1242,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                 onPressed: () {
                                   // 链接按钮点击事件
                                   // launchUrl(playlistInfo['source_url']);
-                                  launchUrl(
-                                      Uri.parse(result['info']['source_url']));
+                                  launchUrl(Uri.parse(result.info.source_url!));
                                 },
                               ),
                         widget.is_my
@@ -1316,9 +1261,9 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                           _coverImgUrlController =
                                           TextEditingController();
                                       _titleController.text =
-                                          result['info']['title'];
+                                          result.info.title!;
                                       _coverImgUrlController.text =
-                                          result['info']['cover_img_url'];
+                                          result.info.cover_img_url!;
                                       return AlertDialog(
                                         title: Text('编辑歌单'),
                                         content: Column(
@@ -1380,14 +1325,14 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                 onPressed: () async {
                                   // 添加按钮点击事件
                                   if (_is_fav) {
-                                    await myplaylist.removeMyPlaylist(
+                                    myplaylist.removeMyPlaylist(
                                         'favorite', widget.listId);
                                     check_fav();
                                     xuan_toast(
                                       msg: '已取消收藏',
                                     );
                                   } else {
-                                    await myplaylist.saveMyPlaylist(
+                                    myplaylist.saveMyPlaylist(
                                         'favorite', result);
                                     check_fav();
                                     xuan_toast(
@@ -1406,9 +1351,9 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                           var _key = GlobalKey();
                           return ListTile(
                             key: _key,
-                            title: Text(track['title'] ?? '未知标题'),
+                            title: Text(track.title ?? '未知标题'),
                             subtitle: Text(
-                                '${track['artist'] ?? '未知艺术家'} - ${track['album'] ?? '未知专辑'}'),
+                                '${track.artist ?? '未知艺术家'} - ${track.album ?? '未知专辑'}'),
                             trailing: IconButton(
                               icon: Icon(Icons.more_vert),
                               onPressed: () async {
@@ -1416,7 +1361,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                     context_PlaylistInfo, track,
                                     change_main_status: widget.onPlaylistTap,
                                     is_my: widget.is_my,
-                                    nowplaylistinfo: result['info'],
+                                    nowplaylistinfo: result.info,
                                     deltrack: deltrack,
                                     position: Offset(
                                         MediaQuery.of(context).size.width,
@@ -1443,7 +1388,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                             ),
                             onTap: () {
                               xuan_toast(
-                                msg: '尝试播放：${track['title']}',
+                                msg: '尝试播放：${track.title}',
                               );
                               playsong(track);
                             },
@@ -1546,11 +1491,9 @@ class Searchlistinfo extends StatefulWidget {
 }
 
 class _SearchlistinfoState extends State<Searchlistinfo> {
-  Map<String, dynamic> _playlist = {};
   bool _loading = true;
   bool song_or_playlist = false;
-  List<Map<String, dynamic>> _unfilteredTracks = [];
-  List<Map<String, dynamic>> tracks = [];
+  List<Track> tracks = [];
   Map<String, dynamic> result = {};
   String source = 'netease';
   String lastsource = 'netease';
@@ -1612,7 +1555,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
     ret["success"]((data) {
       result = data;
       setState(() {
-        tracks.addAll(List<Map<String, dynamic>>.from(data['result']));
+        tracks.addAll(List<Track>.from(data['result']));
         _loading = false;
       });
     });
@@ -1639,7 +1582,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
       ret["success"]((data) {
         result = data;
         setState(() {
-          tracks = List<Map<String, dynamic>>.from(data['result']);
+          tracks = List<Track>.from(data['result']);
           _loading = false;
         });
       });
@@ -1710,9 +1653,8 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                         var _key = GlobalKey();
                         final track = tracks[index];
                         return ListTile(
-                          title: Text(track['title']),
-                          subtitle:
-                              Text('${track['artist']} - ${track['album']}'),
+                          title: Text(track.title!),
+                          subtitle: Text('${track.artist} - ${track.album}'),
                           trailing: IconButton(
                             key: _key,
                             icon: Icon(Icons.more_vert),
@@ -1729,7 +1671,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                           ),
                           onTap: () {
                             xuan_toast(
-                              msg: '尝试播放：${track['title']}',
+                              msg: '尝试播放：${track.title}',
                             );
                             playsong(track);
                           },

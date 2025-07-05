@@ -1,13 +1,15 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'controllers/myPlaylist_controller.dart';
+import 'controllers/play_controller.dart';
 import 'lowebutil.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:math';
 import 'global_settings_animations.dart';
 
 class MyPlaylist {
-  Future<void> arrayMove(List<dynamic> arr, int oldIndex, int newIndex) async {
+  final MyPlayListController _myPlayListController =
+      Get.find<MyPlayListController>();
+  void arrayMove(List<dynamic> arr, int oldIndex, int newIndex) {
     if (newIndex >= arr.length) {
       int k = newIndex - arr.length + 1;
       while (k > 0) {
@@ -27,51 +29,37 @@ class MyPlaylist {
     return '';
   }
 
-  Future<void> Add_to_my_playlist(
-      BuildContext context, List<Map<String, dynamic>> tracks,
+  Future<void> Add_to_my_playlist(BuildContext context, List<Track> tracks,
       [String? title = "", String? cover_img_url = ""]) async {
     try {
+      final playlists = show_myplaylist('my')['result'];
       await showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text('请选择要添加到的歌单'),
-            content: FutureBuilder(
-              future: show_myplaylist('my'),
-              builder: (BuildContext context, AsyncSnapshot snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  if (snapshot.hasData) {
-                    final playlists = snapshot.data['result'];
-
-                    return Container(
-                      width: double.maxFinite,
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: playlists.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final playlist = playlists[index];
-                          return ListTile(
-                            title: Text(playlist['info']['title']),
-                            onTap: () async {
-                              final playlistId = playlist['info']['id'];
-                              for (var track in tracks) {
-                                await addTrackToMyPlaylist(playlistId, track);
-                              }
-                              Navigator.of(context).pop();
-                              xuan_toast(
-                                msg: '添加成功',
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    );
-                  }
-                }
-                return Center(
-                  child: global_loading_anime,
-                );
-              },
+            content: Container(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: playlists.length,
+                itemBuilder: (BuildContext context, int index) {
+                  PlayList playlist = playlists[index];
+                  return ListTile(
+                    title: Text(playlist.info.title ?? ''),
+                    onTap: () async {
+                      final playlistId = playlist.info.id;
+                      for (var track in tracks) {
+                        await addTrackToMyPlaylist(playlistId, track);
+                      }
+                      Navigator.of(context).pop();
+                      xuan_toast(
+                        msg: '添加成功',
+                      );
+                    },
+                  );
+                },
+              ),
             ),
             actions: [
               TextButton(
@@ -142,6 +130,9 @@ class MyPlaylist {
           );
         },
       );
+      try {
+        My_playlist_loaddata(() {});
+      } catch (e) {}
     } catch (e) {
       // print(e);
       xuan_toast(
@@ -150,51 +141,53 @@ class MyPlaylist {
     }
   }
 
-  Future<Map<String, dynamic>> show_myplaylist(String playlistType) async {
+  Map<String, dynamic> show_myplaylist(String playlistType) {
     final key = getPlaylistObjectKey(playlistType);
     if (key == '') {
       // fn({'result': []});
       return {'result': []};
     }
-    final prefs = await SharedPreferences.getInstance();
-    List<String>? playlists = prefs.getStringList(key);
-    if (playlists == null) {
-      playlists = [];
+    // final prefs = await SharedPreferences.getInstance();
+    // List<String>? playlists = prefs.getStringList(key);
+    // if (playlists == null) {
+    //   playlists = [];
+    // }
+    // final result = playlists
+    //     .map((id) {
+    //       final playlistJson = prefs.getString(id);
+    //       if (playlistJson != null) {
+    //         final playlist = jsonDecode(playlistJson);
+    //         if (playlist['tracks'] != null) {
+    //           for (var track in playlist['tracks']) {
+    //             track.remove('url');
+    //           }
+    //         }
+    //         return playlist;
+    //       }
+    //       return null;
+    //     })
+    //     .where((playlist) => playlist != null)
+    //     .toList();
+    // return {'result': result};
+    switch (key) {
+      case 'playerlists':
+        return {'result': _myPlayListController.playerlists.values.toList()};
+      case 'favoriteplayerlists':
+        return {
+          'result': _myPlayListController.favoriteplayerlists.values.toList()
+        };
+      default:
+        return {'result': []};
     }
-    final result = playlists
-        .map((id) {
-          final playlistJson = prefs.getString(id);
-          if (playlistJson != null) {
-            final playlist = jsonDecode(playlistJson);
-            if (playlist['tracks'] != null) {
-              for (var track in playlist['tracks']) {
-                track.remove('url');
-              }
-            }
-            return playlist;
-          }
-          return null;
-        })
-        .where((playlist) => playlist != null)
-        .toList();
-    return {'result': result};
   }
 
   Future<Map<String, dynamic>?> get_playlist(String url) async {
     final listId = getParameterByName('list_id', url);
-    final prefs = await SharedPreferences.getInstance();
-    final playlistJson = listId != null ? prefs.getString(listId) : null;
+    final playlist = _myPlayListController.playerlists[listId];
     return {
       "success": ((fn) {
-        if (playlistJson != null) {
-          final playlist = jsonDecode(playlistJson);
-          if (playlist['tracks'] != null) {
-            for (var track in playlist['tracks']) {
-              track.remove('url');
-              track['disabled'] = false;
-            }
-          }
-          fn(playlist);
+        if (playlist != null) {
+          fn(playlist.toJson());
           // return playlist;
         } else {
           fn(null);
@@ -213,188 +206,153 @@ class MyPlaylist {
     return '${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}';
   }
 
-  Future<List<String>> insertMyPlaylistToMyPlaylists(String playlistType,
-      String playlistId, String toPlaylistId, String direction) async {
-    final key = getPlaylistObjectKey(playlistType);
-    if (key == '') {
-      return [];
-    }
-    final prefs = await SharedPreferences.getInstance();
-    List<String>? playlists = prefs.getStringList(key);
-    if (playlists == null) {
-      return [];
-    }
-    final index = playlists.indexOf(playlistId);
-    int insertIndex = playlists.indexOf(toPlaylistId);
-    if (index == insertIndex) {
-      return playlists;
-    }
-    if (insertIndex > index) {
-      insertIndex -= 1;
-    }
-    final offset = direction == 'top' ? 0 : 1;
-    await arrayMove(playlists, index, insertIndex + offset);
-    prefs.setStringList(key, playlists);
-    return playlists;
-  }
-
-  Future<void> saveMyPlaylist(
-      String playlistType, Map<String, dynamic> playlistObj) async {
+  void saveMyPlaylist(String playlistType, PlayList playlistObj) {
     final key = getPlaylistObjectKey(playlistType);
     if (key == '') {
       return;
-    }
-    final prefs = await SharedPreferences.getInstance();
-    List<String>? playlists = prefs.getStringList(key);
-    if (playlists == null) {
-      playlists = [];
     }
     String playlistId;
     if (playlistType == 'my') {
       playlistId = 'myplaylist_${guid()}';
-      playlistObj['info']['id'] = playlistId;
-      playlistObj['is_mine'] = 1;
+      playlistObj.info.id = playlistId;
+      playlistObj.is_mine = 1;
     } else if (playlistType == 'favorite') {
-      playlistId = playlistObj['info']['id'];
-      playlistObj['is_fav'] = 1;
-      playlistObj.remove('tracks');
+      playlistId = playlistObj.info.id;
+      playlistObj.is_fav = 1;
+      playlistObj.tracks = [];
     } else {
       return;
     }
-    playlists.add(playlistId);
-    prefs.setStringList(key, playlists);
-    prefs.setString(playlistId, jsonEncode(playlistObj));
-  }
-
-  Future<bool> isMyfavPlaylist(String playlistId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final playlistJson = prefs.getStringList('favoriteplayerlists');
-    if (playlistJson == null) {
-      return false;
+    switch (key) {
+      case 'playerlists':
+        _myPlayListController.playerlists[playlistId] = playlistObj;
+        break;
+      case 'favoriteplayerlists':
+        _myPlayListController.favoriteplayerlists[playlistId] = playlistObj;
+        break;
+      default:
+        return;
     }
-    return playlistJson.contains(playlistId);
   }
 
-  Future<void> removeMyPlaylist(String playlistType, String playlistId) async {
+  bool isMyfavPlaylist(String playlistId) {
+    return _myPlayListController.favoriteplayerlists.containsKey(playlistId);
+  }
+
+  void removeMyPlaylist(String playlistType, String playlistId) {
     final key = getPlaylistObjectKey(playlistType);
     if (key == '') {
       return;
     }
-    final prefs = await SharedPreferences.getInstance();
-    List<String>? playlists = prefs.getStringList(key);
-    if (playlists == null) {
-      return;
+    switch (key) {
+      case 'playerlists':
+        _myPlayListController.playerlists.remove(playlistId);
+        break;
+      case 'favoriteplayerlists':
+        _myPlayListController.favoriteplayerlists.remove(playlistId);
+        break;
+      default:
+        return;
     }
-    playlists.remove(playlistId);
-    prefs.setStringList(key, playlists);
-    prefs.remove(playlistId);
   }
 
-  Future<Map<String, dynamic>?> addTrackToMyPlaylist(
-      String playlistId, dynamic track) async {
-    final prefs = await SharedPreferences.getInstance();
-    final playlistJson = prefs.getString(playlistId);
-    if (playlistJson == null) {
+  PlayList? addTrackToMyPlaylist(String playlistId, dynamic track) {
+    final playlist = _myPlayListController.playerlists[playlistId];
+    if (playlist == null) {
       return null;
     }
-    final playlist = jsonDecode(playlistJson);
-    if (playlist['tracks'] == null) {
-      playlist['tracks'] = [];
+    if (playlist.tracks == null) {
+      playlist.tracks = [];
     }
-    if (track is List) {
-      playlist['tracks'] = track + playlist['tracks'];
-    } else {
-      playlist['tracks'].insert(0, track);
+    if (!(track is List)) {
+      track = [track];
     }
-    final newTracks = [];
-    final trackIds = [];
-    for (var track in playlist['tracks']) {
-      if (!trackIds.contains(track['id'])) {
-        newTracks.add(track);
-        trackIds.add(track['id']);
-      }
-    }
-    playlist['tracks'] = newTracks;
-    prefs.setString(playlistId, jsonEncode(playlist));
+    playlist.tracks!.addAllIf(
+        (item) => !playlist.tracks!.contains(item), track as List<Track>);
+    _myPlayListController.playerlists[playlistId] = playlist;
     return playlist;
   }
 
-  Future<Map<String, dynamic>?> insertTrackToMyPlaylist(String playlistId,
-      dynamic track, dynamic toTrack, String direction) async {
-    final prefs = await SharedPreferences.getInstance();
-    final playlistJson = prefs.getString(playlistId);
-    if (playlistJson == null) {
+  PlayList? insertTrackToMyPlaylist(
+      String playlistId, Track track, Track toTrack, String direction) {
+    final playlist = _myPlayListController.playerlists[playlistId];
+    if (playlist == null || playlist.tracks == null) {
       return null;
     }
-    final playlist = jsonDecode(playlistJson);
-    final index = playlist['tracks'].indexWhere((i) => i['id'] == track['id']);
-    int insertIndex =
-        playlist['tracks'].indexWhere((i) => i['id'] == toTrack['id']);
-    if (index == insertIndex) {
+    final index = playlist.tracks!.indexWhere((i) => i.id == track.id);
+    int insertIndex = playlist.tracks!.indexWhere((i) => i.id == toTrack.id);
+    if (index == -1 || insertIndex == -1 || index == insertIndex) {
       return playlist;
     }
     if (insertIndex > index) {
       insertIndex -= 1;
     }
     final offset = direction == 'top' ? 0 : 1;
-    await arrayMove(playlist['tracks'], index, insertIndex + offset);
-    prefs.setString(playlistId, jsonEncode(playlist));
+    arrayMove(playlist.tracks!, index, insertIndex + offset);
+    _myPlayListController.playerlists[playlistId] = playlist;
     return playlist;
   }
 
-  Future<void> removeTrackFromMyPlaylist(
-      String playlistId, String trackId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final playlistJson = prefs.getString(playlistId);
-    if (playlistJson == null) {
-      return;
+  bool removeTrackFromMyPlaylist(String playlistId, String trackId) {
+    final playlist = _myPlayListController.playerlists[playlistId];
+    if (playlist == null || playlist.tracks == null) {
+      return false;
     }
-    final playlist = jsonDecode(playlistJson);
-    playlist['tracks'] =
-        playlist['tracks'].where((item) => item['id'] != trackId).toList();
-    prefs.setString(playlistId, jsonEncode(playlist));
+    final initialLength = playlist.tracks!.length;
+    playlist.tracks!.removeWhere((track) => track.id == trackId);
+    _myPlayListController.playerlists[playlistId] = playlist;
+    return playlist.tracks!.length < initialLength;
   }
 
-  Future<void> createMyPlaylist(String playlistTitle, dynamic track,
+  Future<void> createMyPlaylist(String playlistTitle, List<Track> tracks,
       [String cover_img_url = "images/mycover.jpg"]) async {
-    final playlist = {
-      'is_mine': 1,
-      'info': {
-        'cover_img_url': cover_img_url,
-        'title': playlistTitle,
-        'id': '',
-        'source_url': '',
-      },
-      'tracks': track is List ? track : [track],
-    };
-    await saveMyPlaylist('my', playlist);
+    // final playlist = {
+    //   'is_mine': 1,
+    //   'info': {
+    //     'cover_img_url': cover_img_url,
+    //     'title': playlistTitle,
+    //     'id': '',
+    //     'source_url': '',
+    //   },
+    //   'tracks': track is List ? track : [track],
+    // };
+    final playlist = PlayList(
+      info: PlayListInfo(
+        id: '',
+        cover_img_url: cover_img_url,
+        title: playlistTitle,
+        source_url: '',
+      ),
+      is_mine: 1,
+      tracks: tracks,
+    );
+    saveMyPlaylist('my', playlist);
   }
 
-  Future<void> editMyPlaylist(
-      String playlistId, String title, String coverImgUrl) async {
-    final prefs = await SharedPreferences.getInstance();
-    final playlistJson = prefs.getString(playlistId);
-    if (playlistJson == null) {
-      return;
+  bool editMyPlaylist(String playlistId, String title, String coverImgUrl) {
+    final playlist = _myPlayListController.playerlists[playlistId];
+    if (playlist == null) {
+      return false;
     }
-    final playlist = jsonDecode(playlistJson);
-    playlist['info']['title'] = title;
-    playlist['info']['cover_img_url'] = coverImgUrl;
-    prefs.setString(playlistId, jsonEncode(playlist));
+    playlist.info.title = title;
+    playlist.info.cover_img_url = coverImgUrl;
+    _myPlayListController.playerlists[playlistId] = playlist;
+    return true;
   }
 
-  Future<bool> myPlaylistContainers(String playlistType, String listId) async {
+  bool myPlaylistContainers(String playlistType, String listId) {
     final key = getPlaylistObjectKey(playlistType);
     if (key == '') {
       return false;
     }
-    final prefs = await SharedPreferences.getInstance();
-    final playlistJson = prefs.getString(listId);
-    if (playlistJson == null) {
-      return false;
+    switch (key) {
+      case 'playerlists':
+        return _myPlayListController.playerlists.containsKey(listId);
+      case 'favoriteplayerlists':
+        return _myPlayListController.favoriteplayerlists.containsKey(listId);
+      default:
+        return false;
     }
-    final playlist = jsonDecode(playlistJson);
-    return playlist['is_fav'] == true;
   }
 }
 

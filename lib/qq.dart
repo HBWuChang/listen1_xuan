@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:listen1_xuan/controllers/play_controller.dart' show Track;
 import 'package:listen1_xuan/loweb.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/settings.dart';
@@ -464,13 +465,13 @@ class QQ {
   }
 
   Future<void> bootstrap_track(
-      Map<String, dynamic> track, Function success, Function failure) async {
+      Track track, Function success, Function failure) async {
     Map<String, dynamic> settings = settings_getsettings();
     String qqcookie = settings['qq'] ?? '';
     // print(qqcookie);
 
     var sound = {};
-    var songId = track['id'].substring('qqtrack_'.length);
+    var songId = track.id.substring('qqtrack_'.length);
     var target_url = 'https://u.y.qq.com/cgi-bin/musicu.fcg';
     // var guid = '10000';
     // $guid = mt_rand() % 10000000000;

@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:encrypt/encrypt.dart' as encrypt;
+import 'controllers/play_controller.dart';
 import 'lowebutil.dart';
 import 'settings.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -448,12 +449,12 @@ class Netease {
   }
 
   Future<void> bootstrap_track(
-      Map<String, dynamic> track, Function success, Function failure) async {
+      Track track, Function success, Function failure) async {
     try {
       final sound = <String, dynamic>{};
       const targetUrl =
           'https://interface3.music.163.com/eapi/song/enhance/player/url';
-      var songId = track['id'].toString().replaceFirst('netrack_', '');
+      var songId = track.id.toString().replaceFirst('netrack_', '');
       const eapiUrl = '/api/song/enhance/player/url';
 
       final data = eapi(eapiUrl, {
@@ -922,42 +923,47 @@ class Netease {
   }
 
   Future<Map<String, dynamic>> get_user() async {
-    const url = 'https://music.163.com/weapi/w/nuser/account/get';
+    try {
+      const url = 'https://music.163.com/weapi/w/nuser/account/get';
 
-    // final encryptReqData = weapi({});
-    final tokens = settings_getsettings();
-    final _cookies = tokens['ne'];
+      // final encryptReqData = weapi({});
+      final tokens = settings_getsettings();
+      final _cookies = tokens['ne'] ?? '';
 
-    final _csrf = _cookies
-        .split(';')
-        .firstWhere((String element) => element.contains('__csrf'))
-        .split('=')
-        .last;
-    dynamic encryptReqData = {
-      // 'csrf_token': await get_csrf(),
-      'csrf_token': _csrf,
-    };
-    // print(encryptReqData);
-    // print(jsonEncode(encryptReqData));
-    encryptReqData = weapi(encryptReqData);
-    print(encryptReqData);
-    final response = await dio_post_with_cookie_and_csrf(url, encryptReqData);
-    dynamic result = {'is_login': false};
-    var status = 'fail';
-    if (response.data['account'] != null) {
-      status = 'success';
-      final data = response.data;
-      result = {
-        'is_login': true,
-        'user_id': data['account']['id'],
-        'user_name': data['account']['userName'],
-        'nickname': data['profile']['nickname'],
-        'avatar': data['profile']['avatarUrl'],
-        'platform': 'netease',
-        'data': data,
+      final _csrf = _cookies
+          .split(';')
+          .firstWhere((String element) => element.contains('__csrf'))
+          .split('=')
+          .last;
+      dynamic encryptReqData = {
+        // 'csrf_token': await get_csrf(),
+        'csrf_token': _csrf,
       };
+      // print(encryptReqData);
+      // print(jsonEncode(encryptReqData));
+      encryptReqData = weapi(encryptReqData);
+      print(encryptReqData);
+      final response = await dio_post_with_cookie_and_csrf(url, encryptReqData);
+      dynamic result = {'is_login': false};
+      var status = 'fail';
+      if (response.data['account'] != null) {
+        status = 'success';
+        final data = response.data;
+        result = {
+          'is_login': true,
+          'user_id': data['account']['id'],
+          'user_name': data['account']['userName'],
+          'nickname': data['profile']['nickname'],
+          'avatar': data['profile']['avatarUrl'],
+          'platform': 'netease',
+          'data': data,
+        };
+      }
+      // fn({'status': status, 'result': result});
+      return {'status': status, 'result': result};
+    } catch (e) {
+      print(e);
+      return {'status': 'fail', 'result': {}};
     }
-    // fn({'status': status, 'result': result});
-    return {'status': status, 'result': result};
   }
 }

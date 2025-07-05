@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:listen1_xuan/controllers/play_controller.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'lowebutil.dart';
@@ -32,29 +33,42 @@ class Kugou {
   //   track.artist_id = `kgartist_${singer_id}`;
   //   return track;
   // }
-  kg_convert_song(song) {
-    final track = {
-      'id': 'kgtrack_${song['FileHash']}',
-      'title': song['SongName'],
-      'artist': '',
-      'artist_id': '',
-      'album': song['AlbumName'],
-      'album_id': 'kgalbum_${song['AlbumID']}',
-      'source': 'kugou',
-      'source_url':
+  Track kg_convert_song(song) {
+    // final track = {
+    //   'id': 'kgtrack_${song['FileHash']}',
+    //   'title': song['SongName'],
+    //   'artist': '',
+    //   'artist_id': '',
+    //   'album': song['AlbumName'],
+    //   'album_id': 'kgalbum_${song['AlbumID']}',
+    //   'source': 'kugou',
+    //   'source_url':
+    //       'https://www.kugou.com/song/#hash=${song['FileHash']}&album_id=${song['AlbumID']}',
+    //   'img_url': '',
+    //   // url: `kgtrack_${song.FileHash}`,
+    //   'lyric_url': song['FileHash'],
+    // };
+    final track = Track(
+      id: 'kgtrack_${song['FileHash']}',
+      title: song['SongName'],
+      artist: '',
+      artist_id: '',
+      album: song['AlbumName'],
+      album_id: 'kgalbum_${song['AlbumID']}',
+      source: 'kugou',
+      source_url:
           'https://www.kugou.com/song/#hash=${song['FileHash']}&album_id=${song['AlbumID']}',
-      'img_url': '',
-      // url: `kgtrack_${song.FileHash}`,
-      'lyric_url': song['FileHash'],
-    };
+      img_url: '',
+      lyric_url: song['FileHash'],
+    );
     var singer_id = song['SingerId'];
     var singer_name = song['SingerName'];
     if (singer_id is List) {
       singer_id = singer_id[0];
       singer_name = singer_name.split('、')[0];
     }
-    track['artist'] = singer_name;
-    track['artist_id'] = 'kgartist_$singer_id';
+    track.artist = singer_name;
+    track.artist_id = 'kgartist_$singer_id';
     return track;
   }
 
@@ -136,7 +150,7 @@ class Kugou {
     final track = kg_convert_song(item);
     // Add singer img
     final url =
-        'https://www.kugou.com/yy/index.php?r=play/getdata&hash=${track['lyric_url']}';
+        'https://www.kugou.com/yy/index.php?r=play/getdata&hash=${track.lyric_url}';
     final response = await dio_with_cookie_manager.get(url,
         options: Options(
           headers: {
@@ -155,9 +169,9 @@ class Kugou {
         ));
     final data = response.data;
     try {
-      track['img_url'] = data['data']['img'];
+      track.img_url = data['data']['img'];
     } catch (e) {
-      track['img_url'] = '';
+      track.img_url = '';
     }
     callback(null, track);
   }
@@ -337,7 +351,7 @@ class Kugou {
     final hash = item['hash'];
     var target_url =
         'https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=$hash';
-    final track = {
+    final track = Track.fromJson({
       'id': 'kgtrack_$hash',
       'title': '',
       'artist': '',
@@ -349,15 +363,15 @@ class Kugou {
           'https://www.kugou.com/song/#hash=$hash&album_id=${item['album_id']}',
       'img_url': '',
       'lyric_url': hash,
-    };
+    });
     // Fix song info
     final response = await dio_with_cookie_manager.get(target_url);
     final data = jsonDecode(response.data);
-    track['title'] = data['songName'];
-    track['artist'] = data['singerId'] == 0 ? '未知' : data['singerName'];
-    track['artist_id'] = 'kgartist_${data['singerId']}';
+    track.title = data['songName'];
+    track.artist = data['singerId'] == 0 ? '未知' : data['singerName'];
+    track.artist_id = 'kgartist_${data['singerId']}';
     if (data['album_img'] != null) {
-      track['img_url'] = data['album_img'].replaceAll('{size}', '400');
+      track.img_url = data['album_img'].replaceAll('{size}', '400');
     } else {
       // track['img_url'] = data.imgUrl.replaceAll('{size}', '400');
     }
@@ -367,9 +381,9 @@ class Kugou {
     final res = await dio_with_cookie_manager.get(target_url);
     final res_data = jsonDecode(res.data);
     if (res_data['status'] != 0 && res_data['data'] != null) {
-      track['album'] = res_data['data']['albumname'];
+      track.album = res_data['data']['albumname'];
     } else {
-      track['album'] = '';
+      track.album = '';
     }
     callback(null, track);
   }
@@ -526,7 +540,7 @@ class Kugou {
   Future<void> kg_render_artist_result_item(
       int index, item, List params, Function callback) async {
     final info = params[0];
-    final track = {
+    final track = Track.fromJson({
       'id': 'kgtrack_${item['hash']}',
       'title': '',
       'artist': '',
@@ -539,10 +553,10 @@ class Kugou {
       'img_url': '',
       // url: `kgtrack_${item.hash}`,
       'lyric_url': item['hash'],
-    };
+    });
     final one = item['filename'].split('-');
-    track['title'] = one[1].trim();
-    track['artist'] = one[0].trim();
+    track.title = one[1].trim();
+    track.artist = one[0].trim();
     // Fix album name and img
     var target_url =
         'https://www.kugou.com/yy/index.php?r=play/getdata&hash=${item['hash']}';
@@ -550,9 +564,9 @@ class Kugou {
         'http://mobilecdnbj.kugou.com/api/v3/album/info?albumid=${item['album_id']}');
     final data = jsonDecode(response.data);
     if (data['status'] != 0 && data['data'] != null) {
-      track['album'] = data['data']['albumname'];
+      track.album = data['data']['albumname'];
     } else {
-      track['album'] = '';
+      track.album = '';
     }
 //     {
 //   "Reqable-Id": "",
@@ -580,7 +594,7 @@ class Kugou {
             'referer': 'https://www.kugou.com/',
           },
         ));
-    track['img_url'] = response1.data['data']['img'];
+    track.img_url = response1.data['data']['img'];
     callback(null, track);
   }
 
@@ -697,8 +711,8 @@ class Kugou {
   //   });
   // }
   Future<void> bootstrap_track(
-      Map<String, dynamic> track, Function success, Function failure) async {
-    final track_id = track['id'].substring('kgtrack_'.length);
+      Track track, Function success, Function failure) async {
+    final track_id = track.id.substring('kgtrack_'.length);
     final target_url =
         'https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=$track_id';
     final response = await dio_with_cookie_manager.get(target_url);
@@ -787,7 +801,7 @@ class Kugou {
       int index, item, List params, Function callback) async {
     final info = params[0];
     final album_id = params[1];
-    final track = {
+    final track = Track.fromJson({
       'id': 'kgtrack_${item['hash']}',
       'title': '',
       'artist': '',
@@ -800,16 +814,16 @@ class Kugou {
       'img_url': '',
       // url: `xmtrack_${item.hash}`,
       'lyric_url': item['hash'],
-    };
+    });
     // Fix other data
     final target_url =
         'https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=${item['hash']}';
     final response = await dio_with_cookie_manager.get(target_url);
     final data = jsonDecode(response.data);
-    track['title'] = data['songName'];
-    track['artist'] = data['singerId'] == 0 ? '未知' : data['singerName'];
-    track['artist_id'] = 'kgartist_${data['singerId']}';
-    track['img_url'] = data['imgUrl'].replaceAll('{size}', '400');
+    track.title = data['songName'];
+    track.artist = data['singerId'] == 0 ? '未知' : data['singerName'];
+    track.artist_id = 'kgartist_${data['singerId']}';
+    track.img_url = data['imgUrl'].replaceAll('{size}', '400');
     callback(null, track);
   }
   // static kg_album(url) {

@@ -7,6 +7,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' show parse;
+import 'controllers/myPlaylist_controller.dart';
+import 'controllers/play_controller.dart';
 import 'lowebutil.dart';
 import 'package:marquee/marquee.dart';
 import 'main.dart';
@@ -15,7 +17,7 @@ import 'global_settings_animations.dart';
 final bilibili = Bilibili();
 
 class Bilibili {
-  Future<List<Map<String, dynamic>>> Xuan_get_bl_playlist() async {
+  Future<List<PlayList>> Xuan_get_bl_playlist() async {
     bool b1 = false;
     var bilibiliData = {};
     var bilibiliData2 = [];
@@ -83,7 +85,7 @@ class Bilibili {
           },
         });
       }
-      return retdata.cast<Map<String, dynamic>>();
+      return retdata.cast<PlayList>();
     } on DioException catch (e) {
       print('请求失败: ${e.message}');
       if (e.response != null) {
@@ -628,8 +630,8 @@ class Bilibili {
   }
 
   Future<void> bootstrap_track(
-      Map<String, dynamic> track, Function success, Function failure) async {
-    final trackId = track['id'];
+      Track track, Function success, Function failure) async {
+    final trackId = track.id;
     if (trackId.startsWith('bitrack_v_')) {
       final sound = {};
       var bvid = trackId.substring('bitrack_v_'.length);

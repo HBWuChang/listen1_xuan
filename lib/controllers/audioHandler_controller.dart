@@ -35,11 +35,11 @@ class AudioHandlerController extends GetxController {
       if (is_windows) {
         smtc = SMTCWindows(
           metadata: MusicMetadata(
-            title: track['track']['title'],
-            album: track['track']['album'],
-            albumArtist: track['track']['artist'],
-            artist: track['track']['artist'],
-            thumbnail: track['track']['img_url'],
+            title: track['track'].title,
+            album: track['track'].album,
+            albumArtist: track['track'].artist,
+            artist: track['track'].artist,
+            thumbnail: track['track'].img_url,
           ),
           timeline: PlaybackTimeline(
             startTimeMs: 0,
@@ -50,7 +50,6 @@ class AudioHandlerController extends GetxController {
           ),
         );
       }
-
       await playsong(track['track'], false);
     } else {
       if (is_windows) {

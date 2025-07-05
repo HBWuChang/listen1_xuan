@@ -12,6 +12,7 @@ import 'package:animations/animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
 import 'controllers/audioHandler_controller.dart';
+import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'settings.dart';
 import 'loweb.dart';
@@ -204,6 +205,8 @@ void main() async {
       Get.put(SettingsController(), permanent: true);
   Get.put(PlayController(), permanent: true);
   await Get.find<PlayController>().loadDatas();
+  Get.put(MyPlayListController(), permanent: true);
+  await Get.find<MyPlayListController>().loadDatas();
   Get.put(AudioHandlerController(), permanent: true);
   await settingsController.loadSettings();
   if (is_windows) {

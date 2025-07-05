@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'bl.dart';
+import 'controllers/myPlaylist_controller.dart';
+import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
 import 'netease.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -207,6 +209,9 @@ Future<void> importSettingsFromFile(
       fontSize: 16.0,
     );
   }
+  await Get.find<PlayController>().loadDatas();
+  await Get.find<MyPlayListController>().loadDatas();
+  await Get.find<SettingsController>().loadSettings();
 }
 
 Future<void> setSaveCookie({
@@ -243,7 +248,7 @@ void g_launchURL(Uri url) async {
 }
 
 Map<String, dynamic> settings_getsettings() {
-  return Get.find<SettingsController>().settings.value ;
+  return Get.find<SettingsController>().settings.value;
 }
 
 Future<void> _saveToken(String platform, String token) async {
@@ -585,8 +590,7 @@ class _login_webviewState extends State<login_webview> {
 class _SettingsPageState extends State<SettingsPage> {
   String _readmeContent = '';
   late StateSetter _readmeContent_setstate;
-  bool useHttpOverrides = false;
-  late StateSetter useHttpOverrides_setstate;
+  var useHttpOverrides = false.obs;
   final FocusNode _focusNode = FocusNode();
   final FocusNode _focusNode2 = FocusNode();
   late String apkfile_name;
@@ -726,9 +730,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void get_useHttpOverrides() async {
     Map<String, dynamic> settings = settings_getsettings();
     if (settings["useHttpOverrides"] != null) {
-      useHttpOverrides_setstate(() {
-        useHttpOverrides = settings["useHttpOverrides"];
-      });
+      useHttpOverrides.value = settings["useHttpOverrides"];
     }
   }
 
@@ -1648,23 +1650,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: const Text('清除所有歌曲缓存'),
                   ),
                   ...create_hotkey_btns(context, _msg),
-                  StatefulBuilder(
-                    builder: (BuildContext context, StateSetter setState) {
-                      useHttpOverrides_setstate = setState;
-                      return SwitchListTile(
+                  Obx(() => SwitchListTile(
                         title: const Text('禁用ssl证书验证'),
-                        value: useHttpOverrides,
+                        value: useHttpOverrides.value,
                         onChanged: (bool value) {
                           set_useHttpOverrides(value);
-                          try {
-                            setState(() {
-                              useHttpOverrides = value;
-                            });
-                          } catch (e) {}
+                          useHttpOverrides.value = value;
                         },
-                      );
-                    },
-                  ),
+                      )),
                   if (is_windows)
                     Obx(() => SwitchListTile(
                           title: const Text('在右侧页面中键时隐藏/最小化主页面'),

@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:async/async.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
+import 'controllers/play_controller.dart';
 import 'netease.dart';
 import 'myplaylist.dart';
 import 'play.dart';
@@ -193,7 +194,7 @@ class MediaService {
     return provider.search(url);
   }
 
-  static Future<dynamic> showMyPlaylist() {
+  static dynamic showMyPlaylist() {
     return myplaylist.show_myplaylist('my');
   }
 
@@ -224,16 +225,16 @@ class MediaService {
     return provider.getLyric(url);
   }
 
-  static Future<dynamic> showFavPlaylist() {
+  static dynamic showFavPlaylist() {
     return myplaylist.show_myplaylist('favorite');
   }
 
-  static Future<dynamic> queryPlaylist(String listId, String type) {
+  static dynamic queryPlaylist(String listId, String type) {
     final result = myplaylist.myPlaylistContainers(type, listId);
     return result;
   }
 
-  static Future<dynamic> getPlaylist(String listId,
+  static dynamic getPlaylist(String listId,
       {bool useCache = true}) async {
     final provider = getProviderByItemId(listId);
     final url = '/playlist?list_id=$listId';
@@ -261,29 +262,17 @@ class MediaService {
     // return provider.getPlaylist(url);
   }
 
-  static Future<dynamic> clonePlaylist(String id, String type) {
-    final provider = getProviderByItemId(id);
-    final url = '/playlist?list_id=$id';
-    // return {
-    //   'success': (Function fn) {
-    //     provider.getPlaylist(url).then((data) {
-    //       myplaylist.saveMyPlaylist(type, data);
-    //       fn();
-    //     });
-    //   },
-    // };
-    return myplaylist.saveMyPlaylist(type, provider.get_playlist(url));
-  }
 
-  static Future<dynamic> removeMyPlaylist(String id, String type) {
+
+  static dynamic removeMyPlaylist(String id, String type) {
     return myplaylist.removeMyPlaylist(type, id);
   }
 
-  static Future<dynamic> addMyPlaylist(String id, dynamic track) {
+  static dynamic addMyPlaylist(String id, dynamic track) {
     return myplaylist.addTrackToMyPlaylist(id, track);
   }
 
-  static Future<dynamic> insertTrackToMyPlaylist(
+  static dynamic insertTrackToMyPlaylist(
       String id, dynamic track, dynamic toTrack, String direction) {
     return myplaylist.insertTrackToMyPlaylist(id, track, toTrack, direction);
   }
@@ -293,7 +282,7 @@ class MediaService {
     return provider.addPlaylist(id, tracks);
   }
 
-  static Future<dynamic> removeTrackFromMyPlaylist(String id, dynamic track) {
+  static dynamic removeTrackFromMyPlaylist(String id, dynamic track) {
     return myplaylist.removeTrackFromMyPlaylist(id, track);
   }
 
@@ -302,17 +291,8 @@ class MediaService {
     return provider.removeFromPlaylist(id, track);
   }
 
-  static Future<dynamic> createMyPlaylist(String title, dynamic track) {
-    return myplaylist.createMyPlaylist(title, track);
-  }
 
-  static Future<dynamic> insertMyplaylistToMyplaylists(String playlistType,
-      String playlistId, String toPlaylistId, String direction) {
-    return myplaylist.insertMyPlaylistToMyPlaylists(
-        playlistType, playlistId, toPlaylistId, direction);
-  }
-
-  static Future<dynamic> editMyPlaylist(
+  static dynamic editMyPlaylist(
       String id, String title, String coverImgUrl) {
     return myplaylist.editMyPlaylist(id, title, coverImgUrl);
   }
@@ -367,18 +347,18 @@ class MediaService {
     }
   }
 
-  static Future<dynamic> bootstrapTrack(dynamic track,
+  static Future<dynamic> bootstrapTrack(Track track,
       Function playerSuccessCallback, Function playerFailCallback) async {
     final successCallback = playerSuccessCallback;
     final sound = {};
-    void failureCallback(dynamic track) async {
+    void failureCallback(Track track) async {
       final prefs = await SharedPreferences.getInstance();
       // if (await localStorage.getObject('enable_auto_choose_source') == false) {
       // if (prefs.getBool('enable_auto_choose_source') == false) {
       //   playerFailCallback();
       //   return;
       // }
-      final trackPlatform = getProviderNameByItemId(track['id']);
+      final trackPlatform = getProviderNameByItemId(track.id);
       // final failoverSourceList = (await getLocalStorageValue('auto_choose_source_list', ['kuwo', 'qq', 'migu'])).where((i) => i != trackPlatform).toList();
       // final failoverSourceList = prefs.getStringList('auto_choose_source_list')!.where((i) => i != trackPlatform).toList();
       // final getUrlPromises = failoverSourceList.map((source) {
@@ -411,10 +391,10 @@ class MediaService {
       }
     }
 
-    if (await get_local_cache(track['id']) != '') {
-      playerSuccessCallback(get_local_cache(track['id']), track);
+    if (await get_local_cache(track.id) != '') {
+      playerSuccessCallback(get_local_cache(track.id), track);
     } else {
-      final provider = getProviderByName(track['source']);
+      final provider = getProviderByName(track.source!);
       if (provider == null) {
         playerFailCallback(track);
         return;
