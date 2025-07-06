@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -110,15 +112,15 @@ class PlayController extends GetxController {
         timer = _save_current_playing_Timer;
         break;
     }
-    
+
     if (timer?.isActive ?? false) {
       timer!.cancel();
     }
-    
+
     Timer newTimer = Timer(const Duration(seconds: 1), () {
       _saveSingleSetting(key);
     });
-    
+
     switch (key) {
       case 'player-settings':
         _save_player_settings_Timer = newTimer;
