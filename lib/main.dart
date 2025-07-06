@@ -916,15 +916,21 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                         children: [
                                           Container(
                                               height: 45,
-                                              child: Obx(() => Row(
-                                                children: [
+                                              child: Obx(() => Row(children: [
                                                     Expanded(
-                                                        child: AnimatedTabBarWidget(
-                                                          pageController: _pageControllerPortrait,
-                                                          tabLabels: platforms.map((platform) => TextSpan(text: platform)).toList(),
-                                                          containerHeight: 45,
-                                                          spacing: 0,
-                                                        )),
+                                                        child:
+                                                            AnimatedTabBarWidget(
+                                                      pageController:
+                                                          _pageControllerPortrait,
+                                                      tabLabels: platforms
+                                                          .map((platform) =>
+                                                              TextSpan(
+                                                                  text:
+                                                                      platform))
+                                                          .toList(),
+                                                      containerHeight: 45,
+                                                      spacing: 0,
+                                                    )),
                                                     if (show_filter.value)
                                                       TextButton(
                                                         child: Text(filters[

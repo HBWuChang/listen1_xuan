@@ -90,23 +90,43 @@ class PlayController extends GetxController {
   void onInit() {
     super.onInit();
     ever(_player_settings, (callback) {
-      _addTimer(_save_player_settings_Timer, 'player-settings');
+      _addTimer('player-settings');
     });
     ever(_current_playing, (callback) {
-      _addTimer(_save_current_playing_Timer, 'current-playing');
+      _addTimer('current-playing');
     });
     music_player.playingStream.listen((event) {
       isplaying.value = event;
     });
   }
 
-  void _addTimer(Timer? timer, String key) {
+  void _addTimer(String key) {
+    Timer? timer;
+    switch (key) {
+      case 'player-settings':
+        timer = _save_player_settings_Timer;
+        break;
+      case 'current-playing':
+        timer = _save_current_playing_Timer;
+        break;
+    }
+    
     if (timer?.isActive ?? false) {
       timer!.cancel();
     }
-    timer = Timer(const Duration(seconds: 1), () {
+    
+    Timer newTimer = Timer(const Duration(seconds: 1), () {
       _saveSingleSetting(key);
     });
+    
+    switch (key) {
+      case 'player-settings':
+        _save_player_settings_Timer = newTimer;
+        break;
+      case 'current-playing':
+        _save_current_playing_Timer = newTimer;
+        break;
+    }
   }
 
   Future<void> _saveSingleSetting(String key) async {

@@ -92,20 +92,40 @@ class MyPlayListController extends GetxController {
   void onInit() {
     super.onInit();
     ever(playerlists, (callback) {
-      _addTimer(_savePlayerListsTimer, 'playerlists');
+      _addTimer('playerlists');
     });
     ever(favoriteplayerlists, (callback) {
-      _addTimer(_saveFavoritePlayerListsTimer, 'favoriteplayerlists');
+      _addTimer('favoriteplayerlists');
     });
   }
 
-  void _addTimer(Timer? timer, String key) {
+  void _addTimer(String key) {
+    Timer? timer;
+    switch (key) {
+      case 'playerlists':
+        timer = _savePlayerListsTimer;
+        break;
+      case 'favoriteplayerlists':
+        timer = _saveFavoritePlayerListsTimer;
+        break;
+    }
+    
     if (timer?.isActive ?? false) {
       timer!.cancel();
     }
-    timer = Timer(const Duration(seconds: 1), () {
+    
+    Timer newTimer = Timer(const Duration(seconds: 1), () {
       _saveSingleSetting(key);
     });
+    
+    switch (key) {
+      case 'playerlists':
+        _savePlayerListsTimer = newTimer;
+        break;
+      case 'favoriteplayerlists':
+        _saveFavoritePlayerListsTimer = newTimer;
+        break;
+    }
   }
 
   Future<void> _saveSingleSetting(String key) async {
@@ -124,6 +144,7 @@ class MyPlayListController extends GetxController {
           String jsonString = jsonEncode(playlist.value.toJson());
           await prefs.setString(playlist.key, jsonString);
         }
+        break;
       default:
         throw Exception('Unknown key: $key');
     }
