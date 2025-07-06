@@ -7,10 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
-import 'package:listen1_xuan/netease.dart';
-import 'package:animations/animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'bl.dart';
 import 'controllers/audioHandler_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
@@ -19,6 +16,7 @@ import 'loweb.dart';
 import 'bodys.dart';
 import 'play.dart';
 import 'global_settings_animations.dart';
+import 'widgets.dart';
 import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter_isolate/flutter_isolate.dart';
@@ -136,7 +134,7 @@ void downloadtasks_background(SendPort mainPort) async {
   receivePort.listen((message) async {
     print("background receive: $message");
     if (message == "get_download_tasks") {
-      Map<String, dynamic> download_tasks = await get_download_tasks();
+      await get_download_tasks();
     }
     // 若为List<String>
     if (message is List<String>) {
@@ -356,12 +354,11 @@ var main_showVolumeSlider;
 
 class _MyHomePageState extends State<MyHomePage> with TrayListener {
   final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
-  bool _isSearchActive = false;
   TextEditingController input_text_Controller = TextEditingController();
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
-  late PreloadPageController _pageControllerPortrait; // 声明 PageController
   late PreloadPageController _pageControllerHorizon; // 声明 PageController
+  late PreloadPageController _pageControllerPortrait; // 声明 PageController
   PlayController _playController = Get.find<PlayController>();
   OverlayEntry? _overlayEntry;
   Timer? _timer;
@@ -392,13 +389,28 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
 
   void updatePageControllers() {
     try {
-      _pageControllerPortrait.dispose(); // 销毁旧的 PageController
-    } catch (e) {}
-    try {
       _pageControllerHorizon.dispose(); // 销毁旧的 PageController
     } catch (e) {}
-    _pageControllerPortrait = PreloadPageController(initialPage: 1);
-    _pageControllerHorizon = PreloadPageController(initialPage: 0);
+    try {
+      _pageControllerPortrait.dispose(); // 销毁旧的 PageController
+    } catch (e) {}
+    _pageControllerHorizon = PreloadPageController(initialPage: 1);
+    _pageControllerPortrait = PreloadPageController(initialPage: 0);
+    _pageControllerHorizon.addListener(() {
+      int currentIndex = _pageControllerHorizon.page!.round();
+      debugPrint(
+          "currentIndex: $currentIndex, sources.length: ${sources.length}");
+      currentIndex = currentIndex + 1;
+      source = sources[currentIndex];
+      show_filter.value = show_filters[currentIndex];
+      _selectedIndex.value = currentIndex;
+    });
+    _pageControllerPortrait.addListener(() {
+      int index = _pageControllerPortrait.page!.round();
+      source = sources[index];
+      show_filter.value = show_filters[index];
+      _selectedIndex.value = index;
+    });
   }
 
   void _init() async {
@@ -441,13 +453,13 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     }
   }
 
-  late int _selectedIndex;
+  var _selectedIndex = 0.obs;
   List<int> offsets = List.generate(sources.length, (i) => 0);
   bool main_is_my = false;
   String source = 'myplaylist';
   List<Map<String, dynamic>> filters =
       List.generate(sources.length, (i) => {'id': '', 'name': '全部'});
-  bool show_filter = false;
+  var show_filter = false.obs;
   // bool show_more = false;
   List<Map<String, dynamic>> filter_details =
       List.generate(sources.length, (i) => {'recommend': [], 'all': []});
@@ -462,54 +474,12 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     }
   }
 
-  var buttons_setstate;
-  void change_buttons_setstate(
-      void Function(void Function()) setState, String info) {
-    print("change_buttons_setstate: $info");
-    if ((global_horizon && info == "Horizon") ||
-        (!global_horizon && info == "Portrait")) {
-      buttons_setstate = setState;
-    }
-  }
-
   var play_list_setstate;
-  void _onItemTapped(int index) async {
-    if (index == _selectedIndex) {
-      return;
-    }
-    source = sources[index];
-    show_filter = show_filters[index];
-    try {
-      buttons_setstate(() {
-        _selectedIndex = index;
-      });
-      if (global_horizon) {
-        _pageControllerPortrait.animateToPage(
-          // 通知 PageController 切换页面
-          // index,
-          index - 1,
-          duration: Duration(milliseconds: 150),
-          curve: Curves.easeInOut,
-        );
-      } else {
-        _pageControllerHorizon.animateToPage(
-          // 通知 PageController 切换页面
-          index,
-          duration: Duration(milliseconds: 150),
-          curve: Curves.easeInOut,
-        );
-      }
-    } catch (e) {
-      print(e);
-    }
-  }
 
   void change_fliter(dynamic id, String name) {
     print('change_fliter{id: $id, name: $name}');
     play_list_setstate(() {
-      buttons_setstate(() {
-        filters[sources.indexOf(source)] = {'id': id, 'name': name};
-      });
+      filters[sources.indexOf(source)] = {'id': id, 'name': name};
     });
   }
 
@@ -538,8 +508,8 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     _focusNode.dispose();
     _timer?.cancel();
     _focusNode2.dispose();
-    _pageControllerPortrait.dispose(); // 销毁 PageController
-    _pageControllerHorizon.dispose();
+    _pageControllerHorizon.dispose(); // 销毁 PageController
+    _pageControllerPortrait.dispose();
     try {} catch (e) {
       // print(e);
     }
@@ -610,12 +580,12 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
           global_horizon = orientation == Orientation.landscape;
           print("global_horizon: $global_horizon");
           if (global_horizon) {
-            _selectedIndex = 2;
+            _selectedIndex.value = 2;
             SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-            show_filter = true;
+            show_filter.value = true;
           } else {
-            _selectedIndex = 0;
+            _selectedIndex.value = 0;
             SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
           }
           bool flag = false;
@@ -824,120 +794,69 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                     children: [
                                       Container(
                                           height: 40,
-                                          child: StatefulBuilder(
-                                              builder: (context, setState_H) {
-                                            change_buttons_setstate(
-                                                setState_H, "Horizon");
-                                            return Container(
-                                                width: MediaQuery.of(context)
-                                                        .size
-                                                        .width -
-                                                    200,
-                                                child: Row(children: [
-                                                  Container(
-                                                      width:
-                                                          MediaQuery.of(context)
-                                                                  .size
-                                                                  .width -
-                                                              200,
-                                                      child: Stack(children: [
-                                                        Positioned(
-                                                            top: -5,
-                                                            child: Container(
-                                                                height: 70,
-                                                                width: MediaQuery.of(
-                                                                            context)
-                                                                        .size
-                                                                        .width -
-                                                                    300,
-                                                                child:
-                                                                    NavigationBar(
-                                                                  selectedIndex:
-                                                                      _selectedIndex - 1 <
-                                                                              0
-                                                                          ? 0
-                                                                          : _selectedIndex -
-                                                                              1,
-                                                                  destinations:
-                                                                      platforms
-                                                                          .sublist(
-                                                                              1)
-                                                                          .map(
-                                                                              (platform) {
-                                                                    return NavigationDestination(
-                                                                      label: '',
-                                                                      icon: Text(
-                                                                          platform),
-                                                                    );
-                                                                  }).toList(),
-                                                                  onDestinationSelected:
-                                                                      (index) {
-                                                                    _onItemTapped(
-                                                                        index +
-                                                                            1);
-                                                                  },
-                                                                ))),
-                                                        if (show_filter)
-                                                          Positioned(
-                                                            top: is_windows
-                                                                ? 5
-                                                                : -5,
-                                                            right: 20,
-                                                            child: TextButton(
-                                                              child: Text(filters[
-                                                                      sources.indexOf(
-                                                                          source)]
-                                                                  ['name']),
-                                                              onPressed: () {
-                                                                Map<String,
-                                                                        dynamic>
-                                                                    tfilter =
-                                                                    {};
-                                                                tfilter["推荐"] =
-                                                                    filter_details[
-                                                                            _selectedIndex]
-                                                                        [
-                                                                        "recommend"];
-                                                                for (var item
-                                                                    in filter_details[
-                                                                            _selectedIndex]
-                                                                        [
-                                                                        "all"]) {
-                                                                  tfilter[item[
-                                                                          "category"]] =
-                                                                      item[
-                                                                          "filters"];
-                                                                }
-                                                                _showFilterSelection(
-                                                                    context_in_1,
-                                                                    tfilter,
-                                                                    filters[sources
-                                                                        .indexOf(
-                                                                            source)]['id'],
-                                                                    change_fliter);
-                                                              },
-                                                            ),
-                                                          )
-                                                      ])),
-                                                ]));
-                                          })),
+                                          child: Container(
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width -
+                                                  200,
+                                              child: Row(children: [
+                                                Container(
+                                                    width:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .width -
+                                                            200,
+                                                    child:
+                                                        Obx(
+                                                            () => Stack(
+                                                                    children: [
+                                                                      Positioned(
+                                                                          top:
+                                                                              0,
+                                                                          child: Container(
+                                                                              height: 40,
+                                                                              width: MediaQuery.of(context).size.width - 300,
+                                                                              child: AnimatedTabBarWidget(
+                                                                                pageController: _pageControllerHorizon,
+                                                                                tabLabels: platforms.sublist(1).map((platform) => TextSpan(text: platform)).toList(),
+                                                                                containerHeight: 40,
+                                                                                spacing: 0,
+                                                                              ))),
+                                                                      if (show_filter
+                                                                          .value)
+                                                                        Positioned(
+                                                                          top: is_windows
+                                                                              ? 5
+                                                                              : -5,
+                                                                          right:
+                                                                              20,
+                                                                          child:
+                                                                              TextButton(
+                                                                            child:
+                                                                                Text(filters[sources.indexOf(source)]['name']),
+                                                                            onPressed:
+                                                                                () {
+                                                                              Map<String, dynamic> tfilter = {};
+                                                                              tfilter["推荐"] = filter_details[_selectedIndex.value]["recommend"];
+                                                                              for (var item in filter_details[_selectedIndex.value]["all"]) {
+                                                                                tfilter[item["category"]] = item["filters"];
+                                                                              }
+                                                                              _showFilterSelection(context_in_1, tfilter, filters[sources.indexOf(source)]['id'], change_fliter);
+                                                                            },
+                                                                          ),
+                                                                        ),
+                                                                    ]))),
+                                              ]))),
                                       Expanded(child: StatefulBuilder(
                                           builder: (context, setState) {
                                         play_list_setstate = setState;
                                         return PreloadPageView.builder(
                                           physics: BouncingScrollPhysics(),
                                           controller:
-                                              _pageControllerPortrait, // 使用 PageController
+                                              _pageControllerHorizon, // 使用 PageController
                                           itemCount: sources.length - 1, // 页面数量
                                           preloadPagesCount: sources.length - 1,
-                                          onPageChanged: (index) {
-                                            index = index + 1;
-                                            source = sources[index];
-                                            show_filter = show_filters[index];
-                                            buttons_setstate(() {
-                                              _selectedIndex = index;
-                                            });
-                                          },
+
                                           itemBuilder: (context, index) {
                                             index = index + 1;
                                             // 其他页面：动态生成
@@ -997,65 +916,49 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                         children: [
                                           Container(
                                               height: 45,
-                                              child: StatefulBuilder(builder:
-                                                  (context, setState_p) {
-                                                change_buttons_setstate(
-                                                    setState_p, "Portrait");
-
-                                                return Row(children: [
-                                                  Expanded(
-                                                      child: NavigationBar(
-                                                    labelBehavior:
-                                                        NavigationDestinationLabelBehavior
-                                                            .alwaysHide,
-                                                    selectedIndex:
-                                                        _selectedIndex,
-                                                    destinations: platforms
-                                                        .map((platform) {
-                                                      return NavigationDestination(
-                                                        icon: Center(
-                                                            child:
-                                                                Text(platform)),
-                                                        label: '',
-                                                      );
-                                                    }).toList(),
-                                                    onDestinationSelected:
-                                                        (index) {
-                                                      _onItemTapped(index);
-                                                    },
-                                                  )),
-                                                  if (show_filter)
-                                                    TextButton(
-                                                      child: Text(filters[
-                                                          sources.indexOf(
-                                                              source)]['name']),
-                                                      onPressed: () {
-                                                        Map<String, dynamic>
-                                                            tfilter = {};
-                                                        tfilter["推荐"] =
-                                                            filter_details[
-                                                                    _selectedIndex]
-                                                                ["recommend"];
-                                                        for (var item
-                                                            in filter_details[
-                                                                    _selectedIndex]
-                                                                ["all"]) {
-                                                          tfilter[item[
-                                                                  "category"]] =
-                                                              item["filters"];
-                                                        }
-                                                        _showFilterSelection(
-                                                            context_in_1,
-                                                            tfilter,
-                                                            filters[sources
-                                                                    .indexOf(
-                                                                        source)]
-                                                                ['id'],
-                                                            change_fliter);
-                                                      },
-                                                    ),
-                                                ]);
-                                              })),
+                                              child: Obx(() => Row(
+                                                children: [
+                                                    Expanded(
+                                                        child: AnimatedTabBarWidget(
+                                                          pageController: _pageControllerPortrait,
+                                                          tabLabels: platforms.map((platform) => TextSpan(text: platform)).toList(),
+                                                          containerHeight: 45,
+                                                          spacing: 0,
+                                                        )),
+                                                    if (show_filter.value)
+                                                      TextButton(
+                                                        child: Text(filters[
+                                                                sources.indexOf(
+                                                                    source)]
+                                                            ['name']),
+                                                        onPressed: () {
+                                                          Map<String, dynamic>
+                                                              tfilter = {};
+                                                          tfilter["推荐"] =
+                                                              filter_details[
+                                                                      _selectedIndex
+                                                                          .value]
+                                                                  ["recommend"];
+                                                          for (var item
+                                                              in filter_details[
+                                                                      _selectedIndex
+                                                                          .value]
+                                                                  ["all"]) {
+                                                            tfilter[item[
+                                                                    "category"]] =
+                                                                item["filters"];
+                                                          }
+                                                          _showFilterSelection(
+                                                              context_in_1,
+                                                              tfilter,
+                                                              filters[sources
+                                                                      .indexOf(
+                                                                          source)]
+                                                                  ['id'],
+                                                              change_fliter);
+                                                        },
+                                                      )
+                                                  ]))),
                                           // 长灰色细分割线
                                           Divider(
                                             height: 1,
@@ -1067,17 +970,10 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                             return PreloadPageView.builder(
                                               physics: BouncingScrollPhysics(),
                                               controller:
-                                                  _pageControllerHorizon, // 使用 PageController
+                                                  _pageControllerPortrait, // 使用 PageController
                                               itemCount: sources.length, // 页面数量
                                               preloadPagesCount: sources.length,
-                                              onPageChanged: (index) {
-                                                source = sources[index];
-                                                show_filter =
-                                                    show_filters[index];
-                                                buttons_setstate(() {
-                                                  _selectedIndex = index;
-                                                });
-                                              },
+
                                               itemBuilder: (context, index) {
                                                 if (index == 0) {
                                                   // 第一个页面：我的歌单
@@ -1160,7 +1056,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     _overlayEntry?.remove();
     _overlayEntry = null;
     _overlayEntry = _createOverlayEntry();
-    Overlay.of(_main_context)!.insert(_overlayEntry!);
+    Overlay.of(_main_context).insert(_overlayEntry!);
     _startAutoCloseTimer();
   }
 
