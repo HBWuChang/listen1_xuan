@@ -267,8 +267,10 @@ class MyPlaylist {
     if (!(track is List)) {
       track = [track];
     }
-    playlist.tracks!.addAllIf(
-        (item) => !playlist.tracks!.contains(item), track as List<Track>);
+    track = List<Track>.from(track);
+    Set<String> trackIds = playlist.tracks!.map((t) => t.id).toSet();
+    track.removeWhere((t) => trackIds.contains(t.id));
+    playlist.tracks!.insertAll(0, track as List<Track>);
     _myPlayListController.playerlists[playlistId] = playlist;
     return playlist;
   }
