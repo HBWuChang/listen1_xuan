@@ -85,7 +85,10 @@ class Bilibili {
           },
         });
       }
-      return retdata.cast<PlayList>();
+      // return retdata.cast<PlayList>();
+      return List.from(retdata.map((item) {
+        return PlayList.fromJson(item);
+      }));
     } on DioException catch (e) {
       print('请求失败: ${e.message}');
       if (e.response != null) {
