@@ -67,7 +67,9 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
         try {
           settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
         } catch (e) {
-          settings[key] = prefs.getString(key);
+          try {
+            settings[key] = prefs.get(key);
+          } catch (e) {}
         }
     }
   }
