@@ -45,6 +45,7 @@ jobs:
         with:
           tag_name: ${{ env.VERSION }}
           files: build/windows-build-artifact.zip
+          prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           

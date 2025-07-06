@@ -108,7 +108,7 @@ class Kugou {
           if (err != null) {
             completer.completeError(err);
           } else {
-            completer.complete(result);
+            completer.complete((result as Track).toJson());
           }
         });
         return completer.future;

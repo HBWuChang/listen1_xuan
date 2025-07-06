@@ -1582,7 +1582,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
       ret["success"]((data) {
         result = data;
         setState(() {
-          tracks = List<Track>.from(data['result']);
+          tracks = List<Track>.from(data['result'].map((item) => Track.fromJson(item)));
           _loading = false;
         });
       });
