@@ -141,8 +141,9 @@ Future<void> importSettingsFromFile(
         case 'settings':
           continue;
         default:
-          // settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
-          prefs.setString(key, jsonEncode(settings[key]));
+          try {
+            prefs.setString(key, jsonEncode(settings[key]));
+          } catch (e) {}
       }
     }
 
