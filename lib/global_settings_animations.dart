@@ -93,24 +93,29 @@ dynamic xuan_toast({
   webBgColor = "linear-gradient(to right, #00b09b, #96c93d)",
   webPosition = "right",
 }) {
-  if (is_windows) {
-    return BotToast.showText(
-      text: msg,
-      clickClose: true,
+  try {
+    if (is_windows) {
+      return BotToast.showText(
+        text: msg,
+        clickClose: true,
+      );
+    }
+    return Fluttertoast.showToast(
+      msg: msg,
+      toastLength: toastLength ?? Toast.LENGTH_SHORT,
+      gravity: gravity ?? ToastGravity.BOTTOM,
+      timeInSecForIosWeb: timeInSecForIosWeb,
+      fontSize: fontSize,
+      backgroundColor: backgroundColor,
+      textColor: textColor,
+      webBgColor: webBgColor,
+      webPosition: webPosition,
+      webShowClose: webShowClose,
     );
+  } catch (e) {
+    debugPrint("Error in xuan_toast: $e");
+    return null;
   }
-  return Fluttertoast.showToast(
-    msg: msg,
-    toastLength: toastLength ?? Toast.LENGTH_SHORT,
-    gravity: gravity ?? ToastGravity.BOTTOM,
-    timeInSecForIosWeb: timeInSecForIosWeb,
-    fontSize: fontSize,
-    backgroundColor: backgroundColor,
-    textColor: textColor,
-    webBgColor: webBgColor,
-    webPosition: webPosition,
-    webShowClose: webShowClose,
-  );
 }
 
 void init_hotkeys() async {
@@ -193,7 +198,6 @@ bool enable_inapp_hotkey = true;
 void set_inapp_hotkey(enable) {
   enable_inapp_hotkey = enable;
 }
-
 
 Future<void> set_hotkey(
   s_hotkey,
