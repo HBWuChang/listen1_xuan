@@ -102,7 +102,7 @@ class LyricController extends GetxController {
     super.onInit();
 
     // 监听播放位置变化，更新歌词显示
-    AudioService.position.listen((position) {
+    Get.find<PlayController>().music_player.positionStream.listen((position) {
       if (lyricModel != null) {
         _updateCurrentLyric(position);
       }
