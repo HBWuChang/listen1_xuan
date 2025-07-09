@@ -10,6 +10,7 @@ import 'myplaylist.dart';
 import 'play.dart';
 import 'qq.dart';
 import 'kugou.dart';
+
 class Provider {
   final String name;
   final dynamic instance;
@@ -213,8 +214,8 @@ class MediaService {
     return provider.get_playlist_filters();
   }
 
-  static Future<dynamic> getLyric(
-      String trackId, String albumId, String lyricUrl, String tlyricUrl) {
+  static Future<dynamic> getLyric(String trackId,
+      {String? albumId, String? lyricUrl, String? tlyricUrl}) {
     final provider = getProviderByItemId(trackId);
     final url = '/lyric?${queryStringify({
           'track_id': trackId,
@@ -222,7 +223,7 @@ class MediaService {
           'lyric_url': lyricUrl,
           'tlyric_url': tlyricUrl,
         })}';
-    return provider.getLyric(url);
+    return provider.lyric(url);
   }
 
   static dynamic showFavPlaylist() {
@@ -234,8 +235,7 @@ class MediaService {
     return result;
   }
 
-  static dynamic getPlaylist(String listId,
-      {bool useCache = true}) async {
+  static dynamic getPlaylist(String listId, {bool useCache = true}) async {
     final provider = getProviderByItemId(listId);
     final url = '/playlist?list_id=$listId';
     var hit;
@@ -261,8 +261,6 @@ class MediaService {
     return playlist;
     // return provider.getPlaylist(url);
   }
-
-
 
   static dynamic removeMyPlaylist(String id, String type) {
     return myplaylist.removeMyPlaylist(type, id);
@@ -291,9 +289,7 @@ class MediaService {
     return provider.removeFromPlaylist(id, track);
   }
 
-
-  static dynamic editMyPlaylist(
-      String id, String title, String coverImgUrl) {
+  static dynamic editMyPlaylist(String id, String title, String coverImgUrl) {
     return myplaylist.editMyPlaylist(id, title, coverImgUrl);
   }
 

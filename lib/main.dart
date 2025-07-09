@@ -7,8 +7,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
+
+import 'package:listen1_xuan/pages/lyric_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'controllers/audioHandler_controller.dart';
+import 'controllers/lyric_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'settings.dart';
@@ -201,12 +204,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 框架已初始化
   SettingsController settingsController =
       Get.put(SettingsController(), permanent: true);
+  CacheController cacheController = Get.put(CacheController(), permanent: true);
+  await cacheController.loadLocalCacheList();
   Get.put(PlayController(), permanent: true);
   await Get.find<PlayController>().loadDatas();
   Get.put(MyPlayListController(), permanent: true);
   await Get.find<MyPlayListController>().loadDatas();
   Get.put(AudioHandlerController(), permanent: true);
   await settingsController.loadSettings();
+  Get.put(LyricController(), permanent: true);
   if (is_windows) {
     await SMTCWindows.initialize();
     enableThumbnailToolbar();
@@ -1028,6 +1034,14 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                   middlewares: [ListenPopMiddleware()]);
                               addAndCleanReapeatRoute(route, '/settings');
                               return route;
+                            case '/lyric':
+                              var route = GetPageRoute(
+                                  settings: settings,
+                                  transition: Transition.downToUp,
+                                  page: () => LyricPage(),
+                                  middlewares: [ListenPopMiddleware()]);
+                              addAndCleanReapeatRoute(route, '/lyric');
+                              return route;
                             default:
                               var route = GetPageRoute(
                                   settings: settings,
@@ -1061,7 +1075,8 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                     // 竖屏状态下添加额外的占位空间
                     if (!global_horizon)
                       Obx(() {
-                        SettingsController controller = Get.find<SettingsController>();
+                        SettingsController controller =
+                            Get.find<SettingsController>();
                         return SizedBox(
                           height: controller.portraitBottomBarPadding.value,
                         );

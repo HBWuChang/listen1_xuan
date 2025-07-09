@@ -6,9 +6,9 @@ import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/main.dart';
 import 'dart:io';
 import 'dart:convert';
-import 'package:path_provider/path_provider.dart';
+
 import 'package:audio_service/audio_service.dart';
-import 'package:rxdart/rxdart.dart';
+
 import 'package:rxdart/rxdart.dart' as rxdart;
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -18,6 +18,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'controllers/audioHandler_controller.dart';
 import 'controllers/play_controller.dart';
+import 'controllers/lyric_controller.dart';
+import 'controllers/cache_controller.dart';
+
 import 'loweb.dart';
 import 'package:vibration/vibration.dart';
 import 'package:logger/logger.dart';
@@ -99,132 +102,16 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
 }
 
 Future<String> get_local_cache(String id) async {
-  final prefs = await SharedPreferences.getInstance();
-  final local_cache_list_json = prefs.getString('local-cache-list');
-  if (local_cache_list_json != null) {
-    final local_cache_list = jsonDecode(local_cache_list_json);
-    if (local_cache_list[id] != null) {
-      var tempDir = await xuan_getdataDirectory();
-
-      final tempPath = tempDir.path;
-      var filePath = '$tempPath/${local_cache_list[id]}';
-      if (is_windows) filePath = '$tempPath\\${local_cache_list[id]}';
-      if (await File(filePath).exists()) return filePath;
-    }
-  }
-  return '';
+  return await Get.find<CacheController>().getLocalCache(id);
 }
 
 Future<void> set_local_cache(String id, String path) async {
-  final prefs = await SharedPreferences.getInstance();
-  final local_cache_list_json = prefs.getString('local-cache-list');
-  if (local_cache_list_json != null) {
-    final local_cache_list = jsonDecode(local_cache_list_json);
-    local_cache_list[id] = path;
-    await prefs.setString('local-cache-list', jsonEncode(local_cache_list));
-  } else {
-    final local_cache_list = {};
-    local_cache_list[id] = path;
-    await prefs.setString('local-cache-list', jsonEncode(local_cache_list));
-  }
+   Get.find<CacheController>().setLocalCache(id, path);
 }
 
 // Future<void> clean_local_cache([bool all = false]) async {
 Future<void> clean_local_cache([bool all = false, String id = '']) async {
-  if (id != '') {
-    String path = await get_local_cache(id);
-    if (path != '') {
-      await File(path).delete();
-      xuan_toast(
-        msg: '已清理',
-      );
-      return;
-    }
-    xuan_toast(
-      msg: '没有可清理的缓存文件',
-    );
-    return;
-  }
-
-  List<String> without = [
-    'app.log',
-  ];
-  final prefs = await SharedPreferences.getInstance();
-  final local_cache_list_json = prefs.getString('local-cache-list');
-  final tempDir = await xuan_getdataDirectory();
-  final tempPath = tempDir.path;
-
-  // 列出文件夹下的所有文件
-  final filesanddirs = Directory(tempPath).listSync();
-  List<String> files = [];
-  for (var file in filesanddirs) {
-    if (file is File &&
-        !without.contains(file.path.split(is_windows ? "\\" : '/').last)) {
-      files.add(file.path);
-    }
-  }
-  int count = 0;
-  List<String> jump_list = ['.json', '.apk', '.zip', '.log'];
-  if (local_cache_list_json != null) {
-    final local_cache_list = jsonDecode(local_cache_list_json);
-    for (var file in files) {
-      bool jump_flag = false;
-      for (var jump in jump_list) {
-        if (file.split(is_windows ? "\\" : '/').last.endsWith(jump)) {
-          jump_flag = true;
-          break;
-        }
-      }
-      if (jump_flag) continue;
-      if (all) {
-        await File(file).delete();
-        count++;
-      } else {
-        bool flag = true;
-        for (var key in local_cache_list.keys) {
-          if (local_cache_list[key] ==
-              file.split(is_windows ? "\\" : '/').last) {
-            flag = false;
-            break;
-          }
-        }
-        print(file.split(is_windows ? "\\" : '/').last);
-        if (flag) {
-          await File(file).delete();
-          count++;
-        }
-      }
-    }
-  } else {
-    for (var file in files) {
-      await File(file).delete();
-      count++;
-    }
-  }
-  if (count > 0) {
-    xuan_toast(
-      msg: '清理了$count个缓存文件',
-    );
-  } else {
-    xuan_toast(
-      msg: '没有可清理的缓存文件',
-    );
-  }
-  if (all) {
-    await prefs.remove('local-cache-list');
-  } else {
-    if (local_cache_list_json != null) {
-      final local_cache_list = jsonDecode(local_cache_list_json);
-      for (var key in local_cache_list.keys) {
-        if (!files.contains(is_windows
-            ? '$tempPath\\${local_cache_list[key]}'
-            : '$tempPath/${local_cache_list[key]}')) {
-          local_cache_list.remove(key);
-        }
-      }
-      await prefs.setString('local-cache-list', jsonEncode(local_cache_list));
-    }
-  }
+  await Get.find<CacheController>().cleanLocalCache(all, id);
 }
 
 void add_current_playing(List<Track> tracks) {
@@ -515,7 +402,7 @@ bool change_p = false;
 
 class Play extends StatefulWidget {
   final Function(String, {bool is_my, String search_text}) onPlaylistTap;
-  bool horizon = false;
+  final bool horizon;
   Play({required this.onPlaylistTap, this.horizon = false});
   @override
   _PlayState createState() => _PlayState();
@@ -523,17 +410,8 @@ class Play extends StatefulWidget {
 
 late SMTCWindows smtc;
 
-class _PlayState extends State<Play> {
-  final _playController = Get.find<PlayController>();
-  String formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
-    return hours > 0
-        ? '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}'
-        : '${twoDigits(minutes)}:${twoDigits(seconds)}';
-  }
+class _PlayState extends State<Play> with TickerProviderStateMixin {
+  PlayController _playController = Get.find<PlayController>();
 
   @override
   void initState() {
@@ -543,6 +421,25 @@ class _PlayState extends State<Play> {
   @override
   void dispose() {
     super.dispose();
+  }
+
+  /// 打开歌词页面
+  void _openLyricPage() {
+    // 确保 LyricController 已经被初始化
+    if (!Get.isRegistered<LyricController>()) {
+      Get.put(LyricController());
+    }
+
+    // 使用路由导航到歌词页面
+    Get.toNamed('/lyric', id: 1);
+  }
+
+  /// 格式化时长
+  String formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$twoDigitMinutes:$twoDigitSeconds';
   }
 
   late Offset position;
@@ -609,18 +506,23 @@ class _PlayState extends State<Play> {
                               height: 50,
                             );
                           }
-                          return Container(
-                            width: 50,
-                            height: 50,
-                            child: CachedNetworkImage(
-                              imageUrl: mediaItem.artUri.toString(),
-                              fit: BoxFit.cover,
-                              errorWidget: (context, url, error) => Icon(
-                                Icons.music_note,
-                                size: 50,
-                              ),
-                            ),
-                          );
+                          return GestureDetector(
+                              onTap: () {
+                                // 点击封面打开歌词页面
+                                _openLyricPage();
+                              },
+                              child: Container(
+                                width: 50,
+                                height: 50,
+                                child: CachedNetworkImage(
+                                  imageUrl: mediaItem.artUri.toString(),
+                                  fit: BoxFit.cover,
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.music_note,
+                                    size: 50,
+                                  ),
+                                ),
+                              ));
                         },
                       ),
                       Container(
@@ -834,15 +736,24 @@ class _PlayState extends State<Play> {
                               height: 168.w,
                             );
                           }
-                          return Container(
-                            width: 168.w,
-                            height: 168.w,
-                            child: CachedNetworkImage(
-                              imageUrl: mediaItem.artUri.toString(),
-                              fit: BoxFit.cover,
-                              errorWidget: (context, url, error) => Icon(
-                                Icons.music_note,
-                                size: 168.w,
+                          return GestureDetector(
+                            onTap: () {
+                              // 点击封面打开歌词页面
+                              _openLyricPage();
+                            },
+                            child: Container(
+                              width: 168.w,
+                              height: 168.w,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: CachedNetworkImage(
+                                  imageUrl: mediaItem.artUri.toString(),
+                                  fit: BoxFit.cover,
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.music_note,
+                                    size: 168.w,
+                                  ),
+                                ),
                               ),
                             ),
                           );
@@ -1352,4 +1263,3 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     );
   }
 }
-

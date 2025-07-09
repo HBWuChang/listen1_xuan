@@ -64,6 +64,8 @@ dependencies:
   smtc_windows: ^1.0.0
   windows_taskbar: ^1.1.2
   get:
+  flutter_lyric:
+    path: packages/flutter_lyric-2.0.4+6
 dev_dependencies:
   flutter_test:
     sdk: flutter

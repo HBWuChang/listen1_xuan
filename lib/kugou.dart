@@ -756,14 +756,20 @@ class Kugou {
     lyric_url += '&_=$timstamp';
     return {
       'success': (fn) async {
-        final response = await dio_with_cookie_manager.get(lyric_url);
-        final data = jsonDecode(response.data);
-        final jsonString =
-            data.substring('jQuery('.length, data.length - 1 - 1);
-        final info = json.decode(jsonString);
-        return fn({
-          'lyric': info['data']['lyrics'],
-        });
+        try {
+          final response = await dio_with_cookie_manager.get(lyric_url);
+          final data = response.data;
+          final jsonString =
+              data.substring('jQuery('.length, data.length - 1 - 1);
+          final info = json.decode(jsonString);
+          fn({
+            'lyric': info['data']['lyrics'],
+          });
+        } catch (e) {
+          fn({
+            'lyric': '',
+          });
+        }
       },
     };
   }

@@ -605,12 +605,12 @@ class QQ {
     var target_url = 'https://i.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?' +
         'songmid=${track_id}&g_tk=5381&format=json&inCharset=utf8&outCharset=utf-8&nobase64=1';
     return {
-      "sucess": (fn) async {
+      "success": (fn) async {
         final response = await dio_get_with_cookie_and_csrf(target_url);
         final data = jsonDecode(response.data);
         final lrc = data['lyric'] ?? '';
         var tlrc = data['trans'].replaceAll(RegExp(r'//'), '') ?? '';
-        return {'lyric': lrc, 'tlyric': tlrc};
+        fn({'lyric': lrc, 'tlyric': tlrc});
       }
     };
   }

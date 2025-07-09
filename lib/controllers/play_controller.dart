@@ -87,7 +87,7 @@ class PlayController extends GetxController {
     _player_settings['volume'] = value * 100.0;
     music_player.setVolume(value);
   }
-
+  Track get currentTrack => _current_playing.isNotEmpty ? _current_playing.firstWhere((track) => track.id == Get.find<PlayController>().getPlayerSettings("nowplaying_track_id")) : Track(id: '');
   @override
   void onInit() {
     super.onInit();
@@ -206,28 +206,5 @@ class PlayController extends GetxController {
   void set_current_playing(List<Track> tracks) {
     _current_playing.value = tracks;
   }
-  //     }
-  //   }
-  //   await set_current_playing(current_playing);
-  // }
 
-  // Future<void> set_current_playing(List<Map<String, dynamic>> tracks) async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final current_playing = jsonEncode(tracks);
-  //   await prefs.setString('current-playing', current_playing);
-  // }
-
-  // Future<List<Map<String, dynamic>>> get_current_playing() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final current_playing = await prefs.getString('current-playing');
-  //   if (current_playing != null) {
-  //     try {
-  //       final List<dynamic> current_playing_json = jsonDecode(current_playing);
-  //       return current_playing_json.cast<Map<String, dynamic>>();
-  //     } catch (e) {
-  //       return [];
-  //     }
-  //   }
-  //   return [];
-  // }
 }

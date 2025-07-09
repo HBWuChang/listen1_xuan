@@ -450,6 +450,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_lyric:
+    dependency: "direct main"
+    description:
+      path: "packages/flutter_lyric-2.0.4+6"
+      relative: true
+    source: path
+    version: "2.0.4+6"
   flutter_markdown:
     dependency: "direct main"
     description:
