@@ -581,11 +581,13 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
           print("global_horizon: $global_horizon");
           if (global_horizon) {
             _selectedIndex.value = 2;
+            debugPrint('当前为横屏模式');
             SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
             show_filter.value = true;
           } else {
             _selectedIndex.value = 0;
+            debugPrint('当前为竖屏模式');
             SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
           }
           bool flag = false;
@@ -1049,9 +1051,22 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                     ]),
                   )),
                 ]),
-                bottomNavigationBar: Play(
-                  onPlaylistTap: change_main_status,
-                  horizon: global_horizon,
+                bottomNavigationBar: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Play(
+                      onPlaylistTap: change_main_status,
+                      horizon: global_horizon,
+                    ),
+                    // 竖屏状态下添加额外的占位空间
+                    if (!global_horizon)
+                      Obx(() {
+                        SettingsController controller = Get.find<SettingsController>();
+                        return SizedBox(
+                          height: controller.portraitBottomBarPadding.value,
+                        );
+                      }),
+                  ],
                 ),
               ));
         }));

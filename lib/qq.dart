@@ -1007,40 +1007,50 @@ class QQ {
         'https://c.y.qq.com/rsc/fcgi-bin/fcg_user_created_diss?cv=4747474&ct=24&format=json&inCharset=utf-8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=1&uin=${user_id}&hostuin=${user_id}&sin=0&size=${size}';
     return {
       "success": (fn) async {
-        var response = await dio_get_with_cookie_and_csrf(target_url);
-        var playlists = [];
-        jsonDecode(response.data)['data']['disslist'].forEach((item) {
-          var playlist = {};
-          if (item['dir_show'] == 0) {
-            if (item['tid'] == 0) {
-              return;
-            }
-            if (item['diss_name'] == '我喜欢') {
+        try {
+          var response = await dio_get_with_cookie_and_csrf(target_url);
+          var playlists = [];
+          jsonDecode(response.data)['data']['disslist'].forEach((item) {
+            var playlist = {};
+            if (item['dir_show'] == 0) {
+              if (item['tid'] == 0) {
+                return;
+              }
+              if (item['diss_name'] == '我喜欢') {
+                playlist = {
+                  'cover_img_url':
+                      'https://y.gtimg.cn/mediastyle/y/img/cover_love_300.jpg',
+                  'id': 'qqplaylist_${item['tid']}',
+                  'source_url':
+                      'https://y.qq.com/n/ryqq/playlist/${item['tid']}',
+                  'title': item['diss_name'],
+                };
+                playlists.add(playlist);
+              }
+            } else {
               playlist = {
-                'cover_img_url':
-                    'https://y.gtimg.cn/mediastyle/y/img/cover_love_300.jpg',
+                'cover_img_url': item['diss_cover'],
                 'id': 'qqplaylist_${item['tid']}',
                 'source_url': 'https://y.qq.com/n/ryqq/playlist/${item['tid']}',
                 'title': item['diss_name'],
               };
               playlists.add(playlist);
             }
-          } else {
-            playlist = {
-              'cover_img_url': item['diss_cover'],
-              'id': 'qqplaylist_${item['tid']}',
-              'source_url': 'https://y.qq.com/n/ryqq/playlist/${item['tid']}',
-              'title': item['diss_name'],
-            };
-            playlists.add(playlist);
-          }
-        });
-        return fn({
-          'status': 'success',
-          'data': {
-            'playlists': playlists,
-          },
-        });
+          });
+          return fn({
+            'status': 'success',
+            'data': {
+              'playlists': playlists,
+            },
+          });
+        } catch (e) {
+          return fn({
+            'status': 'success',
+            'data': {
+              'playlists': [],
+            },
+          });
+        }
       }
     };
   }

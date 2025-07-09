@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsController extends GetxController {
   var settings = <String, dynamic>{}.obs;
+  var portraitBottomBarPadding = 0.0.obs;
 
   Timer? _saveTimer;
   @override
@@ -17,6 +18,11 @@ class SettingsController extends GetxController {
         _saveSettings();
       });
     });
+    
+    // 监听 portraitBottomBarPadding 变化并保存到 settings
+    ever(portraitBottomBarPadding, (value) {
+      settings['portraitBottomBarPadding'] = value;
+    });
   }
 
   Future<void> loadSettings() async {
@@ -25,6 +31,9 @@ class SettingsController extends GetxController {
     if (jsonString != null) {
       settings.value = jsonDecode(jsonString);
     }
+    
+    // 加载 portraitBottomBarPadding 的值
+    portraitBottomBarPadding.value = (settings['portraitBottomBarPadding'] ?? 0.0).toDouble();
   }
 
   Future<void> _saveSettings() async {

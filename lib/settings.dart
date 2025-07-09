@@ -251,7 +251,7 @@ void g_launchURL(Uri url) async {
 }
 
 Map<String, dynamic> settings_getsettings() {
-  return Get.find<SettingsController>().settings.value;
+  return Get.find<SettingsController>().settings;
 }
 
 Future<void> _saveToken(String platform, String token) async {
@@ -1674,6 +1674,75 @@ class _SettingsPageState extends State<SettingsPage> {
                             _msg('设置成功', 1.0);
                           },
                         )),
+                  // 竖屏底部播放条额外占位高度设置
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Obx(() {
+                      SettingsController controller = Get.find<SettingsController>();
+                      double paddingValue = controller.portraitBottomBarPadding.value;
+                      TextEditingController textController = TextEditingController(
+                        text: paddingValue.toStringAsFixed(1),
+                      );
+                      
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '竖屏底部播放条额外占位高度 (${paddingValue.toStringAsFixed(1)}px)',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Slider(
+                                  value: paddingValue.clamp(0.0, 200.0),
+                                  min: 0.0,
+                                  max: 200.0,
+                                  divisions: 200,
+                                  onChanged: (value) {
+                                    controller.portraitBottomBarPadding.value = value;
+                                    textController.text = value.toStringAsFixed(1);
+                                  },
+                                ),
+                              ),
+                              SizedBox(width: 16),
+                              Container(
+                                width: 80,
+                                child: TextField(
+                                  controller: textController,
+                                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                  ),
+                                  onSubmitted: (value) {
+                                    double? parsedValue = double.tryParse(value);
+                                    if (parsedValue != null) {
+                                      double clampedValue = parsedValue.clamp(0.0, 200.0);
+                                      controller.portraitBottomBarPadding.value = clampedValue;
+                                      textController.text = clampedValue.toStringAsFixed(1);
+                                    } else {
+                                      textController.text = paddingValue.toStringAsFixed(1);
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                         
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 16),
                   if (is_windows)
                     FutureBuilder(
                       // future: check_bl_cookie(),
