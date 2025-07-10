@@ -468,19 +468,24 @@ class Bilibili {
 
     return {
       'success': (Function fn) {
-        Dio().get(targetUrl).then((response) {
-          final data = response.data['data']["data"] as List;
-          final result = data.map((item) {
-            return {
-              'cover_img_url': item['cover'],
-              'title': item['title'],
-              'id': 'biplaylist_${item['menuId']}',
-              'source_url':
-                  'https://www.bilibili.com/audio/am${item['menuId']}',
-            };
-          }).toList();
-          fn(result);
-        });
+        try {
+          Dio().get(targetUrl).then((response) {
+            final data = response.data['data']["data"] as List;
+            final result = data.map((item) {
+              return {
+                'cover_img_url': item['cover'],
+                'title': item['title'],
+                'id': 'biplaylist_${item['menuId']}',
+                'source_url':
+                    'https://www.bilibili.com/audio/am${item['menuId']}',
+              };
+            }).toList();
+            fn(result);
+          });
+        } catch (e) {
+          debugPrint('Error fetching playlist: $e');
+          fn([]);
+        }
       },
     };
   }

@@ -204,15 +204,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 框架已初始化
   SettingsController settingsController =
       Get.put(SettingsController(), permanent: true);
-  
+  CacheController cacheController = Get.put(CacheController(), permanent: true);
+  await cacheController.loadLocalCacheList();
   Get.put(PlayController(), permanent: true);
   await Get.find<PlayController>().loadDatas();
   Get.put(MyPlayListController(), permanent: true);
   await Get.find<MyPlayListController>().loadDatas();
   Get.put(AudioHandlerController(), permanent: true);
   await settingsController.loadSettings();
-  CacheController cacheController = Get.put(CacheController(), permanent: true);
-  await cacheController.loadLocalCacheList();
   Get.put(LyricController(), permanent: true);
   if (is_windows) {
     await SMTCWindows.initialize();

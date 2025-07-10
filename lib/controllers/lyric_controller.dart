@@ -38,7 +38,7 @@ class LyricController extends GetxController {
   /// 从本地缓存读取歌词
   Future<Map<String, String>> _loadLyricFromCache(String trackId) async {
     final result = <String, String>{};
-    
+
     try {
       // 获取音乐文件的缓存路径作为基础路径
       final musicCachePath = await _cacheController.getLocalCache(trackId);
@@ -47,23 +47,23 @@ class LyricController extends GetxController {
       // 构建歌词文件路径
       final tempDir = await xuan_getdataDirectory();
       final tempPath = tempDir.path;
-      
+
       // 主歌词文件
       final lyricFileName = _getLyricCacheFileName(trackId);
-      final lyricFilePath = is_windows 
-          ? '$tempPath\\$lyricFileName'
-          : '$tempPath/$lyricFileName';
-      
+      final lyricFilePath =
+          is_windows ? '$tempPath\\$lyricFileName' : '$tempPath/$lyricFileName';
+
       if (await File(lyricFilePath).exists()) {
         result['lyric'] = await File(lyricFilePath).readAsString();
       }
 
       // 翻译歌词文件
-      final tlyricFileName = _getLyricCacheFileName(trackId, isTranslation: true);
-      final tlyricFilePath = is_windows 
+      final tlyricFileName =
+          _getLyricCacheFileName(trackId, isTranslation: true);
+      final tlyricFilePath = is_windows
           ? '$tempPath\\$tlyricFileName'
           : '$tempPath/$tlyricFileName';
-      
+
       if (await File(tlyricFilePath).exists()) {
         result['tlyric'] = await File(tlyricFilePath).readAsString();
       }
@@ -75,23 +75,22 @@ class LyricController extends GetxController {
   }
 
   /// 保存歌词到本地缓存
-  Future<void> _saveLyricToCache(String trackId, String lyric, {bool isTranslation = false}) async {
+  Future<void> _saveLyricToCache(String trackId, String lyric,
+      {bool isTranslation = false}) async {
     try {
       final tempDir = await xuan_getdataDirectory();
       final tempPath = tempDir.path;
-      
-      final fileName = _getLyricCacheFileName(trackId, isTranslation: isTranslation);
-      final filePath = is_windows 
-          ? '$tempPath\\$fileName'
-          : '$tempPath/$fileName';
-      
+
+      final fileName =
+          _getLyricCacheFileName(trackId, isTranslation: isTranslation);
+      final filePath =
+          is_windows ? '$tempPath\\$fileName' : '$tempPath/$fileName';
+
       await File(filePath).writeAsString(lyric);
-      
+
       // 将歌词文件添加到缓存管理
       _cacheController.setLocalCache(
-        isTranslation ? '${trackId}_tlyric' : '${trackId}_lyric', 
-        fileName
-      );
+          isTranslation ? '${trackId}_tlyric' : '${trackId}_lyric', fileName);
     } catch (e) {
       print('保存歌词到缓存失败: $e');
     }
@@ -100,7 +99,6 @@ class LyricController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-
     // 监听播放位置变化，更新歌词显示
     Get.find<PlayController>().music_player.positionStream.listen((position) {
       if (lyricModel != null) {
@@ -124,8 +122,9 @@ class LyricController extends GetxController {
     try {
       // 首先尝试从本地缓存加载歌词
       final cachedLyrics = await _loadLyricFromCache(trackId);
-      
-      if (cachedLyrics.containsKey('lyric') && cachedLyrics['lyric']!.isNotEmpty) {
+
+      if (cachedLyrics.containsKey('lyric') &&
+          cachedLyrics['lyric']!.isNotEmpty) {
         // 从缓存加载成功
         print('从缓存加载歌词: $trackId');
         _processLyricData(cachedLyrics['lyric']!, cachedLyrics['tlyric'] ?? '');
@@ -136,7 +135,6 @@ class LyricController extends GetxController {
       // 缓存中没有歌词，从网络获取
       print('从网络获取歌词: $trackId');
       await _loadLyricFromNetwork(trackId);
-      
     } catch (e) {
       print('加载歌词失败: $e');
       isLyricLoading.value = false;
@@ -165,7 +163,7 @@ class LyricController extends GetxController {
         if (tlyric.isNotEmpty) {
           await _saveLyricToCache(trackId, tlyric, isTranslation: true);
         }
-        
+
         // 处理歌词数据
         _processLyricData(lyric, tlyric);
       }
@@ -178,14 +176,14 @@ class LyricController extends GetxController {
   void _processLyricData(String lyric, String tlyric) {
     currentLyric.value = lyric;
     _originalLyric = lyric;
-    
+
     if (tlyric.isNotEmpty) {
       translationLyric.value = tlyric;
       _originalTranslation = tlyric;
     } else {
       _originalTranslation = '';
     }
-    
+
     // 构建歌词模型
     _rebuildLyricModel();
     hasLyric.value = true;
@@ -228,12 +226,12 @@ class LyricController extends GetxController {
     if (_originalLyric.isEmpty) return;
 
     var builder = LyricsModelBuilder.create().bindLyricToMain(_originalLyric);
-    
+
     // 只有在开启翻译显示且有翻译内容时才绑定翻译歌词
     if (showTranslation.value && _originalTranslation.isNotEmpty) {
       builder = builder.bindLyricToExt(_originalTranslation);
     }
-    
+
     lyricModel = builder.getModel();
   }
 
@@ -243,7 +241,7 @@ class LyricController extends GetxController {
       // 清理主歌词缓存
       final lyricCacheKey = '${trackId}_lyric';
       final tlyricCacheKey = '${trackId}_tlyric';
-      
+
       await _cacheController.cleanLocalCache(false, lyricCacheKey);
       await _cacheController.cleanLocalCache(false, tlyricCacheKey);
     } catch (e) {
@@ -254,6 +252,7 @@ class LyricController extends GetxController {
   /// 检查歌词缓存是否存在
   Future<bool> hasLyricCache(String trackId) async {
     final cachedLyrics = await _loadLyricFromCache(trackId);
-    return cachedLyrics.containsKey('lyric') && cachedLyrics['lyric']!.isNotEmpty;
+    return cachedLyrics.containsKey('lyric') &&
+        cachedLyrics['lyric']!.isNotEmpty;
   }
 }
