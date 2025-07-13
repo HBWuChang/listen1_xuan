@@ -1139,6 +1139,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                       value: _playController.currentVolume,
                       onChanged: (value) {
                         _playController.currentVolume = value;
+                        _startAutoCloseTimer();
                       },
                     )),
               ),
