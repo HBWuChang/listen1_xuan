@@ -5,8 +5,8 @@ import 'dart:io';
 import '../loweb.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/cache_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../global_settings_animations.dart';
-import 'package:audio_service/audio_service.dart';
 
 class LyricController extends GetxController {
   // 歌词显示相关
@@ -14,7 +14,7 @@ class LyricController extends GetxController {
   var translationLyric = ''.obs;
   var isLyricLoading = false.obs;
   var hasLyric = false.obs;
-  var showTranslation = true.obs; // 是否显示翻译歌词
+  // showTranslation 已移至 SettingsController
 
   // 歌词解析相关
   LyricsReaderModel? lyricModel;
@@ -28,6 +28,9 @@ class LyricController extends GetxController {
 
   /// 获取缓存控制器
   CacheController get _cacheController => Get.find<CacheController>();
+  
+  /// 获取设置控制器
+  SettingsController get _settingsController => Get.find<SettingsController>();
 
   /// 生成歌词缓存文件路径
   String _getLyricCacheFileName(String trackId, {bool isTranslation = false}) {
@@ -217,7 +220,7 @@ class LyricController extends GetxController {
 
   /// 切换翻译显示状态
   void toggleTranslation() {
-    showTranslation.value = !showTranslation.value;
+    _settingsController.showLyricTranslation.value = !_settingsController.showLyricTranslation.value;
     _rebuildLyricModel();
   }
 
@@ -228,7 +231,7 @@ class LyricController extends GetxController {
     var builder = LyricsModelBuilder.create().bindLyricToMain(_originalLyric);
 
     // 只有在开启翻译显示且有翻译内容时才绑定翻译歌词
-    if (showTranslation.value && _originalTranslation.isNotEmpty) {
+    if (_settingsController.showLyricTranslation.value && _originalTranslation.isNotEmpty) {
       builder = builder.bindLyricToExt(_originalTranslation);
     }
 

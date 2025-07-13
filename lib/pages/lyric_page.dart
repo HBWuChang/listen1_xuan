@@ -9,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:audio_service/audio_service.dart';
 import '../controllers/lyric_controller.dart';
 import '../controllers/play_controller.dart';
+import '../controllers/settings_controller.dart';
 
 import '../global_settings_animations.dart';
 
@@ -20,6 +21,7 @@ class LyricPage extends StatefulWidget {
 class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
   late LyricController lyricController;
   late PlayController playController;
+  late SettingsController settingsController;
 
   // 歌词UI样式
   var lyricUI = UINetease();
@@ -36,6 +38,7 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
     lyricController = Get.find<LyricController>();
     lyricController.loadLyric();
     playController = Get.find<PlayController>();
+    settingsController = Get.find<SettingsController>();
     lyricController.loadLyric();
 
     _backgroundController = AnimationController(
@@ -243,7 +246,7 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
   Widget _buildLyricContent() {
     return Obx(() {
       // 监听翻译开关状态变化，确保UI能够响应
-      lyricController.showTranslation.value;
+      settingsController.showLyricTranslation.value;
       
       if (lyricController.isLyricLoading.value) {
         return Center(
@@ -382,7 +385,7 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: lyricController.showTranslation.value
+                        color: settingsController.showLyricTranslation.value
                             ? Theme.of(context).colorScheme.primary
                             : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
                       ),
@@ -394,13 +397,13 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
                       height: 20,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        color: lyricController.showTranslation.value
+                        color: settingsController.showLyricTranslation.value
                             ? Theme.of(context).colorScheme.primary
                             : Theme.of(context).disabledColor,
                       ),
                       child: AnimatedAlign(
                         duration: Duration(milliseconds: 200),
-                        alignment: lyricController.showTranslation.value
+                        alignment: settingsController.showLyricTranslation.value
                             ? Alignment.centerRight
                             : Alignment.centerLeft,
                         child: Container(
