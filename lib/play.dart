@@ -106,7 +106,7 @@ Future<String> get_local_cache(String id) async {
 }
 
 Future<void> set_local_cache(String id, String path) async {
-   Get.find<CacheController>().setLocalCache(id, path);
+  Get.find<CacheController>().setLocalCache(id, path);
 }
 
 // Future<void> clean_local_cache([bool all = false]) async {
@@ -283,6 +283,7 @@ Future<void> playsong(Track track,
       return;
     }
     await Get.find<PlayController>().music_player.setFilePath(tdir);
+    Get.find<LyricController>().loadLyric();
     double t_volume = 100;
     try {
       t_volume = Get.find<PlayController>().getPlayerSettings("volume");
