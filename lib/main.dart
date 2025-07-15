@@ -317,11 +317,26 @@ class MyApp extends StatelessWidget {
                       if (is_windows) {
                         widget = BotToastInit()(context, widget);
                       }
+                      // 处理 MediaQuery 异常问题，特别是小米澎湃系统
+                      MediaQueryData mediaQuery = MediaQuery.of(context);
+                      double safeTop = mediaQuery.padding.top;
+
+                      // 如果出现异常值，使用默认值替代
+                      if (safeTop > 80 || safeTop < 0) {
+                        print(
+                            'Detected abnormal top padding: $safeTop, using fallback.');
+                        safeTop = 24.0; // 合理默认值
+                      }
+
                       // 然后应用 MediaQuery 设置
                       return MediaQuery(
                         ///设置文字大小不随系统设置改变
                         data: MediaQuery.of(context)
-                            .copyWith(textScaleFactor: 1.0),
+                            .copyWith(textScaleFactor: 1.0)
+                            .copyWith(
+                              padding:
+                                  mediaQuery.padding.copyWith(top: safeTop),
+                            ),
                         child: widget!,
                       );
                     },
