@@ -247,7 +247,7 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
     return Obx(() {
       // 监听翻译开关状态变化，确保UI能够响应
       settingsController.showLyricTranslation.value;
-      
+
       if (lyricController.isLyricLoading.value) {
         return Center(
           child: Column(
@@ -333,7 +333,6 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
               },
               onTap: () {
                 // 点击歌词区域的处理
-
               },
             );
           },
@@ -387,7 +386,11 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
                         fontWeight: FontWeight.w600,
                         color: settingsController.showLyricTranslation.value
                             ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                            : Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.color
+                                ?.withOpacity(0.6),
                       ),
                     ),
                     SizedBox(width: 6),
@@ -492,5 +495,11 @@ class _ThemedUINetease extends UINetease {
               (isDark ? Colors.white60 : Colors.black45),
       fontSize: defaultExtSize,
     );
+  }
+
+  @override
+  Color getLyricHightlightColor() {
+    final theme = Theme.of(context);
+    return theme.colorScheme.primaryFixed.withAlpha(200);
   }
 }
