@@ -48,7 +48,7 @@ class FileLogOutput extends LogOutput {
 
 var playmode = 0.obs;
 List<Track> randommodetemplist = [];
-
+bool randomTrackInsertAtHead = false;
 Future<void> onPlaybackCompleted([bool force_next = false]) async {
   await fresh_playmode();
   final current_playing = await get_current_playing();
@@ -67,24 +67,22 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
             : await playsong(current_playing[0]);
         break;
       case 1:
-        // final randomIndex = (current_playing.length *
-        //         (DateTime.now().millisecondsSinceEpoch % 1000) /
-        //         1000)
-        //     .floor();
-
-        final random = Random();
-        final randomIndex = random.nextInt(current_playing.length);
-        // if (randommodetemplist.contains(current_playing[index])) {
-        //   randommodetemplist.remove(current_playing[index]);
-        // }
-        for (var i = randommodetemplist.length - 1; i >= 0; i--) {
-          if (randommodetemplist[i].id == current_playing[index].id) {
-            randommodetemplist.removeAt(i);
-            break;
+        int t = randommodetemplist
+            .map((e) => e.id)
+            .toList()
+            .indexOf(nowplaying_track['track'].id);
+        if (t != randommodetemplist.length - 1 && t != -1) {
+          Track tt = randommodetemplist[t + 1];
+          if (current_playing.any((element) => element.id == tt.id)) {
+            await playsong(tt);
+            return;
           }
         }
-        randommodetemplist.add(current_playing[index]);
-        await playsong(current_playing[randomIndex]);
+        final random = Random();
+        final randomIndex = random.nextInt(current_playing.length);
+        Track track = current_playing[randomIndex];
+        randommodetemplist.removeWhere((element) => element.id == track.id);
+        await playsong(track);
         break;
       case 2:
         if (force_next) {
@@ -263,7 +261,9 @@ Future<void> change_playback_state(Track track) async {
 
 // Future<void> playsong(Map<String, dynamic> track) async {
 Future<void> playsong(Track track,
-    [start = true, on_playersuccesscallback = false]) async {
+    [start = true,
+    on_playersuccesscallback = false,
+    bool isByClick = false]) async {
   try {
     if (on_playersuccesscallback &&
         (Get.find<PlayController>().getPlayerSettings("nowplaying_track_id") !=
@@ -283,6 +283,20 @@ Future<void> playsong(Track track,
       return;
     }
     await Get.find<PlayController>().music_player.setFilePath(tdir);
+
+    if (!randommodetemplist.any((element) => element.id == track.id)) {
+      if (randomTrackInsertAtHead) {
+        randommodetemplist.insert(0, track);
+        randomTrackInsertAtHead = false;
+      } else {
+        randommodetemplist.add(track);
+      }
+    } else if (isByClick) {
+      // 如果是点击播放，且当前歌曲已经在随机列表中，则将其移动到列表头部
+      randommodetemplist.removeWhere((element) => element.id == track.id);
+      randommodetemplist.add(track);
+    }
+
     Get.find<LyricController>().loadLyric();
     double t_volume = 100;
     try {
@@ -379,12 +393,6 @@ Future<void> playerFailCallback(Track track) async {
     debugPrint(connectivityResult.toString());
     // 等待三秒
     await Future.delayed(Duration(seconds: 3));
-  }
-  if (playmode.value == 1) {
-    debugPrint(randommodetemplist.toString());
-    if (randommodetemplist.length - 1 > 0) {
-      randommodetemplist.removeAt(randommodetemplist.length - 1);
-    }
   }
 
   onPlaybackCompleted(true);
@@ -1082,18 +1090,25 @@ Future<void> global_skipToPrevious() async {
         break;
       case 1:
         try {
-          await playsong(randommodetemplist[randommodetemplist.length - 1]);
-          randommodetemplist.removeAt(randommodetemplist.length - 1);
-          return;
+          int t = randommodetemplist
+              .map((e) => e.id)
+              .toList()
+              .indexOf(nowplaying_track['track'].id);
+          if (t > 0) {
+            Track tt = randommodetemplist[t - 1];
+            if (current_playing.any((element) => element.id == tt.id)) {
+              await playsong(tt);
+              return;
+            }
+          }
         } catch (e) {
           print(e);
         }
-
-        final randomIndex = (current_playing.length *
-                (DateTime.now().millisecondsSinceEpoch % 1000) /
-                1000)
-            .floor();
-        await playsong(current_playing[randomIndex]);
+        final randomIndex = Random().nextInt(current_playing.length);
+        Track track = current_playing[randomIndex];
+        randommodetemplist.removeWhere((element) => element.id == track.id);
+        randomTrackInsertAtHead = true; // 下次插入到头部
+        await playsong(track);
         break;
       case 2:
         await playsong(current_playing[index]);

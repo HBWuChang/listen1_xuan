@@ -1146,7 +1146,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                           .setPlayerSetting(
                                               "nowplaying_track_id",
                                               tracks[0].id);
-                                      playsong(tracks[0]);
+                                      playsong(tracks[0], true, false, true);
                                     },
                                     child: Text('播放全部（共${tracks.length}首）'),
                                   ),
@@ -1390,7 +1390,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                               xuan_toast(
                                 msg: '尝试播放：${track.title}',
                               );
-                              playsong(track);
+                              playsong(track, true, false, true);
                             },
                           );
                         }).toList(),
@@ -1582,7 +1582,8 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
       ret["success"]((data) {
         result = data;
         setState(() {
-          tracks = List<Track>.from(data['result'].map((item) => Track.fromJson(item)));
+          tracks = List<Track>.from(
+              data['result'].map((item) => Track.fromJson(item)));
           _loading = false;
         });
       });
@@ -1673,7 +1674,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                             xuan_toast(
                               msg: '尝试播放：${track.title}',
                             );
-                            playsong(track);
+                            playsong(track, true, false, true);
                           },
                         );
                       },
