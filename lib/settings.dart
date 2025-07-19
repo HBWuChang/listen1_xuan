@@ -146,7 +146,9 @@ Future<void> importSettingsFromFile(
           } catch (e) {}
       }
     }
-
+    await Get.find<PlayController>().loadDatas();
+    await Get.find<MyPlayListController>().loadDatas();
+    await Get.find<SettingsController>().loadSettings();
     xuan_toast(
       msg: 'Settings imported successfully',
       toastLength: Toast.LENGTH_SHORT,
@@ -212,9 +214,6 @@ Future<void> importSettingsFromFile(
       fontSize: 16.0,
     );
   }
-  await Get.find<PlayController>().loadDatas();
-  await Get.find<MyPlayListController>().loadDatas();
-  await Get.find<SettingsController>().loadSettings();
 }
 
 Future<void> setSaveCookie({
@@ -1121,11 +1120,10 @@ class _SettingsPageState extends State<SettingsPage> {
                                               await Github.gist2json(jsfile);
                                           await importSettingsFromFile(
                                               true, settings);
+                                          Navigator.of(context).pop();
                                           xuan_toast(
                                             msg: '导入成功',
                                           );
-                                          Navigator.of(context).pop();
-                                          My_playlist_loaddata();
                                         } catch (e) {
                                           xuan_toast(
                                             msg: '导入失败$e',
@@ -1677,66 +1675,78 @@ class _SettingsPageState extends State<SettingsPage> {
                   // 竖屏底部播放条额外占位高度设置
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Obx(() {
-                      SettingsController controller = Get.find<SettingsController>();
-                      double paddingValue = controller.portraitBottomBarPadding.value;
-                      TextEditingController textController = TextEditingController(
-                        text: paddingValue.toStringAsFixed(1),
-                      );
-                      
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '竖屏底部播放条额外占位高度 (${paddingValue.toStringAsFixed(1)}px)',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                    child: Obx(
+                      () {
+                        SettingsController controller =
+                            Get.find<SettingsController>();
+                        double paddingValue =
+                            controller.portraitBottomBarPadding.value;
+                        TextEditingController textController =
+                            TextEditingController(
+                          text: paddingValue.toStringAsFixed(1),
+                        );
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '竖屏底部播放条额外占位高度 (${paddingValue.toStringAsFixed(1)}px)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Slider(
-                                  value: paddingValue.clamp(0.0, 200.0),
-                                  min: 0.0,
-                                  max: 200.0,
-                                  divisions: 200,
-                                  onChanged: (value) {
-                                    controller.portraitBottomBarPadding.value = value;
-                                    textController.text = value.toStringAsFixed(1);
-                                  },
-                                ),
-                              ),
-                              SizedBox(width: 16),
-                              Container(
-                                width: 80,
-                                child: TextField(
-                                  controller: textController,
-                                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                                  decoration: InputDecoration(
-                                    border: OutlineInputBorder(),
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Slider(
+                                    value: paddingValue.clamp(0.0, 200.0),
+                                    min: 0.0,
+                                    max: 200.0,
+                                    divisions: 200,
+                                    onChanged: (value) {
+                                      controller.portraitBottomBarPadding
+                                          .value = value;
+                                      textController.text =
+                                          value.toStringAsFixed(1);
+                                    },
                                   ),
-                                  onSubmitted: (value) {
-                                    double? parsedValue = double.tryParse(value);
-                                    if (parsedValue != null) {
-                                      double clampedValue = parsedValue.clamp(0.0, 200.0);
-                                      controller.portraitBottomBarPadding.value = clampedValue;
-                                      textController.text = clampedValue.toStringAsFixed(1);
-                                    } else {
-                                      textController.text = paddingValue.toStringAsFixed(1);
-                                    }
-                                  },
                                 ),
-                              ),
-                            ],
-                          ),
-                         
+                                SizedBox(width: 16),
+                                Container(
+                                  width: 80,
+                                  child: TextField(
+                                    controller: textController,
+                                    keyboardType:
+                                        TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    decoration: InputDecoration(
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                    ),
+                                    onSubmitted: (value) {
+                                      double? parsedValue =
+                                          double.tryParse(value);
+                                      if (parsedValue != null) {
+                                        double clampedValue =
+                                            parsedValue.clamp(0.0, 200.0);
+                                        controller.portraitBottomBarPadding
+                                            .value = clampedValue;
+                                        textController.text =
+                                            clampedValue.toStringAsFixed(1);
+                                      } else {
+                                        textController.text =
+                                            paddingValue.toStringAsFixed(1);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         );
                       },

@@ -130,9 +130,7 @@ class MyPlaylist {
           );
         },
       );
-      try {
-        My_playlist_loaddata(() {});
-      } catch (e) {}
+      Get.find<MyPlayListController>().loadDatas();
     } catch (e) {
       // print(e);
       xuan_toast(

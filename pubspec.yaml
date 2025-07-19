@@ -35,7 +35,6 @@ dependencies:
     path: packages/webview_cookie_manager-2.0.6
   dio_cookie_manager: ^3.1.1
   fluttertoast: ^8.2.10
-  bot_toast: ^4.1.0
   file_picker: ^8.1.6
   permission_handler: ^11.3.1
   vibration: ^2.0.1

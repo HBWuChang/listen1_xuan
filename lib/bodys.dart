@@ -211,6 +211,7 @@ Future<dynamic> song_dialog(
                                 myplaylist.removeTrackFromMyPlaylist(
                                     nowplaylistinfo!.id, track.id);
                                 Navigator.of(context).pop();
+                                Navigator.of(context).pop();
                                 if (deltrack != null) {
                                   deltrack(track);
                                 }

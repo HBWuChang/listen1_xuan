@@ -5,7 +5,6 @@ import 'package:listen1_xuan/play.dart';
 import 'package:loading_animations/loading_animations.dart';
 import 'package:animations/animations.dart';
 import 'package:universal_io/io.dart' as universal_io;
-import 'package:bot_toast/bot_toast.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -14,7 +13,6 @@ import 'controllers/settings_controller.dart';
 import 'settings.dart';
 import 'package:window_manager/window_manager.dart';
 
-var My_playlist_loaddata;
 Future<String> get_windows_proxy_addr() async {
   var settings = settings_getsettings();
   var proxy = settings["proxy"];
@@ -83,7 +81,7 @@ final bool is_windows = universal_io.Platform.isWindows;
 dynamic xuan_toast({
   required String msg,
   Toast? toastLength,
-  int timeInSecForIosWeb = 1,
+  int timeInSecForIosWeb = 2,
   double? fontSize,
   String? fontAsset,
   ToastGravity? gravity,
@@ -95,9 +93,16 @@ dynamic xuan_toast({
 }) {
   try {
     if (is_windows) {
-      return BotToast.showText(
-        text: msg,
-        clickClose: true,
+      return Get.snackbar(
+        '提示',
+        msg,
+        snackPosition: SnackPosition.TOP,
+        duration: Duration(seconds: timeInSecForIosWeb),
+        backgroundColor: backgroundColor,
+        colorText: textColor,
+        isDismissible: true,
+        margin: EdgeInsets.all(10),
+        borderRadius: 5,
       );
     }
     return Fluttertoast.showToast(

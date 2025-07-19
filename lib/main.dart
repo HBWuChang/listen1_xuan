@@ -30,7 +30,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
-import 'package:bot_toast/bot_toast.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:flutter/gestures.dart';
@@ -314,9 +313,7 @@ class MyApp extends StatelessWidget {
                     title: 'Listen1',
                     builder: (context, widget) {
                       // 先应用 BotToastInit（如果是 Windows）
-                      if (is_windows) {
-                        widget = BotToastInit()(context, widget);
-                      }
+
                       // 处理 MediaQuery 异常问题，特别是小米澎湃系统
                       MediaQueryData mediaQuery = MediaQuery.of(context);
                       double safeTop = mediaQuery.padding.top;
@@ -340,9 +337,7 @@ class MyApp extends StatelessWidget {
                         child: widget!,
                       );
                     },
-                    navigatorObservers: is_windows
-                        ? [
-                            BotToastNavigatorObserver(),
+                    navigatorObservers: is_windows ? [
                           ]
                         : [], //2.注册路由观察者
                     theme: theme,
