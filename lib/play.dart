@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:listen1_xuan/bodys.dart';
+import 'package:listen1_xuan/controllers/nowplaying_controller.dart';
 import 'package:listen1_xuan/main.dart';
 import 'dart:io';
 import 'dart:convert';
@@ -273,6 +274,7 @@ Future<void> playsong(Track track,
     Get.find<PlayController>()
         .setPlayerSetting("nowplaying_track_id", track.id);
     add_current_playing([track]);
+    Get.find<NowPlayingController>().scrollToCurrentTrack();
     final tdir = await get_local_cache(track.id);
     debugPrint('playsong');
     debugPrint(track.toString());
@@ -535,7 +537,7 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                         },
                       ),
                       Container(
-                          width: (MediaQuery.of(context).size.width - 500),
+                          width: (MediaQuery.of(context).size.width - 514),
                           height: 50,
                           child: Column(
                             children: [
@@ -643,6 +645,7 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                           )),
                       IconButton(
                         key: _buttonKey,
+                        tooltip: '歌曲弹窗',
                         icon: Icon(Icons.list),
                         onPressed: () async {
                           final track = await getnowplayingsong();
@@ -667,9 +670,32 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                           }
                         },
                       ),
+                      Obx(() => SizedBox(
+                          width: 30,
+                          height: 30,
+                          child: Stack(children: [
+                            IconButton(
+                                tooltip: '正在播放列表',
+                                icon: Icon(Icons.playlist_play_rounded),
+                                onPressed: () async {
+                                  Get.toNamed('/nowPlayingPage', id: 1);
+                                }),
+                            Text(
+                              '${_playController.current_playing.length}',
+                              style: TextStyle(
+                                fontSize: 12,
+                              ),
+                            ),
+                          ]))),
                       Obx(
                         () {
                           return IconButton(
+                            tooltip: switch (playmode.value) {
+                              0 => '循环播放',
+                              1 => '随机播放',
+                              2 => '单曲循环',
+                              _ => '未知模式',
+                            },
                             icon: switch (playmode.value) {
                               0 => Icon(Icons.repeat),
                               1 => Icon(Icons.shuffle),
@@ -814,9 +840,6 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                             },
                                           ),
                                         ),
-                                        SizedBox(
-                                          width: 20.w,
-                                        ),
                                         Container(
                                           width: 200.w,
                                           child: StreamBuilder<MediaState>(
@@ -843,6 +866,29 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                             },
                                           ),
                                         ),
+                                        Obx(() => SizedBox(
+                                            width: 120.w,
+                                            height: 120.w,
+                                            child: Stack(children: [
+                                              Center(
+                                                  child: IconButton(
+                                                      tooltip: '正在播放列表',
+                                                      icon: Icon(Icons
+                                                          .playlist_play_rounded),
+                                                      onPressed: () async {
+                                                        Get.toNamed(
+                                                            '/nowPlayingPage',
+                                                            id: 1);
+                                                      })),
+                                              Positioned(
+                                                  top: 0,
+                                                  child: Text(
+                                                    '${_playController.current_playing.length}',
+                                                    style: TextStyle(
+                                                      fontSize: 32.sp,
+                                                    ),
+                                                  )),
+                                            ]))),
                                         Obx(
                                           () {
                                             return IconButton(

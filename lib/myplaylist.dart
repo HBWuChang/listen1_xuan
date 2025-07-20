@@ -29,108 +29,99 @@ class MyPlaylist {
     return '';
   }
 
-  Future<void> Add_to_my_playlist(BuildContext context, List<Track> tracks,
+  Future<void> Add_to_my_playlist(dynamic context, List<Track> tracks,
       [String? title = "", String? cover_img_url = ""]) async {
     try {
       final playlists = show_myplaylist('my')['result'];
-      await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('请选择要添加到的歌单'),
-            content: Container(
-              width: double.maxFinite,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: playlists.length,
-                itemBuilder: (BuildContext context, int index) {
-                  PlayList playlist = playlists[index];
-                  return ListTile(
-                    title: Text(playlist.info.title ?? ''),
-                    onTap: () async {
-                      final playlistId = playlist.info.id;
-                      for (var track in tracks) {
-                        await addTrackToMyPlaylist(playlistId, track);
-                      }
-                      Navigator.of(context).pop();
-                      xuan_toast(
-                        msg: '添加成功',
-                      );
-                    },
-                  );
-                },
-              ),
+      await Get.dialog(
+        AlertDialog(
+          title: Text('请选择要添加到的歌单'),
+          content: Container(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: playlists.length,
+              itemBuilder: (BuildContext context, int index) {
+                PlayList playlist = playlists[index];
+                return ListTile(
+                  title: Text(playlist.info.title ?? ''),
+                  onTap: () async {
+                    final playlistId = playlist.info.id;
+                    addTrackToMyPlaylist(playlistId, tracks);
+                    Get.back();
+                    xuan_toast(
+                      msg: '添加成功',
+                    );
+                  },
+                );
+              },
             ),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  await showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: Text('请输入歌单信息'),
-                        content: Column(children: [
-                          TextField(
-                            controller: TextEditingController(text: title),
-                            onChanged: (text) {
-                              title = text;
-                            },
-                            decoration: InputDecoration(
-                              labelText: '歌单标题',
-                              // border: InputBorder.none,
-                            ),
-                          ),
-                          TextField(
-                              controller:
-                                  TextEditingController(text: cover_img_url),
-                              onChanged: (text) {
-                                cover_img_url = text;
-                              },
-                              decoration: InputDecoration(
-                                labelText: '封面图片链接',
-                                // border: InputBorder.none,
-                              )),
-                        ]),
-                        actions: [
-                          TextButton(
-                            onPressed: () async {
-                              if (title == '') {
-                                return;
-                              }
-                              await createMyPlaylist(title!, tracks,
-                                  cover_img_url ?? "images/mycover.jpg");
-                              Navigator.of(context).pop();
-                              Navigator.of(context).pop();
-                              xuan_toast(
-                                msg: '添加成功',
-                              );
-                            },
-                            child: Text('确定'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            child: Text('取消'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-                child: Text('新建歌单'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text('取消'),
-              ),
-            ],
-          );
-        },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await Get.dialog(
+                  AlertDialog(
+                    title: Text('请输入歌单信息'),
+                    content: Column(children: [
+                      TextField(
+                        controller: TextEditingController(text: title),
+                        onChanged: (text) {
+                          title = text;
+                        },
+                        decoration: InputDecoration(
+                          labelText: '歌单标题',
+                          // border: InputBorder.none,
+                        ),
+                      ),
+                      TextField(
+                          controller:
+                              TextEditingController(text: cover_img_url),
+                          onChanged: (text) {
+                            cover_img_url = text;
+                          },
+                          decoration: InputDecoration(
+                            labelText: '封面图片链接',
+                            // border: InputBorder.none,
+                          )),
+                    ]),
+                    actions: [
+                      TextButton(
+                        onPressed: () async {
+                          if (title == '') {
+                            return;
+                          }
+                          await createMyPlaylist(title!, tracks,
+                              cover_img_url ?? "images/mycover.jpg");
+                          Get.back();
+                          Get.back();
+                          xuan_toast(
+                            msg: '添加成功',
+                          );
+                        },
+                        child: Text('确定'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Get.back();
+                        },
+                        child: Text('取消'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: Text('新建歌单'),
+            ),
+            TextButton(
+              onPressed: () {
+                Get.back();
+              },
+              child: Text('取消'),
+            ),
+          ],
+        ),
       );
-      Get.find<MyPlayListController>().loadDatas();
     } catch (e) {
       // print(e);
       xuan_toast(

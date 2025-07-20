@@ -13,7 +13,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'controllers/audioHandler_controller.dart';
 import 'controllers/lyric_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
+import 'controllers/nowplaying_controller.dart';
 import 'controllers/play_controller.dart';
+import 'pages/nowPlaying_page.dart';
 import 'settings.dart';
 import 'loweb.dart';
 import 'bodys.dart';
@@ -212,6 +214,7 @@ void main() async {
   Get.put(AudioHandlerController(), permanent: true);
   await settingsController.loadSettings();
   Get.put(LyricController(), permanent: true);
+  Get.put(NowPlayingController(), permanent: true);
   if (is_windows) {
     await SMTCWindows.initialize();
     enableThumbnailToolbar();
@@ -337,9 +340,7 @@ class MyApp extends StatelessWidget {
                         child: widget!,
                       );
                     },
-                    navigatorObservers: is_windows ? [
-                          ]
-                        : [], //2.注册路由观察者
+
                     theme: theme,
                     darkTheme: darkTheme,
                     localizationsDelegates: [
@@ -1043,6 +1044,14 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                   page: () => SettingsPage(),
                                   middlewares: [ListenPopMiddleware()]);
                               addAndCleanReapeatRoute(route, '/settings');
+                              return route;
+                            case '/nowPlayingPage':
+                              var route = GetPageRoute(
+                                  settings: settings,
+                                  transition: Transition.downToUp,
+                                  page: () => NowPlayingPage(),
+                                  middlewares: [ListenPopMiddleware()]);
+                              addAndCleanReapeatRoute(route, '/nowPlayingPage');
                               return route;
                             case '/lyric':
                               var route = GetPageRoute(
