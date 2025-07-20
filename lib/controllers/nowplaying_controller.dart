@@ -45,7 +45,7 @@ class NowPlayingController extends GetxController {
 
   // 获取单个项目的实际高度（根据平台调整）
   double get itemHeight {
-    return 80.0; // 默认值
+    return 44.0; // 默认值
   }
 
   // 调试方法：打印当前平台和使用的高度值
