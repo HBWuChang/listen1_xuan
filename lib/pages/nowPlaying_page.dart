@@ -278,6 +278,9 @@ class NowPlayingPage extends StatelessWidget {
   Widget _buildTrackItem(BuildContext context, Track track, int index,
       bool isCurrentTrack, NowPlayingController controller) {
     final theme = Theme.of(context);
+    void playT() {
+      controller.playTrack(track);
+    }
 
     return Container(
       key: ValueKey(track.id), // 重排序需要的key
@@ -340,6 +343,7 @@ class NowPlayingPage extends StatelessWidget {
                         isCurrentTrack ? FontWeight.w600 : FontWeight.normal,
                   ),
                   theme.colorScheme.secondary,
+                  voidCallback: playT,
                 );
               }),
             ),
@@ -368,9 +372,7 @@ class NowPlayingPage extends StatelessWidget {
                   ),
                   color: theme.colorScheme.error.withOpacity(0.7))
             ]),
-        onTap: () {
-          controller.playTrack(track);
-        },
+        onTap: playT,
       ),
     );
   }
@@ -424,6 +426,7 @@ class NowPlayingPage extends StatelessWidget {
     String query,
     TextStyle? baseStyle,
     Color highlightColor,
+    {VoidCallback? voidCallback}
   ) {
     if (query.isEmpty) {
       return SelectableText(
@@ -438,6 +441,7 @@ class NowPlayingPage extends StatelessWidget {
           cut: false,
           paste: false,
         ),
+        onTap: voidCallback,
       );
     }
 
