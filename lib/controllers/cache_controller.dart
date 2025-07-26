@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:convert';
 import '../global_settings_animations.dart';
+import 'settings_controller.dart';
 
 class CacheController extends GetxController {
   final String _localCacheListKey = 'local-cache-list';
@@ -16,22 +17,16 @@ class CacheController extends GetxController {
   }
 
   /// 加载本地缓存列表
-  Future<void> loadLocalCacheList() async {
-    final prefs = await SharedPreferences.getInstance();
-    final localCacheListJson = prefs.getString(_localCacheListKey);
-    if (localCacheListJson != null) {
-      final localCacheList = jsonDecode(localCacheListJson);
-      _localCacheList.assignAll(Map<String, String>.from(localCacheList));
-    } else {
-      _localCacheList.clear();
-    }
+  void loadLocalCacheList() {
+    _localCacheList.value =
+        Get.find<SettingsController>().CacheController_localCacheList;
   }
 
   /// 保存本地缓存列表
   Future<void> _saveLocalCacheList() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        _localCacheListKey, jsonEncode(Map<String, String>.from(_localCacheList)));
+    await prefs.setString(_localCacheListKey,
+        jsonEncode(Map<String, String>.from(_localCacheList)));
   }
 
   /// 获取本地缓存文件路径
@@ -111,7 +106,7 @@ class CacheController extends GetxController {
   Future<void> _cleanAllCache() async {
     final tempDir = await xuan_getdataDirectory();
     final files = await _getCacheFiles(tempDir.path);
-    
+
     int count = 0;
     for (final file in files) {
       try {
@@ -132,13 +127,13 @@ class CacheController extends GetxController {
   Future<void> _cleanUnusedCache() async {
     final tempDir = await xuan_getdataDirectory();
     final files = await _getCacheFiles(tempDir.path);
-    
+
     int count = 0;
     final cacheFileNames = _localCacheList.values.toSet();
-    
+
     for (final file in files) {
       final fileName = file.split(is_windows ? "\\" : '/').last;
-      
+
       // 如果文件不在缓存列表中，则删除
       if (!cacheFileNames.contains(fileName)) {
         try {
@@ -164,14 +159,15 @@ class CacheController extends GetxController {
 
     try {
       final filesAndDirs = Directory(tempPath).listSync();
-      
+
       for (final fileSystemEntity in filesAndDirs) {
         if (fileSystemEntity is File) {
-          final fileName = fileSystemEntity.path.split(is_windows ? "\\" : '/').last;
-          
+          final fileName =
+              fileSystemEntity.path.split(is_windows ? "\\" : '/').last;
+
           // 跳过系统文件和特定类型文件
           if (without.contains(fileName)) continue;
-          
+
           bool shouldJump = false;
           for (final extension in jumpList) {
             if (fileName.endsWith(extension)) {
@@ -179,7 +175,7 @@ class CacheController extends GetxController {
               break;
             }
           }
-          
+
           if (!shouldJump) {
             files.add(fileSystemEntity.path);
           }
@@ -199,10 +195,9 @@ class CacheController extends GetxController {
     final List<String> keysToRemove = [];
 
     for (final entry in _localCacheList.entries) {
-      final filePath = is_windows 
-          ? '$tempPath\\${entry.value}'
-          : '$tempPath/${entry.value}';
-      
+      final filePath =
+          is_windows ? '$tempPath\\${entry.value}' : '$tempPath/${entry.value}';
+
       if (!await File(filePath).exists()) {
         keysToRemove.add(entry.key);
       }

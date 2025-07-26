@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/play.dart';
 import 'dart:io';
@@ -146,9 +145,9 @@ Future<void> importSettingsFromFile(
           } catch (e) {}
       }
     }
-    await Get.find<PlayController>().loadDatas();
-    await Get.find<MyPlayListController>().loadDatas();
     await Get.find<SettingsController>().loadSettings();
+    Get.find<PlayController>().loadDatas();
+    Get.find<MyPlayListController>().loadDatas();
     xuan_toast(
       msg: 'Settings imported successfully',
       toastLength: Toast.LENGTH_SHORT,
@@ -1662,13 +1661,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   if (is_windows)
                     Obx(() => SwitchListTile(
                           title: const Text('在右侧页面中键时隐藏/最小化主页面'),
-                          value: Get.find<SthSettingsController>()
-                              .hideOrMinimize
-                              .value,
+                          value: Get.find<SettingsController>().hideOrMinimize,
                           onChanged: (bool value) {
-                            Get.find<SthSettingsController>()
-                                .hideOrMinimize
-                                .value = value;
+                            Get.find<SettingsController>().hideOrMinimize =
+                                value;
                             _msg('设置成功', 1.0);
                           },
                         )),

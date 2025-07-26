@@ -10,6 +10,7 @@ import 'package:smtc_windows/smtc_windows.dart';
 import '../global_settings_animations.dart';
 import '../play.dart';
 import 'play_controller.dart';
+import 'settings_controller.dart';
 
 class PlayListInfo {
   String id;
@@ -97,7 +98,7 @@ class MyPlayListController extends GetxController {
         await prefs.setString(playlist.key, jsonString);
       }
     });
-    ever(favoriteplayerlists, (callback) async {
+    debounce(favoriteplayerlists, (callback) async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(
           'favoriteplayerlists', favoriteplayerlists.keys.toList());
@@ -108,26 +109,9 @@ class MyPlayListController extends GetxController {
     });
   }
 
-  Future<void> loadDatas() async {
-    final prefs = await SharedPreferences.getInstance();
-    playerlists.clear();
-    favoriteplayerlists.clear();
-    List<String>? playlists = prefs.getStringList('playerlists');
-    for (var playlist in playlists ?? []) {
-      final playlistJson = prefs.getString(playlist);
-      if (playlistJson != null) {
-        playerlists[playlist] = PlayList.fromJson(jsonDecode(playlistJson));
-      }
-    }
-    List<String>? favoritePlaylists =
-        prefs.getStringList('favoriteplayerlists');
-    for (var playlist in favoritePlaylists ?? []) {
-      final playlistJson = prefs.getString(playlist);
-      if (playlistJson != null) {
-        favoriteplayerlists[playlist] =
-            PlayList.fromJson(jsonDecode(playlistJson));
-      }
-    }
+  void loadDatas()  {
+    playerlists.value=Get.find<SettingsController>().MyPlayListController_playerlists;
+    favoriteplayerlists.value=Get.find<SettingsController>().MyPlayListController_favoriteplayerlists;
     update();
   }
 }

@@ -206,13 +206,13 @@ void main() async {
   SettingsController settingsController =
       Get.put(SettingsController(), permanent: true);
   CacheController cacheController = Get.put(CacheController(), permanent: true);
-  await cacheController.loadLocalCacheList();
-  Get.put(PlayController(), permanent: true);
-  await Get.find<PlayController>().loadDatas();
-  Get.put(MyPlayListController(), permanent: true);
-  await Get.find<MyPlayListController>().loadDatas();
-  Get.put(AudioHandlerController(), permanent: true);
   await settingsController.loadSettings();
+  cacheController.loadLocalCacheList();
+  Get.put(PlayController(), permanent: true);
+  Get.find<PlayController>().loadDatas();
+  Get.put(MyPlayListController(), permanent: true);
+  Get.find<MyPlayListController>().loadDatas();
+  Get.put(AudioHandlerController(), permanent: true);
   Get.put(LyricController(), permanent: true);
   Get.put(NowPlayingController(), permanent: true);
   if (is_windows) {
@@ -238,9 +238,6 @@ void main() async {
       await windowManager.show();
     });
     enableThumbnailToolbar();
-    SthSettingsController sthSettingsController =
-        Get.put(SthSettingsController());
-    await sthSettingsController.loadSettings();
   }
 
   Map<String, dynamic> settings = settings_getsettings();
@@ -727,9 +724,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                       }
                       if (event.kind == PointerDeviceKind.mouse &&
                           event.buttons == kMiddleMouseButton) {
-                        switch (Get.find<SthSettingsController>()
-                            .hideOrMinimize
-                            .value) {
+                        switch (Get.find<SettingsController>().hideOrMinimize) {
                           case false:
                             windowManager.hide();
                             windowManager.setSkipTaskbar(true);

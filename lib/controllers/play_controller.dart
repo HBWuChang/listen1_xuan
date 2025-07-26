@@ -8,6 +8,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../global_settings_animations.dart';
+import 'settings_controller.dart';
 
 class Track {
   String id;
@@ -87,48 +88,24 @@ class PlayController extends GetxController {
     _player_settings['volume'] = value * 100.0;
     music_player.setVolume(value);
   }
-  Track get currentTrack => _current_playing.isNotEmpty ? _current_playing.firstWhere((track) => track.id == Get.find<PlayController>().getPlayerSettings("nowplaying_track_id")) : Track(id: '');
+
+  Track get currentTrack => _current_playing.isNotEmpty
+      ? _current_playing.firstWhere((track) =>
+          track.id ==
+          Get.find<PlayController>().getPlayerSettings("nowplaying_track_id"))
+      : Track(id: '');
   @override
   void onInit() {
     super.onInit();
-    ever(_player_settings, (callback) {
-      _addTimer('player-settings');
+    debounce(_player_settings, (event) {
+      _saveSingleSetting('player-settings');
     });
-    ever(_current_playing, (callback) {
-      _addTimer('current-playing');
+    debounce(_current_playing, (event) {
+      _saveSingleSetting('current-playing');
     });
     music_player.playingStream.listen((event) {
       isplaying.value = event;
     });
-  }
-
-  void _addTimer(String key) {
-    Timer? timer;
-    switch (key) {
-      case 'player-settings':
-        timer = _save_player_settings_Timer;
-        break;
-      case 'current-playing':
-        timer = _save_current_playing_Timer;
-        break;
-    }
-
-    if (timer?.isActive ?? false) {
-      timer!.cancel();
-    }
-
-    Timer newTimer = Timer(const Duration(seconds: 1), () {
-      _saveSingleSetting(key);
-    });
-
-    switch (key) {
-      case 'player-settings':
-        _save_player_settings_Timer = newTimer;
-        break;
-      case 'current-playing':
-        _save_current_playing_Timer = newTimer;
-        break;
-    }
   }
 
   Future<void> _saveSingleSetting(String key) async {
@@ -176,22 +153,11 @@ class PlayController extends GetxController {
     _player_settings[key] = value;
   }
 
-  Future<void> loadDatas() async {
-    final prefs = await SharedPreferences.getInstance();
-    final player_settings = await prefs.getString('player-settings');
-    if (player_settings != null) {
-      try {
-        _player_settings.value = jsonDecode(player_settings);
-      } catch (e) {}
-    }
-    final current_playing = await prefs.getString('current-playing');
-    if (current_playing != null) {
-      try {
-        _current_playing.value = (jsonDecode(current_playing) as List)
-            .map((track) => Track.fromJson(track))
-            .toList();
-      } catch (e) {}
-    }
+  void loadDatas() {
+    _player_settings.value =
+        Get.find<SettingsController>().PlayController_player_settings;
+    _current_playing.value =
+        Get.find<SettingsController>().PlayController_current_playing;
   }
 
   List<Track> get current_playing => _current_playing.toList();
@@ -206,5 +172,4 @@ class PlayController extends GetxController {
   void set_current_playing(List<Track> tracks) {
     _current_playing.value = tracks;
   }
-
 }
