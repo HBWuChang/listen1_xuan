@@ -1,13 +1,40 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:convert';
 import '../global_settings_animations.dart';
+import 'myPlaylist_controller.dart';
+import 'play_controller.dart';
 import 'settings_controller.dart';
+import 'package:metadata_god/metadata_god.dart';
 
 class CacheController extends GetxController {
   final String _localCacheListKey = 'local-cache-list';
   final _localCacheList = <String, String>{}.obs;
+  String get ffmpegPathWindows {
+    String? ffmpegPath =
+        Get.find<PlayController>().getPlayerSettings('ffmpegPath');
+    if (ffmpegPath != null && ffmpegPath.isNotEmpty) return ffmpegPath;
+    return 'ffmpeg';
+  }
+
+  set ffmpegPathWindows(String path) {
+    Get.find<PlayController>().setPlayerSetting('ffmpegPath', path);
+  }
+
+  Future<bool> isFFmpegOk() async {
+    try {
+      var result = await Process.run(ffmpegPathWindows, ['-version']);
+      return result.exitCode == 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -31,45 +58,52 @@ class CacheController extends GetxController {
 
   /// 获取本地缓存文件路径
   Future<String> getLocalCache(String id) async {
-    // final prefs = await SharedPreferences.getInstance();
-    // final localCacheListJson = prefs.getString(_localCacheListKey);
-    // if (localCacheListJson != null) {
-    //   final localCacheList = jsonDecode(localCacheListJson);
-    //   if (localCacheList[id] != null) {
-    //     var tempDir = await xuan_getdataDirectory();
-
-    //     final tempPath = tempDir.path;
-    //     var filePath = '$tempPath/${localCacheList[id]}';
-    //     if (is_windows) filePath = '$tempPath\\${localCacheList[id]}';
-    //     if (await File(filePath).exists()) return filePath;
-    //   }
-    // }
-    // return '';
     if (_localCacheList.containsKey(id)) {
       var tempDir = await xuan_getdataDirectory();
 
       final tempPath = tempDir.path;
       var filePath = '$tempPath/${_localCacheList[id]}';
       if (is_windows) filePath = '$tempPath\\${_localCacheList[id]}';
-      if (await File(filePath).exists()) return filePath;
+      if (await File(filePath).exists()) {
+        return await saveMetadataToCache(id, filePath);
+      }
     }
     return '';
   }
 
+  Future<String> saveMetadataToCache(String id, String filePath) async {
+    try {
+      Metadata metadata = await MetadataGod.readMetadata(file: filePath);
+      // Metadata metadata = await MetadataGod.readMetadata(file: "E:\\下载\\Listen1\\138077118_u2-1-30280 - 副本.m4a");
+      if (metadata.albumArtist == id) return filePath; // 如果专辑艺术家与ID相同，直接返回文件路径
+      Track? track = Get.find<PlayController>().getTrackById(id);
+      if (track == null) return filePath;
+      // var imgres = await dio_with_ProxyAdapter.get(track.img_url!,
+      //     options: Options(responseType: ResponseType.bytes,sen  dTimeout: Duration(seconds: 5),receiveTimeout: Duration(seconds: 5)));
+      // if (imgres.statusCode != 200) return filePath;
+      Metadata toSaveMetadata = Metadata(
+          title: track.title,
+          artist: track.artist,
+          album: track.album,
+          albumArtist: id
+          // picture: Picture(
+          //   data: CachedNetworkImageProvider(
+          //     track.img_url,
+          //   ).getBytes(),
+          //   mimeType: lookupMimeType("/path/to/cover-image"),
+          // ),
+          );
+      await MetadataGod.writeMetadata(metadata: toSaveMetadata, file: filePath);
+      return filePath;
+    } catch (e) {
+      debugPrint('读取元数据失败: $e');
+      return filePath; // 如果读取失败，仍然返回文件路径
+    }
+  }
+
   /// 设置本地缓存文件路径
-  void setLocalCache(String id, String path) async {
-    // final prefs = await SharedPreferences.getInstance();
-    // final localCacheListJson = prefs.getString(_localCacheListKey);
-    // if (localCacheListJson != null) {
-    //   final localCacheList = jsonDecode(localCacheListJson);
-    //   localCacheList[id] = path;
-    //   await prefs.setString('local-cache-list', jsonEncode(localCacheList));
-    // } else {
-    //   final localCacheList = {};
-    //   localCacheList[id] = path;
-    //   await prefs.setString('local-cache-list', jsonEncode(localCacheList));
-    // }
-    _localCacheList[id] = path;
+  void setLocalCache(String id, String fileName) async {
+    _localCacheList[id] = fileName;
   }
 
   /// 清理本地缓存
@@ -127,15 +161,29 @@ class CacheController extends GetxController {
   Future<void> _cleanUnusedCache() async {
     final tempDir = await xuan_getdataDirectory();
     final files = await _getCacheFiles(tempDir.path);
-
+    Set<String> notToDelIds = {};
+    notToDelIds.addAll(Get.find<MyPlayListController>().savedIds);
+    notToDelIds.addAll(Get.find<PlayController>().playingIds);
+    _localCacheList.removeWhere((key, value) {
+      return !notToDelIds.contains(key);
+    });
     int count = 0;
     final cacheFileNames = _localCacheList.values.toSet();
+    bool checkLyric(String filename) {
+      if (!filename.endsWith('.lrc')) {
+        return false;
+      }
+      List<String> trackIds = filename.split('_');
+      if (trackIds.length == 0) return false;
+      trackIds.removeLast();
+      return notToDelIds.contains(trackIds.join('_'));
+    }
 
     for (final file in files) {
       final fileName = file.split(is_windows ? "\\" : '/').last;
 
       // 如果文件不在缓存列表中，则删除
-      if (!cacheFileNames.contains(fileName)) {
+      if (!cacheFileNames.contains(fileName) && !checkLyric(fileName)) {
         try {
           await File(file).delete();
           count++;

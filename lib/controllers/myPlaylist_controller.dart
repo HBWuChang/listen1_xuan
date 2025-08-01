@@ -87,6 +87,13 @@ class PlayList {
 class MyPlayListController extends GetxController {
   var playerlists = <String, PlayList>{}.obs;
   var favoriteplayerlists = <String, PlayList>{}.obs;
+  Set<String> get savedIds {
+    Set<String> ids = {};
+    for (var playlist in playerlists.values) {
+      ids.addAll(playlist.tracks?.map((track) => track.id).toSet() ?? {});
+    }
+    return ids;
+  }
   @override
   void onInit() {
     super.onInit();

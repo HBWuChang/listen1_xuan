@@ -835,6 +835,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.16.0"
+  metadata_god:
+    dependency: "direct main"
+    description:
+      name: metadata_god
+      sha256: "025d8149059f62f44108ab9d74ebd77aa8f0af98b238f3f25121a4711ee3e5d0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   native_dio_adapter:
     dependency: "direct main"
     description:

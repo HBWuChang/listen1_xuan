@@ -42,7 +42,7 @@ import 'package:smtc_windows/smtc_windows.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
-
+import 'package:metadata_god/metadata_god.dart';
 import 'theme.dart';
 
 final dio_with_cookie_manager = Dio();
@@ -203,13 +203,14 @@ void enableThumbnailToolbar() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 框架已初始化
+  MetadataGod.initialize();
   SettingsController settingsController =
       Get.put(SettingsController(), permanent: true);
-  CacheController cacheController = Get.put(CacheController(), permanent: true);
   await settingsController.loadSettings();
-  cacheController.loadLocalCacheList();
   Get.put(PlayController(), permanent: true);
   Get.find<PlayController>().loadDatas();
+  CacheController cacheController = Get.put(CacheController(), permanent: true);
+  cacheController.loadLocalCacheList();
   Get.put(MyPlayListController(), permanent: true);
   Get.find<MyPlayListController>().loadDatas();
   Get.put(AudioHandlerController(), permanent: true);
@@ -1097,6 +1098,14 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                       }),
                   ],
                 ),
+                floatingActionButton: FloatingActionButton(onPressed: () async {
+                  try {
+                    var isOk = await Get.find<CacheController>().isFFmpegOk();
+                    print('FFmpeg is ${isOk ? "available" : "not available"}');
+                  } catch (e) {
+                    print('Error: $e');
+                  } 
+                }),
               ));
         }));
   }

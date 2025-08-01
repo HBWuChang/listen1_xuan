@@ -79,14 +79,17 @@ class Track {
 class PlayController extends GetxController {
   final music_player = AudioPlayer();
   var _player_settings = <String, dynamic>{}.obs;
-  Timer? _save_player_settings_Timer;
   var _current_playing = <Track>[].obs;
-  Timer? _save_current_playing_Timer;
+
   var isplaying = false.obs;
   double get currentVolume => (_player_settings['volume'] ?? 50.0) / 100.0;
   set currentVolume(double value) {
     _player_settings['volume'] = value * 100.0;
     music_player.setVolume(value);
+  }
+
+  Set<String> get playingIds {
+    return _current_playing.map((track) => track.id).toSet();
   }
 
   Track get currentTrack => _current_playing.isNotEmpty
@@ -171,5 +174,9 @@ class PlayController extends GetxController {
 
   void set_current_playing(List<Track> tracks) {
     _current_playing.value = tracks;
+  }
+
+  Track? getTrackById(String id) {
+    return _current_playing.firstWhereOrNull((track) => track.id == id);
   }
 }

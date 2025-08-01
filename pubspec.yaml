@@ -4,7 +4,7 @@ description: "A new Flutter project."
 # Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 1.1.0+14
+version: 1.1.1+15
 
 environment:
   sdk: ^3.6.2
@@ -65,6 +65,7 @@ dependencies:
   get:
   flutter_lyric:
     path: packages/flutter_lyric-2.0.4+6
+  metadata_god: ^1.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -80,3 +81,4 @@ flutter:
   assets:
     # Add assets from the images directory to the application.
     - assets/images/
+

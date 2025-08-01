@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'bl.dart';
+import 'controllers/cache_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
@@ -1778,6 +1779,22 @@ class _SettingsPageState extends State<SettingsPage> {
                         }
                       },
                     ),
+                  if (is_windows)
+                    TextField(
+                      focusNode: _focusNode2,
+                      controller: TextEditingController(
+                        text: Get.find<PlayController>()
+                            .getPlayerSettings('ffmpegPath'),
+                      ),
+                      decoration: InputDecoration(
+                        labelText:
+                            'FFmpeg路径,例如：C:\\ffmpeg\\bin\\ffmpeg.exe,留空表示使用默认,回车以保存',
+                      ),
+                      onSubmitted: (value) async {
+                        Get.find<CacheController>().ffmpegPathWindows = value;
+                        _msg('设置成功$value，重启应用生效', 1.0);
+                      },
+                    )
                 ]),
             SizedBox(
               height: MediaQuery.of(context).size.height - 200,
