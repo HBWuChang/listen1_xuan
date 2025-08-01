@@ -7,21 +7,18 @@ import 'package:listen1_xuan/controllers/nowplaying_controller.dart';
 import 'package:listen1_xuan/main.dart';
 import 'dart:io';
 import 'dart:convert';
-
+import 'package:extended_image/extended_image.dart';
 import 'package:audio_service/audio_service.dart';
-
 import 'package:rxdart/rxdart.dart' as rxdart;
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:marquee/marquee.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'controllers/audioHandler_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/lyric_controller.dart';
 import 'controllers/cache_controller.dart';
-
 import 'loweb.dart';
 import 'package:vibration/vibration.dart';
 import 'package:logger/logger.dart';
@@ -525,14 +522,18 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                               child: Container(
                                 width: 50,
                                 height: 50,
-                                child: CachedNetworkImage(
-                                  imageUrl: mediaItem.artUri.toString(),
-                                  fit: BoxFit.cover,
-                                  errorWidget: (context, url, error) => Icon(
-                                    Icons.music_note,
-                                    size: 50,
-                                  ),
-                                ),
+                                child: ExtendedImage.network(
+                                    mediaItem.artUri.toString(),
+                                    fit: BoxFit.cover,
+                                    cache: true, loadStateChanged: (state) {
+                                  if (state.extendedImageLoadState ==
+                                      LoadState.failed) {
+                                    return Icon(
+                                      Icons.music_note,
+                                      size: 168.w,
+                                    );
+                                  }
+                                }),
                               ));
                         },
                       ),
@@ -781,14 +782,18 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                               height: 168.w,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                child: CachedNetworkImage(
-                                  imageUrl: mediaItem.artUri.toString(),
-                                  fit: BoxFit.cover,
-                                  errorWidget: (context, url, error) => Icon(
-                                    Icons.music_note,
-                                    size: 168.w,
-                                  ),
-                                ),
+                                child: ExtendedImage.network(
+                                    mediaItem.artUri.toString(),
+                                    fit: BoxFit.cover,
+                                    cache: true, loadStateChanged: (state) {
+                                  if (state.extendedImageLoadState ==
+                                      LoadState.failed) {
+                                    return Icon(
+                                      Icons.music_note,
+                                      size: 168.w,
+                                    );
+                                  }
+                                }),
                               ),
                             ),
                           );

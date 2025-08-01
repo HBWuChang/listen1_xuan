@@ -7,7 +7,6 @@ import 'package:listen1_xuan/qq.dart';
 import 'netease.dart';
 import 'package:marquee/marquee.dart';
 import 'loweb.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'play.dart';
 import 'myplaylist.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -17,7 +16,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'global_settings_animations.dart';
 import 'package:get/get.dart';
-
+import 'package:extended_image/extended_image.dart';
 import 'settings.dart';
 
 Future<dynamic> song_dialog(
@@ -84,10 +83,17 @@ Future<dynamic> song_dialog(
                 },
                 child: track.img_url == null
                     ? Container()
-                    : CachedNetworkImage(
-                        imageUrl: track.img_url!,
-                        errorWidget: (context, url, error) => Icon(Icons.error),
-                      ),
+                    : ExtendedImage.network(track.img_url!,
+                        fit: BoxFit.cover,
+                        cache: true,
+                        cacheMaxAge: const Duration(days: 365 * 4),
+                        loadStateChanged: (state) {
+                        if (state.extendedImageLoadState == LoadState.failed) {
+                          return Icon(
+                            Icons.error,
+                          );
+                        }
+                      }),
               ),
               ListTile(
                 title: Text('搜索此音乐'),
@@ -388,9 +394,10 @@ class _PlaylistState extends State<Playlist> {
                                       ? 6
                                       : 3) -
                               10,
-                          child: CachedNetworkImage(
-                            imageUrl: playlist['cover_img_url'],
+                          child: ExtendedImage.network(
+                            playlist['cover_img_url'],
                             fit: BoxFit.cover,
+                            cache: true,
                           ),
                         ),
                         Text(
@@ -639,11 +646,12 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                 width: 50,
                                 height: 50,
                               )
-                            : CachedNetworkImage(
-                                imageUrl: playlist.info.cover_img_url!,
+                            : ExtendedImage.network(
+                                playlist.info.cover_img_url!,
                                 width: 50,
                                 height: 50,
                                 fit: BoxFit.cover,
+                                cache: true,
                               ),
                         title: FittedBox(
                             alignment: Alignment.centerLeft,
@@ -690,11 +698,12 @@ class _MyPlaylistState extends State<MyPlaylist> {
                   ? Column(
                       children: _playlists_fav.map((playlist) {
                         return ListTile(
-                          leading: CachedNetworkImage(
-                            imageUrl: playlist.info.cover_img_url!,
+                          leading: ExtendedImage.network(
+                            playlist.info.cover_img_url!,
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
+                            cache: true,
                           ),
                           title: FittedBox(
                               alignment: Alignment.centerLeft,
@@ -742,14 +751,19 @@ class _MyPlaylistState extends State<MyPlaylist> {
                   ? Column(
                       children: _playlists_bl.map((playlist) {
                         return ListTile(
-                            leading: CachedNetworkImage(
-                              imageUrl: playlist.info.cover_img_url!,
-                              width: 50,
-                              height: 50,
-                              fit: BoxFit.cover,
-                              errorWidget: (context, url, error) =>
-                                  Icon(Icons.help_outline), // 添加错误处理
-                            ),
+                            leading: ExtendedImage.network(
+                                playlist.info.cover_img_url!,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                // errorWidget: (context, url, error) =>
+                                //     Icon(Icons.help_outline), // 添加错误处理
+                                cache: true, loadStateChanged: (state) {
+                              if (state.extendedImageLoadState ==
+                                  LoadState.failed) {
+                                return Icon(Icons.help_outline);
+                              }
+                            }),
                             title: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
@@ -771,10 +785,10 @@ class _MyPlaylistState extends State<MyPlaylist> {
             ExpansionPanel(
               headerBuilder: (BuildContext context, bool isExpanded) {
                 return ListTile(
-                  leading: CachedNetworkImage(
-                      imageUrl:
-                          "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
+                  leading: ExtendedImage.network(
+                      "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
                       width: 18,
+                      cache: true,
                       height: 18),
                   title: FittedBox(
                     alignment: Alignment.centerLeft,
@@ -798,11 +812,12 @@ class _MyPlaylistState extends State<MyPlaylist> {
                   ? Column(
                       children: _playlists_ne.map((playlist) {
                         return ListTile(
-                          leading: CachedNetworkImage(
-                            imageUrl: playlist.info.cover_img_url!,
+                          leading: ExtendedImage.network(
+                            playlist.info.cover_img_url!,
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
+                            cache: true,
                           ),
                           title: FittedBox(
                               fit: BoxFit.scaleDown,
@@ -826,9 +841,9 @@ class _MyPlaylistState extends State<MyPlaylist> {
             ExpansionPanel(
               headerBuilder: (BuildContext context, bool isExpanded) {
                 return ListTile(
-                  leading: CachedNetworkImage(
-                      imageUrl:
-                          "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
+                  leading: ExtendedImage.network(
+                      "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
+                      cache: true,
                       width: 18,
                       height: 18),
                   title: FittedBox(
@@ -853,13 +868,12 @@ class _MyPlaylistState extends State<MyPlaylist> {
                   ? Column(
                       children: _playlists_qq.map((playlist) {
                         return ListTile(
-                          leading: CachedNetworkImage(
-                            imageUrl: playlist.info.cover_img_url ?? '',
+                          leading: ExtendedImage.network(
+                            playlist.info.cover_img_url ?? '',
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
-                            errorWidget: (context, url, error) =>
-                                Container(), // 如果加载出错则返回空的Container
+                            cache: true,
                           ),
                           title: FittedBox(
                               fit: BoxFit.scaleDown,
@@ -1121,15 +1135,18 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // SizedBox(height: 80), // 添加一个空的SizedBox来调整位置
-                            CachedNetworkImage(
-                              imageUrl: result.info.cover_img_url!,
+                            ExtendedImage.network(
+                              result.info.cover_img_url!,
                               width: 150,
                               height: 150,
                               fit: BoxFit.cover,
-                              placeholder: (context, url) =>
-                                  global_loading_anime,
-                              errorWidget: (context, url, error) =>
-                                  Icon(Icons.error),
+                              cache: true,
+                              loadStateChanged: (state) {
+                                if (state.extendedImageLoadState ==
+                                    LoadState.failed) {
+                                  return Icon(Icons.error);
+                                }
+                              },
                             ),
                             SizedBox(height: 8.0),
                             Row(

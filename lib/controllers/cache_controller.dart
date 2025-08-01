@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -15,6 +14,7 @@ import 'package:metadata_god/metadata_god.dart';
 class CacheController extends GetxController {
   final String _localCacheListKey = 'local-cache-list';
   final _localCacheList = <String, String>{}.obs;
+  String checkFfmpegVersion = '';
   String get ffmpegPathWindows {
     String? ffmpegPath =
         Get.find<PlayController>().getPlayerSettings('ffmpegPath');
@@ -29,6 +29,7 @@ class CacheController extends GetxController {
   Future<bool> isFFmpegOk() async {
     try {
       var result = await Process.run(ffmpegPathWindows, ['-version']);
+      checkFfmpegVersion = result.stdout;
       return result.exitCode == 0;
     } catch (e) {
       return false;
@@ -87,7 +88,7 @@ class CacheController extends GetxController {
           album: track.album,
           albumArtist: id
           // picture: Picture(
-          //   data: CachedNetworkImageProvider(
+          //   data: ExtendedImage.network(Provider(
           //     track.img_url,
           //   ).getBytes(),
           //   mimeType: lookupMimeType("/path/to/cover-image"),
@@ -202,7 +203,7 @@ class CacheController extends GetxController {
   /// 获取缓存目录下的所有文件
   Future<List<String>> _getCacheFiles(String tempPath) async {
     final List<String> without = ['app.log'];
-    final List<String> jumpList = ['.json', '.apk', '.zip', '.log'];
+    final List<String> jumpList = ['.json', '.apk', '.zip', '.log', '.exe'];
     final List<String> files = [];
 
     try {

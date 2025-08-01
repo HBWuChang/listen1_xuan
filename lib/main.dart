@@ -1098,14 +1098,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                       }),
                   ],
                 ),
-                floatingActionButton: FloatingActionButton(onPressed: () async {
-                  try {
-                    var isOk = await Get.find<CacheController>().isFFmpegOk();
-                    print('FFmpeg is ${isOk ? "available" : "not available"}');
-                  } catch (e) {
-                    print('Error: $e');
-                  } 
-                }),
+                
               ));
         }));
   }

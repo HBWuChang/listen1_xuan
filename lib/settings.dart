@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/main.dart';
@@ -13,6 +12,7 @@ import 'controllers/cache_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
+import 'funcs.dart';
 import 'netease.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:marquee/marquee.dart';
@@ -39,7 +39,7 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:charset_converter/charset_converter.dart';
 import 'package:get/get.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
-
+import 'package:extended_image/extended_image.dart';
 import 'theme.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
@@ -595,11 +595,13 @@ class _SettingsPageState extends State<SettingsPage> {
   var useHttpOverrides = false.obs;
   final FocusNode _focusNode = FocusNode();
   final FocusNode _focusNode2 = FocusNode();
+  final FocusNode _focusNode3 = FocusNode();
   late String apkfile_name;
   @override
   void dispose() {
     _focusNode.dispose(); // 释放 FocusNode
     _focusNode2.dispose(); // 释放 FocusNode
+    _focusNode3.dispose(); // 释放 FocusNode
     super.dispose();
   }
 
@@ -770,6 +772,13 @@ class _SettingsPageState extends State<SettingsPage> {
         set_inapp_hotkey(true);
       }
     });
+    _focusNode3.addListener(() {
+      if (_focusNode3.hasFocus) {
+        set_inapp_hotkey(false);
+      } else {
+        set_inapp_hotkey(true);
+      }
+    });
   }
 
   Future<void> init_apkfilepath() async {
@@ -850,11 +859,12 @@ class _SettingsPageState extends State<SettingsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
-                CachedNetworkImage(
-                    imageUrl:
-                        "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
-                    width: 18,
-                    height: 18),
+                ExtendedImage.network(
+                  "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
+                  width: 18,
+                  height: 18,
+                  cache: true,
+                ),
                 FutureBuilder(
                   // future: check_bl_cookie(),
                   future: Netease().get_user(),
@@ -883,9 +893,9 @@ class _SettingsPageState extends State<SettingsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
-                CachedNetworkImage(
-                    imageUrl:
-                        "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
+                ExtendedImage.network(
+                    "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
+                    cache: true,
                     width: 18,
                     height: 18),
                 FutureBuilder(
@@ -1780,21 +1790,103 @@ class _SettingsPageState extends State<SettingsPage> {
                       },
                     ),
                   if (is_windows)
-                    TextField(
-                      focusNode: _focusNode2,
-                      controller: TextEditingController(
-                        text: Get.find<PlayController>()
-                            .getPlayerSettings('ffmpegPath'),
-                      ),
-                      decoration: InputDecoration(
-                        labelText:
-                            'FFmpeg路径,例如：C:\\ffmpeg\\bin\\ffmpeg.exe,留空表示使用默认,回车以保存',
-                      ),
-                      onSubmitted: (value) async {
-                        Get.find<CacheController>().ffmpegPathWindows = value;
-                        _msg('设置成功$value，重启应用生效', 1.0);
-                      },
-                    )
+                    Row(children: [
+                      Expanded(
+                          child: TextField(
+                        focusNode: _focusNode3,
+                        controller: TextEditingController(
+                          text: Get.find<PlayController>()
+                              .getPlayerSettings('ffmpegPath'),
+                        ),
+                        decoration: InputDecoration(
+                          labelText:
+                              'FFmpeg路径,例如：C:\\ffmpeg\\bin\\ffmpeg.exe,留空表示使用默认,回车以保存',
+                        ),
+                        onSubmitted: (value) async {
+                          var msg = '正在检查ffmpeg'.obs;
+                          Get.find<CacheController>().ffmpegPathWindows = value;
+                          try {
+                            showLoadingDialog(msg);
+                            var isOk =
+                                await Get.find<CacheController>().isFFmpegOk();
+                            if (!isOk) throw Exception('FFmpeg不可用');
+                            Get.back();
+                            showSuccessSnackbar('设置成功',
+                                Get.find<CacheController>().checkFfmpegVersion);
+                          } catch (e) {
+                            Get.back();
+                            showErrorSnackbar('错误', e.toString());
+                          }
+                        },
+                      )),
+                      ElevatedButton(
+                          onPressed: () async {
+                            var msg = '正在下载FFmpeg'.obs;
+                            showLoadingDialog(msg);
+                            try {
+                              final res1 = (await Dio().get(
+                                      'https://h3.040905.xyz/default/https/api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest'))
+                                  .data;
+                              debugPrint('FFmpeg最新版本信息: $res1');
+                              List assets = res1["assets"];
+                              if (assets.isEmpty) {
+                                throw Exception('没有可用的FFmpeg版本');
+                              }
+                              String downloadUrl = '';
+                              for (var asset in assets) {
+                                // ffmpeg-master-latest-win64-lgpl-shared.zip
+                                if (asset['name'].contains('ffmpeg') &&
+                                    asset['name'].contains('win64') &&
+                                    asset['name'].contains('lgpl') &&
+                                    !asset['name'].contains('shared')) {
+                                  downloadUrl = asset['browser_download_url'];
+                                  break;
+                                }
+                              }
+                              if (downloadUrl.isEmpty) {
+                                throw Exception('没有可用的FFmpeg版本');
+                              }
+                              downloadUrl = downloadUrl.replaceAll('https://',
+                                  'https://h3.040905.xyz/default/https/');
+                              debugPrint('FFmpeg下载链接: $downloadUrl');
+                              final tempPath =
+                                  (await xuan_getdownloadDirectory()).path;
+                              String filePath = '$tempPath/ffmpeg.zip';
+                              await Dio().download(downloadUrl, filePath,
+                                  onReceiveProgress: (received, total) {
+                                if (total > 0) {
+                                  msg.value =
+                                      '下载进度: ${(received / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB';
+                                }
+                              });
+                              msg.value = '下载完成，正在解压FFmpeg';
+                              final bytes = File(filePath).readAsBytesSync();
+                              final archive = ZipDecoder().decodeBytes(bytes);
+                              for (final file in archive) {
+                                var filename = file.name;
+                                if (filename.contains('ffmpeg.exe')) {
+                                  filename = 'ffmpeg.exe';
+                                  final data = file.content as List<int>;
+                                  File('$tempPath/$filename')
+                                    ..createSync(recursive: true)
+                                    ..writeAsBytesSync(data);
+                                  break;
+                                }
+                              }
+                              Get.find<CacheController>().ffmpegPathWindows =
+                                  '$tempPath/ffmpeg.exe';
+                              msg.value = '正在删除压缩包';
+                              await File(filePath).delete();
+                              Get.back();
+                              setState(() {});
+                              showSuccessSnackbar('下载成功', 'FFmpeg已设置');
+                            } catch (e) {
+                              Get.back();
+                              showErrorSnackbar('下载失败', e.toString());
+                            }
+                          },
+                          child: Text('从GitHub下载FFmpeg')),
+                    ])
                 ]),
             SizedBox(
               height: MediaQuery.of(context).size.height - 200,

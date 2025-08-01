@@ -5,11 +5,11 @@ import 'dart:ui';
 
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:flutter_lyric/lyric_ui/ui_netease.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:audio_service/audio_service.dart';
 import '../controllers/lyric_controller.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/settings_controller.dart';
+import 'package:extended_image/extended_image.dart';
 
 import '../global_settings_animations.dart';
 
@@ -154,22 +154,26 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              CachedNetworkImage(
-                imageUrl: currentSong.img_url ?? '',
-                fit: BoxFit.cover,
-                errorWidget: (context, url, error) => Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Theme.of(context).primaryColor.withOpacity(0.3),
-                        Theme.of(context).scaffoldBackgroundColor,
-                      ],
+              ExtendedImage.network(currentSong.img_url ?? '',
+                  fit: BoxFit.cover,
+                  cache: true,
+                  cacheMaxAge: const Duration(days: 365 * 4),
+                  loadStateChanged: (state) {
+                if (state.extendedImageLoadState == LoadState.failed) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Theme.of(context).primaryColor.withOpacity(0.3),
+                          Theme.of(context).scaffoldBackgroundColor,
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ),
+                  );
+                }
+              }),
               // 高斯模糊效果
               BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
