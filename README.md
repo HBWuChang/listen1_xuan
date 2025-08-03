@@ -4,6 +4,9 @@
 -https://www.bilibili.com/video/BV133VHzaEPt/
 flutter version 3.32.0
 # 第一次使用
+## 安卓务必授予全部存储访问权限！！！
+## 安卓务必授予全部存储访问权限！！！
+## 安卓务必授予全部存储访问权限！！！
 - 请在设置页面登录各平台账号以确保相应平台可用
 - 登录Github账号后可使用Github同步歌单、一键下载最新测试版
 - 若网易、QQ、Github登录页面打不开，请尝试检查[webview2运行环境](https://github.com/jnschulze/flutter-webview-windows?tab=readme-ov-file#target-platform-requirements)
@@ -55,6 +58,9 @@ flutter version 3.32.0
 ### 设置页面
 ![alt text](readme/Screenshot_2025-06-26-23-19-29-460_com.xiebian.listen1_xuan.jpg) 
 ## 更新日志
+---
+1.1.1+15
+- 添加下载功能，windows若原无ffmpeg则可在设置中下载（由于封了个ffmpeg导致安卓安装包变大了两倍多QAQ）
 ---
 1.1.0+14
 - 添加歌词页面，点击播放栏的封面图打开
