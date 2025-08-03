@@ -227,7 +227,7 @@ void enableThumbnailToolbar() async {
 }
 
 void main() async {
-  await WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter 框架已初始化
+  await WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter框架已初始化
   if (is_windows) {
     MetadataGod.initialize();
   }
