@@ -10,8 +10,10 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'controllers/settings_controller.dart';
+import 'funcs.dart';
 import 'settings.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 Future<String> get_windows_proxy_addr() async {
   var settings = settings_getsettings();
@@ -25,29 +27,20 @@ Future<String> get_windows_proxy_addr() async {
 }
 
 Future<Directory> xuan_getdataDirectory() async {
-  if (!is_windows) return await getApplicationDocumentsDirectory();
-  var tempDir = await getDownloadsDirectory();
-  if (tempDir == null)
-    tempDir = await getApplicationDocumentsDirectory();
-  else {
-    // 检查是否存在 Listen1 文件夹
-    var listen1Dir = Directory('${tempDir.path}/Listen1');
-    if (is_windows) {
-      listen1Dir = Directory('${tempDir.path}\\Listen1');
+  if (!is_windows) {
+    if (!(await Permission.manageExternalStorage.request().isGranted ||
+        await Permission.storage.request().isGranted)) {
+      showInfoSnackbar('请务必授予存储权限以下载歌曲及读取配置文件等操作', '本应用不会访问您的个人数据');
+      if (!(await Permission.manageExternalStorage.request().isGranted ||
+          await Permission.storage.request().isGranted))
+        throw Exception('Storage permission not granted');
     }
-    if (!await listen1Dir.exists()) {
-      // 如果不存在，则创建
-      await listen1Dir.create(recursive: true);
-    }
-    // 更新 tempDir 为 Listen1 文件夹
-    tempDir = listen1Dir;
   }
-  return tempDir;
+ 
+  return await xuan_getdownloadDirectory();
 }
 
-Future<dynamic> xuan_getdownloadDirectory({
-  String? path,
-}) async {
+Future<dynamic> xuan_getdownloadDirectory({String? path}) async {
   var tempDir = is_windows
       ? await getDownloadsDirectory()
       : Directory('/storage/emulated/0/Download');
@@ -153,34 +146,13 @@ void init_hotkeys() async {
 }
 
 Map<String, HotKey> inapp_hotkeys = {
-  "space": HotKey(
-    key: PhysicalKeyboardKey.space,
-    scope: HotKeyScope.inapp,
-  ),
-  "arrowLeft": HotKey(
-    key: PhysicalKeyboardKey.keyA,
-    scope: HotKeyScope.inapp,
-  ),
-  "arrowRight": HotKey(
-    key: PhysicalKeyboardKey.keyD,
-    scope: HotKeyScope.inapp,
-  ),
-  "arrowUp": HotKey(
-    key: PhysicalKeyboardKey.keyW,
-    scope: HotKeyScope.inapp,
-  ),
-  "arrowDown": HotKey(
-    key: PhysicalKeyboardKey.keyS,
-    scope: HotKeyScope.inapp,
-  ),
-  "next": HotKey(
-    key: PhysicalKeyboardKey.keyE,
-    scope: HotKeyScope.inapp,
-  ),
-  "previous": HotKey(
-    key: PhysicalKeyboardKey.keyQ,
-    scope: HotKeyScope.inapp,
-  ),
+  "space": HotKey(key: PhysicalKeyboardKey.space, scope: HotKeyScope.inapp),
+  "arrowLeft": HotKey(key: PhysicalKeyboardKey.keyA, scope: HotKeyScope.inapp),
+  "arrowRight": HotKey(key: PhysicalKeyboardKey.keyD, scope: HotKeyScope.inapp),
+  "arrowUp": HotKey(key: PhysicalKeyboardKey.keyW, scope: HotKeyScope.inapp),
+  "arrowDown": HotKey(key: PhysicalKeyboardKey.keyS, scope: HotKeyScope.inapp),
+  "next": HotKey(key: PhysicalKeyboardKey.keyE, scope: HotKeyScope.inapp),
+  "previous": HotKey(key: PhysicalKeyboardKey.keyQ, scope: HotKeyScope.inapp),
 };
 Map<LogicalKeyboardKey, dynamic> inappShortcuts = {
   LogicalKeyboardKey.space: global_play_or_pause,
@@ -204,11 +176,7 @@ void set_inapp_hotkey(enable) {
   enable_inapp_hotkey = enable;
 }
 
-Future<void> set_hotkey(
-  s_hotkey,
-  hotkey,
-  name,
-) async {
+Future<void> set_hotkey(s_hotkey, hotkey, name) async {
   if (s_hotkey != null) {
     await hotKeyManager.unregister(s_hotkey);
   }
@@ -264,22 +232,10 @@ var enable_hotkey;
 List<Widget> create_hotkey_btns(context, _msg) {
   if (!is_windows) return [];
   var s_hotkeys = [
-    {
-      "name": "播放/暂停",
-      "hotkey": "play_pause",
-    },
-    {
-      "name": "下一首",
-      "hotkey": "next",
-    },
-    {
-      "name": "上一首",
-      "hotkey": "previous",
-    },
-    {
-      "name": "显示",
-      "hotkey": "show",
-    },
+    {"name": "播放/暂停", "hotkey": "play_pause"},
+    {"name": "下一首", "hotkey": "next"},
+    {"name": "上一首", "hotkey": "previous"},
+    {"name": "显示", "hotkey": "show"},
   ];
   return <Widget>[
     StatefulBuilder(
@@ -306,47 +262,47 @@ List<Widget> create_hotkey_btns(context, _msg) {
     ),
     ...s_hotkeys.map((_hotkey) {
       return TextButton(
-          onPressed: () async {
-            var settings = settings_getsettings();
-            var hotkeys = settings['hotkeys'];
-            var hotkeyData = hotkeys[_hotkey['hotkey']];
-            var hotkey =
-                hotkeyData == null ? null : HotKey.fromJson(hotkeyData);
-            var s_hotkey = hotkey;
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: Text('设置${_hotkey['name']}热键'),
-                  content: HotKeyRecorder(
-                    initalHotKey: hotkey,
-                    onHotKeyRecorded: (hotKey) {
-                      print(hotKey.toJson());
-                      hotkey = hotKey;
+        onPressed: () async {
+          var settings = settings_getsettings();
+          var hotkeys = settings['hotkeys'];
+          var hotkeyData = hotkeys[_hotkey['hotkey']];
+          var hotkey = hotkeyData == null ? null : HotKey.fromJson(hotkeyData);
+          var s_hotkey = hotkey;
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('设置${_hotkey['name']}热键'),
+                content: HotKeyRecorder(
+                  initalHotKey: hotkey,
+                  onHotKeyRecorded: (hotKey) {
+                    print(hotKey.toJson());
+                    hotkey = hotKey;
+                  },
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text('确定'),
+                    onPressed: () async {
+                      if (hotkey == null) {
+                        _msg('请设置热键', 1.0);
+                        return;
+                      }
+                      hotkeys[_hotkey['hotkey']] = hotkey!.toJson();
+                      settings['hotkeys'] = hotkeys;
+                      Get.find<SettingsController>().setSettings(settings);
+                      await set_hotkey(s_hotkey, hotkey, _hotkey['hotkey']);
+                      Navigator.of(context).pop();
                     },
                   ),
-                  actions: <Widget>[
-                    TextButton(
-                      child: const Text('确定'),
-                      onPressed: () async {
-                        if (hotkey == null) {
-                          _msg('请设置热键', 1.0);
-                          return;
-                        }
-                        hotkeys[_hotkey['hotkey']] = hotkey!.toJson();
-                        settings['hotkeys'] = hotkeys;
-                        Get.find<SettingsController>().setSettings(settings);
-                        await set_hotkey(s_hotkey, hotkey, _hotkey['hotkey']);
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-          child: Text("设置 " + (_hotkey['name'] as String) + " 热键"));
-    }).toList()
+                ],
+              );
+            },
+          );
+        },
+        child: Text("设置 " + (_hotkey['name'] as String) + " 热键"),
+      );
+    }).toList(),
   ];
 }
 
@@ -361,10 +317,7 @@ Widget search_Animation({
 }) {
   const curve = Curves.easeInOut;
 
-  var curvedAnimation = CurvedAnimation(
-    parent: animation,
-    curve: curve,
-  );
+  var curvedAnimation = CurvedAnimation(parent: animation, curve: curve);
 
   var alignmentTween = Tween<Alignment>(
     // begin: Alignment.topCenter, // 从顶部开始

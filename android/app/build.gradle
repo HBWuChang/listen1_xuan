@@ -22,13 +22,13 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
         coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = '21'
     }
 
     defaultConfig {
@@ -36,7 +36,7 @@ android {
         applicationId = "com.xiebian.listen1_xuan"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdkVersion 24 
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

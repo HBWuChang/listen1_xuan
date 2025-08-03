@@ -1,7 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_audio_tagger/flutter_audio_tagger.dart';
+import 'package:flutter_audio_tagger/tag.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/main.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:convert';
@@ -10,18 +14,52 @@ import 'myPlaylist_controller.dart';
 import 'play_controller.dart';
 import 'settings_controller.dart';
 import 'package:metadata_god/metadata_god.dart';
+import 'package:mime/mime.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:ffmpeg_kit_flutter_new_min/abstract_session.dart';
+import 'package:ffmpeg_kit_flutter_new_min/arch_detect.dart';
+import 'package:ffmpeg_kit_flutter_new_min/chapter.dart';
+import 'package:ffmpeg_kit_flutter_new_min/extensions.dart';
+import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit_config.dart';
+import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_session.dart';
+import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_session_complete_callback.dart';
+import 'package:ffmpeg_kit_flutter_new_min/ffprobe_kit.dart';
+import 'package:ffmpeg_kit_flutter_new_min/ffprobe_session.dart';
+import 'package:ffmpeg_kit_flutter_new_min/ffprobe_session_complete_callback.dart';
+import 'package:ffmpeg_kit_flutter_new_min/level.dart';
+import 'package:ffmpeg_kit_flutter_new_min/log.dart';
+import 'package:ffmpeg_kit_flutter_new_min/log_callback.dart';
+import 'package:ffmpeg_kit_flutter_new_min/log_redirection_strategy.dart';
+import 'package:ffmpeg_kit_flutter_new_min/media_information.dart';
+import 'package:ffmpeg_kit_flutter_new_min/media_information_json_parser.dart';
+import 'package:ffmpeg_kit_flutter_new_min/media_information_session.dart';
+import 'package:ffmpeg_kit_flutter_new_min/media_information_session_complete_callback.dart';
+import 'package:ffmpeg_kit_flutter_new_min/packages.dart';
+import 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
+import 'package:ffmpeg_kit_flutter_new_min/session.dart';
+import 'package:ffmpeg_kit_flutter_new_min/session_state.dart';
+import 'package:ffmpeg_kit_flutter_new_min/signal.dart';
+import 'package:ffmpeg_kit_flutter_new_min/statistics.dart';
+import 'package:ffmpeg_kit_flutter_new_min/statistics_callback.dart';
+import 'package:ffmpeg_kit_flutter_new_min/stream_information.dart';
 
 class CacheController extends GetxController {
   final String _localCacheListKey = 'local-cache-list';
   final _localCacheList = <String, String>{}.obs;
   String checkFfmpegVersion = '';
+  bool isFFmpegOkWithoutCheck = false;
+  bool _firstCheck = true;
+  final _toDelFiles = <String>{}.obs;
   String get ffmpegPathWindows {
-    String? ffmpegPath =
-        Get.find<PlayController>().getPlayerSettings('ffmpegPath');
+    String? ffmpegPath = Get.find<PlayController>().getPlayerSettings(
+      'ffmpegPath',
+    );
     if (ffmpegPath != null && ffmpegPath.isNotEmpty) return ffmpegPath;
     return 'ffmpeg';
   }
 
+  late FlutterAudioTagger tagger;
   set ffmpegPathWindows(String path) {
     Get.find<PlayController>().setPlayerSetting('ffmpegPath', path);
   }
@@ -30,75 +68,355 @@ class CacheController extends GetxController {
     try {
       var result = await Process.run(ffmpegPathWindows, ['-version']);
       checkFfmpegVersion = result.stdout;
-      return result.exitCode == 0;
+      isFFmpegOkWithoutCheck = result.exitCode == 0;
+      return isFFmpegOkWithoutCheck;
     } catch (e) {
+      debugPrint('检查FFmpeg失败: $e');
+      isFFmpegOkWithoutCheck = false;
       return false;
     }
   }
 
+  bool _isDeleting = false;
   @override
   void onInit() {
     super.onInit();
+    if (!is_windows) {
+      tagger = FlutterAudioTagger();
+    }
     debounce(_localCacheList, (value) {
       _saveLocalCacheList();
     }, time: Duration(seconds: 3));
+    debounce(_toDelFiles, (value) {
+      Get.find<SettingsController>().settings['toDelFiles'] = _toDelFiles
+          .toList();
+    }, time: Duration(seconds: 3));
+  }
+
+  Future<void> moveOldData() async {
+    final oldDir = await getApplicationDocumentsDirectory();
+    final newDir = await xuan_getdataDirectory();
+    if (oldDir.path != newDir.path) {
+      final oldFiles = Directory(oldDir.path).listSync();
+      for (var file in oldFiles) {
+        try {
+          if (file is File &&
+              (file.path.endsWith('.mp3') ||
+                  file.path.endsWith('.mp4') ||
+                  file.path.endsWith('.m4a') ||
+                  file.path.endsWith('.m4s') ||
+                  file.path.endsWith('.flv') ||
+                  file.path.endsWith('.lrc'))) {
+            final newPath = '${newDir.path}/${file.uri.pathSegments.last}';
+            await file.copy(newPath);
+            file.deleteSync(); // 删除旧文件
+            debugPrint('迁移文件: ${file.path} -> $newPath');
+          }
+        } catch (e) {
+          debugPrint('迁移文件失败: ${file.path}, 错误: $e');
+        }
+      }
+      debugPrint('旧数据迁移完成');
+    } else {
+      debugPrint('新旧目录相同，无需迁移');
+    }
   }
 
   /// 加载本地缓存列表
   void loadLocalCacheList() {
     _localCacheList.value =
         Get.find<SettingsController>().CacheController_localCacheList;
+    var t = Get.find<SettingsController>().settings['toDelFiles'] ?? [];
+    try {
+      _toDelFiles.value = Set<String>.from(t);
+    } catch (e) {
+      debugPrint('加载待删除文件列表失败: $e');
+    }
   }
 
   /// 保存本地缓存列表
   Future<void> _saveLocalCacheList() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_localCacheListKey,
-        jsonEncode(Map<String, String>.from(_localCacheList)));
+    await prefs.setString(
+      _localCacheListKey,
+      jsonEncode(Map<String, String>.from(_localCacheList)),
+    );
+  }
+
+  Future<void> tryDelFiles() async {
+    if (_toDelFiles.isEmpty) return;
+    _isDeleting = true;
+    _toDelFiles.forEach((filePath) async {
+      try {
+        File file = File(filePath);
+        if (await file.exists()) {
+          await file.delete();
+          debugPrint('删除文件成功: $filePath');
+          _toDelFiles.remove(filePath);
+        } else {
+          debugPrint('文件不存在: $filePath');
+          _toDelFiles.remove(filePath);
+        }
+      } catch (e) {
+        debugPrint('删除文件失败: $filePath, 错误: $e');
+      }
+    });
+    _isDeleting = false;
   }
 
   /// 获取本地缓存文件路径
   Future<String> getLocalCache(String id) async {
+    if (!_isDeleting) tryDelFiles(); // 尝试删除待删除的文件
     if (_localCacheList.containsKey(id)) {
-      var tempDir = await xuan_getdataDirectory();
+      var downDir = await xuan_getdataDirectory();
 
-      final tempPath = tempDir.path;
-      var filePath = '$tempPath/${_localCacheList[id]}';
-      if (is_windows) filePath = '$tempPath\\${_localCacheList[id]}';
+      final downPath = downDir.path;
+      var filePath = '$downPath/${_localCacheList[id]}';
+      if (is_windows) filePath = '$downPath\\${_localCacheList[id]}';
       if (await File(filePath).exists()) {
-        return await saveMetadataToCache(id, filePath);
+        // return await saveMetadataToCache(id, filePath);
+        // if (!(await isSoCalledDownloaded(id))) {
+        if (!(await isSoCalledDownloaded(id))) {
+          saveMetadataToCache(id, filePath);
+        }
+        return filePath;
       }
     }
     return '';
   }
 
-  Future<String> saveMetadataToCache(String id, String filePath) async {
-    try {
-      Metadata metadata = await MetadataGod.readMetadata(file: filePath);
-      // Metadata metadata = await MetadataGod.readMetadata(file: "E:\\下载\\Listen1\\138077118_u2-1-30280 - 副本.m4a");
-      if (metadata.albumArtist == id) return filePath; // 如果专辑艺术家与ID相同，直接返回文件路径
+  Future<String> getDownloadNamedPath(Track track) async {
+    // var downloadDir = await xuan_getdownloadDirectory();
+    // final tempPath = downloadDir.path;
+    // var fileName = _localCacheList[track.id];
+    // if (fileName == null || fileName.isEmpty) return '';
+    // if (is_windows) return '$tempPath\\$fileName';
+    // return '$tempPath/$fileName';
+    String fileName = '${track.title}-${track.artist}.m4a'
+        .replaceAll('/', '-')
+        .replaceAll('\\', '-')
+        .replaceAll(':', '-')
+        .replaceAll('?', '-')
+        .replaceAll('*', '-')
+        .replaceAll('"', '-')
+        .replaceAll('<', '-')
+        .replaceAll('>', '-')
+        .replaceAll('|', '-');
+    var res = (await xuan_getdownloadDirectory()).path + '/$fileName';
+    return res;
+  }
+
+  Future<bool> isSoCalledDownloaded(String id) async {
+    if (_localCacheList.containsKey(id)) {
+      var downLoad = await xuan_getdownloadDirectory();
+
+      final downLoadPath = downLoad.path;
+      var filePath = '$downLoadPath/${_localCacheList[id]}';
+      if (is_windows) filePath = '$downLoadPath\\${_localCacheList[id]}';
+      if (!await File(filePath).exists()) {
+        return false;
+      }
+      if (is_windows) {
+        try {
+          Metadata metadata = await MetadataGod.readMetadata(file: filePath);
+          if (metadata.albumArtist == id) return true; // 如果专辑艺术家与ID相同，返回true
+          throw Exception('Metadata albumArtist does not match ID');
+        } catch (e) {}
+      } else {
+        try {
+          Tag? t = await tagger.getAllTags(filePath);
+          if (t?.composer == id) return true; // 如果作曲家与ID相同，返回true
+          throw Exception('Metadata composer does not match ID');
+        } catch (e) {}
+      }
+    }
+    return false;
+  }
+
+  Future<void> saveMetadataToCache(String id, String filePath) async {
+    if (is_windows) {
+      if (_firstCheck) {
+        _firstCheck = false;
+        await isFFmpegOk();
+      }
+      if (isFFmpegOkWithoutCheck) {
+        Track? track = Get.find<PlayController>().getTrackById(id);
+        if (track == null) return;
+        try {
+          String outPath = await getDownloadNamedPath(track);
+          if (filePath.endsWith('.mp3'))
+            outPath = outPath.replaceAll('.m4a', '.mp3');
+          // 尝试使用FFmpeg转换格式
+          // ffmpeg -i .\138077118_u2-1-30280.m4s -vn -acodec copy output.m4a
+          var returnCode;
+          var result;
+          if (!is_windows) {
+            var session = await FFmpegKit.execute(
+              '-i $filePath -vn -acodec copy $outPath',
+            );
+            returnCode = await session.getReturnCode();
+          } else {
+            result = await Process.run(ffmpegPathWindows, [
+              '-i',
+              filePath,
+              '-vn',
+              '-acodec',
+              'copy',
+              outPath,
+            ], runInShell: true);
+          }
+          if (result.exitCode == 0 || ReturnCode.isSuccess(returnCode)) {
+            _toDelFiles.add(filePath);
+            _localCacheList[id] = outPath.split('/').last.split('\\').last;
+            File? cover = await getCachedImageFile(track.img_url ?? '');
+            String? mimeType = cover != null
+                ? lookupMimeType(cover.path)
+                : null;
+            bool needToDel = false;
+            if (mimeType == null) {
+              try {
+                await Dio().download(track.img_url ?? '', '$outPath.cover');
+                cover = File('$outPath.cover');
+                mimeType = lookupMimeType(
+                  cover.path,
+                  headerBytes: cover.readAsBytesSync(),
+                );
+                needToDel = true;
+              } catch (e) {
+                debugPrint('下载封面失败: $e');
+              }
+            }
+            if (is_windows) {
+              Metadata toSaveMetadata = mimeType != null
+                  ? Metadata(
+                      title: track.title,
+                      artist: track.artist,
+                      album: track.album,
+                      albumArtist: id,
+                      picture: Picture(
+                        data: await cover!.readAsBytes(),
+                        mimeType: mimeType,
+                      ),
+                    )
+                  : Metadata(
+                      title: track.title,
+                      artist: track.artist,
+                      album: track.album,
+                      albumArtist: id,
+                    );
+              if (needToDel) {
+                try {
+                  cover!.deleteSync();
+                } catch (e) {
+                  debugPrint('删除临时封面失败: $e');
+                }
+              }
+              await MetadataGod.writeMetadata(
+                metadata: toSaveMetadata,
+                file: outPath,
+              );
+            } else {
+              Tag toSaveTag = mimeType != null
+                  ? Tag(
+                      title: track.title,
+                      artist: track.artist,
+                      album: track.album,
+                      composer: id,
+                      artwork: await cover!.readAsBytes(),
+                    )
+                  : Tag(
+                      title: track.title,
+                      artist: track.artist,
+                      album: track.album,
+                      composer: id,
+                    );
+              if (needToDel) {
+                try {
+                  cover!.deleteSync();
+                } catch (e) {
+                  debugPrint('删除临时封面失败: $e');
+                }
+              }
+              await tagger.editTags(toSaveTag, outPath);
+              await File(outPath).delete();
+              // mv /storage/emulated/0/Download/song_edited.mp3 to /storage/music/song.mp3
+              String tdir =
+                  '${outPath.substring(0, outPath.lastIndexOf('.'))}_edited.${outPath.split('.').last}';
+              await File(tdir).rename(outPath);
+            }
+          }
+        } catch (e) {
+          debugPrint('FFmpeg提取元数据失败: $e');
+        }
+      }
+    } else {
+      // Android
       Track? track = Get.find<PlayController>().getTrackById(id);
-      if (track == null) return filePath;
-      // var imgres = await dio_with_ProxyAdapter.get(track.img_url!,
-      //     options: Options(responseType: ResponseType.bytes,sen  dTimeout: Duration(seconds: 5),receiveTimeout: Duration(seconds: 5)));
-      // if (imgres.statusCode != 200) return filePath;
-      Metadata toSaveMetadata = Metadata(
-          title: track.title,
-          artist: track.artist,
-          album: track.album,
-          albumArtist: id
-          // picture: Picture(
-          //   data: ExtendedImage.network(Provider(
-          //     track.img_url,
-          //   ).getBytes(),
-          //   mimeType: lookupMimeType("/path/to/cover-image"),
-          // ),
-          );
-      await MetadataGod.writeMetadata(metadata: toSaveMetadata, file: filePath);
-      return filePath;
-    } catch (e) {
-      debugPrint('读取元数据失败: $e');
-      return filePath; // 如果读取失败，仍然返回文件路径
+      if (track == null) return;
+      try {
+        String outPath = await getDownloadNamedPath(track);
+        if (filePath.endsWith('.mp3'))
+          outPath = outPath.replaceAll('.m4a', '.mp3');
+        // 尝试使用FFmpeg转换格式
+        // ffmpeg -i .\138077118_u2-1-30280.m4s -vn -acodec copy output.m4a
+        var returnCode;
+        var session = await FFmpegKit.execute(
+          '-y -i \'$filePath\' -vn -acodec copy \'$outPath\'',
+        );
+        returnCode = await session.getReturnCode();
+        debugPrint('FFmpeg执行结果: ${await session.getOutput()}');
+        if (ReturnCode.isSuccess(returnCode)) {
+          _toDelFiles.add(filePath);
+          _localCacheList[id] = outPath.split('/').last.split('\\').last;
+          File? cover = await getCachedImageFile(track.img_url ?? '');
+          String? mimeType = cover != null ? lookupMimeType(cover.path) : null;
+          bool needToDel = false;
+          if (mimeType == null) {
+            try {
+              await Dio().download(track.img_url ?? '', '$outPath.cover');
+              cover = File('$outPath.cover');
+              mimeType = lookupMimeType(
+                cover.path,
+                headerBytes: cover.readAsBytesSync(),
+              );
+              needToDel = true;
+            } catch (e) {
+              debugPrint('下载封面失败: $e');
+            }
+          }
+
+          Tag toSaveTag = mimeType != null
+              ? Tag(
+                  title: track.title,
+                  artist: track.artist,
+                  album: track.album,
+                  composer: id,
+                  artwork: await cover!.readAsBytes(),
+                )
+              : Tag(
+                  title: track.title,
+                  artist: track.artist,
+                  album: track.album,
+                  composer: id,
+                );
+          if (needToDel) {
+            try {
+              cover!.deleteSync();
+            } catch (e) {
+              debugPrint('删除临时封面失败: $e');
+            }
+          }
+          await tagger.editTags(toSaveTag, outPath);
+          // await File(outPath).delete();
+          // mv /storage/emulated/0/Download/song_edited.mp3 to /storage/music/song.mp3
+          String tdir =
+              '${outPath.substring(0, outPath.lastIndexOf('.'))}_edited.${outPath.split('.').last}';
+          tdir = '/storage/emulated/0/Download/${tdir.split('/').last}';
+          await File(tdir).rename(outPath);
+        }
+      } catch (e) {
+        debugPrint('FFmpeg提取元数据失败: $e');
+      }
     }
   }
 
@@ -211,8 +529,9 @@ class CacheController extends GetxController {
 
       for (final fileSystemEntity in filesAndDirs) {
         if (fileSystemEntity is File) {
-          final fileName =
-              fileSystemEntity.path.split(is_windows ? "\\" : '/').last;
+          final fileName = fileSystemEntity.path
+              .split(is_windows ? "\\" : '/')
+              .last;
 
           // 跳过系统文件和特定类型文件
           if (without.contains(fileName)) continue;
@@ -244,8 +563,9 @@ class CacheController extends GetxController {
     final List<String> keysToRemove = [];
 
     for (final entry in _localCacheList.entries) {
-      final filePath =
-          is_windows ? '$tempPath\\${entry.value}' : '$tempPath/${entry.value}';
+      final filePath = is_windows
+          ? '$tempPath\\${entry.value}'
+          : '$tempPath/${entry.value}';
 
       if (!await File(filePath).exists()) {
         keysToRemove.add(entry.key);

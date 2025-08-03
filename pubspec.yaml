@@ -7,7 +7,7 @@ publish_to: "none"
 version: 1.1.1+15
 
 environment:
-  sdk: ^3.6.2
+  sdk: ^3.8.1
 
 dependencies:
   flutter:
@@ -66,6 +66,9 @@ dependencies:
     path: packages/flutter_lyric-2.0.4+6
   metadata_god: ^1.0.0
   extended_image: ^10.0.1
+  mime: ^2.0.0
+  flutter_audio_tagger: ^3.0.3
+  ffmpeg_kit_flutter_new_min: ^2.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
