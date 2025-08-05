@@ -8,6 +8,8 @@ flutter version 3.32.0
 ## 安卓务必授予全部存储访问权限！！！
 ## 安卓务必授予全部存储访问权限！！！
 - 请在设置页面登录各平台账号以确保相应平台可用
+- 播放即下载，安卓在Download/Listen1,win在默认下载文件夹/Listen1（win需要在设置中安装ffmpeg（若之前没有
+有时间我再修改修改提示啥的
 - 登录Github账号后可使用Github同步歌单、一键下载最新测试版
 - 若网易、QQ、Github登录页面打不开，请尝试检查[webview2运行环境](https://github.com/jnschulze/flutter-webview-windows?tab=readme-ov-file#target-platform-requirements)
 ## ~~可能需要的~~提示
