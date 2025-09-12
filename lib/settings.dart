@@ -287,7 +287,9 @@ Future<void> _saveToken(String platform, String token) async {
         var cookieValue = Uri.encodeComponent(cookie[1].trim());
         cookies.add(Cookie(cookieName, cookieValue));
       }
+      cookies.add(Cookie('os', 'pc'));
       await setSaveCookie(url: 'https://music.163.com', cookies: cookies);
+      await setSaveCookie(url: 'https://interface3.music.163.com', cookies: cookies);
       break;
     case 'qq':
       List<Cookie> cookies = [];

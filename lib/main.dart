@@ -322,6 +322,15 @@ void main() async {
 
   // 将 PersistCookieJar 添加到 Dio 的拦截器中
   dio_with_cookie_manager.interceptors.add(CookieManager(cookieJar));
+  // dio_with_cookie_manager.httpClientAdapter = IOHttpClientAdapter(
+  //   createHttpClient: () {
+  //     final client = HttpClient();
+  //     client.findProxy = (uri) {
+  //       return 'PROXY localhost:9000';
+  //     };
+  //     return client;
+  //   },
+  // );
   runApp(MyApp());
 }
 
