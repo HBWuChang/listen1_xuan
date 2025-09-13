@@ -244,8 +244,11 @@ class CacheController extends GetxController {
         if (track == null) return;
         try {
           String outPath = await getDownloadNamedPath(track);
-          if (filePath.endsWith('.mp3'))
-            outPath = outPath.replaceAll('.m4a', '.mp3');
+          if (!{'.m4s', '.flv'}.any((ext) => filePath.endsWith(ext))) {
+            outPath =
+                outPath.replaceAll('.m4a', '') + '.' + filePath.split('.').last;
+          }
+
           // 尝试使用FFmpeg转换格式
           // ffmpeg -i .\138077118_u2-1-30280.m4s -vn -acodec copy output.m4a
           var returnCode;
@@ -355,8 +358,10 @@ class CacheController extends GetxController {
       if (track == null) return;
       try {
         String outPath = await getDownloadNamedPath(track);
-        if (filePath.endsWith('.mp3'))
-          outPath = outPath.replaceAll('.m4a', '.mp3');
+        if (!{'.m4s', '.flv'}.any((ext) => filePath.endsWith(ext))) {
+          outPath =
+              outPath.replaceAll('.m4a', '') + '.' + filePath.split('.').last;
+        }
         // 尝试使用FFmpeg转换格式
         // ffmpeg -i .\138077118_u2-1-30280.m4s -vn -acodec copy output.m4a
         var returnCode;
