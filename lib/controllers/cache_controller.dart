@@ -51,6 +51,7 @@ class CacheController extends GetxController {
   bool isFFmpegOkWithoutCheck = false;
   bool _firstCheck = true;
   final _toDelFiles = <String>{}.obs;
+  Set<String> saveMetadataToCacheWorkingIds = {};
   String get ffmpegPathWindows {
     String? ffmpegPath = Get.find<PlayController>().getPlayerSettings(
       'ffmpegPath',
@@ -234,6 +235,8 @@ class CacheController extends GetxController {
   }
 
   Future<void> saveMetadataToCache(String id, String filePath) async {
+    if (saveMetadataToCacheWorkingIds.contains(id)) return;
+    saveMetadataToCacheWorkingIds.add(id);
     if (is_windows) {
       if (_firstCheck) {
         _firstCheck = false;
@@ -251,24 +254,16 @@ class CacheController extends GetxController {
 
           // 尝试使用FFmpeg转换格式
           // ffmpeg -i .\138077118_u2-1-30280.m4s -vn -acodec copy output.m4a
-          var returnCode;
-          var result;
-          if (!is_windows) {
-            var session = await FFmpegKit.execute(
-              '-i $filePath -vn -acodec copy $outPath',
-            );
-            returnCode = await session.getReturnCode();
-          } else {
-            result = await Process.run(ffmpegPathWindows, [
-              '-i',
-              filePath,
-              '-vn',
-              '-acodec',
-              'copy',
-              outPath,
-            ], runInShell: true);
-          }
-          if (result.exitCode == 0 || ReturnCode.isSuccess(returnCode)) {
+          var result = await Process.run(ffmpegPathWindows, [
+            '-i',
+            filePath,
+            '-vn',
+            '-acodec',
+            'copy',
+            outPath,
+          ], runInShell: true);
+
+          if (result.exitCode == 0) {
             _toDelFiles.add(filePath);
             _localCacheList[id] = outPath.split('/').last.split('\\').last;
             File? cover = await getCachedImageFile(track.img_url ?? '');
@@ -356,8 +351,9 @@ class CacheController extends GetxController {
       // Android
       Track? track = Get.find<PlayController>().getTrackById(id);
       if (track == null) return;
+      String outPath = '';
       try {
-        String outPath = await getDownloadNamedPath(track);
+        outPath = await getDownloadNamedPath(track);
         if (!{'.m4s', '.flv'}.any((ext) => filePath.endsWith(ext))) {
           outPath =
               outPath.replaceAll('.m4a', '') + '.' + filePath.split('.').last;
@@ -366,7 +362,7 @@ class CacheController extends GetxController {
         // ffmpeg -i .\138077118_u2-1-30280.m4s -vn -acodec copy output.m4a
         var returnCode;
         var session = await FFmpegKit.execute(
-          '-y -i \'$filePath\' -vn -acodec copy \'$outPath\'',
+          '-y -i \"$filePath\" -vn -acodec copy \"$outPath\"',
         );
         returnCode = await session.getReturnCode();
         debugPrint('FFmpeg执行结果: ${await session.getOutput()}');
@@ -418,11 +414,29 @@ class CacheController extends GetxController {
               '${outPath.substring(0, outPath.lastIndexOf('.'))}_edited.${outPath.split('.').last}';
           tdir = '/storage/emulated/0/Download/${tdir.split('/').last}';
           await File(tdir).rename(outPath);
+          if (File(tdir).existsSync()) {
+            try {
+              File(tdir).deleteSync();
+            } catch (e) {
+              debugPrint('删除临时文件失败: $e');
+            }
+          }
         }
       } catch (e) {
         debugPrint('FFmpeg提取元数据失败: $e');
+        String tdir =
+            '${outPath.substring(0, outPath.lastIndexOf('.'))}_edited.${outPath.split('.').last}';
+        tdir = '/storage/emulated/0/Download/${tdir.split('/').last}';
+        if (File(tdir).existsSync()) {
+          try {
+            File(tdir).deleteSync();
+          } catch (e) {
+            debugPrint('删除临时文件失败: $e');
+          }
+        }
       }
     }
+    saveMetadataToCacheWorkingIds.remove(id);
   }
 
   /// 设置本地缓存文件路径
