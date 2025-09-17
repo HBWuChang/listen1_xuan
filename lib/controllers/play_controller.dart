@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../global_settings_animations.dart';
 import 'settings_controller.dart';
+import 'websocket_card_controller.dart';
 
 class Track {
   String id;
@@ -93,9 +94,13 @@ class PlayController extends GetxController {
   }
 
   Track get currentTrack => _current_playing.isNotEmpty
-      ? _current_playing.firstWhere((track) =>
-          track.id ==
-          Get.find<PlayController>().getPlayerSettings("nowplaying_track_id"))
+      ? _current_playing.firstWhere(
+          (track) =>
+              track.id ==
+              Get.find<PlayController>().getPlayerSettings(
+                "nowplaying_track_id",
+              ),
+        )
       : Track(id: '');
   @override
   void onInit() {
@@ -108,6 +113,9 @@ class PlayController extends GetxController {
     });
     music_player.playingStream.listen((event) {
       isplaying.value = event;
+    });
+    ever(isplaying, (callback) {
+      broadcastWs();
     });
   }
 
@@ -135,19 +143,13 @@ class PlayController extends GetxController {
     if (key == 'playmode') {
       switch (value) {
         case 0:
-          xuan_toast(
-            msg: '循环',
-          );
+          xuan_toast(msg: '循环');
           break;
         case 1:
-          xuan_toast(
-            msg: '随机',
-          );
+          xuan_toast(msg: '随机');
           break;
         case 2:
-          xuan_toast(
-            msg: '单曲',
-          );
+          xuan_toast(msg: '单曲');
           break;
         default:
           break;

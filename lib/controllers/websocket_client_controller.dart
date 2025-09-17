@@ -1,0 +1,746 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:logger/logger.dart';
+
+import '../models/websocket_message.dart';
+import 'controllers.dart';
+
+/// WebSocket 客户端控制器
+/// 管理WebSocket客户端的连接状态和UI交互
+class WebSocketClientController extends GetxController {
+  static const String _tag = 'WebSocketClientController';
+  final Logger _logger = Logger();
+
+  /// WebSocket 客户端实例
+  WebSocket? _webSocket;
+
+  /// UI状态
+  final RxBool _isExpanded = false.obs;
+  final RxString _statusMessage = '未连接'.obs;
+  final RxBool _isConnecting = false.obs;
+  final RxBool _isDisconnecting = false.obs;
+  final RxBool _isConnected = false.obs;
+  final RxString _serverUrl = ''.obs;
+
+  /// WebSocket客户端是否自动启动的标志位
+  final RxBool _wsClientAutoStart = false.obs;
+  final RxBool _wsClientBtnShow = true.obs;
+
+  /// 客户端配置
+  final RxString _serverAddress = '127.0.0.1:25917'.obs;
+  final RxBool _autoReconnect = true.obs;
+  final RxInt _reconnectInterval = 5.obs; // 秒
+  final RxInt _heartbeatInterval = 30.obs; // 秒
+
+  /// 连接管理
+  final RxBool _isReconnecting = false.obs;
+  Timer? _reconnectTimer;
+  Timer? _heartbeatTimer;
+  Timer? _statusPollingTimer;
+
+  /// 消息控制器
+  final TextEditingController messageController = TextEditingController();
+  final RxList<String> _receivedMessages = <String>[].obs;
+
+  /// 播放状态数据
+  final Rx<PlayStatusData?> _lastPlayStatus = Rx<PlayStatusData?>(null);
+
+  /// Getters (返回响应式值)
+  RxBool get isExpandedRx => _isExpanded;
+  RxString get statusMessageRx => _statusMessage;
+  RxBool get isConnectingRx => _isConnecting;
+  RxBool get isDisconnectingRx => _isDisconnecting;
+  RxString get serverAddressRx => _serverAddress;
+  RxBool get autoReconnectRx => _autoReconnect;
+  RxInt get reconnectIntervalRx => _reconnectInterval;
+  RxInt get heartbeatIntervalRx => _heartbeatInterval;
+  RxBool get isConnectedRx => _isConnected;
+  RxString get serverUrlRx => _serverUrl;
+  RxBool get wsClientAutoStartRx => _wsClientAutoStart;
+  RxBool get wsClientBtnShowRx => _wsClientBtnShow;
+  RxBool get isReconnectingRx => _isReconnecting;
+  RxList<String> get receivedMessagesRx => _receivedMessages;
+  Rx<PlayStatusData?> get lastPlayStatusRx => _lastPlayStatus;
+
+  // 保留原有的getter用于非响应式访问
+  bool get isExpanded => _isExpanded.value;
+  String get statusMessage => _statusMessage.value;
+  bool get isConnecting => _isConnecting.value;
+  bool get isDisconnecting => _isDisconnecting.value;
+  String get serverAddress => _serverAddress.value;
+  bool get autoReconnect => _autoReconnect.value;
+  int get reconnectInterval => _reconnectInterval.value;
+  int get heartbeatInterval => _heartbeatInterval.value;
+  bool get isConnected => _isConnected.value;
+  String get serverUrl => _serverUrl.value;
+  bool get wsClientAutoStart => _wsClientAutoStart.value;
+  bool get wsClientBtnShow => _wsClientBtnShow.value;
+  bool get isReconnecting => _isReconnecting.value;
+  List<String> get receivedMessages => _receivedMessages;
+  PlayStatusData? get lastPlayStatus => _lastPlayStatus.value;
+
+  /// 从设置控制器加载WebSocket客户端配置
+  void loadWebSocketClientSettings() {
+    try {
+      final settingsController = Get.find<SettingsController>();
+      final settings = settingsController.settings;
+
+      // 读取WebSocket客户端配置
+      _wsClientAutoStart.value = settings['wsClientAutoStart'] ?? false;
+      _wsClientBtnShow.value = settings['wsClientBtnShow'] ?? true;
+      final address = settings['wsClientAddress'] as String?;
+      final autoReconn = settings['wsClientAutoReconnect'] as bool?;
+      final reconnInterval = settings['wsClientReconnectInterval'] as int?;
+      final heartInterval = settings['wsClientHeartbeatInterval'] as int?;
+
+      if (address != null && address.isNotEmpty) {
+        _serverAddress.value = address;
+      }
+
+      if (autoReconn != null) {
+        _autoReconnect.value = autoReconn;
+      }
+
+      if (reconnInterval != null &&
+          reconnInterval >= 1 &&
+          reconnInterval <= 60) {
+        _reconnectInterval.value = reconnInterval;
+      }
+
+      if (heartInterval != null && heartInterval >= 5 && heartInterval <= 300) {
+        _heartbeatInterval.value = heartInterval;
+      }
+
+      _logger.i('$_tag 客户端配置加载完成: 自动启动=$wsClientAutoStart, 地址=$serverAddress');
+    } catch (e) {
+      _logger.w('$_tag 客户端配置加载失败: $e');
+    }
+  }
+
+  /// 保存WebSocket客户端配置到Settings
+  void saveWebSocketClientSettings() {
+    try {
+      final settingsController = Get.find<SettingsController>();
+      final settings = settingsController.settings;
+
+      // 保存WebSocket客户端配置
+      settings['wsClientAutoStart'] = _wsClientAutoStart.value;
+      settings['wsClientBtnShow'] = _wsClientBtnShow.value;
+      settings['wsClientAddress'] = _serverAddress.value;
+      settings['wsClientAutoReconnect'] = _autoReconnect.value;
+      settings['wsClientReconnectInterval'] = _reconnectInterval.value;
+      settings['wsClientHeartbeatInterval'] = _heartbeatInterval.value;
+
+      // 触发设置保存
+      settingsController.setSettings(settings);
+
+      _logger.i('$_tag 客户端配置保存完成: 自动启动=$wsClientAutoStart, 地址=$serverAddress');
+    } catch (e) {
+      _logger.w('$_tag 客户端配置保存失败: $e');
+    }
+  }
+
+  /// 更新自动启动设置
+  void updateAutoStart(bool enabled) {
+    _wsClientAutoStart.value = enabled;
+    saveWebSocketClientSettings();
+  }
+
+  /// 更新客户端按钮显示设置
+  void updateBtnShow(bool enabled) {
+    _wsClientBtnShow.value = enabled;
+    saveWebSocketClientSettings();
+  }
+
+  /// 如果设置了自动启动，则连接WebSocket服务器
+  Future<void> autoConnectIfNeeded() async {
+    if (_wsClientAutoStart.value) {
+      _logger.i('$_tag 自动连接WebSocket服务器');
+      await connect();
+    }
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    _updateStatusMessage();
+    _logger.i('$_tag 初始化完成');
+  }
+
+  @override
+  void onClose() {
+    messageController.dispose();
+    stopStatusPolling();
+    _disconnect(manual: true);
+    super.onClose();
+  }
+
+  /// 切换卡片展开状态
+  void toggleExpanded() {
+    _isExpanded.value = !_isExpanded.value;
+  }
+
+  /// 更新服务器地址
+  void updateServerAddress(String newAddress) {
+    if (isConnected) {
+      _showError('连接时不能更改配置');
+      return;
+    }
+    _serverAddress.value = newAddress.trim();
+    saveWebSocketClientSettings();
+    _logger.i('$_tag 服务器地址已更新为: $newAddress');
+  }
+
+  /// 更新自动重连设置
+  void updateAutoReconnect(bool enabled) {
+    _autoReconnect.value = enabled;
+    saveWebSocketClientSettings();
+
+    if (!enabled) {
+      _stopReconnectTimer();
+      _isReconnecting.value = false;
+    }
+  }
+
+  /// 更新重连间隔
+  void updateReconnectInterval(int seconds) {
+    if (seconds < 1 || seconds > 60) {
+      _showError('重连间隔必须在 1-60 秒之间');
+      return;
+    }
+    _reconnectInterval.value = seconds;
+    saveWebSocketClientSettings();
+  }
+
+  /// 更新心跳间隔
+  void updateHeartbeatInterval(int seconds) {
+    if (seconds < 5 || seconds > 300) {
+      _showError('心跳间隔必须在 5-300 秒之间');
+      return;
+    }
+    _heartbeatInterval.value = seconds;
+    saveWebSocketClientSettings();
+
+    // 如果已连接，重启心跳定时器
+    if (isConnected) {
+      _startHeartbeatTimer();
+    }
+  }
+
+  /// 连接到WebSocket服务器
+  Future<void> connect() async {
+    if (isConnected || _isConnecting.value) return;
+
+    try {
+      _isConnecting.value = true;
+      _updateStatusMessage('正在连接...');
+
+      // 解析服务器地址
+      final addressParts = _serverAddress.value.split(':');
+      if (addressParts.length != 2) {
+        throw Exception('服务器地址格式错误，应为 "IP:端口"');
+      }
+
+      final host = addressParts[0];
+      final port = int.tryParse(addressParts[1]);
+      if (port == null || port < 1 || port > 65535) {
+        throw Exception('端口号无效');
+      }
+
+      final uri = 'ws://$host:$port';
+      _serverUrl.value = uri;
+
+      // 创建WebSocket连接
+      _webSocket = await WebSocket.connect(uri);
+
+      _isConnected.value = true;
+      _updateStatusMessage('已连接');
+      _showSuccess('WebSocket 客户端连接成功');
+      _logger.i('$_tag WebSocket客户端连接成功: $uri');
+
+      // 停止重连定时器
+      _stopReconnectTimer();
+      _isReconnecting.value = false;
+
+      // 启动心跳定时器
+      _startHeartbeatTimer();
+
+      // 启动状态轮询（如果未启动）
+      if (_statusPollingTimer == null || !_statusPollingTimer!.isActive) {
+        startStatusPolling();
+      }
+
+      // 监听消息
+      _webSocket!.listen(
+        _onMessage,
+        onDone: _onDisconnected,
+        onError: _onError,
+      );
+    } catch (e) {
+      _isConnected.value = false;
+      _serverUrl.value = '';
+      _updateStatusMessage('连接失败');
+      _showError('连接失败: $e');
+      _logger.e('$_tag 连接失败', error: e);
+
+      // 如果启用了自动重连，开始重连
+      if (_autoReconnect.value && !_isReconnecting.value) {
+        _startReconnectTimer();
+      }
+    } finally {
+      _isConnecting.value = false;
+    }
+  }
+
+  /// 断开连接
+  Future<void> disconnect() async {
+    await _disconnect(manual: true);
+  }
+
+  Future<void> _disconnect({bool manual = false}) async {
+    if (!isConnected || _isDisconnecting.value) return;
+
+    try {
+      _isDisconnecting.value = true;
+      _updateStatusMessage('正在断开...');
+
+      // 停止定时器
+      _stopHeartbeatTimer();
+      stopStatusPolling();
+      if (manual) {
+        _stopReconnectTimer();
+        _isReconnecting.value = false;
+      }
+
+      // 关闭WebSocket连接
+      await _webSocket?.close();
+      _webSocket = null;
+
+      _isConnected.value = false;
+      _serverUrl.value = '';
+      _updateStatusMessage(manual ? '已断开' : '连接中断');
+
+      if (manual) {
+        _showSuccess('WebSocket 客户端已断开');
+      }
+      _logger.i('$_tag WebSocket客户端已断开');
+    } catch (e) {
+      _showError('断开连接时发生错误: $e');
+      _logger.e('$_tag 断开连接失败', error: e);
+    } finally {
+      _isDisconnecting.value = false;
+    }
+  }
+
+  /// 发送消息
+  void sendMessage() {
+    if (!isConnected) {
+      _showError('未连接到服务器');
+      return;
+    }
+
+    final message = messageController.text.trim();
+    if (message.isEmpty) {
+      _showError('请输入要发送的消息');
+      return;
+    }
+
+    try {
+      final messageObj = WebSocketMessageBuilder.createMessage(
+        message,
+        from: 'flutter_client',
+      );
+
+      _webSocket!.add(messageObj.toJsonString());
+      messageController.clear();
+      _showSuccess('消息已发送');
+      _logger.i('$_tag 消息已发送: $message');
+    } catch (e) {
+      _showError('发送消息失败: $e');
+      _logger.e('$_tag 发送消息失败', error: e);
+    }
+  }
+
+  /// 发送心跳
+  void sendHeartbeat() {
+    if (!isConnected) {
+      _showError('未连接到服务器');
+      return;
+    }
+
+    try {
+      final pingMessage = WebSocketMessageBuilder.createPingMessage();
+      _webSocket!.add(pingMessage.toJsonString());
+      _showInfo('心跳已发送');
+      _logger.i('$_tag 心跳已发送');
+    } catch (e) {
+      _showError('发送心跳失败: $e');
+      _logger.e('$_tag 发送心跳失败', error: e);
+    }
+  }
+
+  /// 请求播放状态
+  void requestPlayStatus() {
+    if (!isConnected) {
+      _showError('未连接到服务器');
+      return;
+    }
+
+    try {
+      final statusRequest = WebSocketMessageBuilder.createGetStatusRequest();
+      _webSocket!.add(statusRequest.toJsonString());
+      _showInfo('已请求播放状态');
+      _logger.i('$_tag 已请求播放状态');
+    } catch (e) {
+      _showError('请求播放状态失败: $e');
+      _logger.e('$_tag 请求播放状态失败', error: e);
+    }
+  }
+
+  /// 发送播放控制消息
+  void sendControlMessage(String command) {
+    if (!isConnected) {
+      _showError('未连接到服务器');
+      return;
+    }
+
+    try {
+      final controlMessage = WebSocketMessageBuilder.createControlMessage(
+        command,
+      );
+      _webSocket!.add(controlMessage.toJsonString());
+
+      // 根据命令显示不同的提示信息
+      String actionText;
+      switch (command) {
+        case PlayControlCommands.play:
+          actionText = '播放';
+          break;
+        case PlayControlCommands.pause:
+        case PlayControlCommands.stop:
+          actionText = '暂停';
+          break;
+        case PlayControlCommands.next:
+          actionText = '下一首';
+          break;
+        case PlayControlCommands.previous:
+          actionText = '上一首';
+          break;
+        default:
+          actionText = command;
+      }
+
+      _showInfo('已发送$actionText控制命令');
+      _logger.i('$_tag 发送播放控制命令: $command');
+    } catch (e) {
+      _showError('发送控制命令失败: $e');
+      _logger.e('$_tag 发送控制命令失败', error: e);
+    }
+  }
+
+  /// 发送播放指定歌曲消息
+  void sendTrackMessage(Track trackData) {
+    if (!isConnected) {
+      _showError('未连接到服务器');
+      return;
+    }
+
+    try {
+      final trackMessage = WebSocketMessageBuilder.createTrackMessage(
+        trackData,
+      );
+      _webSocket!.add(trackMessage.toJsonString());
+
+      // 根据歌曲信息显示提示
+      String trackInfo = '歌曲';
+      if (trackData is Map<String, dynamic>) {
+        final title = trackData.title ?? '未知标题';
+        final artist = trackData.artist ?? '未知艺术家';
+        trackInfo = '$title - $artist';
+      }
+
+      _showInfo('已发送播放请求: $trackInfo');
+      _logger.i('$_tag 发送播放歌曲命令: $trackInfo');
+    } catch (e) {
+      _showError('发送播放歌曲命令失败: $e');
+      _logger.e('$_tag 发送播放歌曲命令失败', error: e);
+    }
+  }
+
+  /// 启动状态轮询
+  void startStatusPolling({int intervalSeconds = 3}) {
+    if (_statusPollingTimer != null) {
+      return; // 已经在轮询中
+    }
+
+    if (!isConnected) {
+      _logger.w('$_tag 未连接到服务器，无法启动状态轮询');
+      return;
+    }
+
+    _logger.i('$_tag 启动状态轮询，间隔: ${intervalSeconds}秒');
+
+    // 立即发送一次状态请求
+    requestPlayStatus();
+
+    // 启动定时器
+    _statusPollingTimer = Timer.periodic(Duration(seconds: intervalSeconds), (
+      timer,
+    ) {
+      if (isConnected) {
+        try {
+          final statusRequest =
+              WebSocketMessageBuilder.createGetStatusRequest();
+          _webSocket!.add(statusRequest.toJsonString());
+          _logger.d('$_tag 定时请求播放状态');
+        } catch (e) {
+          _logger.e('$_tag 定时请求播放状态失败', error: e);
+        }
+      } else {
+        // 如果连接断开，停止轮询
+        stopStatusPolling();
+      }
+    });
+  }
+
+  /// 停止状态轮询
+  void stopStatusPolling() {
+    if (_statusPollingTimer != null) {
+      _statusPollingTimer!.cancel();
+      _statusPollingTimer = null;
+      _logger.i('$_tag 停止状态轮询');
+    }
+  }
+
+  /// 清除消息记录
+  void clearMessages() {
+    _receivedMessages.clear();
+    _showInfo('消息记录已清除');
+  }
+
+  /// 处理接收到的消息
+  void _onMessage(dynamic data) {
+    try {
+      // 尝试解析为新的 WebSocketMessage 格式
+      WebSocketMessage message;
+      try {
+        message = WebSocketMessage.fromJsonString(data.toString());
+      } catch (e) {
+        // 如果解析失败，作为普通文本处理
+        final timestamp = DateTime.now().toIso8601String();
+        final logMessage = '[$timestamp] 收到文本: $data';
+        _receivedMessages.add(logMessage);
+
+        _logger.d('$_tag 收到文本消息: $data');
+        return;
+      }
+
+      final timestamp = DateTime.now().toIso8601String();
+
+      // 根据消息类型进行特殊处理
+      switch (message.type) {
+        case WebSocketMessageType.status:
+          // 处理播放状态消息
+          try {
+            final statusData = message.parseContent<PlayStatusData>(
+              PlayStatusData.fromJson,
+            );
+            // 保存最新的播放状态
+            _lastPlayStatus.value = statusData;
+            _lastPlayStatus.refresh();
+            final logMessage =
+                '[$timestamp] 播放状态: ${statusData.isPlaying ? "播放中" : "已暂停"} - ${statusData.currentTrack?.title ?? "无曲目"}';
+            _receivedMessages.add(logMessage);
+            _logger.i('$_tag 收到播放状态: $statusData');
+          } catch (e) {
+            final logMessage = '[$timestamp] 状态消息解析失败: ${message.content}';
+            _receivedMessages.add(logMessage);
+            _logger.w('$_tag 状态消息解析失败', error: e);
+          }
+          break;
+        case WebSocketMessageType.welcome:
+          // 处理欢迎消息
+          final contentMap = message.parseContentAsMap();
+          final welcomeMsg = contentMap?['message'] ?? '连接成功';
+          final logMessage = '[$timestamp] 欢迎消息: $welcomeMsg';
+          _receivedMessages.add(logMessage);
+          break;
+        case WebSocketMessageType.error:
+          // 处理错误消息
+          final contentMap = message.parseContentAsMap();
+          final errorMsg = contentMap?['error'] ?? message.content;
+          final logMessage = '[$timestamp] 错误: $errorMsg';
+          _receivedMessages.add(logMessage);
+          break;
+        case WebSocketMessageType.pong:
+          // 处理 pong 消息
+          final logMessage = '[$timestamp] 收到心跳响应';
+          _receivedMessages.add(logMessage);
+          break;
+        default:
+          // 处理其他类型消息
+          final logMessage =
+              '[$timestamp] 收到 ${message.type}: ${message.content}';
+          _receivedMessages.add(logMessage);
+      }
+
+      // 限制消息记录数量
+      if (_receivedMessages.length > 100) {
+        _receivedMessages.removeAt(0);
+      }
+
+      _logger.d('$_tag 收到消息: ${message.type}');
+    } catch (e) {
+      final timestamp = DateTime.now().toIso8601String();
+      final logMessage = '[$timestamp] 消息处理失败: $data';
+      _receivedMessages.add(logMessage);
+
+      _logger.e('$_tag 消息处理失败', error: e);
+    }
+  }
+
+  /// 处理连接断开
+  void _onDisconnected() {
+    _logger.i('$_tag WebSocket连接已断开');
+    _isConnected.value = false;
+    _serverUrl.value = '';
+    _stopHeartbeatTimer();
+    stopStatusPolling();
+
+    if (_autoReconnect.value && !_isReconnecting.value) {
+      _updateStatusMessage('连接中断，准备重连...');
+      _startReconnectTimer();
+    } else {
+      _updateStatusMessage('连接中断');
+    }
+  }
+
+  /// 处理连接错误
+  void _onError(dynamic error) {
+    _logger.e('$_tag WebSocket连接错误', error: error);
+    _isConnected.value = false;
+    _serverUrl.value = '';
+    _stopHeartbeatTimer();
+    stopStatusPolling();
+    _updateStatusMessage('连接错误');
+
+    if (_autoReconnect.value && !_isReconnecting.value) {
+      _startReconnectTimer();
+    }
+  }
+
+  /// 启动重连定时器
+  void _startReconnectTimer() {
+    if (!_autoReconnect.value || _isReconnecting.value) return;
+
+    _isReconnecting.value = true;
+    _updateStatusMessage('将在 ${_reconnectInterval.value} 秒后重连...');
+
+    _reconnectTimer = Timer(
+      Duration(seconds: _reconnectInterval.value),
+      () async {
+        if (_autoReconnect.value && !_isConnected.value) {
+          _logger.i('$_tag 尝试自动重连...');
+          await connect();
+        }
+      },
+    );
+  }
+
+  /// 停止重连定时器
+  void _stopReconnectTimer() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+  }
+
+  /// 启动心跳定时器
+  void _startHeartbeatTimer() {
+    _stopHeartbeatTimer();
+
+    _heartbeatTimer = Timer.periodic(
+      Duration(seconds: _heartbeatInterval.value),
+      (timer) {
+        if (_isConnected.value) {
+          try {
+            final pingMessage = WebSocketMessageBuilder.createPingMessage();
+            _webSocket!.add(pingMessage.toJsonString());
+            _logger.d('$_tag 自动心跳已发送');
+          } catch (e) {
+            _logger.e('$_tag 自动心跳发送失败', error: e);
+          }
+        } else {
+          timer.cancel();
+        }
+      },
+    );
+  }
+
+  /// 停止心跳定时器
+  void _stopHeartbeatTimer() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  /// 更新状态消息
+  void _updateStatusMessage([String? message]) {
+    if (message != null) {
+      _statusMessage.value = message;
+    } else {
+      if (isConnected) {
+        _statusMessage.value = '已连接';
+      } else if (isConnecting) {
+        _statusMessage.value = '连接中...';
+      } else if (isReconnecting) {
+        _statusMessage.value = '重连中...';
+      } else {
+        _statusMessage.value = '未连接';
+      }
+    }
+  }
+
+  /// 显示成功消息
+  void _showSuccess(String message) {
+    // try {
+    //   Get.snackbar(
+    //     '成功',
+    //     message,
+    //     backgroundColor: Colors.green.withOpacity(0.8),
+    //     colorText: Colors.white,
+    //     duration: const Duration(seconds: 2),
+    //     snackPosition: SnackPosition.TOP,
+    //   );
+    // } catch (e) {}
+  }
+
+  /// 显示错误消息
+  void _showError(String message) {
+    // try {
+    //   Get.snackbar(
+    //     '错误',
+    //     message,
+    //     backgroundColor: Colors.red.withOpacity(0.8),
+    //     colorText: Colors.white,
+    //     duration: const Duration(seconds: 3),
+    //     snackPosition: SnackPosition.TOP,
+    //   );
+    // } catch (e) {}
+  }
+
+  /// 显示信息消息
+  void _showInfo(String message) {
+    // try {
+    //   Get.snackbar(
+    //     '信息',
+    //     message,
+    //     backgroundColor: Colors.blue.withOpacity(0.8),
+    //     colorText: Colors.white,
+    //     duration: const Duration(seconds: 2),
+    //     snackPosition: SnackPosition.TOP,
+    //   );
+    // } catch (e) {}
+  }
+}

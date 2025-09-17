@@ -17,6 +17,8 @@ import 'controllers/lyric_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/nowplaying_controller.dart';
 import 'controllers/play_controller.dart';
+import 'examples/websocket_server_example.dart';
+import 'examples/websocket_client_example.dart';
 import 'pages/nowPlaying_page.dart';
 import 'settings.dart';
 import 'loweb.dart';
@@ -236,6 +238,7 @@ void main() async {
     permanent: true,
   );
   await settingsController.loadSettings();
+
   Get.put(PlayController(), permanent: true);
   Get.find<PlayController>().loadDatas();
   CacheController cacheController = Get.put(CacheController(), permanent: true);
@@ -270,6 +273,24 @@ void main() async {
     });
     enableThumbnailToolbar();
   }
+
+  // 初始化WebSocket控制器并加载配置
+  WebSocketCardController wsController = Get.put(
+    WebSocketCardController(),
+    permanent: true,
+  );
+  wsController.loadWebSocketSettings();
+  // 如果设置了自动启动，则启动WebSocket服务器
+  wsController.autoStartServerIfNeeded();
+
+  // 初始化WebSocket客户端控制器并加载配置
+  WebSocketClientController wsClientController = Get.put(
+    WebSocketClientController(),
+    permanent: true,
+  );
+  wsClientController.loadWebSocketClientSettings();
+  // 如果设置了自动连接，则连接WebSocket服务器
+  wsClientController.autoConnectIfNeeded();
 
   Map<String, dynamic> settings = settings_getsettings();
   bool useHttpOverrides = false;
@@ -739,6 +760,14 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                       iconSize: 24.0, // 可选：自定义图标大小
                       padding: EdgeInsets.all(0), // 可选：自定义内边距
                     ),
+                    WebSocketHelper.buildReactiveButton(
+                      tooltip: "WebSocket服务器",
+                      inMainPage: true,
+                    ),
+                    WebSocketClientHelper.buildReactiveButton(
+                      tooltip: "WebSocket客户端",
+                      inMainPage: true,
+                    ),
                     IconButton(
                       tooltip: "设置",
                       icon: Icon(Icons.settings),
@@ -1040,6 +1069,14 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                       );
                                                     },
                                                   ),
+                                                ),
+                                                WebSocketHelper.buildReactiveButton(
+                                                  tooltip: "WebSocket服务器",
+                                                  inMainPage: true,
+                                                ),
+                                                WebSocketClientHelper.buildReactiveButton(
+                                                  tooltip: "WebSocket客户端",
+                                                  inMainPage: true,
                                                 ),
                                                 IconButton(
                                                   tooltip: "设置",

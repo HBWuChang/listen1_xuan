@@ -12,6 +12,8 @@ import 'controllers/cache_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
+import 'examples/websocket_client_example.dart';
+import 'examples/websocket_server_example.dart';
 import 'funcs.dart';
 import 'netease.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -43,8 +45,9 @@ import 'package:extended_image/extended_image.dart';
 import 'theme.dart';
 
 // Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
-Future<Map<String, dynamic>> outputAllSettingsToFile(
-    [bool toJsonString = false]) async {
+Future<Map<String, dynamic>> outputAllSettingsToFile([
+  bool toJsonString = false,
+]) async {
   final prefs = await SharedPreferences.getInstance();
   Map<String, dynamic> settings = {};
   final allkeys = prefs.getKeys();
@@ -121,9 +124,8 @@ Future<Map<String, dynamic>> outputAllSettingsToFile(
 }
 
 Future<void> importSettingsFromFile(
-    // [bool fromjson = false, String jsonString = '']) async {
-    [bool fromjson = false,
-    Map<String, dynamic> jsonString = const {}]) async {
+// [bool fromjson = false, String jsonString = '']) async {
+[bool fromjson = false, Map<String, dynamic> jsonString = const {}]) async {
   Future<void> _sets(Map<String, dynamic> settings) async {
     final prefs = await SharedPreferences.getInstance();
     for (var key in settings.keys) {
@@ -226,12 +228,14 @@ Future<void> setSaveCookie({
   await PersistCookieJar(
     ignoreExpires: true,
     storage: FileStorage(
-        is_windows ? '${tempPath}\\.cookies\\' : '${tempPath}/.cookies/'),
+      is_windows ? '${tempPath}\\.cookies\\' : '${tempPath}/.cookies/',
+    ),
   ).delete(Uri.parse(url));
   await PersistCookieJar(
     ignoreExpires: true,
     storage: FileStorage(
-        is_windows ? '${tempPath}\\.cookies\\' : '${tempPath}/.cookies/'),
+      is_windows ? '${tempPath}\\.cookies\\' : '${tempPath}/.cookies/',
+    ),
   ).saveFromResponse(Uri.parse(url), cookies);
 }
 
@@ -289,7 +293,10 @@ Future<void> _saveToken(String platform, String token) async {
       }
       cookies.add(Cookie('os', 'pc'));
       await setSaveCookie(url: 'https://music.163.com', cookies: cookies);
-      await setSaveCookie(url: 'https://interface3.music.163.com', cookies: cookies);
+      await setSaveCookie(
+        url: 'https://interface3.music.163.com',
+        cookies: cookies,
+      );
       break;
     case 'qq':
       List<Cookie> cookies = [];
@@ -317,7 +324,8 @@ Future<void> createAndRunBatFile(String tempPath, String executableDir) async {
   final batFilePath = '$tempPath\\script.bat';
 
   // 创建 .bat 文件内容，使用 \r\n 作为换行符
-  String batContent = '''
+  String batContent =
+      '''
 @echo off\r
 :: Check if running as administrator\r
 net session >nul 2>&1\r
@@ -349,7 +357,7 @@ start "" "$folderA\\listen1_xuan.exe"\r
 \r
 ''';
 
-// 将内容转换为 GBK 编码的字节
+  // 将内容转换为 GBK 编码的字节
   Uint8List gbkBytes = await CharsetConverter.encode("gb2312", batContent);
 
   // 写入文件
@@ -376,11 +384,12 @@ class login_webview extends StatefulWidget {
   final dynamic controller;
   final String config_key;
   final String open_url;
-  const login_webview(
-      {super.key,
-      required this.controller,
-      required this.config_key,
-      required this.open_url});
+  const login_webview({
+    super.key,
+    required this.controller,
+    required this.config_key,
+    required this.open_url,
+  });
   @override
   _login_webviewState createState() => _login_webviewState();
 }
@@ -450,12 +459,15 @@ class _login_webviewState extends State<login_webview> {
   Future<void> initPlatformState() async {
     try {
       await widget.controller.initialize();
-      _subscriptions.add(widget.controller.url.listen((url) {
-        nowurl = url;
-      }));
+      _subscriptions.add(
+        widget.controller.url.listen((url) {
+          nowurl = url;
+        }),
+      );
       await widget.controller.setBackgroundColor(Colors.transparent);
-      await widget.controller
-          .setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
+      await widget.controller.setPopupWindowPolicy(
+        WebviewPopupWindowPolicy.deny,
+      );
       await widget.controller.loadUrl(widget.open_url);
 
       if (!mounted) return;
@@ -463,26 +475,27 @@ class _login_webviewState extends State<login_webview> {
     } on PlatformException catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-                  title: Text('Error'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Code: ${e.code}'),
-                      Text('Message: ${e.message}'),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      child: Text('Continue'),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    )
-                  ],
-                ));
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text('Error'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Code: ${e.code}'),
+                Text('Message: ${e.message}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                child: Text('Continue'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+        );
       });
     }
   }
@@ -491,34 +504,32 @@ class _login_webviewState extends State<login_webview> {
     if (!widget.controller.value.isInitialized) {
       return const Text(
         'Not Initialized',
-        style: TextStyle(
-          fontSize: 24.0,
-          fontWeight: FontWeight.w900,
-        ),
+        style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.w900),
       );
     } else {
       return Card(
-          color: Colors.transparent,
-          elevation: 0,
-          clipBehavior: Clip.antiAliasWithSaveLayer,
-          child: Stack(
-            children: [
-              Webview(
-                widget.controller,
-                permissionRequested: _onPermissionRequested,
-              ),
-              StreamBuilder<LoadingState>(
-                  stream: widget.controller.loadingState,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData &&
-                        snapshot.data == LoadingState.loading) {
-                      return LinearProgressIndicator();
-                    } else {
-                      return SizedBox();
-                    }
-                  }),
-            ],
-          ));
+        color: Colors.transparent,
+        elevation: 0,
+        clipBehavior: Clip.antiAliasWithSaveLayer,
+        child: Stack(
+          children: [
+            Webview(
+              widget.controller,
+              permissionRequested: _onPermissionRequested,
+            ),
+            StreamBuilder<LoadingState>(
+              stream: widget.controller.loadingState,
+              builder: (context, snapshot) {
+                if (snapshot.hasData && snapshot.data == LoadingState.loading) {
+                  return LinearProgressIndicator();
+                } else {
+                  return SizedBox();
+                }
+              },
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -529,7 +540,10 @@ class _login_webviewState extends State<login_webview> {
   }
 
   Future<WebviewPermissionDecision> _onPermissionRequested(
-      String url, WebviewPermissionKind kind, bool isUserInitiated) async {
+    String url,
+    WebviewPermissionKind kind,
+    bool isUserInitiated,
+  ) async {
     final decision = await showDialog<WebviewPermissionDecision>(
       context: navigatorKey.currentContext!,
       builder: (BuildContext context) => AlertDialog(
@@ -559,21 +573,22 @@ class _login_webviewState extends State<login_webview> {
       appBar: AppBar(
         // title: const Text('请登录后，点击右上角保存cooke按钮'),
         title: SizedBox(
-            height: 30,
-            child: Marquee(
-              text: '请登录后，点击右上角保存cookie按钮',
-              style: const TextStyle(fontSize: 20),
-              scrollAxis: Axis.horizontal,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              blankSpace: 20.0,
-              velocity: 100.0,
-              pauseAfterRound: const Duration(seconds: 1),
-              startPadding: 10.0,
-              accelerationDuration: const Duration(seconds: 1),
-              accelerationCurve: Curves.linear,
-              decelerationDuration: const Duration(milliseconds: 500),
-              decelerationCurve: Curves.easeOut,
-            )),
+          height: 30,
+          child: Marquee(
+            text: '请登录后，点击右上角保存cookie按钮',
+            style: const TextStyle(fontSize: 20),
+            scrollAxis: Axis.horizontal,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            blankSpace: 20.0,
+            velocity: 100.0,
+            pauseAfterRound: const Duration(seconds: 1),
+            startPadding: 10.0,
+            accelerationDuration: const Duration(seconds: 1),
+            accelerationCurve: Curves.linear,
+            decelerationDuration: const Duration(milliseconds: 500),
+            decelerationCurve: Curves.easeOut,
+          ),
+        ),
 
         actions: [
           IconButton(
@@ -637,16 +652,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: <Widget>[
                   ElevatedButton(
                     onPressed: () {
-                      g_launchURL(Uri.parse(
-                          'https://mashir0-bilibili-qr-login.hf.space/'));
+                      g_launchURL(
+                        Uri.parse(
+                          'https://mashir0-bilibili-qr-login.hf.space/',
+                        ),
+                      );
                     },
                     child: const Text('点击打开B站cookie获取页面'),
                   ),
                   TextField(
                     focusNode: _focusNode,
-                    decoration: const InputDecoration(
-                      labelText: '请输入B站cookie',
-                    ),
+                    decoration: const InputDecoration(labelText: '请输入B站cookie'),
                     onSubmitted: (String value) async {
                       await _saveToken('bl', value);
                       _msg('设置成功', 1.0);
@@ -686,16 +702,18 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         )
         ..setUserAgent(
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
+        )
         ..loadRequest(Uri.parse('https://music.163.com/'));
     }
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => login_webview(
-            controller: controller,
-            config_key: 'ne',
-            open_url: 'https://music.163.com/'),
+          controller: controller,
+          config_key: 'ne',
+          open_url: 'https://music.163.com/',
+        ),
       ),
     );
   }
@@ -719,16 +737,18 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         )
         ..setUserAgent(
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
+        )
         ..loadRequest(Uri.parse('https://y.qq.com/'));
     }
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => login_webview(
-            controller: controller,
-            config_key: 'qq',
-            open_url: 'https://y.qq.com/'),
+          controller: controller,
+          config_key: 'qq',
+          open_url: 'https://y.qq.com/',
+        ),
       ),
     );
   }
@@ -787,14 +807,17 @@ class _SettingsPageState extends State<SettingsPage> {
     // 确保路径存在
     switch (SysInfo.kernelArchitecture.name) {
       case "ARM64":
-        apkfile_name =
-            await xuan_getdownloadDirectory(path: 'app-arm64-v8a-release.apk');
+        apkfile_name = await xuan_getdownloadDirectory(
+          path: 'app-arm64-v8a-release.apk',
+        );
       case "ARM":
         apkfile_name = await xuan_getdownloadDirectory(
-            path: 'app-armeabi-v7a-release.apk');
+          path: 'app-armeabi-v7a-release.apk',
+        );
       case "X86_64":
-        apkfile_name =
-            await xuan_getdownloadDirectory(path: 'app-x86_64-release.apk');
+        apkfile_name = await xuan_getdownloadDirectory(
+          path: 'app-x86_64-release.apk',
+        );
       default:
         apkfile_name = await xuan_getdownloadDirectory(path: 'app-release.apk');
     }
@@ -811,8 +834,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
       // 使用base64对content进行解码
       _readmeContent_setstate(() {
-        _readmeContent =
-            decodeBase64(treadmeContent.data['content'].replaceAll("\n", ''));
+        _readmeContent = decodeBase64(
+          treadmeContent.data['content'].replaceAll("\n", ''),
+        );
       });
     } catch (e) {
       _readmeContent_setstate(() {
@@ -825,8 +849,14 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text('Settings'),
-          actions: [Text('长按设置颜色->'), ThemeToggleButton()]),
+        title: const Text('Settings'),
+        actions: [
+          Text('长按设置颜色->'),
+          ThemeToggleButton(),
+          WebSocketHelper.buildReactiveButton(tooltip: "WebSocket服务器"),
+          WebSocketClientHelper.buildReactiveButton(tooltip: "WebSocket客户端"),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -835,22 +865,24 @@ class _SettingsPageState extends State<SettingsPage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 SvgPicture.string(
-                    '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" class="zhuzhan-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.73252 2.67094C3.33229 2.28484 3.33229 1.64373 3.73252 1.25764C4.11291 0.890684 4.71552 0.890684 5.09591 1.25764L7.21723 3.30403C7.27749 3.36218 7.32869 3.4261 7.37081 3.49407H10.5789C10.6211 3.4261 10.6723 3.36218 10.7325 3.30403L12.8538 1.25764C13.2342 0.890684 13.8368 0.890684 14.2172 1.25764C14.6175 1.64373 14.6175 2.28484 14.2172 2.67094L13.364 3.49407H14C16.2091 3.49407 18 5.28493 18 7.49407V12.9996C18 15.2087 16.2091 16.9996 14 16.9996H4C1.79086 16.9996 0 15.2087 0 12.9996V7.49406C0 5.28492 1.79086 3.49407 4 3.49407H4.58579L3.73252 2.67094ZM4 5.42343C2.89543 5.42343 2 6.31886 2 7.42343V13.0702C2 14.1748 2.89543 15.0702 4 15.0702H14C15.1046 15.0702 16 14.1748 16 13.0702V7.42343C16 6.31886 15.1046 5.42343 14 5.42343H4ZM5 9.31747C5 8.76519 5.44772 8.31747 6 8.31747C6.55228 8.31747 7 8.76519 7 9.31747V10.2115C7 10.7638 6.55228 11.2115 6 11.2115C5.44772 11.2115 5 10.7638 5 10.2115V9.31747ZM12 8.31747C11.4477 8.31747 11 8.76519 11 9.31747V10.2115C11 10.7638 11.4477 11.2115 12 11.2115C12.5523 11.2115 13 10.7638 13 10.2115V9.31747C13 8.76519 12.5523 8.31747 12 8.31747Z" fill="gray"></path></svg>'),
+                  '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" class="zhuzhan-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.73252 2.67094C3.33229 2.28484 3.33229 1.64373 3.73252 1.25764C4.11291 0.890684 4.71552 0.890684 5.09591 1.25764L7.21723 3.30403C7.27749 3.36218 7.32869 3.4261 7.37081 3.49407H10.5789C10.6211 3.4261 10.6723 3.36218 10.7325 3.30403L12.8538 1.25764C13.2342 0.890684 13.8368 0.890684 14.2172 1.25764C14.6175 1.64373 14.6175 2.28484 14.2172 2.67094L13.364 3.49407H14C16.2091 3.49407 18 5.28493 18 7.49407V12.9996C18 15.2087 16.2091 16.9996 14 16.9996H4C1.79086 16.9996 0 15.2087 0 12.9996V7.49406C0 5.28492 1.79086 3.49407 4 3.49407H4.58579L3.73252 2.67094ZM4 5.42343C2.89543 5.42343 2 6.31886 2 7.42343V13.0702C2 14.1748 2.89543 15.0702 4 15.0702H14C15.1046 15.0702 16 14.1748 16 13.0702V7.42343C16 6.31886 15.1046 5.42343 14 5.42343H4ZM5 9.31747C5 8.76519 5.44772 8.31747 6 8.31747C6.55228 8.31747 7 8.76519 7 9.31747V10.2115C7 10.7638 6.55228 11.2115 6 11.2115C5.44772 11.2115 5 10.7638 5 10.2115V9.31747ZM12 8.31747C11.4477 8.31747 11 8.76519 11 9.31747V10.2115C11 10.7638 11.4477 11.2115 12 11.2115C12.5523 11.2115 13 10.7638 13 10.2115V9.31747C13 8.76519 12.5523 8.31747 12 8.31747Z" fill="gray"></path></svg>',
+                ),
                 FutureBuilder(
                   // future: check_bl_cookie(),
                   future: bilibili.check_bl_cookie(),
                   builder:
                       (BuildContext context, AsyncSnapshot<String> snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return global_loading_anime;
-                    } else {
-                      if (snapshot.data == '') {
-                        return const Text('cookie未设置或失效');
-                      } else {
-                        return Text(snapshot.data ?? 'Loading...');
-                      }
-                    }
-                  },
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return global_loading_anime;
+                        } else {
+                          if (snapshot.data == '') {
+                            return const Text('cookie未设置或失效');
+                          } else {
+                            return Text(snapshot.data ?? 'Loading...');
+                          }
+                        }
+                      },
                 ),
                 ElevatedButton(
                   onPressed: () => open_bl_login(),
@@ -870,21 +902,26 @@ class _SettingsPageState extends State<SettingsPage> {
                 FutureBuilder(
                   // future: check_bl_cookie(),
                   future: Netease().get_user(),
-                  builder: (BuildContext context,
-                      AsyncSnapshot<Map<String, dynamic>> snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return global_loading_anime;
-                    } else {
-                      if (snapshot.data == '') {
-                        return const Text('cookie未设置或失效');
-                      } else {
-                        // return Text(const JsonEncoder.withIndent('  ')
-                        //     .convert(snapshot.data));
-                        return Text(
-                            (snapshot.data?['result']?['nickname'] ?? '未知用户'));
-                      }
-                    }
-                  },
+                  builder:
+                      (
+                        BuildContext context,
+                        AsyncSnapshot<Map<String, dynamic>> snapshot,
+                      ) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return global_loading_anime;
+                        } else {
+                          if (snapshot.data == '') {
+                            return const Text('cookie未设置或失效');
+                          } else {
+                            // return Text(const JsonEncoder.withIndent('  ')
+                            //     .convert(snapshot.data));
+                            return Text(
+                              (snapshot.data?['result']?['nickname'] ?? '未知用户'),
+                            );
+                          }
+                        }
+                      },
                 ),
                 ElevatedButton(
                   onPressed: () => open_netease_login(),
@@ -896,28 +933,34 @@ class _SettingsPageState extends State<SettingsPage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 ExtendedImage.network(
-                    "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
-                    cache: true,
-                    width: 18,
-                    height: 18),
+                  "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
+                  cache: true,
+                  width: 18,
+                  height: 18,
+                ),
                 FutureBuilder(
                   // future: check_bl_cookie(),
                   future: qq.get_user(),
-                  builder: (BuildContext context,
-                      AsyncSnapshot<Map<String, dynamic>> snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return global_loading_anime;
-                    } else {
-                      if (snapshot.data == '') {
-                        return const Text('cookie未设置或失效');
-                      } else {
-                        // return Text(const JsonEncoder.withIndent('  ')
-                        //     .convert(snapshot.data));
-                        return Text(
-                            (snapshot.data?['data']?['nickname'] ?? '未知用户'));
-                      }
-                    }
-                  },
+                  builder:
+                      (
+                        BuildContext context,
+                        AsyncSnapshot<Map<String, dynamic>> snapshot,
+                      ) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return global_loading_anime;
+                        } else {
+                          if (snapshot.data == '') {
+                            return const Text('cookie未设置或失效');
+                          } else {
+                            // return Text(const JsonEncoder.withIndent('  ')
+                            //     .convert(snapshot.data));
+                            return Text(
+                              (snapshot.data?['data']?['nickname'] ?? '未知用户'),
+                            );
+                          }
+                        }
+                      },
                 ),
                 ElevatedButton(
                   onPressed: () => open_qq_login(),
@@ -929,7 +972,8 @@ class _SettingsPageState extends State<SettingsPage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 SvgPicture.string(
-                    '<svg width="800px" height="800px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>github [#142]</title><desc>Created with Sketch.</desc><defs></defs><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#000000"><g id="icons" transform="translate(56.000000, 160.000000)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" id="github-[#142]"></path></g></g></g></svg>'),
+                  '<svg width="800px" height="800px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>github [#142]</title><desc>Created with Sketch.</desc><defs></defs><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="Dribbble-Light-Preview" transform="translate(-140.000000, -7559.000000)" fill="#000000"><g id="icons" transform="translate(56.000000, 160.000000)"><path d="M94,7399 C99.523,7399 104,7403.59 104,7409.253 C104,7413.782 101.138,7417.624 97.167,7418.981 C96.66,7419.082 96.48,7418.762 96.48,7418.489 C96.48,7418.151 96.492,7417.047 96.492,7415.675 C96.492,7414.719 96.172,7414.095 95.813,7413.777 C98.04,7413.523 100.38,7412.656 100.38,7408.718 C100.38,7407.598 99.992,7406.684 99.35,7405.966 C99.454,7405.707 99.797,7404.664 99.252,7403.252 C99.252,7403.252 98.414,7402.977 96.505,7404.303 C95.706,7404.076 94.85,7403.962 94,7403.958 C93.15,7403.962 92.295,7404.076 91.497,7404.303 C89.586,7402.977 88.746,7403.252 88.746,7403.252 C88.203,7404.664 88.546,7405.707 88.649,7405.966 C88.01,7406.684 87.619,7407.598 87.619,7408.718 C87.619,7412.646 89.954,7413.526 92.175,7413.785 C91.889,7414.041 91.63,7414.493 91.54,7415.156 C90.97,7415.418 89.522,7415.871 88.63,7414.304 C88.63,7414.304 88.101,7413.319 87.097,7413.247 C87.097,7413.247 86.122,7413.234 87.029,7413.87 C87.029,7413.87 87.684,7414.185 88.139,7415.37 C88.139,7415.37 88.726,7417.2 91.508,7416.58 C91.513,7417.437 91.522,7418.245 91.522,7418.489 C91.522,7418.76 91.338,7419.077 90.839,7418.982 C86.865,7417.627 84,7413.783 84,7409.253 C84,7403.59 88.478,7399 94,7399" id="github-[#142]"></path></g></g></g></svg>',
+                ),
                 FutureBuilder(
                   // future: check_bl_cookie(),
                   future: Github.updateStatus(),
@@ -954,231 +998,411 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
             Wrap(
-                alignment: WrapAlignment.spaceAround,
-                direction: Axis.horizontal,
-                children: [
-                  ElevatedButton(
-                    onPressed: () => outputAllSettingsToFile(),
-                    child: const Text('保存配置到文件'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (Github.status != 2) {
-                        _msg('请先登录Github', 1.0);
-                        return;
-                      }
-                      var playlists = await Github.listExistBackup();
-                      print(playlists);
+              alignment: WrapAlignment.spaceAround,
+              direction: Axis.horizontal,
+              children: [
+                ElevatedButton(
+                  onPressed: () => outputAllSettingsToFile(),
+                  child: const Text('保存配置到文件'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (Github.status != 2) {
+                      _msg('请先登录Github', 1.0);
+                      return;
+                    }
+                    var playlists = await Github.listExistBackup();
+                    print(playlists);
 
-                      try {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text('导出歌单到Github Gist'),
-                              content: Container(
-                                width: double.maxFinite,
-                                child: ListView.builder(
-                                  shrinkWrap: true,
-                                  itemCount: playlists.length,
-                                  itemBuilder:
-                                      (BuildContext context, int index) {
-                                    final playlist = playlists[index];
-                                    return ListTile(
-                                      title: Text(playlist['id']),
-                                      subtitle: Text(playlist['description']),
-                                      onTap: () async {
-                                        try {
-                                          xuan_toast(
-                                            msg: '正在导出',
-                                          );
-                                          final settings =
-                                              await outputAllSettingsToFile(
-                                                  true);
-                                          final jsfile =
-                                              Github.json2gist(settings);
-                                          await Github.backupMySettings2Gist(
-                                            jsfile,
-                                            playlist['id'],
-                                            playlist['public'],
-                                          );
-                                          xuan_toast(
-                                            msg: '导出成功',
-                                          );
-                                          Navigator.of(context).pop();
-                                        } catch (e) {
-                                          xuan_toast(
-                                            msg: '导出失败$e',
-                                          );
-                                        }
-                                      },
-                                    );
-                                  },
-                                ),
+                    try {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('导出歌单到Github Gist'),
+                            content: Container(
+                              width: double.maxFinite,
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: playlists.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  final playlist = playlists[index];
+                                  return ListTile(
+                                    title: Text(playlist['id']),
+                                    subtitle: Text(playlist['description']),
+                                    onTap: () async {
+                                      try {
+                                        xuan_toast(msg: '正在导出');
+                                        final settings =
+                                            await outputAllSettingsToFile(true);
+                                        final jsfile = Github.json2gist(
+                                          settings,
+                                        );
+                                        await Github.backupMySettings2Gist(
+                                          jsfile,
+                                          playlist['id'],
+                                          playlist['public'],
+                                        );
+                                        xuan_toast(msg: '导出成功');
+                                        Navigator.of(context).pop();
+                                      } catch (e) {
+                                        xuan_toast(msg: '导出失败$e');
+                                      }
+                                    },
+                                  );
+                                },
                               ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () async {
-                                    try {
-                                      xuan_toast(
-                                        msg: '正在导出',
-                                      );
-                                      final settings =
-                                          await outputAllSettingsToFile(true);
-                                      final jsfile = Github.json2gist(settings);
-                                      await Github.backupMySettings2Gist(
-                                        jsfile,
-                                        null,
-                                        true,
-                                      );
-                                      xuan_toast(
-                                        msg: '导出成功',
-                                      );
-                                      Navigator.of(context).pop();
-                                    } catch (e) {
-                                      xuan_toast(
-                                        msg: '导出失败$e',
-                                      );
-                                    }
-                                  },
-                                  child: Text('创建公开备份'),
-                                ),
-                                TextButton(
-                                  onPressed: () async {
-                                    try {
-                                      xuan_toast(
-                                        msg: '正在导出',
-                                      );
-                                      final settings =
-                                          await outputAllSettingsToFile(true);
-                                      final jsfile = Github.json2gist(settings);
-                                      await Github.backupMySettings2Gist(
-                                        jsfile,
-                                        null,
-                                        false,
-                                      );
-                                      xuan_toast(
-                                        msg: '导出成功',
-                                      );
-                                      Navigator.of(context).pop();
-                                    } catch (e) {
-                                      xuan_toast(
-                                        msg: '导出失败$e',
-                                      );
-                                    }
-                                  },
-                                  child: Text('创建私有备份'),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Text('取消'),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      } catch (e) {
-                        // print(e);
-                        xuan_toast(
-                          msg: '添加失败${e}',
-                        );
-                      }
-                    },
-                    child: const Text('导出歌单到Github Gist'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => importSettingsFromFile(),
-                    child: const Text('从文件导入配置'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (Github.status != 2) {
-                        _msg('请先登录Github', 1.0);
-                        return;
-                      }
-                      var playlists = await Github.listExistBackup();
-                      print(playlists);
-
-                      try {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text('从Github Gist导入歌单'),
-                              content: Container(
-                                width: double.maxFinite,
-                                child: ListView.builder(
-                                  shrinkWrap: true,
-                                  itemCount: playlists.length,
-                                  itemBuilder:
-                                      (BuildContext context, int index) {
-                                    final playlist = playlists[index];
-                                    return ListTile(
-                                      title: Text(playlist['id']),
-                                      subtitle: Text(playlist['description']),
-                                      onTap: () async {
-                                        try {
-                                          xuan_toast(
-                                            msg: '正在导入',
-                                          );
-
-                                          final jsfile = await Github
-                                              .importMySettingsFromGist(
-                                            playlist['id'],
-                                          );
-                                          final settings =
-                                              await Github.gist2json(jsfile);
-                                          await importSettingsFromFile(
-                                              true, settings);
-                                          Navigator.of(context).pop();
-                                          xuan_toast(
-                                            msg: '导入成功',
-                                          );
-                                        } catch (e) {
-                                          xuan_toast(
-                                            msg: '导入失败$e',
-                                          );
-                                        }
-                                      },
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () async {
+                                  try {
+                                    xuan_toast(msg: '正在导出');
+                                    final settings =
+                                        await outputAllSettingsToFile(true);
+                                    final jsfile = Github.json2gist(settings);
+                                    await Github.backupMySettings2Gist(
+                                      jsfile,
+                                      null,
+                                      true,
                                     );
-                                  },
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
+                                    xuan_toast(msg: '导出成功');
                                     Navigator.of(context).pop();
-                                  },
-                                  child: Text('取消'),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      } catch (e) {
-                        xuan_toast(
-                          msg: '添加失败${e}',
-                        );
-                      }
-                    },
-                    child: const Text('从Github Gist导入歌单'),
-                  ),
-                  ElevatedButton(
-                    onLongPress: () {
-                      g_launchURL(Uri.parse(
-                          'https://github.com/HBWuChang/listen1_xuan/releases'));
-                    },
-                    onPressed: () async {
-                      var dia_context;
+                                  } catch (e) {
+                                    xuan_toast(msg: '导出失败$e');
+                                  }
+                                },
+                                child: Text('创建公开备份'),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  try {
+                                    xuan_toast(msg: '正在导出');
+                                    final settings =
+                                        await outputAllSettingsToFile(true);
+                                    final jsfile = Github.json2gist(settings);
+                                    await Github.backupMySettings2Gist(
+                                      jsfile,
+                                      null,
+                                      false,
+                                    );
+                                    xuan_toast(msg: '导出成功');
+                                    Navigator.of(context).pop();
+                                  } catch (e) {
+                                    xuan_toast(msg: '导出失败$e');
+                                  }
+                                },
+                                child: Text('创建私有备份'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text('取消'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    } catch (e) {
+                      // print(e);
+                      xuan_toast(msg: '添加失败${e}');
+                    }
+                  },
+                  child: const Text('导出歌单到Github Gist'),
+                ),
+                ElevatedButton(
+                  onPressed: () => importSettingsFromFile(),
+                  child: const Text('从文件导入配置'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (Github.status != 2) {
+                      _msg('请先登录Github', 1.0);
+                      return;
+                    }
+                    var playlists = await Github.listExistBackup();
+                    print(playlists);
 
-                      if (is_windows) {
+                    try {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('从Github Gist导入歌单'),
+                            content: Container(
+                              width: double.maxFinite,
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: playlists.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  final playlist = playlists[index];
+                                  return ListTile(
+                                    title: Text(playlist['id']),
+                                    subtitle: Text(playlist['description']),
+                                    onTap: () async {
+                                      try {
+                                        xuan_toast(msg: '正在导入');
+
+                                        final jsfile =
+                                            await Github.importMySettingsFromGist(
+                                              playlist['id'],
+                                            );
+                                        final settings = await Github.gist2json(
+                                          jsfile,
+                                        );
+                                        await importSettingsFromFile(
+                                          true,
+                                          settings,
+                                        );
+                                        Navigator.of(context).pop();
+                                        xuan_toast(msg: '导入成功');
+                                      } catch (e) {
+                                        xuan_toast(msg: '导入失败$e');
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text('取消'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    } catch (e) {
+                      xuan_toast(msg: '添加失败${e}');
+                    }
+                  },
+                  child: const Text('从Github Gist导入歌单'),
+                ),
+                ElevatedButton(
+                  onLongPress: () {
+                    g_launchURL(
+                      Uri.parse(
+                        'https://github.com/HBWuChang/listen1_xuan/releases',
+                      ),
+                    );
+                  },
+                  onPressed: () async {
+                    var dia_context;
+
+                    if (is_windows) {
+                      try {
+                        final tempPath =
+                            (await xuan_getdownloadDirectory()).path;
+
+                        final filePath = '$tempPath\\canary.zip';
+                        final url_list =
+                            'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
+                        final prefs = await SharedPreferences.getInstance();
+                        final token = prefs.getString('githubOauthAccessKey');
+                        if (token == null) {
+                          xuan_toast(
+                            msg: '请先登录Github',
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.CENTER,
+                            timeInSecForIosWeb: 1,
+                            backgroundColor: Colors.red,
+                            textColor: Colors.white,
+                            fontSize: 16.0,
+                          );
+                          return;
+                        }
+                        final response = await dio_with_ProxyAdapter.get(
+                          url_list,
+                          options: Options(
+                            headers: {
+                              'accept': 'application/vnd.github.v3+json',
+                              'authorization': 'Bearer ' + token,
+                              'x-github-api-version': '2022-11-28',
+                            },
+                          ),
+                        );
+                        late var art;
+
+                        for (var i in response.data["artifacts"]) {
+                          if (i['name'].indexOf("windows") >= 0) {
+                            art = i;
+                            break;
+                          }
+                        }
+                        bool flag = true;
+                        if (await File(filePath).exists()) {
+                          // 获取sha256值
+                          var sha256 = await Process.run('certutil', [
+                            '-hashfile',
+                            filePath,
+                            'SHA256',
+                          ]);
+                          var sha256_str = sha256.stdout
+                              .toString()
+                              .split('\n')[1]
+                              .trim();
+                          print('sha256: $sha256_str');
+                          String r_sha256 = art["digest"]
+                              .replaceAll("sha256:", "")
+                              .trim();
+                          if (sha256_str == r_sha256) {
+                            flag = false;
+                          }
+                        }
+                        if (flag) {
+                          final download_url = art["archive_download_url"];
+                          final created_at = art["created_at"];
+                          double total = art["size_in_bytes"].toDouble();
+                          double received = 0;
+                          final StreamController<double>
+                          progressStreamController = StreamController<double>();
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              dia_context = context;
+                              return PopScope(
+                                canPop: false,
+                                onPopInvokedWithResult: (didPop, result) => {},
+                                child: StatefulBuilder(
+                                  builder:
+                                      (
+                                        BuildContext context,
+                                        StateSetter setState,
+                                      ) {
+                                        return AlertDialog(
+                                          title: Text('下载进度: ${created_at}'),
+                                          content: StreamBuilder<double>(
+                                            stream:
+                                                progressStreamController.stream,
+                                            builder: (context, snapshot) {
+                                              double progress =
+                                                  snapshot.data ?? 0;
+                                              return Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  LinearProgressIndicator(
+                                                    value: progress,
+                                                  ),
+                                                  SizedBox(height: 20),
+                                                  Text(
+                                                    '${(progress * total / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB',
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                ),
+                              );
+                            },
+                          );
+                          await dio_with_ProxyAdapter.download(
+                            download_url,
+                            filePath,
+                            options: Options(
+                              headers: {
+                                'accept': 'application/vnd.github.v3+json',
+                                'authorization': 'Bearer ' + token,
+                                'x-github-api-version': '2022-11-28',
+                              },
+                            ),
+                            onReceiveProgress: (receivedBytes, totalBytes) {
+                              received = receivedBytes.toDouble();
+                              double progress = received / total;
+                              progressStreamController.add(progress);
+                            },
+                          );
+                          try {
+                            Navigator.of(dia_context).pop(); // 关闭进度条对话框
+                          } catch (e) {
+                            print('关闭进度条对话框失败: $e');
+                          }
+                        }
+                        xuan_toast(
+                          msg: '下载成功',
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.CENTER,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.blue,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+
+                        // 解压 ZIP 文件
+                        final bytes = File(filePath).readAsBytesSync();
+                        final archive = ZipDecoder().decodeBytes(bytes);
+                        // 删除canary文件夹
+                        final canaryDir = Directory('$tempPath\\canary');
+                        if (await canaryDir.exists()) {
+                          await canaryDir.delete(recursive: true);
+                        }
+                        for (final file in archive) {
+                          final filename = file.name;
+                          if (file.isFile) {
+                            final data = file.content as List<int>;
+                            File('$tempPath\\canary\\$filename')
+                              ..createSync(recursive: true)
+                              ..writeAsBytesSync(data);
+                          } else {
+                            Directory(
+                              '$filePath\\canary\\$filename',
+                            ).create(recursive: true);
+                          }
+                        }
+                        String executablePath = Platform.resolvedExecutable;
+                        String executableDir = File(executablePath).parent.path;
+                        print(executableDir);
+                        createAndRunBatFile(tempPath, executableDir);
+                      } catch (e) {
                         try {
+                          Navigator.of(dia_context).pop(); // 关闭进度条对话框
+                        } catch (e) {
+                          print('关闭进度条对话框失败: $e');
+                        }
+                        xuan_toast(
+                          msg: '下载失败$e',
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.CENTER,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+                      }
+                    } else {
+                      try {
+                        if (await Permission.manageExternalStorage
+                                .request()
+                                .isGranted ||
+                            await Permission.storage.request().isGranted) {
                           final tempPath =
                               (await xuan_getdownloadDirectory()).path;
 
-                          final filePath = '$tempPath\\canary.zip';
+                          final apkFile = File(apkfile_name);
+                          print('apkFile: $apkFile');
+                          if (await apkFile.exists()) {
+                            try {
+                              InstallPlugin.installApk(apkfile_name)
+                                  .then((result) {
+                                    print('install apk $result');
+                                  })
+                                  .catchError((error) {
+                                    print('install apk error: $error');
+                                  });
+                              return;
+                            } catch (e) {
+                              print('安装APK失败: $e');
+                              return;
+                            }
+                          }
+                          final filePath = '$tempPath/canary.zip';
+
                           final url_list =
                               'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
                           final prefs = await SharedPreferences.getInstance();
@@ -1195,100 +1419,171 @@ class _SettingsPageState extends State<SettingsPage> {
                             );
                             return;
                           }
-                          final response =
-                              await dio_with_ProxyAdapter.get(url_list,
-                                  options: Options(headers: {
-                                    'accept': 'application/vnd.github.v3+json',
-                                    'authorization': 'Bearer ' + token,
-                                    'x-github-api-version': '2022-11-28',
-                                  }));
-                          late var art;
-
-                          for (var i in response.data["artifacts"]) {
-                            if (i['name'].indexOf("windows") >= 0) {
-                              art = i;
-                              break;
-                            }
-                          }
-                          bool flag = true;
-                          if (await File(filePath).exists()) {
-                            // 获取sha256值
-                            var sha256 = await Process.run(
-                                'certutil', ['-hashfile', filePath, 'SHA256']);
-                            var sha256_str =
-                                sha256.stdout.toString().split('\n')[1].trim();
-                            print('sha256: $sha256_str');
-                            String r_sha256 =
-                                art["digest"].replaceAll("sha256:", "").trim();
-                            if (sha256_str == r_sha256) {
-                              flag = false;
-                            }
-                          }
-                          if (flag) {
-                            final download_url = art["archive_download_url"];
-                            final created_at = art["created_at"];
-                            double total = art["size_in_bytes"].toDouble();
-                            double received = 0;
-                            final StreamController<double>
-                                progressStreamController =
-                                StreamController<double>();
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (BuildContext context) {
-                                dia_context = context;
-                                return PopScope(
-                                  canPop: false,
-                                  onPopInvokedWithResult: (didPop, result) =>
-                                      {},
-                                  child: StatefulBuilder(
-                                    builder: (BuildContext context,
-                                        StateSetter setState) {
-                                      return AlertDialog(
-                                        title: Text('下载进度: ${created_at}'),
-                                        content: StreamBuilder<double>(
-                                          stream:
-                                              progressStreamController.stream,
-                                          builder: (context, snapshot) {
-                                            double progress =
-                                                snapshot.data ?? 0;
-                                            return Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                LinearProgressIndicator(
-                                                    value: progress),
-                                                SizedBox(height: 20),
-                                                Text(
-                                                    '${(progress * total / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB'),
-                                              ],
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
-                            );
-                            await dio_with_ProxyAdapter.download(
-                              download_url,
-                              filePath,
-                              options: Options(headers: {
+                          final response = await dio_with_ProxyAdapter.get(
+                            url_list,
+                            options: Options(
+                              headers: {
                                 'accept': 'application/vnd.github.v3+json',
                                 'authorization': 'Bearer ' + token,
                                 'x-github-api-version': '2022-11-28',
-                              }),
-                              onReceiveProgress: (receivedBytes, totalBytes) {
-                                received = receivedBytes.toDouble();
-                                double progress = received / total;
-                                progressStreamController.add(progress);
                               },
-                            );
-                            try {
-                              Navigator.of(dia_context).pop(); // 关闭进度条对话框
-                            } catch (e) {
-                              print('关闭进度条对话框失败: $e');
+                            ),
+                          );
+                          print(
+                            'Kernel architecture: ${SysInfo.kernelArchitecture.name}',
+                          );
+                          late var art;
+
+                          switch (SysInfo.kernelArchitecture.name) {
+                            case "ARM64":
+                              for (var i in response.data["artifacts"]) {
+                                if (i['name'].indexOf("arm64") > 0) {
+                                  art = i;
+                                  break;
+                                }
+                              }
+                            case "ARM":
+                              for (var i in response.data["artifacts"]) {
+                                if (i['name'].indexOf("armeabi") > 0) {
+                                  art = i;
+                                  break;
+                                }
+                              }
+                            case "X86_64":
+                              for (var i in response.data["artifacts"]) {
+                                if (i['name'].indexOf("x86_64") > 0) {
+                                  art = i;
+                                  break;
+                                }
+                              }
+                            default:
+                              art = response.data["artifacts"][0];
+                          }
+                          final download_url = art["archive_download_url"];
+                          final created_at = art["created_at"];
+                          double total = art["size_in_bytes"].toDouble();
+                          double received = 0;
+                          final StreamController<double>
+                          progressStreamController = StreamController<double>();
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              dia_context = context;
+                              return PopScope(
+                                canPop: false,
+                                onPopInvokedWithResult: (didPop, result) => {},
+                                child: StatefulBuilder(
+                                  builder:
+                                      (
+                                        BuildContext context,
+                                        StateSetter setState,
+                                      ) {
+                                        return AlertDialog(
+                                          title: Text('下载进度: ${created_at}'),
+                                          content: StreamBuilder<double>(
+                                            stream:
+                                                progressStreamController.stream,
+                                            builder: (context, snapshot) {
+                                              double progress =
+                                                  snapshot.data ?? 0;
+                                              return Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  LinearProgressIndicator(
+                                                    value: progress,
+                                                  ),
+                                                  SizedBox(height: 20),
+                                                  Text(
+                                                    '${(progress * total / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB',
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                ),
+                              );
+                            },
+                          );
+                          // 首先获取302重定向的实际下载链接
+                          final redirectResponse = await dio_with_ProxyAdapter
+                              .get(
+                                download_url,
+                                options: Options(
+                                  followRedirects: false,
+                                  validateStatus: (status) => status! < 400,
+                                  headers: {
+                                    'accept': 'application/vnd.github.v3+json',
+                                    'authorization': 'Bearer ' + token,
+                                    'x-github-api-version': '2022-11-28',
+                                  },
+                                ),
+                              );
+                          String actualDownloadUrl = download_url;
+                          if (redirectResponse.statusCode == 302) {
+                            actualDownloadUrl =
+                                redirectResponse.headers.value('location') ??
+                                download_url;
+                          }
+
+                          // 使用实际下载链接进行下载，不添加GitHub API请求头
+                          await dio_with_ProxyAdapter.download(
+                            // await Dio().download(
+                            actualDownloadUrl,
+                            filePath,
+                            onReceiveProgress: (receivedBytes, totalBytes) {
+                              received = receivedBytes.toDouble();
+                              double progress = received / total;
+                              progressStreamController.add(progress);
+                            },
+                          );
+
+                          try {
+                            Navigator.of(dia_context).pop(); // 关闭进度条对话框
+                          } catch (e) {
+                            print('关闭进度条对话框失败: $e');
+                          }
+                          // 解压 ZIP 文件
+                          final bytes = File(filePath).readAsBytesSync();
+                          final archive = ZipDecoder().decodeBytes(bytes);
+
+                          for (final file in archive) {
+                            final filename = file.name;
+                            if (file.isFile) {
+                              final data = file.content as List<int>;
+                              File('$tempPath/$filename')
+                                ..createSync(recursive: true)
+                                ..writeAsBytesSync(data);
+                            } else {
+                              Directory(
+                                '$filePath/$filename',
+                              ).create(recursive: true);
                             }
+                          }
+                          if (await apkFile.exists()) {
+                            try {
+                              InstallPlugin.installApk(apkfile_name)
+                                  .then((result) {
+                                    print('install apk $result');
+                                  })
+                                  .catchError((error) {
+                                    print('install apk error: $error');
+                                  });
+                            } catch (e) {
+                              print('安装APK失败: $e');
+                            }
+                          } else {
+                            xuan_toast(
+                              msg: 'APK 文件未找到',
+                              toastLength: Toast.LENGTH_SHORT,
+                              gravity: ToastGravity.CENTER,
+                              timeInSecForIosWeb: 1,
+                              backgroundColor: Colors.red,
+                              textColor: Colors.white,
+                              fontSize: 16.0,
+                            );
                           }
                           xuan_toast(
                             msg: '下载成功',
@@ -1299,608 +1594,370 @@ class _SettingsPageState extends State<SettingsPage> {
                             textColor: Colors.white,
                             fontSize: 16.0,
                           );
-
-                          // 解压 ZIP 文件
-                          final bytes = File(filePath).readAsBytesSync();
-                          final archive = ZipDecoder().decodeBytes(bytes);
-                          // 删除canary文件夹
-                          final canaryDir = Directory('$tempPath\\canary');
-                          if (await canaryDir.exists()) {
-                            await canaryDir.delete(recursive: true);
-                          }
-                          for (final file in archive) {
-                            final filename = file.name;
-                            if (file.isFile) {
-                              final data = file.content as List<int>;
-                              File('$tempPath\\canary\\$filename')
-                                ..createSync(recursive: true)
-                                ..writeAsBytesSync(data);
-                            } else {
-                              Directory('$filePath\\canary\\$filename')
-                                  .create(recursive: true);
-                            }
-                          }
-                          String executablePath = Platform.resolvedExecutable;
-                          String executableDir =
-                              File(executablePath).parent.path;
-                          print(executableDir);
-                          createAndRunBatFile(tempPath, executableDir);
-                        } catch (e) {
-                          try {
-                            Navigator.of(dia_context).pop(); // 关闭进度条对话框
-                          } catch (e) {
-                            print('关闭进度条对话框失败: $e');
-                          }
-                          xuan_toast(
-                            msg: '下载失败$e',
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.CENTER,
-                            timeInSecForIosWeb: 1,
-                            backgroundColor: Colors.red,
-                            textColor: Colors.white,
-                            fontSize: 16.0,
-                          );
+                        } else {
+                          throw Exception("没有权限访问存储空间");
                         }
-                      } else {
+                      } catch (e) {
                         try {
-                          if (await Permission.manageExternalStorage
-                                  .request()
-                                  .isGranted ||
-                              await Permission.storage.request().isGranted) {
-                            final tempPath =
-                                (await xuan_getdownloadDirectory()).path;
-
-                            final apkFile = File(apkfile_name);
-                            print('apkFile: $apkFile');
-                            if (await apkFile.exists()) {
-                              try {
-                                InstallPlugin.installApk(apkfile_name)
-                                    .then((result) {
-                                  print('install apk $result');
-                                }).catchError((error) {
-                                  print('install apk error: $error');
-                                });
-                                return;
-                              } catch (e) {
-                                print('安装APK失败: $e');
-                                return;
-                              }
-                            }
-                            final filePath = '$tempPath/canary.zip';
-
-                            final url_list =
-                                'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
-                            final prefs = await SharedPreferences.getInstance();
-                            final token =
-                                prefs.getString('githubOauthAccessKey');
-                            if (token == null) {
-                              xuan_toast(
-                                msg: '请先登录Github',
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.CENTER,
-                                timeInSecForIosWeb: 1,
-                                backgroundColor: Colors.red,
-                                textColor: Colors.white,
-                                fontSize: 16.0,
-                              );
-                              return;
-                            }
-                            final response =
-                                await dio_with_ProxyAdapter.get(url_list,
-                                    options: Options(headers: {
-                                      'accept':
-                                          'application/vnd.github.v3+json',
-                                      'authorization': 'Bearer ' + token,
-                                      'x-github-api-version': '2022-11-28',
-                                    }));
-                            print(
-                                'Kernel architecture: ${SysInfo.kernelArchitecture.name}');
-                            late var art;
-
-                            switch (SysInfo.kernelArchitecture.name) {
-                              case "ARM64":
-                                for (var i in response.data["artifacts"]) {
-                                  if (i['name'].indexOf("arm64") > 0) {
-                                    art = i;
-                                    break;
-                                  }
-                                }
-                              case "ARM":
-                                for (var i in response.data["artifacts"]) {
-                                  if (i['name'].indexOf("armeabi") > 0) {
-                                    art = i;
-                                    break;
-                                  }
-                                }
-                              case "X86_64":
-                                for (var i in response.data["artifacts"]) {
-                                  if (i['name'].indexOf("x86_64") > 0) {
-                                    art = i;
-                                    break;
-                                  }
-                                }
-                              default:
-                                art = response.data["artifacts"][0];
-                            }
-                            final download_url = art["archive_download_url"];
-                            final created_at = art["created_at"];
-                            double total = art["size_in_bytes"].toDouble();
-                            double received = 0;
-                            final StreamController<double>
-                                progressStreamController =
-                                StreamController<double>();
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (BuildContext context) {
-                                dia_context = context;
-                                return PopScope(
-                                  canPop: false,
-                                  onPopInvokedWithResult: (didPop, result) =>
-                                      {},
-                                  child: StatefulBuilder(
-                                    builder: (BuildContext context,
-                                        StateSetter setState) {
-                                      return AlertDialog(
-                                        title: Text('下载进度: ${created_at}'),
-                                        content: StreamBuilder<double>(
-                                          stream:
-                                              progressStreamController.stream,
-                                          builder: (context, snapshot) {
-                                            double progress =
-                                                snapshot.data ?? 0;
-                                            return Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                LinearProgressIndicator(
-                                                    value: progress),
-                                                SizedBox(height: 20),
-                                                Text(
-                                                    '${(progress * total / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB'),
-                                              ],
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
-                            );
-                            // 首先获取302重定向的实际下载链接
-                            final redirectResponse =
-                                await dio_with_ProxyAdapter.get(
-                              download_url,
-                              options: Options(
-                                followRedirects: false,
-                                validateStatus: (status) => status! < 400,
-                                headers: {
-                                  'accept': 'application/vnd.github.v3+json',
-                                  'authorization': 'Bearer ' + token,
-                                  'x-github-api-version': '2022-11-28',
-                                },
-                              ),
-                            );
-                            String actualDownloadUrl = download_url;
-                            if (redirectResponse.statusCode == 302) {
-                              actualDownloadUrl =
-                                  redirectResponse.headers.value('location') ??
-                                      download_url;
-                            }
-
-                            // 使用实际下载链接进行下载，不添加GitHub API请求头
-                            await dio_with_ProxyAdapter.download(
-                              // await Dio().download(
-                              actualDownloadUrl,
-                              filePath,
-                              onReceiveProgress: (receivedBytes, totalBytes) {
-                                received = receivedBytes.toDouble();
-                                double progress = received / total;
-                                progressStreamController.add(progress);
-                              },
-                            );
-
-                            try {
-                              Navigator.of(dia_context).pop(); // 关闭进度条对话框
-                            } catch (e) {
-                              print('关闭进度条对话框失败: $e');
-                            }
-                            // 解压 ZIP 文件
-                            final bytes = File(filePath).readAsBytesSync();
-                            final archive = ZipDecoder().decodeBytes(bytes);
-
-                            for (final file in archive) {
-                              final filename = file.name;
-                              if (file.isFile) {
-                                final data = file.content as List<int>;
-                                File('$tempPath/$filename')
-                                  ..createSync(recursive: true)
-                                  ..writeAsBytesSync(data);
-                              } else {
-                                Directory('$filePath/$filename')
-                                    .create(recursive: true);
-                              }
-                            }
-                            if (await apkFile.exists()) {
-                              try {
-                                InstallPlugin.installApk(apkfile_name)
-                                    .then((result) {
-                                  print('install apk $result');
-                                }).catchError((error) {
-                                  print('install apk error: $error');
-                                });
-                              } catch (e) {
-                                print('安装APK失败: $e');
-                              }
-                            } else {
-                              xuan_toast(
-                                msg: 'APK 文件未找到',
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.CENTER,
-                                timeInSecForIosWeb: 1,
-                                backgroundColor: Colors.red,
-                                textColor: Colors.white,
-                                fontSize: 16.0,
-                              );
-                            }
-                            xuan_toast(
-                              msg: '下载成功',
-                              toastLength: Toast.LENGTH_SHORT,
-                              gravity: ToastGravity.CENTER,
-                              timeInSecForIosWeb: 1,
-                              backgroundColor: Colors.blue,
-                              textColor: Colors.white,
-                              fontSize: 16.0,
-                            );
-                          } else {
-                            throw Exception("没有权限访问存储空间");
-                          }
+                          Navigator.of(dia_context).pop(); // 关闭进度条对话框
                         } catch (e) {
-                          try {
-                            Navigator.of(dia_context).pop(); // 关闭进度条对话框
-                          } catch (e) {
-                            print('关闭进度条对话框失败: $e');
-                          }
-                          xuan_toast(
-                            msg: '下载失败$e',
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.CENTER,
-                            timeInSecForIosWeb: 1,
-                            backgroundColor: Colors.red,
-                            textColor: Colors.white,
-                            fontSize: 16.0,
-                          );
+                          print('关闭进度条对话框失败: $e');
                         }
+                        xuan_toast(
+                          msg: '下载失败$e',
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.CENTER,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('下载最新测试版'),
+                ),
+                if (!is_windows)
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (await Permission.manageExternalStorage
+                              .request()
+                              .isGranted ||
+                          await Permission.storage.request().isGranted) {
+                        final tempDir =
+                            await getApplicationDocumentsDirectory();
+                        var tempPath = tempDir.path;
+                        var filePath = '$tempPath/canary.zip';
+
+                        var file = File(filePath);
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-arm64-v8a-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-armeabi-v7a-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-x86_64-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        tempPath = '/storage/emulated/0/Download/Listen1';
+                        filePath = '$tempPath/canary.zip';
+
+                        file = File(filePath);
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-arm64-v8a-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-armeabi-v7a-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-x86_64-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+                        file = File('$tempPath/app-release.apk');
+                        if (await file.exists()) {
+                          await file.delete();
+                        }
+
+                        xuan_toast(
+                          msg: '清理成功',
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.CENTER,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.blue,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+                      } else {
+                        xuan_toast(
+                          msg: '没有权限访问存储空间',
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.CENTER,
+                          timeInSecForIosWeb: 1,
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
                       }
                     },
-                    child: const Text('下载最新测试版'),
+                    child: const Text('清除安装包缓存'),
                   ),
-                  if (!is_windows)
-                    ElevatedButton(
-                      onPressed: () async {
-                        if (await Permission.manageExternalStorage
-                                .request()
-                                .isGranted ||
-                            await Permission.storage.request().isGranted) {
-                          final tempDir =
-                              await getApplicationDocumentsDirectory();
-                          var tempPath = tempDir.path;
-                          var filePath = '$tempPath/canary.zip';
-
-                          var file = File(filePath);
-                          if (await file.exists()) {
-                            await file.delete();
-                          }
-                          file = File('$tempPath/app-arm64-v8a-release.apk');
-                          if (await file.exists()) {
-                            await file.delete();
-                          }
-                          file = File('$tempPath/app-armeabi-v7a-release.apk');
-                          if (await file.exists()) {
-                            await file.delete();
-                          }
-                          file = File('$tempPath/app-x86_64-release.apk');
-                          if (await file.exists()) {
-                            await file.delete();
-                          }
-                          file = File('$tempPath/app-release.apk');
-                          if (await file.exists()) {
-                            await file.delete();
-                          }
-                          tempPath = '/storage/emulated/0/Download/Listen1';
-                          filePath = '$tempPath/canary.zip';
-
-                          file = File(filePath);
-                          if (await file.exists()) {
-                            await file.delete();
-                          }
-                          file = File('$tempPath/app-arm64-v8a-release.apk');
-                          if (await file.exists()) {
-                            await file.delete();
-                          }
-                          file = File('$tempPath/app-armeabi-v7a-release.apk');
-                          if (await file.exists()) {
-                            await file.delete();
-                          }
-                          file = File('$tempPath/app-x86_64-release.apk');
-                          if (await file.exists()) {
-                            await file.delete();
-                          }
-                          file = File('$tempPath/app-release.apk');
-                          if (await file.exists()) {
-                            await file.delete();
-                          }
-
-                          xuan_toast(
-                            msg: '清理成功',
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.CENTER,
-                            timeInSecForIosWeb: 1,
-                            backgroundColor: Colors.blue,
-                            textColor: Colors.white,
-                            fontSize: 16.0,
-                          );
-                        } else {
-                          xuan_toast(
-                            msg: '没有权限访问存储空间',
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.CENTER,
-                            timeInSecForIosWeb: 1,
-                            backgroundColor: Colors.red,
-                            textColor: Colors.white,
-                            fontSize: 16.0,
-                          );
-                        }
+                ElevatedButton(
+                  onPressed: () => clean_local_cache(),
+                  child: const Text('清除未在配置文件中的歌曲缓存'),
+                ),
+                ElevatedButton(
+                  onPressed: () => clean_local_cache(true),
+                  child: const Text('清除所有歌曲缓存'),
+                ),
+                ...create_hotkey_btns(context, _msg),
+                Obx(
+                  () => SwitchListTile(
+                    title: const Text('禁用ssl证书验证'),
+                    value: useHttpOverrides.value,
+                    onChanged: (bool value) {
+                      set_useHttpOverrides(value);
+                      useHttpOverrides.value = value;
+                    },
+                  ),
+                ),
+                if (is_windows)
+                  Obx(
+                    () => SwitchListTile(
+                      title: const Text('在右侧页面中键时隐藏/最小化主页面'),
+                      value: Get.find<SettingsController>().hideOrMinimize,
+                      onChanged: (bool value) {
+                        Get.find<SettingsController>().hideOrMinimize = value;
+                        _msg('设置成功', 1.0);
                       },
-                      child: const Text('清除安装包缓存'),
                     ),
-                  ElevatedButton(
-                    onPressed: () => clean_local_cache(),
-                    child: const Text('清除未在配置文件中的歌曲缓存'),
                   ),
-                  ElevatedButton(
-                    onPressed: () => clean_local_cache(true),
-                    child: const Text('清除所有歌曲缓存'),
-                  ),
-                  ...create_hotkey_btns(context, _msg),
-                  Obx(() => SwitchListTile(
-                        title: const Text('禁用ssl证书验证'),
-                        value: useHttpOverrides.value,
-                        onChanged: (bool value) {
-                          set_useHttpOverrides(value);
-                          useHttpOverrides.value = value;
-                        },
-                      )),
-                  if (is_windows)
-                    Obx(() => SwitchListTile(
-                          title: const Text('在右侧页面中键时隐藏/最小化主页面'),
-                          value: Get.find<SettingsController>().hideOrMinimize,
-                          onChanged: (bool value) {
-                            Get.find<SettingsController>().hideOrMinimize =
-                                value;
-                            _msg('设置成功', 1.0);
-                          },
-                        )),
-                  // 竖屏底部播放条额外占位高度设置
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Obx(
-                      () {
-                        SettingsController controller =
-                            Get.find<SettingsController>();
-                        double paddingValue =
-                            controller.portraitBottomBarPadding.value;
-                        TextEditingController textController =
-                            TextEditingController(
+                // 竖屏底部播放条额外占位高度设置
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Obx(() {
+                    SettingsController controller =
+                        Get.find<SettingsController>();
+                    double paddingValue =
+                        controller.portraitBottomBarPadding.value;
+                    TextEditingController textController =
+                        TextEditingController(
                           text: paddingValue.toStringAsFixed(1),
                         );
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '竖屏底部播放条额外占位高度 (${paddingValue.toStringAsFixed(1)}px)',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Row(
                           children: [
-                            Text(
-                              '竖屏底部播放条额外占位高度 (${paddingValue.toStringAsFixed(1)}px)',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Slider(
+                                value: paddingValue.clamp(0.0, 200.0),
+                                min: 0.0,
+                                max: 200.0,
+                                divisions: 200,
+                                onChanged: (value) {
+                                  controller.portraitBottomBarPadding.value =
+                                      value;
+                                  textController.text = value.toStringAsFixed(
+                                    1,
+                                  );
+                                },
                               ),
                             ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Slider(
-                                    value: paddingValue.clamp(0.0, 200.0),
-                                    min: 0.0,
-                                    max: 200.0,
-                                    divisions: 200,
-                                    onChanged: (value) {
-                                      controller.portraitBottomBarPadding
-                                          .value = value;
-                                      textController.text =
-                                          value.toStringAsFixed(1);
-                                    },
+                            SizedBox(width: 16),
+                            Container(
+                              width: 80,
+                              child: TextField(
+                                controller: textController,
+                                keyboardType: TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
                                   ),
                                 ),
-                                SizedBox(width: 16),
-                                Container(
-                                  width: 80,
-                                  child: TextField(
-                                    controller: textController,
-                                    keyboardType:
-                                        TextInputType.numberWithOptions(
-                                            decimal: true),
-                                    decoration: InputDecoration(
-                                      border: OutlineInputBorder(),
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                    ),
-                                    onSubmitted: (value) {
-                                      double? parsedValue =
-                                          double.tryParse(value);
-                                      if (parsedValue != null) {
-                                        double clampedValue =
-                                            parsedValue.clamp(0.0, 200.0);
-                                        controller.portraitBottomBarPadding
-                                            .value = clampedValue;
-                                        textController.text =
-                                            clampedValue.toStringAsFixed(1);
-                                      } else {
-                                        textController.text =
-                                            paddingValue.toStringAsFixed(1);
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ],
+                                onSubmitted: (value) {
+                                  double? parsedValue = double.tryParse(value);
+                                  if (parsedValue != null) {
+                                    double clampedValue = parsedValue.clamp(
+                                      0.0,
+                                      200.0,
+                                    );
+                                    controller.portraitBottomBarPadding.value =
+                                        clampedValue;
+                                    textController.text = clampedValue
+                                        .toStringAsFixed(1);
+                                  } else {
+                                    textController.text = paddingValue
+                                        .toStringAsFixed(1);
+                                  }
+                                },
+                              ),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  if (is_windows)
-                    FutureBuilder(
-                      // future: check_bl_cookie(),
-                      future: get_windows_proxy_addr(),
-                      builder: (BuildContext context,
-                          AsyncSnapshot<String> snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return global_loading_anime;
-                        } else {
-                          return TextField(
-                            focusNode: _focusNode2,
-                            controller: TextEditingController(
-                              text: snapshot.data,
-                            ),
-                            decoration: InputDecoration(
-                              labelText:
-                                  'Windows代理地址,仅适用于Github,例如：localhost:7890,留空表示不使用,回车以保存',
-                            ),
-                            onSubmitted: (value) async {
-                              Get.find<SettingsController>().setSettings(
-                                {'proxy': value},
-                              );
-                              _msg('设置成功$value，重启应用生效', 1.0);
-                            },
-                          );
-                        }
-                      },
-                    ),
-                  if (is_windows)
-                    Row(children: [
-                      Expanded(
-                          child: TextField(
-                        focusNode: _focusNode3,
-                        controller: TextEditingController(
-                          text: Get.find<PlayController>()
-                              .getPlayerSettings('ffmpegPath'),
                         ),
-                        decoration: InputDecoration(
-                          labelText:
-                              'FFmpeg路径,例如：C:\\ffmpeg\\bin\\ffmpeg.exe,留空表示使用默认,回车以保存',
-                        ),
-                        onSubmitted: (value) async {
-                          var msg = '正在检查ffmpeg'.obs;
-                          Get.find<CacheController>().ffmpegPathWindows = value;
-                          try {
-                            showLoadingDialog(msg);
-                            var isOk =
-                                await Get.find<CacheController>().isFFmpegOk();
-                            if (!isOk) throw Exception('FFmpeg不可用');
-                            Get.back();
-                            showSuccessSnackbar('设置成功',
-                                Get.find<CacheController>().checkFfmpegVersion);
-                          } catch (e) {
-                            Get.back();
-                            showErrorSnackbar('错误', e.toString());
+                      ],
+                    );
+                  }),
+                ),
+                SizedBox(height: 16),
+                if (is_windows)
+                  FutureBuilder(
+                    // future: check_bl_cookie(),
+                    future: get_windows_proxy_addr(),
+                    builder:
+                        (BuildContext context, AsyncSnapshot<String> snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return global_loading_anime;
+                          } else {
+                            return TextField(
+                              focusNode: _focusNode2,
+                              controller: TextEditingController(
+                                text: snapshot.data,
+                              ),
+                              decoration: InputDecoration(
+                                labelText:
+                                    'Windows代理地址,仅适用于Github,例如：localhost:7890,留空表示不使用,回车以保存',
+                              ),
+                              onSubmitted: (value) async {
+                                Get.find<SettingsController>().setSettings({
+                                  'proxy': value,
+                                });
+                                _msg('设置成功$value，重启应用生效', 1.0);
+                              },
+                            );
                           }
                         },
-                      )),
-                      ElevatedButton(
-                          onPressed: () async {
-                            var msg = '正在下载FFmpeg'.obs;
-                            showLoadingDialog(msg);
+                  ),
+                if (is_windows)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          focusNode: _focusNode3,
+                          controller: TextEditingController(
+                            text: Get.find<PlayController>().getPlayerSettings(
+                              'ffmpegPath',
+                            ),
+                          ),
+                          decoration: InputDecoration(
+                            labelText:
+                                'FFmpeg路径,例如：C:\\ffmpeg\\bin\\ffmpeg.exe,留空表示使用默认,回车以保存',
+                          ),
+                          onSubmitted: (value) async {
+                            var msg = '正在检查ffmpeg'.obs;
+                            Get.find<CacheController>().ffmpegPathWindows =
+                                value;
                             try {
-                              final res1 = (await Dio().get(
-                                      'https://h3.040905.xyz/default/https/api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest'))
-                                  .data;
-                              debugPrint('FFmpeg最新版本信息: $res1');
-                              List assets = res1["assets"];
-                              if (assets.isEmpty) {
-                                throw Exception('没有可用的FFmpeg版本');
+                              showLoadingDialog(msg);
+                              var isOk = await Get.find<CacheController>()
+                                  .isFFmpegOk();
+                              if (!isOk) throw Exception('FFmpeg不可用');
+                              Get.back();
+                              showSuccessSnackbar(
+                                '设置成功',
+                                Get.find<CacheController>().checkFfmpegVersion,
+                              );
+                            } catch (e) {
+                              Get.back();
+                              showErrorSnackbar('错误', e.toString());
+                            }
+                          },
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () async {
+                          var msg = '正在下载FFmpeg'.obs;
+                          showLoadingDialog(msg);
+                          try {
+                            final res1 = (await Dio().get(
+                              'https://h3.040905.xyz/default/https/api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest',
+                            )).data;
+                            debugPrint('FFmpeg最新版本信息: $res1');
+                            List assets = res1["assets"];
+                            if (assets.isEmpty) {
+                              throw Exception('没有可用的FFmpeg版本');
+                            }
+                            String downloadUrl = '';
+                            for (var asset in assets) {
+                              // ffmpeg-master-latest-win64-lgpl-shared.zip
+                              if (asset['name'].contains('ffmpeg') &&
+                                  asset['name'].contains('win64') &&
+                                  asset['name'].contains('lgpl') &&
+                                  !asset['name'].contains('shared')) {
+                                downloadUrl = asset['browser_download_url'];
+                                break;
                               }
-                              String downloadUrl = '';
-                              for (var asset in assets) {
-                                // ffmpeg-master-latest-win64-lgpl-shared.zip
-                                if (asset['name'].contains('ffmpeg') &&
-                                    asset['name'].contains('win64') &&
-                                    asset['name'].contains('lgpl') &&
-                                    !asset['name'].contains('shared')) {
-                                  downloadUrl = asset['browser_download_url'];
-                                  break;
-                                }
-                              }
-                              if (downloadUrl.isEmpty) {
-                                throw Exception('没有可用的FFmpeg版本');
-                              }
-                              downloadUrl = downloadUrl.replaceAll('https://',
-                                  'https://h3.040905.xyz/default/https/');
-                              debugPrint('FFmpeg下载链接: $downloadUrl');
-                              final tempPath =
-                                  (await xuan_getdownloadDirectory()).path;
-                              String filePath = '$tempPath/ffmpeg.zip';
-                              await Dio().download(downloadUrl, filePath,
-                                  onReceiveProgress: (received, total) {
+                            }
+                            if (downloadUrl.isEmpty) {
+                              throw Exception('没有可用的FFmpeg版本');
+                            }
+                            downloadUrl = downloadUrl.replaceAll(
+                              'https://',
+                              'https://h3.040905.xyz/default/https/',
+                            );
+                            debugPrint('FFmpeg下载链接: $downloadUrl');
+                            final tempPath =
+                                (await xuan_getdownloadDirectory()).path;
+                            String filePath = '$tempPath/ffmpeg.zip';
+                            await Dio().download(
+                              downloadUrl,
+                              filePath,
+                              onReceiveProgress: (received, total) {
                                 if (total > 0) {
                                   msg.value =
                                       '下载进度: ${(received / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB';
                                 }
-                              });
-                              msg.value = '下载完成，正在解压FFmpeg';
-                              final bytes = File(filePath).readAsBytesSync();
-                              final archive = ZipDecoder().decodeBytes(bytes);
-                              for (final file in archive) {
-                                var filename = file.name;
-                                if (filename.contains('ffmpeg.exe')) {
-                                  filename = 'ffmpeg.exe';
-                                  final data = file.content as List<int>;
-                                  File('$tempPath/$filename')
-                                    ..createSync(recursive: true)
-                                    ..writeAsBytesSync(data);
-                                  break;
-                                }
+                              },
+                            );
+                            msg.value = '下载完成，正在解压FFmpeg';
+                            final bytes = File(filePath).readAsBytesSync();
+                            final archive = ZipDecoder().decodeBytes(bytes);
+                            for (final file in archive) {
+                              var filename = file.name;
+                              if (filename.contains('ffmpeg.exe')) {
+                                filename = 'ffmpeg.exe';
+                                final data = file.content as List<int>;
+                                File('$tempPath/$filename')
+                                  ..createSync(recursive: true)
+                                  ..writeAsBytesSync(data);
+                                break;
                               }
-                              Get.find<CacheController>().ffmpegPathWindows =
-                                  '$tempPath/ffmpeg.exe';
-                              msg.value = '正在删除压缩包';
-                              await File(filePath).delete();
-                              Get.back();
-                              setState(() {});
-                              showSuccessSnackbar('下载成功', 'FFmpeg已设置');
-                            } catch (e) {
-                              Get.back();
-                              showErrorSnackbar('下载失败', e.toString());
                             }
-                          },
-                          child: Text('从GitHub下载FFmpeg')),
-                    ])
-                ]),
+                            Get.find<CacheController>().ffmpegPathWindows =
+                                '$tempPath/ffmpeg.exe';
+                            msg.value = '正在删除压缩包';
+                            await File(filePath).delete();
+                            Get.back();
+                            setState(() {});
+                            showSuccessSnackbar('下载成功', 'FFmpeg已设置');
+                          } catch (e) {
+                            Get.back();
+                            showErrorSnackbar('下载失败', e.toString());
+                          }
+                        },
+                        child: Text('从GitHub下载FFmpeg'),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
             SizedBox(
               height: MediaQuery.of(context).size.height - 200,
               child: StatefulBuilder(
                 builder: (BuildContext context, StateSetter setState) {
                   _readmeContent_setstate = setState;
-                  return Markdown(
-                    data: _readmeContent,
-                  );
+                  return Markdown(data: _readmeContent);
                 },
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -1918,9 +1975,7 @@ class _SettingsPageState extends State<SettingsPage> {
 }
 
 void main() {
-  runApp(MaterialApp(
-    home: SettingsPage(),
-  ));
+  runApp(MaterialApp(home: SettingsPage()));
 }
 
 void _msg(String msg, BuildContext context, [double showtime = 3.0]) {
@@ -1959,11 +2014,7 @@ class Github {
         response = await dio_with_ProxyAdapter.post(
           url,
           queryParameters: params,
-          options: Options(
-            headers: {
-              'Accept': 'application/json',
-            },
-          ),
+          options: Options(headers: {'Accept': 'application/json'}),
         );
         res = response.data.toString();
       } catch (e) {
@@ -1971,11 +2022,7 @@ class Github {
         response = await Dio().post(
           url,
           queryParameters: params,
-          options: Options(
-            headers: {
-              'Accept': 'application/json',
-            },
-          ),
+          options: Options(headers: {'Accept': 'application/json'}),
         );
         res = response.data.toString();
       }
@@ -2018,7 +2065,10 @@ class Github {
       context,
       MaterialPageRoute(
         builder: (context) => login_webview(
-            controller: controller, config_key: 'github', open_url: url),
+          controller: controller,
+          config_key: 'github',
+          open_url: url,
+        ),
       ),
     );
   }
@@ -2048,18 +2098,26 @@ class Github {
     } else {
       var response;
       try {
-        response = await dio_with_ProxyAdapter.get('$API_URL/user',
-            options: Options(headers: {
+        response = await dio_with_ProxyAdapter.get(
+          '$API_URL/user',
+          options: Options(
+            headers: {
               'Authorization': 'token $accessToken',
               'Accept': 'application/json',
-            }));
+            },
+          ),
+        );
       } catch (e) {
         usedefault = true;
-        response = await Dio().get('$API_URL/user',
-            options: Options(headers: {
+        response = await Dio().get(
+          '$API_URL/user',
+          options: Options(
+            headers: {
               'Authorization': 'token $accessToken',
               'Accept': 'application/json',
-            }));
+            },
+          ),
+        );
       }
 
       final data = response.data;
@@ -2081,9 +2139,7 @@ class Github {
   static Map<String, dynamic> json2gist(Map<String, dynamic> jsonObject) {
     final result = <String, dynamic>{};
 
-    result['listen1_backup.json'] = {
-      'content': json.encode(jsonObject),
-    };
+    result['listen1_backup.json'] = {'content': json.encode(jsonObject)};
 
     final playlistIds = jsonObject['playerlists'];
     final songsCount = playlistIds.fold<int>(0, (count, playlistId) {
@@ -2099,16 +2155,12 @@ class Github {
       final content =
           '<details>\n  <summary>$cover   $title</summary><p>\n$tableHeader$tableBody</p></details>';
       final filename = 'listen1_$playlistId.md';
-      result[filename] = {
-        'content': content,
-      };
+      result[filename] = {'content': content};
       return (count as int) + (playlist['tracks'].length as int);
     });
     final summary =
         '本歌单由[listen1_xuan](https://github.com/HBWuChang/listen1_xuan)创建, 歌曲数：$songsCount，歌单数：${playlistIds.length}，点击查看更多';
-    result['listen1_aha_playlist.md'] = {
-      'content': summary,
-    };
+    result['listen1_aha_playlist.md'] = {'content': summary};
 
     return result;
   }
@@ -2123,12 +2175,15 @@ class Github {
       final url = gistFiles['listen1_backup.json']['raw_url'];
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('githubOauthAccessKey');
-      final response =
-          await (usedefault ? Dio() : dio_with_ProxyAdapter).get(url,
-              options: Options(headers: {
-                'Authorization': 'token $accessToken',
-                'Accept': 'application/json',
-              }));
+      final response = await (usedefault ? Dio() : dio_with_ProxyAdapter).get(
+        url,
+        options: Options(
+          headers: {
+            'Authorization': 'token $accessToken',
+            'Accept': 'application/json',
+          },
+        ),
+      );
       return json.decode(response.data);
     }
   }
@@ -2136,12 +2191,15 @@ class Github {
   static Future<List<dynamic>> listExistBackup() async {
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    final response =
-        await (usedefault ? Dio() : dio_with_ProxyAdapter).get('$API_URL/gists',
-            options: Options(headers: {
-              'Authorization': 'token $accessToken',
-              'Accept': 'application/vnd.github.v3+json',
-            }));
+    final response = await (usedefault ? Dio() : dio_with_ProxyAdapter).get(
+      '$API_URL/gists',
+      options: Options(
+        headers: {
+          'Authorization': 'token $accessToken',
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      ),
+    );
     final result = response.data;
     return result.where((backupObject) {
       return backupObject['description'] != null &&
@@ -2150,7 +2208,10 @@ class Github {
   }
 
   static Future<void> backupMySettings2Gist(
-      Map<String, dynamic> files, String? gistId, bool isPublic) async {
+    Map<String, dynamic> files,
+    String? gistId,
+    bool isPublic,
+  ) async {
     String method;
     String url;
     if (gistId != null) {
@@ -2164,10 +2225,13 @@ class Github {
     final accessToken = prefs.getString('githubOauthAccessKey');
     await (usedefault ? Dio() : dio_with_ProxyAdapter).request(
       url,
-      options: Options(method: method, headers: {
-        'Authorization': 'token $accessToken',
-        'Accept': 'application/json',
-      }),
+      options: Options(
+        method: method,
+        headers: {
+          'Authorization': 'token $accessToken',
+          'Accept': 'application/json',
+        },
+      ),
       data: {
         'description':
             'updated by Listen1_xuan(https://github.com/HBWuChang/listen1_xuan) at ${DateTime.now().toLocal()}',
@@ -2178,15 +2242,19 @@ class Github {
   }
 
   static Future<Map<String, dynamic>> importMySettingsFromGist(
-      String gistId) async {
+    String gistId,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    final response = await (usedefault ? Dio() : dio_with_ProxyAdapter)
-        .get('$API_URL/gists/$gistId',
-            options: Options(headers: {
-              'Authorization': 'token $accessToken',
-              'Accept': 'application/json',
-            }));
+    final response = await (usedefault ? Dio() : dio_with_ProxyAdapter).get(
+      '$API_URL/gists/$gistId',
+      options: Options(
+        headers: {
+          'Authorization': 'token $accessToken',
+          'Accept': 'application/json',
+        },
+      ),
+    );
     return response.data['files'];
   }
 }

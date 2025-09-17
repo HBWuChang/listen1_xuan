@@ -19,6 +19,7 @@ import 'controllers/audioHandler_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/lyric_controller.dart';
 import 'controllers/cache_controller.dart';
+import 'controllers/websocket_card_controller.dart';
 import 'loweb.dart';
 import 'package:vibration/vibration.dart';
 import 'package:logger/logger.dart';
@@ -38,8 +39,10 @@ class FileLogOutput extends LogOutput {
   @override
   void output(OutputEvent event) {
     for (var line in event.lines) {
-      file.writeAsStringSync('${DateTime.now()}: $line\n',
-          mode: FileMode.append);
+      file.writeAsStringSync(
+        '${DateTime.now()}: $line\n',
+        mode: FileMode.append,
+      );
     }
   }
 }
@@ -123,8 +126,9 @@ List<Track> get_current_playing() {
 }
 
 Future<Map<String, dynamic>> getnowplayingsong() async {
-  final nowplaying_track_id =
-      Get.find<PlayController>().getPlayerSettings("nowplaying_track_id");
+  final nowplaying_track_id = Get.find<PlayController>().getPlayerSettings(
+    "nowplaying_track_id",
+  );
   final current_playing = await get_current_playing();
   for (var track in current_playing) {
     if (track.id == nowplaying_track_id) {
@@ -177,6 +181,7 @@ Future<void> bind_smtc() async {
 Future<void> change_playback_state(Track track) async {
   try {
     debugPrint('开始更新播放状态');
+    broadcastWs();
     // 使用 Completer 来等待 _duration 被赋值
     final Completer<void> completer = Completer<void>();
     Get.find<PlayController>().music_player.durationStream.listen((duration) {
@@ -197,9 +202,11 @@ Future<void> change_playback_state(Track track) async {
       id: track.id,
       title: track.title!,
       artist: track.artist,
-      artUri: Uri.parse(track.img_url == null
-          ? 'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0'
-          : track.img_url!),
+      artUri: Uri.parse(
+        track.img_url == null
+            ? 'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0'
+            : track.img_url!,
+      ),
       duration: _duration,
     );
     (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
@@ -258,18 +265,22 @@ Future<void> change_playback_state(Track track) async {
 }
 
 // Future<void> playsong(Map<String, dynamic> track) async {
-Future<void> playsong(Track track,
-    [start = true,
-    on_playersuccesscallback = false,
-    bool isByClick = false]) async {
+Future<void> playsong(
+  Track track, [
+  start = true,
+  on_playersuccesscallback = false,
+  bool isByClick = false,
+]) async {
   try {
     if (on_playersuccesscallback &&
         (Get.find<PlayController>().getPlayerSettings("nowplaying_track_id") !=
             track.id)) {
       return;
     }
-    Get.find<PlayController>()
-        .setPlayerSetting("nowplaying_track_id", track.id);
+    Get.find<PlayController>().setPlayerSetting(
+      "nowplaying_track_id",
+      track.id,
+    );
     add_current_playing([track]);
     Get.find<NowPlayingController>().scrollToCurrentTrack();
     final tdir = await get_local_cache(track.id);
@@ -278,7 +289,10 @@ Future<void> playsong(Track track,
     debugPrint(tdir);
     if (tdir == "") {
       MediaService.bootstrapTrack(
-          track, playerSuccessCallback, playerFailCallback);
+        track,
+        playerSuccessCallback,
+        playerFailCallback,
+      );
       return;
     }
     await Get.find<PlayController>().music_player.setFilePath(tdir);
@@ -325,7 +339,8 @@ Future<void> playerSuccessCallback(dynamic res, Track track) async {
       // 获取应用程序的临时目录
       // final fileName = res['url'].split('/').last.split('?').first;
       // 根据.定位文件后缀名
-      String fileName = res['url']
+      String fileName =
+          res['url']
               .split('.')[res['url'].split('.').length - 2]
               .split('/')
               .last +
@@ -343,18 +358,20 @@ Future<void> playerSuccessCallback(dynamic res, Track track) async {
           await dio.download(
             res['url'],
             filePath,
-            options: Options(headers: {
-              "user-agent":
-                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
-              "accept": "*/*",
-              "accept-encoding": "identity;q=1, *;q=0",
-              "accept-language": "zh-CN",
-              "referer": "https://www.bilibili.com/",
-              "sec-fetch-dest": "audio",
-              "sec-fetch-mode": "no-cors",
-              "sec-fetch-site": "cross-site",
-              "range": "bytes=0-",
-            }),
+            options: Options(
+              headers: {
+                "user-agent":
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
+                "accept": "*/*",
+                "accept-encoding": "identity;q=1, *;q=0",
+                "accept-language": "zh-CN",
+                "referer": "https://www.bilibili.com/",
+                "sec-fetch-dest": "audio",
+                "sec-fetch-mode": "no-cors",
+                "sec-fetch-site": "cross-site",
+                "range": "bytes=0-",
+              },
+            ),
           );
         case "netease":
           final dio = dio_with_cookie_manager;
@@ -378,9 +395,7 @@ Future<void> playerFailCallback(Track track) async {
   print(track);
   // {id: netrack_2084034562, title: Anytime Anywhere, artist: milet, artist_id: neartist_31464106, album: Anytime Anywhere, album_id: nealbum_175250775, source: netease, source_url: https://music.163.com/#/song?id=2084034562, img_url: https://p1.music.126.net/11p2mKi5CMKJvAS43ulraQ==/109951168930518368.jpg, sourceName: 网易, $$hashKey: object:2884, disabled: false, index: 365, playNow: true, bitrate: 320kbps, platform: netease, platformText: 网易}
   debugPrint('playerFailCallback');
-  xuan_toast(
-    msg: '播放失败：${track.title}',
-  );
+  xuan_toast(msg: '播放失败：${track.title}');
   if (Get.find<PlayController>().getPlayerSettings("nowplaying_track_id") !=
       track.id) {
     return;
@@ -465,22 +480,23 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
             child: widget.horizon
                 ? Center(
                     child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        child: Center(
-                          // 上一首
-                          child: _button(Icons.skip_previous, () {
-                            global_skipToPrevious();
-                          }, h: true),
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          child: Center(
+                            // 上一首
+                            child: _button(Icons.skip_previous, () {
+                              global_skipToPrevious();
+                            }, h: true),
+                          ),
                         ),
-                      ),
-                      Container(
-                        width: 50,
-                        height: 50,
-                        child: Obx(() => Center(
+                        Container(
+                          width: 50,
+                          height: 50,
+                          child: Obx(
+                            () => Center(
                               child: _playController.isplaying.value
                                   ? _button(Icons.pause, () {
                                       global_pause();
@@ -488,33 +504,31 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                   : _button(Icons.play_arrow, () {
                                       global_play();
                                     }, h: true),
-                            )),
-                      ),
-                      Container(
-                        width: 50,
-                        height: 50,
-                        child: Center(
-                          // 上一首
-                          child: _button(Icons.skip_next, () {
-                            global_skipToNext();
-                          }, h: true),
+                            ),
+                          ),
                         ),
-                      ),
-                      // Show media item title
-                      StreamBuilder<MediaItem?>(
-                        stream: Get.find<AudioHandlerController>()
-                            .audioHandler
-                            .mediaItem,
-                        builder: (context, snapshot) {
-                          final mediaItem = snapshot.data;
-                          // return Text(mediaItem?.title ?? '');
-                          if (mediaItem == null) {
-                            return Container(
-                              width: 50,
-                              height: 50,
-                            );
-                          }
-                          return GestureDetector(
+                        Container(
+                          width: 50,
+                          height: 50,
+                          child: Center(
+                            // 上一首
+                            child: _button(Icons.skip_next, () {
+                              global_skipToNext();
+                            }, h: true),
+                          ),
+                        ),
+                        // Show media item title
+                        StreamBuilder<MediaItem?>(
+                          stream: Get.find<AudioHandlerController>()
+                              .audioHandler
+                              .mediaItem,
+                          builder: (context, snapshot) {
+                            final mediaItem = snapshot.data;
+                            // return Text(mediaItem?.title ?? '');
+                            if (mediaItem == null) {
+                              return Container(width: 50, height: 50);
+                            }
+                            return GestureDetector(
                               onTap: () {
                                 // 点击封面打开歌词页面
                                 _openLyricPage();
@@ -523,21 +537,24 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                 width: 50,
                                 height: 50,
                                 child: ExtendedImage.network(
-                                    mediaItem.artUri.toString(),
-                                    fit: BoxFit.cover,
-                                    cache: true, loadStateChanged: (state) {
-                                  if (state.extendedImageLoadState ==
-                                      LoadState.failed) {
-                                    return Icon(
-                                      Icons.music_note,
-                                      size: 168.w,
-                                    );
-                                  }
-                                }),
-                              ));
-                        },
-                      ),
-                      Container(
+                                  mediaItem.artUri.toString(),
+                                  fit: BoxFit.cover,
+                                  cache: true,
+                                  loadStateChanged: (state) {
+                                    if (state.extendedImageLoadState ==
+                                        LoadState.failed) {
+                                      return Icon(
+                                        Icons.music_note,
+                                        size: 168.w,
+                                      );
+                                    }
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        Container(
                           width: (MediaQuery.of(context).size.width - 514),
                           height: 50,
                           child: Column(
@@ -545,63 +562,69 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                               Container(
                                 height: 20,
                                 child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Expanded(
-                                        flex: 5,
-                                        child: StreamBuilder<MediaItem?>(
-                                          stream:
-                                              Get.find<AudioHandlerController>()
-                                                  .audioHandler
-                                                  .mediaItem,
-                                          builder: (context, snapshot) {
-                                            final mediaItem = snapshot.data;
-                                            return Marquee(
-                                              text: (mediaItem?.title ??
-                                                      'null') +
-                                                  '  -  ' +
-                                                  (mediaItem?.artist ?? 'null'),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              blankSpace: 20.0,
-                                              velocity: 50.0,
-                                              pauseAfterRound:
-                                                  Duration(seconds: 1),
-                                              startPadding: 10.0,
-                                            );
-                                          },
-                                        ),
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Expanded(
+                                      flex: 5,
+                                      child: StreamBuilder<MediaItem?>(
+                                        stream:
+                                            Get.find<AudioHandlerController>()
+                                                .audioHandler
+                                                .mediaItem,
+                                        builder: (context, snapshot) {
+                                          final mediaItem = snapshot.data;
+                                          return Marquee(
+                                            text:
+                                                (mediaItem?.title ?? 'null') +
+                                                '  -  ' +
+                                                (mediaItem?.artist ?? 'null'),
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            blankSpace: 20.0,
+                                            velocity: 50.0,
+                                            pauseAfterRound: Duration(
+                                              seconds: 1,
+                                            ),
+                                            startPadding: 10.0,
+                                          );
+                                        },
                                       ),
-                                      Container(
-                                        width: 120,
-                                        child: StreamBuilder<MediaState>(
-                                          stream: _mediaStateStream,
-                                          builder: (context, snapshot) {
-                                            final mediaItem = snapshot.data;
-                                            return Center(
-                                                child: FittedBox(
+                                    ),
+                                    Container(
+                                      width: 120,
+                                      child: StreamBuilder<MediaState>(
+                                        stream: _mediaStateStream,
+                                        builder: (context, snapshot) {
+                                          final mediaItem = snapshot.data;
+                                          return Center(
+                                            child: FittedBox(
                                               fit: BoxFit.scaleDown,
                                               child: Text(
                                                 (formatDuration(
-                                                        mediaItem?.position ??
-                                                            Duration.zero) +
+                                                      mediaItem?.position ??
+                                                          Duration.zero,
+                                                    ) +
                                                     ' / ' +
-                                                    formatDuration(mediaItem
-                                                            ?.mediaItem
-                                                            ?.duration ??
-                                                        Duration.zero)),
-                                                style:
-                                                    TextStyle(fontSize: 20.0),
+                                                    formatDuration(
+                                                      mediaItem
+                                                              ?.mediaItem
+                                                              ?.duration ??
+                                                          Duration.zero,
+                                                    )),
+                                                style: TextStyle(
+                                                  fontSize: 20.0,
+                                                ),
                                               ),
-                                            ));
-                                          },
-                                        ),
+                                            ),
+                                          );
+                                        },
                                       ),
-                                    ]),
+                                    ),
+                                  ],
+                                ),
                               ),
                               StreamBuilder<MediaState>(
                                 stream: _mediaStateStream,
@@ -609,87 +632,98 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                   final mediaState = snapshot.data;
 
                                   return Container(
-                                      height: 20,
-                                      child: Slider(
-                                        value:
-                                            (mediaState?.position.inMilliseconds
-                                                            .toDouble() ??
-                                                        0.0) >
-                                                    (mediaState
-                                                            ?.mediaItem
-                                                            ?.duration
-                                                            ?.inMilliseconds
-                                                            .toDouble() ??
-                                                        1.0)
-                                                ? (mediaState
-                                                        ?.mediaItem
-                                                        ?.duration
-                                                        ?.inMilliseconds
-                                                        .toDouble() ??
-                                                    1.0)
-                                                : (mediaState?.position
-                                                        .inMilliseconds
-                                                        .toDouble() ??
-                                                    0.0),
-                                        max: mediaState?.mediaItem?.duration
-                                                ?.inMilliseconds
-                                                .toDouble() ??
-                                            1.0,
-                                        onChanged: (value) {
-                                          global_seek(Duration(
-                                              milliseconds: value.toInt()));
-                                        },
-                                      ));
+                                    height: 20,
+                                    child: Slider(
+                                      value:
+                                          (mediaState?.position.inMilliseconds
+                                                      .toDouble() ??
+                                                  0.0) >
+                                              (mediaState
+                                                      ?.mediaItem
+                                                      ?.duration
+                                                      ?.inMilliseconds
+                                                      .toDouble() ??
+                                                  1.0)
+                                          ? (mediaState
+                                                    ?.mediaItem
+                                                    ?.duration
+                                                    ?.inMilliseconds
+                                                    .toDouble() ??
+                                                1.0)
+                                          : (mediaState?.position.inMilliseconds
+                                                    .toDouble() ??
+                                                0.0),
+                                      max:
+                                          mediaState
+                                              ?.mediaItem
+                                              ?.duration
+                                              ?.inMilliseconds
+                                              .toDouble() ??
+                                          1.0,
+                                      onChanged: (value) {
+                                        global_seek(
+                                          Duration(milliseconds: value.toInt()),
+                                        );
+                                      },
+                                    ),
+                                  );
                                 },
                               ),
                             ],
-                          )),
-                      IconButton(
-                        key: _buttonKey,
-                        tooltip: '歌曲弹窗',
-                        icon: Icon(Icons.list),
-                        onPressed: () async {
-                          final track = await getnowplayingsong();
+                          ),
+                        ),
+                        IconButton(
+                          key: _buttonKey,
+                          tooltip: '歌曲弹窗',
+                          icon: Icon(Icons.list),
+                          onPressed: () async {
+                            final track = await getnowplayingsong();
 
-                          var ret = await song_dialog(
-                            context,
-                            track['track'],
-                            change_main_status: widget.onPlaylistTap,
-                            position: (_buttonKey.currentContext!
-                                    .findRenderObject() as RenderBox)
-                                .localToGlobal(Offset.zero),
-                          );
-                          if (ret != null) {
-                            if (ret["push"] != null) {
-                              Get.toNamed(ret["push"],
+                            var ret = await song_dialog(
+                              context,
+                              track['track'],
+                              change_main_status: widget.onPlaylistTap,
+                              position:
+                                  (_buttonKey.currentContext!.findRenderObject()
+                                          as RenderBox)
+                                      .localToGlobal(Offset.zero),
+                            );
+                            if (ret != null) {
+                              if (ret["push"] != null) {
+                                Get.toNamed(
+                                  ret["push"],
                                   arguments: {
                                     'listId': ret["push"],
                                     'is_my': false,
                                   },
-                                  id: 1);
+                                  id: 1,
+                                );
+                              }
                             }
-                          }
-                        },
-                      ),
-                      Obx(() => SizedBox(
-                          width: 30,
-                          height: 30,
-                          child: Stack(children: [
-                            IconButton(
-                                tooltip: '正在播放列表',
-                                icon: Icon(Icons.playlist_play_rounded),
-                                onPressed: () async {
-                                  Get.toNamed('/nowPlayingPage', id: 1);
-                                }),
-                            Text(
-                              '${_playController.current_playing.length}',
-                              style: TextStyle(
-                                fontSize: 12,
-                              ),
+                          },
+                        ),
+                        Obx(
+                          () => SizedBox(
+                            width: 30,
+                            height: 30,
+                            child: Stack(
+                              children: [
+                                IconButton(
+                                  tooltip: '正在播放列表',
+                                  icon: Icon(Icons.playlist_play_rounded),
+                                  onPressed: () async {
+                                    Get.toNamed('/nowPlayingPage', id: 1);
+                                  },
+                                ),
+                                Text(
+                                  '${_playController.current_playing.length}',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ],
                             ),
-                          ]))),
-                      Obx(
-                        () {
+                          ),
+                        ),
+                        Obx(() {
                           return IconButton(
                             tooltip: switch (playmode.value) {
                               0 => '循环播放',
@@ -707,99 +741,102 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                               global_change_play_mode();
                             },
                           );
-                        },
-                      ),
-                      Stack(
-                        children: [
-                          // 强行移动的图标
-                          Positioned(
-                            top: 18, // 距离顶部 50 像素
-                            left: 0, // 距离左侧 100 像素
-                            child: Icon(
-                              Icons.volume_up,
-                              size: 24, // 图标大小
+                        }),
+                        Stack(
+                          children: [
+                            // 强行移动的图标
+                            Positioned(
+                              top: 18, // 距离顶部 50 像素
+                              left: 0, // 距离左侧 100 像素
+                              child: Icon(
+                                Icons.volume_up,
+                                size: 24, // 图标大小
+                              ),
                             ),
-                          ),
-                          Listener(
-                            onPointerSignal: (pointerSignal) {
-                              if (pointerSignal is PointerScrollEvent) {
-                                // 获取滚轮的滚动方向
-                                final scrollDelta =
-                                    pointerSignal.scrollDelta.dy;
-                                final stepSize = 0.01; // 每次滚动的音量步长
+                            Listener(
+                              onPointerSignal: (pointerSignal) {
+                                if (pointerSignal is PointerScrollEvent) {
+                                  // 获取滚轮的滚动方向
+                                  final scrollDelta =
+                                      pointerSignal.scrollDelta.dy;
+                                  final stepSize = 0.01; // 每次滚动的音量步长
 
-                                double newVolume =
-                                    _playController.currentVolume;
-                                if (scrollDelta > 0) {
-                                  // 向下滚动，减小音量
-                                  newVolume = (newVolume - stepSize);
-                                } else if (scrollDelta < 0) {
-                                  // 向上滚动，增大音量
-                                  newVolume = (newVolume + stepSize);
+                                  double newVolume =
+                                      _playController.currentVolume;
+                                  if (scrollDelta > 0) {
+                                    // 向下滚动，减小音量
+                                    newVolume = (newVolume - stepSize);
+                                  } else if (scrollDelta < 0) {
+                                    // 向上滚动，增大音量
+                                    newVolume = (newVolume + stepSize);
+                                  }
+                                  newVolume = newVolume.clamp(
+                                    0.0,
+                                    1.0,
+                                  ); // 确保音量在 0.0 到 1.0 之间
+                                  _playController.currentVolume =
+                                      newVolume; // 更新音量
                                 }
-                                newVolume = newVolume.clamp(
-                                    0.0, 1.0); // 确保音量在 0.0 到 1.0 之间
-                                _playController.currentVolume =
-                                    newVolume; // 更新音量
-                              }
-                            },
-                            child: Obx(() => Slider(
+                              },
+                              child: Obx(
+                                () => Slider(
                                   value: _playController.currentVolume,
                                   onChanged: (value) {
                                     _playController.currentVolume = value;
                                   },
-                                )),
-                          )
-                        ],
-                      ),
-                    ],
-                  ))
-                : Center(
-                    child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Show media item title
-                      StreamBuilder<MediaItem?>(
-                        stream: Get.find<AudioHandlerController>()
-                            .audioHandler
-                            .mediaItem,
-                        builder: (context, snapshot) {
-                          final mediaItem = snapshot.data;
-                          // return Text(mediaItem?.title ?? '');
-                          if (mediaItem == null) {
-                            return Container(
-                              width: 168.w,
-                              height: 168.w,
-                            );
-                          }
-                          return GestureDetector(
-                            onTap: () {
-                              // 点击封面打开歌词页面
-                              _openLyricPage();
-                            },
-                            child: Container(
-                              width: 168.w,
-                              height: 168.w,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: ExtendedImage.network(
-                                    mediaItem.artUri.toString(),
-                                    fit: BoxFit.cover,
-                                    cache: true, loadStateChanged: (state) {
-                                  if (state.extendedImageLoadState ==
-                                      LoadState.failed) {
-                                    return Icon(
-                                      Icons.music_note,
-                                      size: 168.w,
-                                    );
-                                  }
-                                }),
+                                ),
                               ),
                             ),
-                          );
-                        },
-                      ),
-                      Container(
+                          ],
+                        ),
+                      ],
+                    ),
+                  )
+                : Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Show media item title
+                        StreamBuilder<MediaItem?>(
+                          stream: Get.find<AudioHandlerController>()
+                              .audioHandler
+                              .mediaItem,
+                          builder: (context, snapshot) {
+                            final mediaItem = snapshot.data;
+                            // return Text(mediaItem?.title ?? '');
+                            if (mediaItem == null) {
+                              return Container(width: 168.w, height: 168.w);
+                            }
+                            return GestureDetector(
+                              onTap: () {
+                                // 点击封面打开歌词页面
+                                _openLyricPage();
+                              },
+                              child: Container(
+                                width: 168.w,
+                                height: 168.w,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: ExtendedImage.network(
+                                    mediaItem.artUri.toString(),
+                                    fit: BoxFit.cover,
+                                    cache: true,
+                                    loadStateChanged: (state) {
+                                      if (state.extendedImageLoadState ==
+                                          LoadState.failed) {
+                                        return Icon(
+                                          Icons.music_note,
+                                          size: 168.w,
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        Container(
                           width: 864.w,
                           height: 150.w,
                           child: Stack(
@@ -812,107 +849,123 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                 child: Container(
                                   height: 120.w,
                                   child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Expanded(
-                                          flex: 5,
-                                          child: StreamBuilder<MediaItem?>(
-                                            stream: Get.find<
-                                                    AudioHandlerController>()
-                                                .audioHandler
-                                                .mediaItem,
-                                            builder: (context, snapshot) {
-                                              final mediaItem = snapshot.data;
-                                              return Marquee(
-                                                text: (mediaItem?.title ??
-                                                        'null') +
-                                                    '  -  ' +
-                                                    (mediaItem?.artist ??
-                                                        'null'),
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                blankSpace: 20.0,
-                                                velocity: 50.0,
-                                                pauseAfterRound:
-                                                    Duration(seconds: 1),
-                                                startPadding: 10.0,
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        Container(
-                                          width: 200.w,
-                                          child: StreamBuilder<MediaState>(
-                                            stream: _mediaStateStream,
-                                            builder: (context, snapshot) {
-                                              final mediaItem = snapshot.data;
-
-                                              return Center(
-                                                  child: FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                child: Text(
-                                                  (formatDuration(
-                                                          mediaItem?.position ??
-                                                              Duration.zero) +
-                                                      ' / ' +
-                                                      formatDuration(mediaItem
-                                                              ?.mediaItem
-                                                              ?.duration ??
-                                                          Duration.zero)),
-                                                  style: TextStyle(
-                                                      fontSize: 60.0.sp),
-                                                ),
-                                              ));
-                                            },
-                                          ),
-                                        ),
-                                        Obx(() => SizedBox(
-                                            width: 120.w,
-                                            height: 120.w,
-                                            child: Stack(children: [
-                                              Center(
-                                                  child: IconButton(
-                                                      tooltip: '正在播放列表',
-                                                      icon: Icon(Icons
-                                                          .playlist_play_rounded),
-                                                      onPressed: () async {
-                                                        Get.toNamed(
-                                                            '/nowPlayingPage',
-                                                            id: 1);
-                                                      })),
-                                              Positioned(
-                                                  top: 0,
-                                                  child: Text(
-                                                    '${_playController.current_playing.length}',
-                                                    style: TextStyle(
-                                                      fontSize: 32.sp,
-                                                    ),
-                                                  )),
-                                            ]))),
-                                        Obx(
-                                          () {
-                                            return IconButton(
-                                              icon: switch (playmode.value) {
-                                                0 => Icon(Icons.repeat,
-                                                    size: 60.w),
-                                                1 => Icon(Icons.shuffle,
-                                                    size: 60.w),
-                                                2 => Icon(Icons.repeat_one,
-                                                    size: 60.w),
-                                                _ => Icon(Icons.error), // 默认情况
-                                              },
-                                              onPressed: () {
-                                                global_change_play_mode();
-                                              },
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        flex: 5,
+                                        child: StreamBuilder<MediaItem?>(
+                                          stream:
+                                              Get.find<AudioHandlerController>()
+                                                  .audioHandler
+                                                  .mediaItem,
+                                          builder: (context, snapshot) {
+                                            final mediaItem = snapshot.data;
+                                            return Marquee(
+                                              text:
+                                                  (mediaItem?.title ?? 'null') +
+                                                  '  -  ' +
+                                                  (mediaItem?.artist ?? 'null'),
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              blankSpace: 20.0,
+                                              velocity: 50.0,
+                                              pauseAfterRound: Duration(
+                                                seconds: 1,
+                                              ),
+                                              startPadding: 10.0,
                                             );
                                           },
                                         ),
-                                      ]),
+                                      ),
+                                      Container(
+                                        width: 200.w,
+                                        child: StreamBuilder<MediaState>(
+                                          stream: _mediaStateStream,
+                                          builder: (context, snapshot) {
+                                            final mediaItem = snapshot.data;
+
+                                            return Center(
+                                              child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(
+                                                  (formatDuration(
+                                                        mediaItem?.position ??
+                                                            Duration.zero,
+                                                      ) +
+                                                      ' / ' +
+                                                      formatDuration(
+                                                        mediaItem
+                                                                ?.mediaItem
+                                                                ?.duration ??
+                                                            Duration.zero,
+                                                      )),
+                                                  style: TextStyle(
+                                                    fontSize: 60.0.sp,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      Obx(
+                                        () => SizedBox(
+                                          width: 120.w,
+                                          height: 120.w,
+                                          child: Stack(
+                                            children: [
+                                              Center(
+                                                child: IconButton(
+                                                  tooltip: '正在播放列表',
+                                                  icon: Icon(
+                                                    Icons.playlist_play_rounded,
+                                                  ),
+                                                  onPressed: () async {
+                                                    Get.toNamed(
+                                                      '/nowPlayingPage',
+                                                      id: 1,
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                              Positioned(
+                                                top: 0,
+                                                child: Text(
+                                                  '${_playController.current_playing.length}',
+                                                  style: TextStyle(
+                                                    fontSize: 32.sp,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      Obx(() {
+                                        return IconButton(
+                                          icon: switch (playmode.value) {
+                                            0 => Icon(Icons.repeat, size: 60.w),
+                                            1 => Icon(
+                                              Icons.shuffle,
+                                              size: 60.w,
+                                            ),
+                                            2 => Icon(
+                                              Icons.repeat_one,
+                                              size: 60.w,
+                                            ),
+                                            _ => Icon(Icons.error), // 默认情况
+                                          },
+                                          onPressed: () {
+                                            global_change_play_mode();
+                                          },
+                                        );
+                                      }),
+                                    ],
+                                  ),
                                 ),
                               ),
                               Positioned(
@@ -924,44 +977,56 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                   builder: (context, snapshot) {
                                     final mediaState = snapshot.data;
                                     return Container(
-                                        height: 120.w,
-                                        child: Slider(
-                                          value: (mediaState?.position
-                                                          .inMilliseconds
-                                                          .toDouble() ??
-                                                      0.0) >
-                                                  (mediaState
-                                                          ?.mediaItem
-                                                          ?.duration
-                                                          ?.inMilliseconds
-                                                          .toDouble() ??
-                                                      1.0)
-                                              ? (mediaState?.mediaItem?.duration
+                                      height: 120.w,
+                                      child: Slider(
+                                        value:
+                                            (mediaState?.position.inMilliseconds
+                                                        .toDouble() ??
+                                                    0.0) >
+                                                (mediaState
+                                                        ?.mediaItem
+                                                        ?.duration
+                                                        ?.inMilliseconds
+                                                        .toDouble() ??
+                                                    1.0)
+                                            ? (mediaState
+                                                      ?.mediaItem
+                                                      ?.duration
                                                       ?.inMilliseconds
                                                       .toDouble() ??
                                                   1.0)
-                                              : (mediaState
-                                                      ?.position.inMilliseconds
+                                            : (mediaState
+                                                      ?.position
+                                                      .inMilliseconds
                                                       .toDouble() ??
                                                   0.0),
-                                          max: mediaState?.mediaItem?.duration
-                                                  ?.inMilliseconds
-                                                  .toDouble() ??
-                                              1.0,
-                                          onChanged: (value) {
-                                            global_seek(Duration(
-                                                milliseconds: value.toInt()));
-                                          },
-                                        ));
+                                        max:
+                                            mediaState
+                                                ?.mediaItem
+                                                ?.duration
+                                                ?.inMilliseconds
+                                                .toDouble() ??
+                                            1.0,
+                                        onChanged: (value) {
+                                          global_seek(
+                                            Duration(
+                                              milliseconds: value.toInt(),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    );
                                   },
                                 ),
-                              )
+                              ),
                             ],
-                          )),
-                      Container(
-                        width: 150.w,
-                        height: 150.w,
-                        child: Obx(() => Center(
+                          ),
+                        ),
+                        Container(
+                          width: 150.w,
+                          height: 150.w,
+                          child: Obx(
+                            () => Center(
                               child: _playController.isplaying.value
                                   ? _button(Icons.pause, () {
                                       global_pause();
@@ -969,10 +1034,12 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                   : _button(Icons.play_arrow, () {
                                       global_play();
                                     }),
-                            )),
-                      )
-                    ],
-                  )),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
           );
 
           return is_windows
@@ -986,17 +1053,19 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                       main_showVolumeSlider();
                     }
                     final track = await getnowplayingsong();
-                    var ret = await song_dialog(context, track['track'],
-                        change_main_status: widget.onPlaylistTap,
-                        position: position);
+                    var ret = await song_dialog(
+                      context,
+                      track['track'],
+                      change_main_status: widget.onPlaylistTap,
+                      position: position,
+                    );
                     if (ret != null) {
                       if (ret["push"] != null) {
-                        Get.toNamed(ret["push"],
-                            arguments: {
-                              'listId': ret["push"],
-                              'is_my': false,
-                            },
-                            id: 1);
+                        Get.toNamed(
+                          ret["push"],
+                          arguments: {'listId': ret["push"], 'is_my': false},
+                          id: 1,
+                        );
                       }
                     }
                   },
@@ -1030,7 +1099,8 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                       }
                     }
                   },
-                  child: t_w);
+                  child: t_w,
+                );
         }
       },
     );
@@ -1040,27 +1110,32 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
 
   Stream<MediaState> get _mediaStateStream =>
       rxdart.Rx.combineLatest2<MediaItem?, Duration, MediaState>(
-          Get.find<AudioHandlerController>().audioHandler.mediaItem,
-          AudioService.position, (mediaItem, position) {
-        if (is_windows) {
-          WindowsTaskbar.setProgress(
+        Get.find<AudioHandlerController>().audioHandler.mediaItem,
+        AudioService.position,
+        (mediaItem, position) {
+          if (is_windows) {
+            WindowsTaskbar.setProgress(
               (position.inMilliseconds /
                       (mediaItem?.duration?.inMilliseconds ?? 1) *
                       100)
                   .toInt(),
-              100);
-        }
-        return MediaState(mediaItem, position);
-      });
-
-  IconButton _button(IconData iconData, VoidCallback onPressed,
-          {bool h = false}) =>
-      IconButton(
-        icon: Icon(iconData),
-        iconSize: h ? 120.0.h : 100.0.w,
-        alignment: Alignment.center,
-        onPressed: onPressed,
+              100,
+            );
+          }
+          return MediaState(mediaItem, position);
+        },
       );
+
+  IconButton _button(
+    IconData iconData,
+    VoidCallback onPressed, {
+    bool h = false,
+  }) => IconButton(
+    icon: Icon(iconData),
+    iconSize: h ? 120.0.h : 100.0.w,
+    alignment: Alignment.center,
+    onPressed: onPressed,
+  );
 }
 
 class MediaState {
@@ -1090,8 +1165,9 @@ Future<void> global_seek(Duration position) async {
   Get.find<PlayController>().music_player.seek(position);
 }
 
-Future<void> global_seek_to_next(
-    {Duration time = const Duration(seconds: 3)}) async {
+Future<void> global_seek_to_next({
+  Duration time = const Duration(seconds: 3),
+}) async {
   var now_pos = Get.find<PlayController>().music_player.position;
   var next_pos = now_pos + time;
   var max_pos = Get.find<PlayController>().music_player.duration ?? now_pos;
@@ -1101,8 +1177,9 @@ Future<void> global_seek_to_next(
   Get.find<PlayController>().music_player.seek(next_pos);
 }
 
-Future<void> global_seek_to_previous(
-    {Duration time = const Duration(seconds: 3)}) async {
+Future<void> global_seek_to_previous({
+  Duration time = const Duration(seconds: 3),
+}) async {
   var now_pos = Get.find<PlayController>().music_player.position;
   var next_pos = now_pos < time ? Duration.zero : now_pos - time;
   Get.find<PlayController>().music_player.seek(next_pos);
@@ -1178,19 +1255,19 @@ Future<void> update_playmode_to_audio_service() async {
   try {
     switch (playmode.value) {
       case 0:
-        await Get.find<AudioHandlerController>()
-            .audioHandler
-            .setRepeatMode(AudioServiceRepeatMode.all);
+        await Get.find<AudioHandlerController>().audioHandler.setRepeatMode(
+          AudioServiceRepeatMode.all,
+        );
         break;
       case 1:
-        await Get.find<AudioHandlerController>()
-            .audioHandler
-            .setRepeatMode(AudioServiceRepeatMode.group);
+        await Get.find<AudioHandlerController>().audioHandler.setRepeatMode(
+          AudioServiceRepeatMode.group,
+        );
         break;
       case 2:
-        await Get.find<AudioHandlerController>()
-            .audioHandler
-            .setRepeatMode(AudioServiceRepeatMode.one);
+        await Get.find<AudioHandlerController>().audioHandler.setRepeatMode(
+          AudioServiceRepeatMode.one,
+        );
         break;
       default:
         break;
@@ -1217,28 +1294,27 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // artist: "Science Friday and WNYC Studios",
     // duration: Duration(milliseconds: 5739820),
     artUri: Uri.parse(
-        'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0'),
+      'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0',
+    ),
   );
   AudioPlayerHandler() {
     // So that our clients (the Flutter UI and the system notification) know
     // what state to display, here we set up our audio handler to broadcast all
     // playback state changes as they happen via playbackState...
-    Get.find<PlayController>()
-        .music_player
-        .playbackEventStream
+    Get.find<PlayController>().music_player.playbackEventStream
         .map(_transformEvent)
         .pipe(playbackState);
     // ... and also the current media item via mediaItem.
     mediaItem.add(_item);
 
     // Load the player.
-    Get.find<PlayController>()
-        .music_player
-        .setAudioSource(AudioSource.uri(Uri.parse(_item.id)), preload: false);
-    Get.find<PlayController>()
-        .music_player
-        .playerStateStream
-        .listen((playerState) {
+    Get.find<PlayController>().music_player.setAudioSource(
+      AudioSource.uri(Uri.parse(_item.id)),
+      preload: false,
+    );
+    Get.find<PlayController>().music_player.playerStateStream.listen((
+      playerState,
+    ) {
       if (playerState.processingState == ProcessingState.completed) {
         onPlaybackCompleted();
       }

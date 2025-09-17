@@ -62,6 +62,9 @@ dependencies:
   smtc_windows: ^1.0.0
   windows_taskbar: ^1.1.2
   get:
+  shelf: ^1.4.2
+  shelf_web_socket: ^3.0.0
+  shelf_router: ^1.1.4
   flutter_lyric:
     path: packages/flutter_lyric-2.0.4+6
   metadata_god: ^1.0.0
@@ -69,6 +72,9 @@ dependencies:
   mime: ^2.0.0
   flutter_audio_tagger: ^3.0.3
   ffmpeg_kit_flutter_new_min: ^2.1.0
+  wolt_modal_sheet: ^0.11.0
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.0.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -84,4 +90,3 @@ flutter:
   assets:
     # Add assets from the images directory to the application.
     - assets/images/
-

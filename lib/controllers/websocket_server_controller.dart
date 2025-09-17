@@ -1,0 +1,602 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:get/get.dart';
+import 'package:logger/logger.dart';
+
+import '../models/websocket_message.dart';
+import 'play_controller.dart';
+import '../play.dart';
+
+/// WebSocket 服务器控制器
+/// 支持 IPv4/IPv6 配置，包含 ping/pong 心跳机制和资源释放
+class WebSocketServerController extends GetxController {
+  static const String _tag = 'WebSocketServerController';
+  final Logger _logger = Logger();
+
+  /// 服务器实例
+  HttpServer? _server;
+
+  /// 所有活跃的 WebSocket 连接
+  final List<WebSocketConnection> _connections = <WebSocketConnection>[];
+
+  /// 心跳定时器
+  Timer? _pingTimer;
+
+  /// 服务器运行状态
+  final RxBool _isRunning = false.obs;
+
+  /// 连接客户端数量
+  final RxInt _clientCount = 0.obs;
+
+  /// 服务器配置
+  late final String _host;
+  late final int _port;
+  final Duration _pingInterval;
+  final Duration _pongTimeout;
+
+  /// Getters
+  bool get isRunning => _isRunning.value;
+  int get clientCount => _clientCount.value;
+  String get serverUrl => 'ws://$_host:$_port/ws';
+
+  WebSocketServerController({
+    required String host,
+    required int port,
+    InternetAddressType addressType = InternetAddressType.any,
+    Duration pingInterval = const Duration(seconds: 30),
+    Duration pongTimeout = const Duration(seconds: 5),
+  }) : _host = host,
+       _port = port,
+       _pingInterval = pingInterval,
+       _pongTimeout = pongTimeout;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _logger.i('$_tag 初始化完成');
+  }
+
+  /// 启动 WebSocket 服务器
+  Future<bool> startServer() async {
+    if (_isRunning.value) {
+      _logger.w('$_tag 服务器已在运行');
+      return true;
+    }
+
+    try {
+      // 创建 HTTP 服务器
+      _server = await HttpServer.bind(_host, _port, shared: true);
+
+      _isRunning.value = true;
+      _logger.i('$_tag WebSocket 服务器启动成功: $serverUrl');
+
+      // 监听请求
+      _server!.listen((HttpRequest request) async {
+        if (WebSocketTransformer.isUpgradeRequest(request)) {
+          // 升级为 WebSocket 连接
+          try {
+            final webSocket = await WebSocketTransformer.upgrade(request);
+            _handleNewConnection(webSocket);
+          } catch (e) {
+            _logger.e('$_tag WebSocket 升级失败', error: e);
+            try {
+              if (!request.response.headers.chunkedTransferEncoding) {
+                request.response.statusCode = HttpStatus.badRequest;
+                await request.response.close();
+              }
+            } catch (closeError) {
+              _logger.e('$_tag 关闭响应失败', error: closeError);
+            }
+          }
+        } else {
+          // 处理普通 HTTP 请求
+          _handleHttpRequest(request);
+        }
+      });
+
+      // 启动心跳检测
+      _startPingTimer();
+
+      return true;
+    } catch (e, stackTrace) {
+      _logger.e('$_tag 启动服务器失败', error: e, stackTrace: stackTrace);
+      return false;
+    }
+  }
+
+  /// 停止 WebSocket 服务器
+  Future<void> stopServer() async {
+    if (!_isRunning.value) {
+      return;
+    }
+
+    try {
+      // 停止心跳检测
+      _stopPingTimer();
+
+      // 关闭所有连接
+      await _closeAllConnections();
+
+      // 关闭服务器
+      await _server?.close(force: true);
+      _server = null;
+
+      _isRunning.value = false;
+      _clientCount.value = 0;
+
+      _logger.i('$_tag WebSocket 服务器已停止');
+    } catch (e, stackTrace) {
+      _logger.e('$_tag 停止服务器时出错', error: e, stackTrace: stackTrace);
+    }
+  }
+
+  /// 处理新的 WebSocket 连接
+  void _handleNewConnection(WebSocket webSocket) {
+    final connection = WebSocketConnection(
+      webSocket: webSocket,
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      connectedAt: DateTime.now(),
+    );
+
+    _connections.add(connection);
+    _clientCount.value = _connections.length;
+
+    _logger.i('$_tag 新客户端连接: ${connection.id}, 总连接数: ${_connections.length}');
+
+    // 发送欢迎消息
+    final welcomeMessage = WebSocketMessageBuilder.createWelcomeMessage(
+      connection.id,
+    );
+    _sendMessage(connection, welcomeMessage);
+
+    // 监听消息
+    webSocket.listen(
+      (data) => _handleMessage(connection, data),
+      onDone: () => _handleConnectionClosed(connection),
+      onError: (error) => _handleConnectionError(connection, error),
+    );
+  }
+
+  /// 处理收到的消息
+  void _handleMessage(WebSocketConnection connection, dynamic data) {
+    try {
+      // 尝试解析为新的 WebSocketMessage 格式
+      WebSocketMessage message;
+      try {
+        message = WebSocketMessage.fromJsonString(data.toString());
+      } catch (e) {
+        // 如果解析失败，尝试解析为旧格式
+        final oldMessage = json.decode(data.toString());
+        final messageType = oldMessage['type'] ?? 'unknown';
+
+        // 转换为新格式
+        message = WebSocketMessage(
+          type: messageType,
+          content: json.encode(oldMessage),
+        );
+      }
+
+      _logger.d('$_tag 收到消息: ${message.type} from ${connection.id}');
+
+      switch (message.type) {
+        case WebSocketMessageType.getStatus:
+          _handleGetStatusRequest(connection);
+          break;
+        case WebSocketMessageType.ctrl:
+          _handleControlMessage(connection, message);
+          break;
+        case WebSocketMessageType.track:
+          _handleTrackMessage(connection, message);
+          break;
+        case WebSocketMessageType.pong:
+          connection.lastPong = DateTime.now();
+          _logger.d('$_tag 收到 pong from ${connection.id}');
+          break;
+        case WebSocketMessageType.ping:
+          // 响应客户端的 ping
+          final pongMessage = WebSocketMessageBuilder.createPongMessage();
+          _sendMessage(connection, pongMessage);
+          break;
+        case WebSocketMessageType.broadcast:
+          // 广播消息给所有客户端
+          final contentMap = message.parseContentAsMap();
+          final broadcastMessage = contentMap?['message'] ?? message.content;
+          final broadcastMsg = WebSocketMessageBuilder.createBroadcastMessage(
+            broadcastMessage,
+            from: connection.id,
+          );
+          _broadcastMessage(broadcastMsg, excludeClient: connection.id);
+          break;
+        case WebSocketMessageType.message:
+          // 处理普通消息（可以根据需要添加逻辑）
+          _logger.d('$_tag 收到普通消息: ${message.content}');
+          break;
+        default:
+          _logger.d('$_tag 未知消息类型: ${message.type}');
+      }
+    } catch (e) {
+      _logger.e('$_tag 处理消息失败', error: e);
+      // 发送错误消息给客户端
+      final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+        '消息处理失败: $e',
+      );
+      _sendMessage(connection, errorMessage);
+    }
+  }
+
+  /// 处理获取状态请求
+  void _handleGetStatusRequest(WebSocketConnection connection) {
+    try {
+      // 获取 PlayController 实例
+      final playController = Get.find<PlayController>();
+
+      // 创建状态数据
+      final statusData = PlayStatusData.fromPlayController(playController);
+
+      // 创建状态响应消息
+      final statusMessage = WebSocketMessageBuilder.createStatusResponse(
+        statusData,
+      );
+
+      // 发送状态消息给请求的客户端
+      _sendMessage(connection, statusMessage);
+
+      _logger.i(
+        '$_tag 发送播放状态给客户端 ${connection.id}: isPlaying=${statusData.isPlaying}, track=${statusData.currentTrack?.title ?? "None"}',
+      );
+    } catch (e) {
+      _logger.e('$_tag 处理获取状态请求失败', error: e);
+
+      // 发送错误消息
+      final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+        '无法获取播放状态: $e',
+      );
+      _sendMessage(connection, errorMessage);
+    }
+  }
+
+  /// 处理播放控制消息
+  void _handleControlMessage(
+    WebSocketConnection connection,
+    WebSocketMessage message,
+  ) {
+    try {
+      final command = message.content.trim();
+      _logger.i('$_tag 收到播放控制命令: $command from ${connection.id}');
+
+      switch (command) {
+        case PlayControlCommands.play:
+          global_play();
+          _logger.i('$_tag 执行播放命令');
+          break;
+        case PlayControlCommands.pause:
+        case PlayControlCommands.stop:
+          global_pause();
+          _logger.i('$_tag 执行暂停命令');
+          break;
+        case PlayControlCommands.next:
+          global_skipToNext();
+          _logger.i('$_tag 执行下一首命令');
+          break;
+        case PlayControlCommands.previous:
+          global_skipToPrevious();
+          _logger.i('$_tag 执行上一首命令');
+          break;
+        default:
+          _logger.w('$_tag 未知播放控制命令: $command');
+          final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+            '未知播放控制命令: $command',
+          );
+          _sendMessage(connection, errorMessage);
+          return;
+      }
+
+      // 发送成功响应
+      final successMessage = WebSocketMessageBuilder.createMessage(
+        '播放控制命令已执行: $command',
+      );
+      _sendMessage(connection, successMessage);
+    } catch (e) {
+      _logger.e('$_tag 处理播放控制消息失败', error: e);
+      final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+        '播放控制失败: $e',
+      );
+      _sendMessage(connection, errorMessage);
+    }
+  }
+
+  /// 处理播放指定歌曲消息
+  void _handleTrackMessage(
+    WebSocketConnection connection,
+    WebSocketMessage message,
+  ) {
+    try {
+      _logger.i('$_tag 收到播放歌曲请求 from ${connection.id}');
+
+      // 解析歌曲数据
+      final trackData = json.decode(message.content);
+
+      // 将Map转换为Track对象
+      final track = Track.fromJson(trackData);
+
+      _logger.i('$_tag 准备播放歌曲: ${track.title} - ${track.artist}');
+
+      // 调用playsong方法播放歌曲
+      playsong(
+        track,
+        true,
+        false,
+        true,
+      ); // start=true, on_playersuccesscallback=false, isByClick=true
+
+      // 发送成功响应
+      final successMessage = WebSocketMessageBuilder.createMessage(
+        '开始播放歌曲: ${track.title} - ${track.artist}',
+      );
+      _sendMessage(connection, successMessage);
+
+      _logger.i('$_tag 播放歌曲命令已执行: ${track.title}');
+    } catch (e) {
+      _logger.e('$_tag 处理播放歌曲消息失败', error: e);
+      final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+        '播放歌曲失败: $e',
+      );
+      _sendMessage(connection, errorMessage);
+    }
+  }
+
+  /// 广播播放状态给所有连接的客户端
+  void broadcastStatus() {
+    if (_connections.isEmpty) {
+      _logger.d('$_tag 没有连接的客户端，跳过状态广播');
+      return;
+    }
+
+    try {
+      // 获取 PlayController 实例
+      final playController = Get.find<PlayController>();
+
+      // 创建状态数据
+      final statusData = PlayStatusData.fromPlayController(playController);
+
+      // 创建状态响应消息
+      final statusMessage = WebSocketMessageBuilder.createStatusResponse(
+        statusData,
+      );
+
+      // 广播状态消息给所有客户端
+      _broadcastMessage(statusMessage);
+
+      _logger.i(
+        '$_tag 向 ${_connections.length} 个客户端广播播放状态: isPlaying=${statusData.isPlaying}, track=${statusData.currentTrack?.title ?? "None"}',
+      );
+    } catch (e) {
+      _logger.e('$_tag 广播播放状态失败', error: e);
+    }
+  }
+
+  /// 处理连接关闭
+  void _handleConnectionClosed(WebSocketConnection connection) {
+    _connections.remove(connection);
+    _clientCount.value = _connections.length;
+    _logger.i('$_tag 客户端断开连接: ${connection.id}, 剩余连接数: ${_connections.length}');
+  }
+
+  /// 处理连接错误
+  void _handleConnectionError(WebSocketConnection connection, dynamic error) {
+    _logger.e('$_tag WebSocket 连接错误 ${connection.id}', error: error);
+    _connections.remove(connection);
+    _clientCount.value = _connections.length;
+  }
+
+  /// 启动 ping 定时器
+  void _startPingTimer() {
+    _pingTimer = Timer.periodic(_pingInterval, (timer) {
+      _sendPingToAllClients();
+      _checkPongTimeout();
+    });
+  }
+
+  /// 停止 ping 定时器
+  void _stopPingTimer() {
+    _pingTimer?.cancel();
+    _pingTimer = null;
+  }
+
+  /// 向所有客户端发送 ping
+  void _sendPingToAllClients() {
+    final pingMessage = WebSocketMessageBuilder.createPingMessage();
+
+    for (final connection in List<WebSocketConnection>.from(_connections)) {
+      connection.lastPing = DateTime.now();
+      _sendMessage(connection, pingMessage);
+    }
+
+    if (_connections.isNotEmpty) {
+      _logger.d('$_tag 向 ${_connections.length} 个客户端发送 ping');
+    }
+  }
+
+  /// 检查 pong 超时
+  void _checkPongTimeout() {
+    final now = DateTime.now();
+    final timeoutConnections = <WebSocketConnection>[];
+
+    for (final connection in _connections) {
+      if (connection.lastPing != null &&
+          (connection.lastPong == null ||
+              connection.lastPong!.isBefore(connection.lastPing!))) {
+        final timeSincePing = now.difference(connection.lastPing!);
+        if (timeSincePing > _pongTimeout) {
+          timeoutConnections.add(connection);
+        }
+      }
+    }
+
+    // 移除超时的连接
+    for (final connection in timeoutConnections) {
+      _logger.w('$_tag 客户端 ${connection.id} pong 超时，移除连接');
+      try {
+        connection.webSocket.close();
+      } catch (e) {
+        _logger.e('$_tag 关闭超时连接失败', error: e);
+      }
+      _connections.remove(connection);
+    }
+
+    if (timeoutConnections.isNotEmpty) {
+      _clientCount.value = _connections.length;
+    }
+  }
+
+  /// 向指定客户端发送消息
+  void _sendMessage(WebSocketConnection connection, dynamic message) {
+    try {
+      String messageJson;
+      if (message is WebSocketMessage) {
+        messageJson = message.toJsonString();
+      } else if (message is Map<String, dynamic>) {
+        messageJson = json.encode(message);
+      } else if (message is String) {
+        messageJson = message;
+      } else {
+        messageJson = message.toString();
+      }
+
+      connection.webSocket.add(messageJson);
+    } catch (e) {
+      _logger.e('$_tag 发送消息失败 to ${connection.id}', error: e);
+      _connections.remove(connection);
+      _clientCount.value = _connections.length;
+    }
+  }
+
+  /// 广播消息给所有客户端
+  void _broadcastMessage(dynamic message, {String? excludeClient}) {
+    String messageJson;
+    if (message is WebSocketMessage) {
+      messageJson = message.toJsonString();
+    } else if (message is Map<String, dynamic>) {
+      messageJson = json.encode(message);
+    } else if (message is String) {
+      messageJson = message;
+    } else {
+      messageJson = message.toString();
+    }
+
+    final connectionsToRemove = <WebSocketConnection>[];
+
+    for (final connection in _connections) {
+      if (excludeClient != null && connection.id == excludeClient) {
+        continue;
+      }
+
+      try {
+        connection.webSocket.add(messageJson);
+      } catch (e) {
+        _logger.e('$_tag 广播消息失败 to ${connection.id}', error: e);
+        connectionsToRemove.add(connection);
+      }
+    }
+
+    // 移除失败的连接
+    for (final connection in connectionsToRemove) {
+      _connections.remove(connection);
+    }
+
+    if (connectionsToRemove.isNotEmpty) {
+      _clientCount.value = _connections.length;
+    }
+  }
+
+  /// 公开的广播方法
+  void broadcastMessage(dynamic message) {
+    if (message is Map<String, dynamic>) {
+      message['timestamp'] = DateTime.now().millisecondsSinceEpoch;
+      _broadcastMessage(message);
+    } else {
+      _broadcastMessage(message);
+    }
+  }
+
+  /// 关闭所有连接
+  Future<void> _closeAllConnections() async {
+    final List<Future> closeFutures = [];
+
+    for (final connection in _connections) {
+      try {
+        closeFutures.add(connection.webSocket.close());
+      } catch (e) {
+        _logger.e('$_tag 关闭连接失败 ${connection.id}', error: e);
+      }
+    }
+
+    await Future.wait(closeFutures);
+    _connections.clear();
+  }
+
+  /// 处理 HTTP 请求（根路径）
+  void _handleHttpRequest(HttpRequest request) {
+    final uri = request.uri.path;
+
+    switch (uri) {
+      case '/':
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.text
+          ..write('WebSocket Server is running\nConnect to: $serverUrl');
+        break;
+      case '/status':
+        final status = {
+          'running': _isRunning.value,
+          'clientCount': _clientCount.value,
+          'serverUrl': serverUrl,
+          'uptime': DateTime.now().millisecondsSinceEpoch,
+        };
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(json.encode(status));
+        break;
+      default:
+        request.response
+          ..statusCode = HttpStatus.notFound
+          ..write('Not Found');
+    }
+
+    request.response.close();
+  }
+
+  @override
+  void onClose() {
+    _logger.i('$_tag 控制器销毁中...');
+
+    // 停止服务器（这会自动清理所有资源）
+    stopServer()
+        .then((_) {
+          _logger.i('$_tag 控制器已销毁');
+        })
+        .catchError((error) {
+          _logger.e('$_tag 销毁时出错', error: error);
+        });
+
+    super.onClose();
+  }
+}
+
+/// WebSocket 连接信息类
+class WebSocketConnection {
+  final WebSocket webSocket;
+  final String id;
+  final DateTime connectedAt;
+  DateTime? lastPing;
+  DateTime? lastPong;
+
+  WebSocketConnection({
+    required this.webSocket,
+    required this.id,
+    required this.connectedAt,
+  });
+}
