@@ -70,16 +70,29 @@ class _WebSocketClientControlContentState
     extends State<WebSocketClientControlContent>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  late TextEditingController _reconnectController;
+  late TextEditingController _heartbeatController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    // 初始化TextEditingController
+    final controller = Get.find<WebSocketClientController>();
+    _reconnectController = TextEditingController(
+      text: controller.reconnectInterval.toString(),
+    );
+    _heartbeatController = TextEditingController(
+      text: controller.heartbeatInterval.toString(),
+    );
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _reconnectController.dispose();
+    _heartbeatController.dispose();
     super.dispose();
   }
 
@@ -500,35 +513,20 @@ class _WebSocketClientControlContentState
     );
   }
 
-  /// 格式化时间戳
-  String _formatTimestamp(DateTime timestamp) {
-    final now = DateTime.now();
-    final diff = now.difference(timestamp);
-
-    if (diff.inSeconds < 60) {
-      return '${diff.inSeconds}秒前';
-    } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}分钟前';
-    } else {
-      return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
-    }
-  }
-
   Widget _buildConfigTab(WebSocketClientController controller) {
-    final addressController = TextEditingController(
-      text: controller.serverAddress,
-    );
-    final reconnectController = TextEditingController(
-      text: controller.reconnectInterval.toString(),
-    );
-    final heartbeatController = TextEditingController(
-      text: controller.heartbeatInterval.toString(),
-    );
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Obx(() {
         final ctrl = Get.find<WebSocketClientController>();
+        
+        // 更新控制器文本以反映当前值
+        if (_reconnectController.text != ctrl.reconnectInterval.toString()) {
+          _reconnectController.text = ctrl.reconnectInterval.toString();
+        }
+        if (_heartbeatController.text != ctrl.heartbeatInterval.toString()) {
+          _heartbeatController.text = ctrl.heartbeatInterval.toString();
+        }
+        
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -590,12 +588,59 @@ class _WebSocketClientControlContentState
             _buildConfigSection('连接配置', [
               Column(
                 children: [
-                  _buildTextField(
-                    controller: addressController,
-                    label: '服务器地址',
-                    hint: 'IP:端口 (例如: 192.168.1.100:8080)',
-                    enabled: !ctrl.isConnected,
-                    onChanged: ctrl.updateServerAddress,
+                  // 服务器地址显示和编辑
+                  InkWell(
+                    onTap: ctrl.isConnected ? null : () => _showServerAddressEditDialog(),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: ctrl.isConnected ? Colors.grey.withOpacity(0.5) : Colors.grey,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '服务器地址',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: ctrl.isConnected ? Colors.grey : Colors.grey[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Obx(() => Text(
+                                  ctrl.serverAddress.isEmpty 
+                                    ? 'IP:端口 (例如: 192.168.1.100:8080)'
+                                    : ctrl.serverAddress,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: ctrl.serverAddress.isEmpty 
+                                      ? Colors.grey[500]
+                                      : (ctrl.isConnected ? Colors.grey[600] : Colors.black87),
+                                  ),
+                                )),
+                              ),
+                              if (!ctrl.isConnected) ...[
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.edit,
+                                  size: 18,
+                                  color: Colors.grey[600],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   // 扫描二维码按钮（仅在Android显示）
@@ -636,7 +681,7 @@ class _WebSocketClientControlContentState
               ),
               const SizedBox(height: 16),
               _buildTextField(
-                controller: reconnectController,
+                controller: _reconnectController,
                 label: '重连间隔 (秒)',
                 hint: '1-60',
                 keyboardType: TextInputType.number,
@@ -652,7 +697,7 @@ class _WebSocketClientControlContentState
 
             _buildConfigSection('心跳配置', [
               _buildTextField(
-                controller: heartbeatController,
+                controller: _heartbeatController,
                 label: '心跳间隔 (秒)',
                 hint: '5-300',
                 keyboardType: TextInputType.number,
@@ -743,6 +788,27 @@ class _WebSocketClientControlContentState
     );
   }
 
+  /// 显示服务器地址编辑对话框
+  Future<void> _showServerAddressEditDialog() async {
+    final controller = Get.find<WebSocketClientController>();
+    
+    final result = await Get.dialog<String>(
+      _ServerAddressEditDialog(initialAddress: controller.serverAddress),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      controller.updateServerAddress(result);
+      Get.snackbar(
+        '保存成功',
+        '服务器地址已更新为: $result',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green.withOpacity(0.8),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+      );
+    }
+  }
+
   /// 扫描二维码获取服务器地址
   Future<void> _scanQRCode() async {
     try {
@@ -776,6 +842,99 @@ class _WebSocketClientControlContentState
         duration: const Duration(seconds: 3),
       );
     }
+  }
+}
+
+/// 服务器地址编辑对话框
+class _ServerAddressEditDialog extends StatefulWidget {
+  final String initialAddress;
+  
+  const _ServerAddressEditDialog({required this.initialAddress});
+  
+  @override
+  State<_ServerAddressEditDialog> createState() => _ServerAddressEditDialogState();
+}
+
+class _ServerAddressEditDialogState extends State<_ServerAddressEditDialog> {
+  late TextEditingController _textController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(text: widget.initialAddress);
+  }
+  
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+  
+  bool _isValidServerAddress(String address) {
+    if (address.isEmpty) return false;
+    
+    final RegExp addressRegex = RegExp(
+      r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(?:[0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$'
+    );
+    
+    // 也支持主机名格式
+    final RegExp hostnameRegex = RegExp(
+      r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*:[0-9]{1,5}$'
+    );
+    
+    return addressRegex.hasMatch(address) || hostnameRegex.hasMatch(address);
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('编辑服务器地址'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _textController,
+            decoration: const InputDecoration(
+              labelText: '服务器地址',
+              hintText: 'IP:端口 (例如: 192.168.1.100:8080)',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.text,
+            autofocus: true,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '格式: IP地址:端口号',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(),
+          child: const Text('取消'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final address = _textController.text.trim();
+            if (_isValidServerAddress(address)) {
+              Get.back(result: address);
+            } else {
+              Get.snackbar(
+                '输入错误',
+                '无效的服务器地址格式',
+                snackPosition: SnackPosition.TOP,
+                backgroundColor: Colors.red.withOpacity(0.8),
+                colorText: Colors.white,
+                duration: const Duration(seconds: 2),
+              );
+            }
+          },
+          child: const Text('保存'),
+        ),
+      ],
+    );
   }
 }
 
