@@ -492,6 +492,42 @@ class _WebSocketClientControlContentState
                           ),
                         ],
                       ),
+                      
+                      // 音量控制滑块
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          const Icon(Icons.volume_down),
+                          Expanded(
+                            child: Slider(
+                              value: ctrl.volume,
+                              min: 0.0,
+                              max: 1.0,
+                              divisions: 100,
+                              label: '${(ctrl.volume * 100).round()}%',
+                              onChangeStart: (value) {
+                                ctrl.startDraggingVolume();
+                              },
+                              onChanged: (value) {
+                                ctrl.updateVolume(value);
+                              },
+                              onChangeEnd: (value) {
+                                ctrl.stopDraggingVolume();
+                              },
+                            ),
+                          ),
+                          const Icon(Icons.volume_up),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 48,
+                            child: Text(
+                              '${(ctrl.volume * 100).round()}%',
+                              style: const TextStyle(fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

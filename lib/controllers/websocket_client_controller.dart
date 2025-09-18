@@ -42,6 +42,11 @@ class WebSocketClientController extends GetxController {
   Timer? _heartbeatTimer;
   Timer? _statusPollingTimer;
 
+  /// 音量控制
+  final RxDouble _volume = 0.5.obs;
+  final RxBool _isDraggingVolume = false.obs;
+  Timer? _volumeUpdateTimer;
+
   /// 消息控制器
   final TextEditingController messageController = TextEditingController();
   final RxList<String> _receivedMessages = <String>[].obs;
@@ -65,6 +70,8 @@ class WebSocketClientController extends GetxController {
   RxBool get isReconnectingRx => _isReconnecting;
   RxList<String> get receivedMessagesRx => _receivedMessages;
   Rx<PlayStatusData?> get lastPlayStatusRx => _lastPlayStatus;
+  RxDouble get volumeRx => _volume;
+  RxBool get isDraggingVolumeRx => _isDraggingVolume;
 
   // 保留原有的getter用于非响应式访问
   bool get isExpanded => _isExpanded.value;
@@ -82,6 +89,8 @@ class WebSocketClientController extends GetxController {
   bool get isReconnecting => _isReconnecting.value;
   List<String> get receivedMessages => _receivedMessages;
   PlayStatusData? get lastPlayStatus => _lastPlayStatus.value;
+  double get volume => _volume.value;
+  bool get isDraggingVolume => _isDraggingVolume.value;
 
   /// 从设置控制器加载WebSocket客户端配置
   void loadWebSocketClientSettings() {
@@ -231,6 +240,67 @@ class WebSocketClientController extends GetxController {
     }
   }
 
+  /// 开始拖动音量
+  void startDraggingVolume() {
+    _isDraggingVolume.value = true;
+    _startVolumeUpdateTimer();
+  }
+
+  /// 结束拖动音量
+  void stopDraggingVolume() {
+    _isDraggingVolume.value = false;
+    _stopVolumeUpdateTimer();
+    // 拖动结束后发送最终的音量值
+    if (isConnected) {
+      sendVolumeControlMessage(_volume.value);
+    }
+  }
+
+  /// 更新音量值
+  void updateVolume(double newVolume) {
+    _volume.value = newVolume;
+  }
+
+  /// 启动音量更新定时器
+  void _startVolumeUpdateTimer() {
+    // 如果已有定时器，先停止
+    _volumeUpdateTimer?.cancel();
+    
+    if (!isConnected) return;
+    
+    // 启动定时器，每100ms发送一次音量数据
+    _volumeUpdateTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (!isConnected || !_isDraggingVolume.value) {
+        timer.cancel();
+        _volumeUpdateTimer = null;
+        return;
+      }
+      sendVolumeControlMessage(_volume.value);
+    });
+  }
+
+  /// 停止音量更新定时器
+  void _stopVolumeUpdateTimer() {
+    _volumeUpdateTimer?.cancel();
+    _volumeUpdateTimer = null;
+  }
+
+  /// 发送音量控制消息
+  void sendVolumeControlMessage(double volume) {
+    if (!isConnected) return;
+
+    try {
+      final message = WebSocketMessage(
+        type: 'ctrl',
+        content: volume.toString(),
+      );
+      _webSocket!.add(message.toJsonString());
+      _logger.i('$_tag 发送音量控制命令: $volume');
+    } catch (e) {
+      _logger.e('$_tag 发送音量控制消息失败', error: e);
+    }
+  }
+
   /// 连接到WebSocket服务器
   Future<void> connect() async {
     if (isConnected || _isConnecting.value) return;
@@ -310,6 +380,7 @@ class WebSocketClientController extends GetxController {
 
       // 停止定时器
       _stopHeartbeatTimer();
+      _stopVolumeUpdateTimer();
       stopStatusPolling();
       if (manual) {
         _stopReconnectTimer();
@@ -413,28 +484,6 @@ class WebSocketClientController extends GetxController {
         command,
       );
       _webSocket!.add(controlMessage.toJsonString());
-
-      // 根据命令显示不同的提示信息
-      String actionText;
-      switch (command) {
-        case PlayControlCommands.play:
-          actionText = '播放';
-          break;
-        case PlayControlCommands.pause:
-        case PlayControlCommands.stop:
-          actionText = '暂停';
-          break;
-        case PlayControlCommands.next:
-          actionText = '下一首';
-          break;
-        case PlayControlCommands.previous:
-          actionText = '上一首';
-          break;
-        default:
-          actionText = command;
-      }
-
-      _showInfo('已发送$actionText控制命令');
       _logger.i('$_tag 发送播放控制命令: $command');
     } catch (e) {
       _showError('发送控制命令失败: $e');
@@ -552,8 +601,14 @@ class WebSocketClientController extends GetxController {
             // 保存最新的播放状态
             _lastPlayStatus.value = statusData;
             _lastPlayStatus.refresh();
+            
+            // 如果没有在拖动音量条，则更新音量值
+            if (!_isDraggingVolume.value) {
+              _volume.value = statusData.volume;
+            }
+            
             final logMessage =
-                '[$timestamp] 播放状态: ${statusData.isPlaying ? "播放中" : "已暂停"} - ${statusData.currentTrack?.title ?? "无曲目"}';
+                '[$timestamp] 播放状态: ${statusData.isPlaying ? "播放中" : "已暂停"} - ${statusData.currentTrack?.title ?? "无曲目"} - 音量: ${(statusData.volume * 100).toInt()}%';
             _receivedMessages.add(logMessage);
             _logger.i('$_tag 收到播放状态: $statusData');
           } catch (e) {

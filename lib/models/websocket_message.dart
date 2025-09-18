@@ -82,11 +82,13 @@ class WebSocketMessage {
 class PlayStatusData {
   final Track? currentTrack;
   final bool isPlaying;
+  final double volume;
   final DateTime timestamp;
 
   PlayStatusData({
     required this.currentTrack,
     required this.isPlaying,
+    required this.volume,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
@@ -105,6 +107,7 @@ class PlayStatusData {
     return PlayStatusData(
       currentTrack: track,
       isPlaying: json['isPlaying'] as bool,
+      volume: json['volume'] as double? ?? 0.5,
       timestamp: timestamp,
     );
   }
@@ -114,6 +117,7 @@ class PlayStatusData {
     return {
       'currentTrack': currentTrack?.toJson(),
       'isPlaying': isPlaying,
+      'volume': volume,
       'timestamp': timestamp.millisecondsSinceEpoch,
     };
   }
@@ -125,12 +129,13 @@ class PlayStatusData {
           ? controller.currentTrack
           : null,
       isPlaying: controller.isplaying.value,
+      volume: controller.currentVolume,
     );
   }
 
   @override
   String toString() {
-    return 'PlayStatusData(currentTrack: ${currentTrack?.title ?? "None"}, isPlaying: $isPlaying)';
+    return 'PlayStatusData(currentTrack: ${currentTrack?.title ?? "None"}, isPlaying: $isPlaying, volume: $volume)';
   }
 }
 

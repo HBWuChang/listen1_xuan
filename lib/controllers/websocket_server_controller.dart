@@ -285,6 +285,31 @@ class WebSocketServerController extends GetxController {
           _logger.i('$_tag 执行上一首命令');
           break;
         default:
+          // 尝试解析为音量控制命令
+          final volumeValue = double.tryParse(command);
+          if (volumeValue != null && volumeValue >= 0.0 && volumeValue <= 1.0) {
+            // 这是音量控制命令
+            try {
+              final playController = Get.find<PlayController>();
+              playController.currentVolume = volumeValue;
+              _logger.i('$_tag 设置音量: ${(volumeValue * 100).toInt()}%');
+              
+              // 发送成功响应
+              final successMessage = WebSocketMessageBuilder.createMessage(
+                '音量已设置为: ${(volumeValue * 100).toInt()}%',
+              );
+              _sendMessage(connection, successMessage);
+              return;
+            } catch (e) {
+              _logger.e('$_tag 设置音量失败', error: e);
+              final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+                '设置音量失败: $e',
+              );
+              _sendMessage(connection, errorMessage);
+              return;
+            }
+          }
+          
           _logger.w('$_tag 未知播放控制命令: $command');
           final errorMessage = WebSocketMessageBuilder.createErrorMessage(
             '未知播放控制命令: $command',
