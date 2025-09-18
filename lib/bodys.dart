@@ -1533,10 +1533,13 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   String lastquery = "";
   bool searchPlayList = false;
   final FocusNode _focusNode = FocusNode(); // 创建 FocusNode
+  final query = ''.obs;
   @override
   void initState() {
     super.initState();
-    widget.input_text_Controller.addListener(_filterTracks);
+    widget.input_text_Controller.addListener(() {
+      query.value = widget.input_text_Controller.text;
+    });
     _scrollController.addListener(_onScroll);
     _focusNode.addListener(() {
       if (_focusNode.hasFocus) {
@@ -1545,6 +1548,9 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
         set_inapp_hotkey(true);
       }
     });
+    interval(query, (_) {
+      _filterTracks();
+    }, time: Duration(milliseconds: 400));
     _filterTracks();
     selectedOptionNotifier.addListener(_filterTracks);
   }
