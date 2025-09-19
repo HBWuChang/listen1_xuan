@@ -1282,6 +1282,7 @@ Future<int> global_change_play_mode() async {
   await fresh_playmode();
   playmode.value = (playmode.value + 1) % 3;
   Get.find<PlayController>().setPlayerSetting("playmode", playmode.value);
+  broadcastWs();
   return playmode.value;
 }
 

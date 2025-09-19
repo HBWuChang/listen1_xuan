@@ -83,12 +83,14 @@ class PlayStatusData {
   final Track? currentTrack;
   final bool isPlaying;
   final double volume;
+  final int playMode;
   final DateTime timestamp;
 
   PlayStatusData({
     required this.currentTrack,
     required this.isPlaying,
     required this.volume,
+    required this.playMode,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
@@ -108,6 +110,7 @@ class PlayStatusData {
       currentTrack: track,
       isPlaying: json['isPlaying'] as bool,
       volume: json['volume'] as double? ?? 0.5,
+      playMode: json['playMode'] as int? ?? 0,
       timestamp: timestamp,
     );
   }
@@ -118,6 +121,7 @@ class PlayStatusData {
       'currentTrack': currentTrack?.toJson(),
       'isPlaying': isPlaying,
       'volume': volume,
+      'playMode': playMode,
       'timestamp': timestamp.millisecondsSinceEpoch,
     };
   }
@@ -130,12 +134,13 @@ class PlayStatusData {
           : null,
       isPlaying: controller.isplaying.value,
       volume: controller.currentVolume,
+      playMode: controller.getPlayerSettings("playmode") ?? 0,
     );
   }
 
   @override
   String toString() {
-    return 'PlayStatusData(currentTrack: ${currentTrack?.title ?? "None"}, isPlaying: $isPlaying, volume: $volume)';
+    return 'PlayStatusData(currentTrack: ${currentTrack?.title ?? "None"}, isPlaying: $isPlaying, volume: $volume, playMode: $playMode)';
   }
 }
 

@@ -198,19 +198,14 @@ class WebSocketControlContent extends StatefulWidget {
       _WebSocketControlContentState();
 }
 
-class _WebSocketControlContentState extends State<WebSocketControlContent>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
-
+class _WebSocketControlContentState extends State<WebSocketControlContent> {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -450,66 +445,10 @@ class _WebSocketControlContentState extends State<WebSocketControlContent>
             }),
           ),
 
-          // Tab 导航
-          TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: '状态', icon: Icon(Icons.info)),
-              Tab(text: '配置', icon: Icon(Icons.settings)),
-              Tab(text: '消息', icon: Icon(Icons.message)),
-            ],
-          ),
-
           // Tab 内容
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildStatusTab(controller),
-                _buildConfigTab(controller),
-                _buildMessageTab(controller),
-              ],
-            ),
-          ),
+          Expanded(child: _buildConfigTab(controller)),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatusTab(WebSocketCardController controller) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Obx(() {
-        final ctrl = Get.find<WebSocketCardController>();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInfoCard('服务器状态', [
-              _buildInfoRow('状态', ctrl.statusMessage),
-              if (ctrl.isServerRunning) ...[
-                _buildInfoRow('服务地址', ctrl.serverUrl),
-                _buildInfoRow('连接数', '${ctrl.clientCount}'),
-                _buildInfoRow('主机', ctrl.host),
-                _buildInfoRow('端口', '${ctrl.port}'),
-              ],
-            ]),
-            const SizedBox(height: 16),
-            _buildInfoCard('心跳配置', [
-              _buildInfoRow('Ping间隔', '${ctrl.pingInterval}秒'),
-              _buildInfoRow('Pong超时', '${ctrl.pongTimeout}秒'),
-            ]),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: ctrl.isServerRunning ? ctrl.testConnection : null,
-                icon: const Icon(Icons.speed),
-                label: const Text('测试连接'),
-              ),
-            ),
-          ],
-        );
-      }),
     );
   }
 
@@ -553,41 +492,6 @@ class _WebSocketControlContentState extends State<WebSocketControlContent>
                   ],
                 ),
               ),
-
-            // 自动启动配置
-            _buildConfigSection('启动配置', [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '应用启动时自动启动WebSocket服务器',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                  Switch(
-                    value: ctrl.wsServerAutoStart,
-                    onChanged: ctrl.updateAutoStart,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '在主页中显示WebSocket服务器按钮',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                  Switch(
-                    value: ctrl.wsServerBtnShow,
-                    onChanged: ctrl.updateBtnShow,
-                  ),
-                ],
-              ),
-            ]),
-
-            const SizedBox(height: 24),
 
             _buildConfigSection('网络配置', [
               // IP地址下拉选择框
@@ -725,6 +629,40 @@ class _WebSocketControlContentState extends State<WebSocketControlContent>
             ]),
 
             const SizedBox(height: 24),
+            // 自动启动配置
+            _buildConfigSection('启动配置', [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '应用启动时自动启动WebSocket服务器',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                  Switch(
+                    value: ctrl.wsServerAutoStart,
+                    onChanged: ctrl.updateAutoStart,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '在主页中显示WebSocket服务器按钮',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                  Switch(
+                    value: ctrl.wsServerBtnShow,
+                    onChanged: ctrl.updateBtnShow,
+                  ),
+                ],
+              ),
+            ]),
+
+            const SizedBox(height: 24),
 
             _buildConfigSection('心跳配置', [
               _buildTextField(
@@ -751,93 +689,6 @@ class _WebSocketControlContentState extends State<WebSocketControlContent>
                 },
               ),
             ]),
-          ],
-        );
-      }),
-    );
-  }
-
-  Widget _buildMessageTab(WebSocketCardController controller) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Obx(() {
-        final ctrl = Get.find<WebSocketCardController>();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInfoCard('连接信息', [
-              _buildInfoRow('当前连接数', '${ctrl.clientCount}'),
-              if (ctrl.isServerRunning) ...[
-                _buildInfoRow('WebSocket地址', ctrl.serverUrl),
-                _buildInfoRow(
-                  'HTTP状态',
-                  'http://${ctrl.host}:${ctrl.port}/status',
-                ),
-              ],
-            ]),
-
-            const SizedBox(height: 16),
-
-            Text(
-              '消息广播',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 8),
-
-            SizedBox(
-              height: 120,
-              child: TextField(
-                controller: ctrl.messageController,
-                maxLines: null,
-                expands: true,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: '输入要广播的消息...',
-                  alignLabelWithHint: true,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: (!ctrl.isServerRunning || ctrl.clientCount == 0)
-                    ? null
-                    : ctrl.broadcastMessage,
-                icon: const Icon(Icons.broadcast_on_personal),
-                label: Text('广播消息 (${ctrl.clientCount} 个客户端)'),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            const Text(
-              '客户端连接示例 (JavaScript):',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-
-            const SizedBox(height: 8),
-
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const SelectableText(
-                'const ws = new WebSocket("ws://localhost:8080");\n'
-                'ws.onmessage = (event) => {\n'
-                '  console.log("收到消息:", event.data);\n'
-                '};\n'
-                'ws.send(JSON.stringify({type: "message", content: "Hello!"}));',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
-            ),
           ],
         );
       }),

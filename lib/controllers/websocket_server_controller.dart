@@ -160,7 +160,7 @@ class WebSocketServerController extends GetxController {
   }
 
   /// 处理收到的消息
-  void _handleMessage(WebSocketConnection connection, dynamic data) {
+  Future<void> _handleMessage(WebSocketConnection connection, dynamic data) async {
     try {
       // 尝试解析为新的 WebSocketMessage 格式
       WebSocketMessage message;
@@ -185,7 +185,7 @@ class WebSocketServerController extends GetxController {
           _handleGetStatusRequest(connection);
           break;
         case WebSocketMessageType.ctrl:
-          _handleControlMessage(connection, message);
+          await _handleControlMessage(connection, message);
           break;
         case WebSocketMessageType.track:
           _handleTrackMessage(connection, message);
@@ -258,10 +258,10 @@ class WebSocketServerController extends GetxController {
   }
 
   /// 处理播放控制消息
-  void _handleControlMessage(
+  Future<void> _handleControlMessage(
     WebSocketConnection connection,
     WebSocketMessage message,
-  ) {
+  ) async {
     try {
       final command = message.content.trim();
       _logger.i('$_tag 收到播放控制命令: $command from ${connection.id}');
@@ -285,6 +285,28 @@ class WebSocketServerController extends GetxController {
           _logger.i('$_tag 执行上一首命令');
           break;
         default:
+          // 检查是否为changePlayMode命令
+          if (command == 'changePlayMode') {
+            try {
+              final newPlayMode = await global_change_play_mode();
+              _logger.i('$_tag 播放模式已切换为: $newPlayMode');
+              
+              // 发送成功响应
+              final successMessage = WebSocketMessageBuilder.createMessage(
+                '播放模式已切换: ${_getPlayModeText(newPlayMode)}',
+              );
+              _sendMessage(connection, successMessage);
+              return;
+            } catch (e) {
+              _logger.e('$_tag 切换播放模式失败', error: e);
+              final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+                '切换播放模式失败: $e',
+              );
+              _sendMessage(connection, errorMessage);
+              return;
+            }
+          }
+          
           // 尝试解析为音量控制命令
           final volumeValue = double.tryParse(command);
           if (volumeValue != null && volumeValue >= 0.0 && volumeValue <= 1.0) {
@@ -592,6 +614,20 @@ class WebSocketServerController extends GetxController {
     }
 
     request.response.close();
+  }
+
+  /// 获取播放模式文本描述
+  String _getPlayModeText(int playMode) {
+    switch (playMode) {
+      case 0:
+        return '循环播放';
+      case 1:
+        return '随机播放';
+      case 2:
+        return '单曲循环';
+      default:
+        return '未知模式';
+    }
   }
 
   @override

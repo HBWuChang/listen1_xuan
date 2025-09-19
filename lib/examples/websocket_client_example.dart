@@ -67,17 +67,14 @@ class WebSocketClientControlContent extends StatefulWidget {
 }
 
 class _WebSocketClientControlContentState
-    extends State<WebSocketClientControlContent>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
+    extends State<WebSocketClientControlContent> {
   late TextEditingController _reconnectController;
   late TextEditingController _heartbeatController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    
+
     // 初始化TextEditingController
     final controller = Get.find<WebSocketClientController>();
     _reconnectController = TextEditingController(
@@ -90,7 +87,6 @@ class _WebSocketClientControlContentState
 
   @override
   void dispose() {
-    _tabController.dispose();
     _reconnectController.dispose();
     _heartbeatController.dispose();
     super.dispose();
@@ -153,7 +149,28 @@ class _WebSocketClientControlContentState
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 12), // 扫描二维码按钮（仅在Android显示）
+                      if (Platform.isAndroid)
+                        SizedBox(
+                          width: 100,
+                          child: ElevatedButton.icon(
+                            onPressed: ctrl.isConnected ? null : _scanQRCode,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange.withOpacity(0.1),
+                              foregroundColor: Colors.orange,
+                              elevation: 0,
+                              side: BorderSide(
+                                color: Colors.orange.withOpacity(0.3),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(Icons.qr_code_scanner, size: 20),
+                            label: const Text('扫码'),
+                          ),
+                        ),
                     ],
                   ),
 
@@ -189,26 +206,8 @@ class _WebSocketClientControlContentState
               );
             }),
           ),
-
-          // Tab 导航
-          TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: '状态', icon: Icon(Icons.info)),
-              Tab(text: '配置', icon: Icon(Icons.settings)),
-            ],
-          ),
-
           // Tab 内容
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildStatusTab(controller),
-                _buildConfigTab(controller),
-              ],
-            ),
-          ),
+          Expanded(child: _buildStatusTab(controller)),
         ],
       ),
     );
@@ -217,69 +216,73 @@ class _WebSocketClientControlContentState
   Widget _buildStatusTab(WebSocketClientController controller) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Obx(() {
-        final ctrl = Get.find<WebSocketClientController>();
-        final playStatus = ctrl.lastPlayStatus;
+      child: Column(
+        children: [
+          Obx(() {
+            final ctrl = Get.find<WebSocketClientController>();
+            final playStatus = ctrl.lastPlayStatus;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
 
-            // 歌曲信息卡片
-            if (playStatus?.currentTrack != null) ...[
-              Card(
-                clipBehavior: Clip.hardEdge,
-                child: InkWell(
-                  onTap: () {
-                    Track? track = playStatus.currentTrack;
-                    if (track != null) {
-                      try {
-                        song_dialog(Get.context!, track);
-                      } catch (e) {
-                        debugPrint(e.toString());
-                      }
-                    }
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '当前歌曲',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
+                // 歌曲信息卡片
+                if (playStatus?.currentTrack != null) ...[
+                  Card(
+                    clipBehavior: Clip.hardEdge,
+                    child: InkWell(
+                      onTap: () {
+                        Track? track = playStatus.currentTrack;
+                        if (track != null) {
+                          try {
+                            song_dialog(Get.context!, track);
+                          } catch (e) {
+                            debugPrint(e.toString());
+                          }
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 封面图片
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                color: Colors.grey[200],
+                            const Text(
+                              '当前歌曲',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
-                              child:
-                                  playStatus!.currentTrack!.img_url != null &&
-                                      playStatus
-                                          .currentTrack!
-                                          .img_url!
-                                          .isNotEmpty
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: ExtendedImage.network(
-                                        playStatus.currentTrack!.img_url!,
-                                        width: 80,
-                                        height: 80,
-                                        fit: BoxFit.cover,
-                                        cache: true,
-                                        loadStateChanged:
-                                            (ExtendedImageState state) {
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                // 封面图片
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: Colors.grey[200],
+                                  ),
+                                  child:
+                                      playStatus!.currentTrack!.img_url !=
+                                              null &&
+                                          playStatus
+                                              .currentTrack!
+                                              .img_url!
+                                              .isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: ExtendedImage.network(
+                                            playStatus.currentTrack!.img_url!,
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                            cache: true,
+                                            loadStateChanged: (ExtendedImageState state) {
                                               switch (state
                                                   .extendedImageLoadState) {
                                                 case LoadState.loading:
@@ -325,428 +328,471 @@ class _WebSocketClientControlContentState
                                                   return null;
                                               }
                                             },
+                                          ),
+                                        )
+                                      : Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[300],
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.music_note,
+                                            color: Colors.grey,
+                                            size: 40,
+                                          ),
+                                        ),
+                                ),
+                                const SizedBox(width: 16),
+                                // 歌曲信息
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        playStatus.currentTrack!.title ??
+                                            '未知标题',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    )
-                                  : Container(
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[300],
-                                        borderRadius: BorderRadius.circular(8),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        playStatus.currentTrack!.artist ??
+                                            '未知艺术家',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      child: const Icon(
-                                        Icons.music_note,
-                                        color: Colors.grey,
-                                        size: 40,
-                                      ),
-                                    ),
-                            ),
-                            const SizedBox(width: 16),
-                            // 歌曲信息
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    playStatus.currentTrack!.title ?? '未知标题',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                      if (playStatus.currentTrack!.album !=
+                                              null &&
+                                          playStatus
+                                              .currentTrack!
+                                              .album!
+                                              .isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          playStatus.currentTrack!.album!,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[500],
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                  const SizedBox(height: 4),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // 音源信息
+                            if (playStatus.currentTrack!.source != null) ...[
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.audiotrack,
+                                    size: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    playStatus.currentTrack!.artist ?? '未知艺术家',
+                                    '音源: ${playStatus.currentTrack!.source}',
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 12,
                                       color: Colors.grey[600],
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  if (playStatus.currentTrack!.album != null &&
-                                      playStatus
-                                          .currentTrack!
-                                          .album!
-                                          .isNotEmpty) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      playStatus.currentTrack!.album!,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[500],
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  // 无歌曲信息时显示的卡片
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.music_off,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '暂无播放曲目',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            ctrl.isConnected
+                                ? '正在获取播放状态...'
+                                : '请先连接到WebSocket服务器',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                if (ctrl.isConnected)
+                  // 播放控制按钮卡片
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          // 播放控制按钮行
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              IconButton(
+                                onPressed: () =>
+                                    ctrl.sendControlMessage('previous'),
+                                icon: const Icon(Icons.skip_previous),
+                                tooltip: '上一首',
+                                iconSize: 32,
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.grey.withOpacity(0.1),
+                                  padding: const EdgeInsets.all(12),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  final playStatus = ctrl.lastPlayStatus;
+                                  if (playStatus?.isPlaying == true) {
+                                    ctrl.sendControlMessage('pause');
+                                  } else {
+                                    ctrl.sendControlMessage('play');
+                                  }
+                                },
+                                icon: Icon(
+                                  playStatus?.isPlaying == true
+                                      ? Icons.pause
+                                      : Icons.play_arrow,
+                                ),
+                                tooltip: '播放/暂停',
+                                iconSize: 36,
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.blue.withOpacity(0.1),
+                                  padding: const EdgeInsets.all(16),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () =>
+                                    ctrl.sendControlMessage('next'),
+                                icon: const Icon(Icons.skip_next),
+                                tooltip: '下一首',
+                                iconSize: 32,
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.grey.withOpacity(0.1),
+                                  padding: const EdgeInsets.all(12),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () =>
+                                    ctrl.sendChangePlayModeMessage(),
+                                icon: Icon(
+                                  _getPlayModeIcon(playStatus?.playMode ?? 0),
+                                ),
+                                tooltip:
+                                    '播放模式: ${_getPlayModeText(playStatus?.playMode ?? 0)}',
+                                iconSize: 32,
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.orange.withOpacity(
+                                    0.1,
+                                  ),
+                                  padding: const EdgeInsets.all(12),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // 音量控制滑块
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              const Icon(Icons.volume_down),
+                              Expanded(
+                                child: Slider(
+                                  value: ctrl.volume,
+                                  min: 0.0,
+                                  max: 1.0,
+                                  divisions: 100,
+                                  label: '${(ctrl.volume * 100).round()}%',
+                                  onChangeStart: (value) {
+                                    ctrl.startDraggingVolume();
+                                  },
+                                  onChanged: (value) {
+                                    ctrl.updateVolume(value);
+                                  },
+                                  onChangeEnd: (value) {
+                                    ctrl.stopDraggingVolume();
+                                  },
+                                ),
+                              ),
+                              const Icon(Icons.volume_up),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                width: 48,
+                                child: Text(
+                                  '${(ctrl.volume * 100).round()}%',
+                                  style: const TextStyle(fontSize: 12),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+              ],
+            );
+          }),
+          Obx(() {
+            final ctrl = Get.find<WebSocketClientController>();
+
+            // 更新控制器文本以反映当前值
+            if (_reconnectController.text !=
+                ctrl.reconnectInterval.toString()) {
+              _reconnectController.text = ctrl.reconnectInterval.toString();
+            }
+            if (_heartbeatController.text !=
+                ctrl.heartbeatInterval.toString()) {
+              _heartbeatController.text = ctrl.heartbeatInterval.toString();
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (ctrl.isConnected)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade300),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.warning, color: Colors.orange),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '连接时不能修改配置',
+                            style: TextStyle(color: Colors.orange),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                _buildConfigSection('连接配置', [
+                  Column(
+                    children: [
+                      // 服务器地址显示和编辑
+                      InkWell(
+                        onTap: ctrl.isConnected
+                            ? null
+                            : () => _showServerAddressEditDialog(),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: ctrl.isConnected
+                                  ? Colors.grey.withOpacity(0.5)
+                                  : Colors.grey,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '服务器地址',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: ctrl.isConnected
+                                      ? Colors.grey
+                                      : Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Obx(
+                                      () => Text(
+                                        ctrl.serverAddress.isEmpty
+                                            ? 'IP:端口 (例如: 192.168.1.100:8080)'
+                                            : ctrl.serverAddress,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: ctrl.serverAddress.isEmpty
+                                              ? Colors.grey[500]
+                                              : (ctrl.isConnected
+                                                    ? Colors.grey[600]
+                                                    : Colors.black87),
+                                        ),
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (!ctrl.isConnected) ...[
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      Icons.edit,
+                                      size: 18,
+                                      color: Colors.grey[600],
                                     ),
                                   ],
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // 音源信息
-                        if (playStatus.currentTrack!.source != null) ...[
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.audiotrack,
-                                size: 16,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '音源: ${playStatus.currentTrack!.source}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
                             ],
                           ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ] else ...[
-              // 无歌曲信息时显示的卡片
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Icon(Icons.music_off, size: 48, color: Colors.grey[400]),
-                      const SizedBox(height: 8),
-                      Text(
-                        '暂无播放曲目',
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        ctrl.isConnected ? '正在获取播放状态...' : '请先连接到WebSocket服务器',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      const SizedBox(height: 12),
+                      // 扫描二维码按钮（仅在Android显示）
+                      if (Platform.isAndroid)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: ctrl.isConnected ? null : _scanQRCode,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange.withOpacity(0.1),
+                              foregroundColor: Colors.orange,
+                              elevation: 0,
+                              side: BorderSide(
+                                color: Colors.orange.withOpacity(0.3),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(Icons.qr_code_scanner, size: 20),
+                            label: const Text('扫描服务器二维码'),
+                          ),
+                        ),
+                    ],
+                  ),
+                ]),
+
+                const SizedBox(height: 24),
+                // 自动启动配置
+                _buildConfigSection('启动配置', [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '应用启动时自动连接',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      Switch(
+                        value: ctrl.wsClientAutoStart,
+                        onChanged: ctrl.updateAutoStart,
                       ),
                     ],
                   ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (ctrl.isConnected)
-              // 播放控制按钮卡片
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
+                  const SizedBox(height: 16),
+                  Row(
                     children: [
-                      // 播放控制按钮行
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          IconButton(
-                            onPressed: () =>
-                                ctrl.sendControlMessage('previous'),
-                            icon: const Icon(Icons.skip_previous),
-                            tooltip: '上一首',
-                            iconSize: 32,
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.grey.withOpacity(0.1),
-                              padding: const EdgeInsets.all(12),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              final playStatus = ctrl.lastPlayStatus;
-                              if (playStatus?.isPlaying == true) {
-                                ctrl.sendControlMessage('pause');
-                              } else {
-                                ctrl.sendControlMessage('play');
-                              }
-                            },
-                            icon: Icon(
-                              playStatus?.isPlaying == true
-                                  ? Icons.pause
-                                  : Icons.play_arrow,
-                            ),
-                            tooltip: '播放/暂停',
-                            iconSize: 36,
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.blue.withOpacity(0.1),
-                              padding: const EdgeInsets.all(16),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => ctrl.sendControlMessage('next'),
-                            icon: const Icon(Icons.skip_next),
-                            tooltip: '下一首',
-                            iconSize: 32,
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.grey.withOpacity(0.1),
-                              padding: const EdgeInsets.all(12),
-                            ),
-                          ),
-                        ],
+                      Expanded(
+                        child: Text(
+                          '在主页中显示WebSocket客户端按钮',
+                          style: TextStyle(fontSize: 16),
+                        ),
                       ),
-                      
-                      // 音量控制滑块
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          const Icon(Icons.volume_down),
-                          Expanded(
-                            child: Slider(
-                              value: ctrl.volume,
-                              min: 0.0,
-                              max: 1.0,
-                              divisions: 100,
-                              label: '${(ctrl.volume * 100).round()}%',
-                              onChangeStart: (value) {
-                                ctrl.startDraggingVolume();
-                              },
-                              onChanged: (value) {
-                                ctrl.updateVolume(value);
-                              },
-                              onChangeEnd: (value) {
-                                ctrl.stopDraggingVolume();
-                              },
-                            ),
-                          ),
-                          const Icon(Icons.volume_up),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 48,
-                            child: Text(
-                              '${(ctrl.volume * 100).round()}%',
-                              style: const TextStyle(fontSize: 12),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
+                      Switch(
+                        value: ctrl.wsClientBtnShow,
+                        onChanged: ctrl.updateBtnShow,
                       ),
                     ],
                   ),
-                ),
-              ),
+                ]),
 
-            const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
-            // 连接信息卡片
-            _buildInfoCard('连接信息', [
-              _buildInfoRow('连接状态', ctrl.statusMessage),
-              if (ctrl.isConnected) ...[
-                _buildInfoRow('服务器地址', ctrl.serverAddress),
-                _buildInfoRow('连接地址', ctrl.serverUrl),
+                _buildConfigSection('重连配置', [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('自动重连', style: TextStyle(fontSize: 16)),
+                      ),
+                      Switch(
+                        value: ctrl.autoReconnect,
+                        onChanged: ctrl.updateAutoReconnect,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _reconnectController,
+                    label: '重连间隔 (秒)',
+                    hint: '1-60',
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (value) {
+                      final interval = int.tryParse(value);
+                      if (interval != null)
+                        ctrl.updateReconnectInterval(interval);
+                    },
+                  ),
+                ]),
+
+                const SizedBox(height: 24),
+
+                _buildConfigSection('心跳配置', [
+                  _buildTextField(
+                    controller: _heartbeatController,
+                    label: '心跳间隔 (秒)',
+                    hint: '5-300',
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (value) {
+                      final interval = int.tryParse(value);
+                      if (interval != null)
+                        ctrl.updateHeartbeatInterval(interval);
+                    },
+                  ),
+                ]),
               ],
-            ]),
-          ],
-        );
-      }),
-    );
-  }
-
-  Widget _buildConfigTab(WebSocketClientController controller) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Obx(() {
-        final ctrl = Get.find<WebSocketClientController>();
-        
-        // 更新控制器文本以反映当前值
-        if (_reconnectController.text != ctrl.reconnectInterval.toString()) {
-          _reconnectController.text = ctrl.reconnectInterval.toString();
-        }
-        if (_heartbeatController.text != ctrl.heartbeatInterval.toString()) {
-          _heartbeatController.text = ctrl.heartbeatInterval.toString();
-        }
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (ctrl.isConnected)
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.shade300),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.warning, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '连接时不能修改配置',
-                        style: TextStyle(color: Colors.orange),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            // 自动启动配置
-            _buildConfigSection('启动配置', [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('应用启动时自动连接', style: TextStyle(fontSize: 16)),
-                  ),
-                  Switch(
-                    value: ctrl.wsClientAutoStart,
-                    onChanged: ctrl.updateAutoStart,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '在主页中显示WebSocket客户端按钮',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                  Switch(
-                    value: ctrl.wsClientBtnShow,
-                    onChanged: ctrl.updateBtnShow,
-                  ),
-                ],
-              ),
-            ]),
-
-            const SizedBox(height: 24),
-
-            _buildConfigSection('连接配置', [
-              Column(
-                children: [
-                  // 服务器地址显示和编辑
-                  InkWell(
-                    onTap: ctrl.isConnected ? null : () => _showServerAddressEditDialog(),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: ctrl.isConnected ? Colors.grey.withOpacity(0.5) : Colors.grey,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '服务器地址',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: ctrl.isConnected ? Colors.grey : Colors.grey[700],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Obx(() => Text(
-                                  ctrl.serverAddress.isEmpty 
-                                    ? 'IP:端口 (例如: 192.168.1.100:8080)'
-                                    : ctrl.serverAddress,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: ctrl.serverAddress.isEmpty 
-                                      ? Colors.grey[500]
-                                      : (ctrl.isConnected ? Colors.grey[600] : Colors.black87),
-                                  ),
-                                )),
-                              ),
-                              if (!ctrl.isConnected) ...[
-                                const SizedBox(width: 8),
-                                Icon(
-                                  Icons.edit,
-                                  size: 18,
-                                  color: Colors.grey[600],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // 扫描二维码按钮（仅在Android显示）
-                  if (Platform.isAndroid)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: ctrl.isConnected ? null : _scanQRCode,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange.withOpacity(0.1),
-                          foregroundColor: Colors.orange,
-                          elevation: 0,
-                          side: BorderSide(color: Colors.orange.withOpacity(0.3)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        icon: const Icon(Icons.qr_code_scanner, size: 20),
-                        label: const Text('扫描服务器二维码'),
-                      ),
-                    ),
-                ],
-              ),
-            ]),
-
-            const SizedBox(height: 24),
-
-            _buildConfigSection('重连配置', [
-              Row(
-                children: [
-                  Expanded(child: Text('自动重连', style: TextStyle(fontSize: 16))),
-                  Switch(
-                    value: ctrl.autoReconnect,
-                    onChanged: ctrl.updateAutoReconnect,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _reconnectController,
-                label: '重连间隔 (秒)',
-                hint: '1-60',
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                onChanged: (value) {
-                  final interval = int.tryParse(value);
-                  if (interval != null) ctrl.updateReconnectInterval(interval);
-                },
-              ),
-            ]),
-
-            const SizedBox(height: 24),
-
-            _buildConfigSection('心跳配置', [
-              _buildTextField(
-                controller: _heartbeatController,
-                label: '心跳间隔 (秒)',
-                hint: '5-300',
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                onChanged: (value) {
-                  final interval = int.tryParse(value);
-                  if (interval != null) ctrl.updateHeartbeatInterval(interval);
-                },
-              ),
-            ]),
-          ],
-        );
-      }),
+            );
+          }),
+        ],
+      ),
     );
   }
 
@@ -827,7 +873,7 @@ class _WebSocketClientControlContentState
   /// 显示服务器地址编辑对话框
   Future<void> _showServerAddressEditDialog() async {
     final controller = Get.find<WebSocketClientController>();
-    
+
     final result = await Get.dialog<String>(
       _ServerAddressEditDialog(initialAddress: controller.serverAddress),
     );
@@ -845,6 +891,58 @@ class _WebSocketClientControlContentState
     }
   }
 
+  /// 获取播放模式文本描述
+  String _getPlayModeText(int playMode) {
+    switch (playMode) {
+      case 0:
+        return '循环播放';
+      case 1:
+        return '随机播放';
+      case 2:
+        return '单曲循环';
+      default:
+        return '未知模式';
+    }
+  }
+
+  /// 获取播放模式图标
+  IconData _getPlayModeIcon(int playMode) {
+    switch (playMode) {
+      case 0:
+        return Icons.repeat;
+      case 1:
+        return Icons.shuffle;
+      case 2:
+        return Icons.repeat_one;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  /// 构建状态信息组件
+  Widget _buildStatusInfo({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: color,
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
   /// 扫描二维码获取服务器地址
   Future<void> _scanQRCode() async {
     try {
@@ -852,12 +950,12 @@ class _WebSocketClientControlContentState
         () => const QRScannerPage(),
         transition: Transition.rightToLeft,
       );
-      
+
       if (result != null && result.isNotEmpty) {
         // 更新服务器地址
         final controller = Get.find<WebSocketClientController>();
         controller.updateServerAddress(result);
-        
+
         // 显示成功提示
         Get.snackbar(
           '扫描成功',
@@ -884,43 +982,44 @@ class _WebSocketClientControlContentState
 /// 服务器地址编辑对话框
 class _ServerAddressEditDialog extends StatefulWidget {
   final String initialAddress;
-  
+
   const _ServerAddressEditDialog({required this.initialAddress});
-  
+
   @override
-  State<_ServerAddressEditDialog> createState() => _ServerAddressEditDialogState();
+  State<_ServerAddressEditDialog> createState() =>
+      _ServerAddressEditDialogState();
 }
 
 class _ServerAddressEditDialogState extends State<_ServerAddressEditDialog> {
   late TextEditingController _textController;
-  
+
   @override
   void initState() {
     super.initState();
     _textController = TextEditingController(text: widget.initialAddress);
   }
-  
+
   @override
   void dispose() {
     _textController.dispose();
     super.dispose();
   }
-  
+
   bool _isValidServerAddress(String address) {
     if (address.isEmpty) return false;
-    
+
     final RegExp addressRegex = RegExp(
-      r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(?:[0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$'
+      r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(?:[0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$',
     );
-    
+
     // 也支持主机名格式
     final RegExp hostnameRegex = RegExp(
-      r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*:[0-9]{1,5}$'
+      r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*:[0-9]{1,5}$',
     );
-    
+
     return addressRegex.hasMatch(address) || hostnameRegex.hasMatch(address);
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -947,10 +1046,7 @@ class _ServerAddressEditDialogState extends State<_ServerAddressEditDialog> {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Get.back(),
-          child: const Text('取消'),
-        ),
+        TextButton(onPressed: () => Get.back(), child: const Text('取消')),
         ElevatedButton(
           onPressed: () {
             final address = _textController.text.trim();

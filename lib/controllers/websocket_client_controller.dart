@@ -468,6 +468,10 @@ class WebSocketClientController extends GetxController {
     }
   }
 
+  void sendChangePlayModeMessage() {
+    sendControlMessage('changePlayMode');
+  }
+
   /// 发送播放指定歌曲消息
   void sendTrackMessage(Track trackData) {
     if (!isConnected) {
@@ -585,7 +589,7 @@ class WebSocketClientController extends GetxController {
             }
 
             final logMessage =
-                '[$timestamp] 播放状态: ${statusData.isPlaying ? "播放中" : "已暂停"} - ${statusData.currentTrack?.title ?? "无曲目"} - 音量: ${(statusData.volume * 100).toInt()}%';
+                '[$timestamp] 播放状态: ${statusData.isPlaying ? "播放中" : "已暂停"} - ${statusData.currentTrack?.title ?? "无曲目"} - 音量: ${(statusData.volume * 100).toInt()}% - 模式: ${_getPlayModeText(statusData.playMode)}';
             _receivedMessages.add(logMessage);
             _logger.i('$_tag 收到播放状态: $statusData');
           } catch (e) {
@@ -731,6 +735,20 @@ class WebSocketClientController extends GetxController {
       } else {
         _statusMessage.value = '未连接';
       }
+    }
+  }
+
+  /// 获取播放模式文本描述
+  String _getPlayModeText(int playMode) {
+    switch (playMode) {
+      case 0:
+        return '循环播放';
+      case 1:
+        return '随机播放';
+      case 2:
+        return '单曲循环';
+      default:
+        return '未知模式';
     }
   }
 
