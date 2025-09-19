@@ -29,7 +29,7 @@ class SettingsController extends GetxController {
   void onInit() {
     super.onInit();
     debounce(settings, (callback) {
-      _saveSettings();
+      saveSettings();
     });
 
     // 监听 portraitBottomBarPadding 变化并保存到 settings
@@ -99,7 +99,7 @@ class SettingsController extends GetxController {
     }
   }
 
-  Future<void> _saveSettings() async {
+  Future<void> saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     String jsonString = jsonEncode(settings);
     await prefs.setString('settings', jsonString);

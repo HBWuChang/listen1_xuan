@@ -218,26 +218,93 @@ Future<void> importSettingsFromFile(
   }
 }
 
+String cookiePath(Directory dir) {
+  return is_windows ? '${dir.path}\\.cookies\\' : '${dir.path}/.cookies/';
+}
+
 Future<void> setSaveCookie({
   required String url,
   required List<Cookie> cookies,
 }) async {
   //Save cookies
   final tempDir = await getApplicationDocumentsDirectory();
-  final tempPath = tempDir.path;
+  final _cookiePath = cookiePath(tempDir);
   await PersistCookieJar(
     ignoreExpires: true,
-    storage: FileStorage(
-      is_windows ? '${tempPath}\\.cookies\\' : '${tempPath}/.cookies/',
-    ),
+    storage: FileStorage(_cookiePath),
   ).delete(Uri.parse(url));
   await PersistCookieJar(
     ignoreExpires: true,
-    storage: FileStorage(
-      is_windows ? '${tempPath}\\.cookies\\' : '${tempPath}/.cookies/',
-    ),
+    storage: FileStorage(_cookiePath),
   ).saveFromResponse(Uri.parse(url), cookies);
 }
+
+Future<Map<String, dynamic>> outputAllSaveCookieToJson() async {
+  Map<String, dynamic> allCookies = {};
+  for (var platform in _cookieUrls.keys) {
+    var platformCookies = await outputSaveCookieToJson(platform: platform);
+    allCookies.addAll(platformCookies);
+  }
+  return allCookies;
+}
+
+Future<Map<String, dynamic>> outputSaveCookieToJson({
+  required String platform,
+}) async {
+  if (_cookieUrls.containsKey(platform)) {
+    Map<String, dynamic> allCookies = {};
+    for (var url in _cookieUrls[platform]!) {
+      var cookies = await _outputSaveCookieToJson(url: url);
+      allCookies[url] = cookies;
+    }
+    return allCookies;
+  } else {
+    return {};
+  }
+}
+
+Future<Map<String, dynamic>> _outputSaveCookieToJson({
+  required String url,
+}) async {
+  try {
+    final tempDir = await getApplicationDocumentsDirectory();
+    final _cookiePath = cookiePath(tempDir);
+    List<Cookie> cookies = await PersistCookieJar(
+      ignoreExpires: true,
+      storage: FileStorage(_cookiePath),
+    ).loadForRequest(Uri.parse(url));
+    Map<String, dynamic> json = {};
+    for (var cookie in cookies) {
+      json[cookie.name] = cookie.value;
+    }
+    return json;
+  } catch (e) {
+    return {};
+  }
+}
+
+Future<void> loadCookieFromJson({required Map<String, dynamic> json}) async {
+  json.forEach((url, value) async {
+    await _loadCookieFromJson(url: url, json: value);
+  });
+}
+
+Future<void> _loadCookieFromJson({
+  required String url,
+  required Map<String, dynamic> json,
+}) async {
+  List<Cookie> cookies = [];
+  for (var key in json.keys) {
+    cookies.add(Cookie(key, json[key]));
+  }
+  await setSaveCookie(url: url, cookies: cookies);
+}
+
+Map<String, List<String>> _cookieUrls = {
+  'bl': ['https://api.bilibili.com', 'https://www.bilibili.com'],
+  'ne': ['https://music.163.com', 'https://interface3.music.163.com'],
+  'qq': ['https://u.y.qq.com'],
+};
 
 Future<bool> saveToken(String name, String token) async {
   final prefs = await SharedPreferences.getInstance();
@@ -258,60 +325,22 @@ Map<String, dynamic> settings_getsettings() {
 }
 
 Future<void> _saveToken(String platform, String token) async {
-  Map<String, dynamic> settings = settings_getsettings();
-  final prefs = await SharedPreferences.getInstance();
-
+  final settings = Get.find<SettingsController>().settings;
   settings[platform] = token;
-  // String jsonString = jsonEncode(tokenData);
-  // await prefs.setString('$platform_token', jsonString);
-  await prefs.setString('settings', jsonEncode(settings));
-  switch (platform) {
-    case "bl":
-      List<Cookie> cookies = [];
-      for (var item in token.split(';')) {
-        // var cookie = item.split('=');
-        // 除去两端空格
-        var cookie = item.trim().split('=');
-        // cookies.add(Cookie(cookie[0], cookie[1]));
-        var cookieName = cookie[0].trim();
-        var cookieValue = Uri.encodeComponent(cookie[1].trim());
-        cookies.add(Cookie(cookieName, cookieValue));
-      }
-      await setSaveCookie(url: 'https://api.bilibili.com', cookies: cookies);
-      await setSaveCookie(url: 'https://www.bilibili.com', cookies: cookies);
-      break;
-    case 'ne':
-      List<Cookie> cookies = [];
-      for (var item in token.split(';')) {
-        // var cookie = item.split('=');
-        // 除去两端空格
-        var cookie = item.trim().split('=');
-        // cookies.add(Cookie(cookie[0], cookie[1]));
-        var cookieName = cookie[0].trim();
-        var cookieValue = Uri.encodeComponent(cookie[1].trim());
-        cookies.add(Cookie(cookieName, cookieValue));
-      }
-      cookies.add(Cookie('os', 'pc'));
-      await setSaveCookie(url: 'https://music.163.com', cookies: cookies);
-      await setSaveCookie(
-        url: 'https://interface3.music.163.com',
-        cookies: cookies,
-      );
-      break;
-    case 'qq':
-      List<Cookie> cookies = [];
-      for (var item in token.split(';')) {
-        // var cookie = item.split('=');
-        // 除去两端空格
-        var cookie = item.trim().split('=');
-        // cookies.add(Cookie(cookie[0], cookie[1]));
-        var cookieName = cookie[0].trim();
-        var cookieValue = Uri.encodeComponent(cookie[1].trim());
-        cookies.add(Cookie(cookieName, cookieValue));
-      }
-      await setSaveCookie(url: 'https://u.y.qq.com', cookies: cookies);
-      break;
-    default:
+  Get.find<SettingsController>().saveSettings();
+  List<Cookie> cookies = [];
+  for (var item in token.split(';')) {
+    // 除去两端空格
+    var cookie = item.trim().split('=');
+    var cookieName = cookie[0].trim();
+    var cookieValue = Uri.encodeComponent(cookie[1].trim());
+    cookies.add(Cookie(cookieName, cookieValue));
+  }
+
+  if (_cookieUrls.containsKey(platform)) {
+    for (var url in _cookieUrls[platform]!) {
+      await setSaveCookie(url: url, cookies: cookies);
+    }
   }
 }
 

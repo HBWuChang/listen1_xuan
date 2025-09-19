@@ -306,10 +306,8 @@ void main() async {
   }
 
   final appDocDir = await getApplicationDocumentsDirectory();
-  final cookiePath = is_windows
-      ? '${appDocDir.path}\\.cookies\\'
-      : '${appDocDir.path}/.cookies/';
-  final cookieDir = Directory(cookiePath);
+  final _cookiePath = cookiePath(appDocDir);
+  final cookieDir = Directory(_cookiePath);
   if (!await cookieDir.exists()) {
     await cookieDir.create(recursive: true);
   }
@@ -337,7 +335,7 @@ void main() async {
   }
   // 创建 PersistCookieJar 实例
   final cookieJar = PersistCookieJar(
-    storage: FileStorage(cookiePath),
+    storage: FileStorage(_cookiePath),
     ignoreExpires: true,
   );
 
