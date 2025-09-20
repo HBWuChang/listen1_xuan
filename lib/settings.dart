@@ -1087,7 +1087,6 @@ class _SettingsPageState extends State<SettingsPage> {
                         },
                       );
                     } catch (e) {
-                      // print(e);
                       xuan_toast(msg: '添加失败${e}');
                     }
                   },
