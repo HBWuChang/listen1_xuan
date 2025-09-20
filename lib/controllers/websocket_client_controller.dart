@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
+import '../global_settings_animations.dart';
 import '../models/websocket_message.dart';
+import '../settings.dart';
 import 'controllers.dart';
 
 /// WebSocket 客户端控制器
@@ -501,6 +503,36 @@ class WebSocketClientController extends GetxController {
     }
   }
 
+  /// 发送获取指定平台cookie信息
+  void sendGetCookieMessage() async {
+    if (!isConnected) {
+      _showError('未连接到服务器');
+      return;
+    }
+    Get.dialog(
+      AlertDialog(
+        title: const Text('获取服务器保存的Cookie'),
+        actions: [
+          ...getCookieCommandsMap.entries.map((entry) {
+            return TextButton(
+              onPressed: () {
+                final message = WebSocketMessage(
+                  type: WebSocketMessageType.getCookie,
+                  content: entry.value,
+                );
+                _webSocket!.add(message.toJsonString());
+                Get.back();
+                _showInfo('已请求获取 ${entry.key} 的 Cookie');
+                _logger.i('$_tag 请求获取 ${entry.key} 的 Cookie');
+              },
+              child: Text(entry.key),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
   /// 启动状态轮询
   void startStatusPolling({int intervalSeconds = 3}) {
     if (_statusPollingTimer != null) {
@@ -598,6 +630,33 @@ class WebSocketClientController extends GetxController {
             _logger.w('$_tag 状态消息解析失败', error: e);
           }
           break;
+        case WebSocketMessageType.setCookie:
+          Future.microtask(() async {
+            try {
+              final contentMap = message.parseContentAsMap();
+              if (contentMap != null) {
+                for (var k in GetCookieCommands.values) {
+                  if (contentMap.containsKey(k)) {
+                    await savePlatformToken(
+                      k,
+                      contentMap[k]!,
+                      saveRightNow: false,
+                    );
+                  }
+                }
+                // 保存设置
+                Get.find<SettingsController>().saveSettings();
+                xuan_toast(msg: 'Cookie 设置成功');
+              } else {
+                throw '内容格式错误，无法解析为 Map';
+              }
+            } catch (e) {
+              _logger.e('$_tag 处理设置 Cookie 消息失败', error: e);
+              xuan_toast(msg: 'Cookie 设置失败: $e');
+            }
+          });
+          break;
+
         case WebSocketMessageType.welcome:
           // 处理欢迎消息
           final contentMap = message.parseContentAsMap();

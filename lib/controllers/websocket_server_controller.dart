@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:get/get.dart';
+import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:logger/logger.dart';
 
 import '../models/websocket_message.dart';
+import '../settings.dart';
 import 'play_controller.dart';
 import '../play.dart';
+import 'settings_controller.dart';
 
 /// WebSocket 服务器控制器
 /// 支持 IPv4/IPv6 配置，包含 ping/pong 心跳机制和资源释放
@@ -160,7 +163,10 @@ class WebSocketServerController extends GetxController {
   }
 
   /// 处理收到的消息
-  Future<void> _handleMessage(WebSocketConnection connection, dynamic data) async {
+  Future<void> _handleMessage(
+    WebSocketConnection connection,
+    dynamic data,
+  ) async {
     try {
       // 尝试解析为新的 WebSocketMessage 格式
       WebSocketMessage message;
@@ -208,6 +214,52 @@ class WebSocketServerController extends GetxController {
             from: connection.id,
           );
           _broadcastMessage(broadcastMsg, excludeClient: connection.id);
+          break;
+        case WebSocketMessageType.getCookie:
+          Set<String> toOpr = {};
+          if (message.content == GetCookieCommands.all) {
+            toOpr.addAll(GetCookieCommands.values);
+          } else {
+            toOpr.add(message.content);
+          }
+          Map<String, String> cookiesMap = {};
+          for (var k in toOpr) {
+            final token = outputPlatformToken(k);
+            if (token != null) {
+              cookiesMap[k] = token;
+            }
+          }
+          _sendMessage(
+            connection,
+            WebSocketMessage(
+              type: WebSocketMessageType.setCookie,
+              content: jsonEncode(cookiesMap),
+            ),
+          );
+          break;
+        case WebSocketMessageType.setCookie:
+          try {
+            final contentMap = message.parseContentAsMap();
+            if (contentMap != null) {
+              for (var k in GetCookieCommands.values) {
+                if (contentMap.containsKey(k)) {
+                  await savePlatformToken(
+                    k,
+                    contentMap[k]!,
+                    saveRightNow: false,
+                  );
+                }
+              }
+              // 保存设置
+              Get.find<SettingsController>().saveSettings();
+              xuan_toast(msg: 'Cookie 设置成功');
+            } else {
+              throw '内容格式错误，无法解析为 Map';
+            }
+          } catch (e) {
+            _logger.e('$_tag 处理设置 Cookie 消息失败', error: e);
+            xuan_toast(msg: 'Cookie 设置失败: $e');
+          }
           break;
         case WebSocketMessageType.message:
           // 处理普通消息（可以根据需要添加逻辑）
@@ -290,7 +342,7 @@ class WebSocketServerController extends GetxController {
             try {
               final newPlayMode = await global_change_play_mode();
               _logger.i('$_tag 播放模式已切换为: $newPlayMode');
-              
+
               // 发送成功响应
               final successMessage = WebSocketMessageBuilder.createMessage(
                 '播放模式已切换: ${_getPlayModeText(newPlayMode)}',
@@ -306,7 +358,7 @@ class WebSocketServerController extends GetxController {
               return;
             }
           }
-          
+
           // 尝试解析为音量控制命令
           final volumeValue = double.tryParse(command);
           if (volumeValue != null && volumeValue >= 0.0 && volumeValue <= 1.0) {
@@ -315,7 +367,7 @@ class WebSocketServerController extends GetxController {
               final playController = Get.find<PlayController>();
               playController.currentVolume = volumeValue;
               _logger.i('$_tag 设置音量: ${(volumeValue * 100).toInt()}%');
-              
+
               // 发送成功响应
               final successMessage = WebSocketMessageBuilder.createMessage(
                 '音量已设置为: ${(volumeValue * 100).toInt()}%',
@@ -331,7 +383,7 @@ class WebSocketServerController extends GetxController {
               return;
             }
           }
-          
+
           _logger.w('$_tag 未知播放控制命令: $command');
           final errorMessage = WebSocketMessageBuilder.createErrorMessage(
             '未知播放控制命令: $command',

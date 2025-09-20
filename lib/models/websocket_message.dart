@@ -173,6 +173,12 @@ class WebSocketMessageType {
 
   /// 错误消息
   static const String error = 'error';
+
+  /// 获取 Cookie 消息
+  static const String getCookie = 'getCookie';
+
+  /// 设置 Cookie 消息
+  static const String setCookie = 'setCookie';
 }
 
 /// 播放控制命令常量
@@ -182,6 +188,21 @@ class PlayControlCommands {
   static const String stop = 'stop';
   static const String next = 'next';
   static const String previous = 'previous';
+}
+
+Map<String, String> getCookieCommandsMap = {
+  '所有': GetCookieCommands.all,
+  '哔哩哔哩': GetCookieCommands.bl,
+  '网易云音乐': GetCookieCommands.ne,
+  'QQ音乐': GetCookieCommands.qq,
+};
+
+class GetCookieCommands {
+  static const String all = 'all';
+  static const String bl = 'bl';
+  static const String ne = 'ne';
+  static const String qq = 'qq';
+  static const List<String> values = [bl, ne, qq];
 }
 
 /// WebSocket 消息构建器

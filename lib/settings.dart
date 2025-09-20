@@ -12,6 +12,7 @@ import 'controllers/cache_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
+import 'controllers/websocket_client_controller.dart';
 import 'examples/websocket_client_example.dart';
 import 'examples/websocket_server_example.dart';
 import 'funcs.dart';
@@ -239,78 +240,11 @@ Future<void> setSaveCookie({
   ).saveFromResponse(Uri.parse(url), cookies);
 }
 
-Future<Map<String, dynamic>> outputAllSaveCookieToJson() async {
-  Map<String, dynamic> allCookies = {};
-  for (var platform in _cookieUrls.keys) {
-    var platformCookies = await outputSaveCookieToJson(platform: platform);
-    allCookies.addAll(platformCookies);
-  }
-  return allCookies;
-}
-
-Future<Map<String, dynamic>> outputSaveCookieToJson({
-  required String platform,
-}) async {
-  if (_cookieUrls.containsKey(platform)) {
-    Map<String, dynamic> allCookies = {};
-    for (var url in _cookieUrls[platform]!) {
-      var cookies = await _outputSaveCookieToJson(url: url);
-      allCookies[url] = cookies;
-    }
-    return allCookies;
-  } else {
-    return {};
-  }
-}
-
-Future<Map<String, dynamic>> _outputSaveCookieToJson({
-  required String url,
-}) async {
-  try {
-    final tempDir = await getApplicationDocumentsDirectory();
-    final _cookiePath = cookiePath(tempDir);
-    List<Cookie> cookies = await PersistCookieJar(
-      ignoreExpires: true,
-      storage: FileStorage(_cookiePath),
-    ).loadForRequest(Uri.parse(url));
-    Map<String, dynamic> json = {};
-    for (var cookie in cookies) {
-      json[cookie.name] = cookie.value;
-    }
-    return json;
-  } catch (e) {
-    return {};
-  }
-}
-
-Future<void> loadCookieFromJson({required Map<String, dynamic> json}) async {
-  json.forEach((url, value) async {
-    await _loadCookieFromJson(url: url, json: value);
-  });
-}
-
-Future<void> _loadCookieFromJson({
-  required String url,
-  required Map<String, dynamic> json,
-}) async {
-  List<Cookie> cookies = [];
-  for (var key in json.keys) {
-    cookies.add(Cookie(key, json[key]));
-  }
-  await setSaveCookie(url: url, cookies: cookies);
-}
-
 Map<String, List<String>> _cookieUrls = {
   'bl': ['https://api.bilibili.com', 'https://www.bilibili.com'],
   'ne': ['https://music.163.com', 'https://interface3.music.163.com'],
   'qq': ['https://u.y.qq.com'],
 };
-
-Future<bool> saveToken(String name, String token) async {
-  final prefs = await SharedPreferences.getInstance();
-  prefs.setString(name, token);
-  return true;
-}
 
 void g_launchURL(Uri url) async {
   if (await canLaunchUrl(url)) {
@@ -324,10 +258,18 @@ Map<String, dynamic> settings_getsettings() {
   return Get.find<SettingsController>().settings;
 }
 
-Future<void> _saveToken(String platform, String token) async {
+String? outputPlatformToken(String platform) {
+  return Get.find<SettingsController>().settings[platform];
+}
+
+Future<void> savePlatformToken(
+  String platform,
+  String token, {
+  bool saveRightNow = true,
+}) async {
   final settings = Get.find<SettingsController>().settings;
   settings[platform] = token;
-  Get.find<SettingsController>().saveSettings();
+  if (saveRightNow) Get.find<SettingsController>().saveSettings();
   List<Cookie> cookies = [];
   for (var item in token.split(';')) {
     // 除去两端空格
@@ -450,7 +392,7 @@ class _login_webviewState extends State<login_webview> {
             cookies += "${item['name']}=${Uri.decodeComponent(item['value'])};";
           }
           cookies = cookies.substring(0, cookies.length - 1);
-          await _saveToken(widget.config_key, cookies);
+          await savePlatformToken(widget.config_key, cookies);
           _msg('设置成功$cookies', 3.0);
         } else {
           final cookieManager = WebviewCookieManager();
@@ -464,7 +406,7 @@ class _login_webviewState extends State<login_webview> {
             cookies += "${item.name}=${Uri.decodeComponent(item.value)};";
           }
           cookies = cookies.substring(0, cookies.length - 1);
-          await _saveToken(widget.config_key, cookies);
+          await savePlatformToken(widget.config_key, cookies);
           _msg('设置成功$cookies', 3.0);
         }
     }
@@ -693,13 +635,13 @@ class _SettingsPageState extends State<SettingsPage> {
                     focusNode: _focusNode,
                     decoration: const InputDecoration(labelText: '请输入B站cookie'),
                     onSubmitted: (String value) async {
-                      await _saveToken('bl', value);
+                      await savePlatformToken('bl', value);
                       _msg('设置成功', 1.0);
                       Navigator.pop(context);
                       setState(() {});
                     },
                     onChanged: (value) async {
-                      await _saveToken('bl', value);
+                      await savePlatformToken('bl', value);
                     },
                     controller: blCookieController,
                   ),
@@ -1026,6 +968,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
+            Obx(() {
+              WebSocketClientController wscc =
+                  Get.find<WebSocketClientController>();
+              if (!wscc.isConnected) return SizedBox.shrink();
+              return ElevatedButton(
+                onPressed: () {
+                  wscc.sendGetCookieMessage();
+                },
+                child: Text('从WebSocket客户端获取登录信息'),
+              );
+            }),
             Wrap(
               alignment: WrapAlignment.spaceAround,
               direction: Axis.horizontal,
