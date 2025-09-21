@@ -1296,35 +1296,53 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                     }),
                 ],
               ),
-              // floatingActionButton: FloatingActionButton(
-              //   onPressed: () async {
-              //     try {
-              //       try {
-              //         File(
-              //           '/storage/emulated/0/Download/Listen1/test.m4a',
-              //         ).deleteSync();
-              //       } catch (e) {}
-              //       var session = await FFmpegKit.execute(
-              //         '-i /storage/emulated/0/Download/Listen1/8951200_da3-1-30280.m4s -vn -acodec copy /storage/emulated/0/Download/Listen1/test.m4a',
-              //       );
-              //       final returnCode = await session.getReturnCode();
-              //       if (ReturnCode.isSuccess(returnCode)) {
-              //         showSuccessSnackbar(
-              //           'Conversion Successful',
-              //           'Your file has been converted successfully.',
-              //         );
-              //         Tag? t = await Get.find<CacheController>().tagger
-              //             .getAllTags(
-              //               '/storage/emulated/0/Download/Listen1/test.m4a',
-              //             );
-              //         debugPrint(t.toString());
-              //       }
-              //     } catch (e) {
-              //       debugPrint(e.toString());
-              //       showErrorSnackbar('Metadata save failed', e.toString());
-              //     }
-              //   },
-              // ),
+              floatingActionButton: Obx(() {
+                WebSocketClientController? controller;
+                try {
+                  controller = Get.find<WebSocketClientController>();
+                } catch (e) {
+                  return FloatingActionButton(
+                    tooltip: "WebSocket客户端",
+
+                    onPressed: () async {
+                      await WebSocketClientHelper.showControlPanel();
+                    },
+                    child: Icon(Icons.cast_connected),
+                  );
+                }
+
+                // 检查是否应该显示按钮
+                if (!controller.wsClientBtnShowFloating) {
+                  return const SizedBox.shrink();
+                }
+
+                // 根据连接状态确定图标颜色和状态
+                Color iconColor;
+                String currentTooltip;
+
+                if (controller.isConnecting || controller.isDisconnecting) {
+                  iconColor = Colors.amber;
+                  currentTooltip = controller.isConnecting
+                      ? "WebSocket客户端 (连接中...)"
+                      : "WebSocket客户端 (断开中...)";
+                } else if (controller.isConnected) {
+                  iconColor = Colors.blue;
+                  currentTooltip = "WebSocket客户端 (已连接)";
+                } else if (controller.isReconnecting) {
+                  iconColor = Colors.orange;
+                  currentTooltip = "WebSocket客户端 (重连中...)";
+                } else {
+                  iconColor = Colors.grey;
+                  currentTooltip = "WebSocket客户端 (未连接)";
+                }
+                return FloatingActionButton(
+                  tooltip: currentTooltip,
+                  onPressed: () async {
+                    await WebSocketClientHelper.showControlPanel();
+                  },
+                  child: Icon(Icons.cast_connected, color: iconColor),
+                );
+              }),
             ),
           );
         },

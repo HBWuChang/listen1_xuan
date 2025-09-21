@@ -30,7 +30,8 @@ class WebSocketClientController extends GetxController {
 
   /// WebSocket客户端是否自动启动的标志位
   final RxBool _wsClientAutoStart = false.obs;
-  final RxBool _wsClientBtnShow = true.obs;
+  final RxBool _wsClientBtnShow = false.obs;
+  final RxBool _wsClientBtnShowFloating = true.obs;
 
   /// 客户端配置
   final RxString _serverAddress = '127.0.0.1:25917'.obs;
@@ -68,6 +69,7 @@ class WebSocketClientController extends GetxController {
   RxString get serverUrlRx => _serverUrl;
   RxBool get wsClientAutoStartRx => _wsClientAutoStart;
   RxBool get wsClientBtnShowRx => _wsClientBtnShow;
+  RxBool get wsClientBtnShowFloatingRx => _wsClientBtnShowFloating;
   RxBool get isReconnectingRx => _isReconnecting;
   RxList<String> get receivedMessagesRx => _receivedMessages;
   Rx<PlayStatusData?> get lastPlayStatusRx => _lastPlayStatus;
@@ -87,6 +89,7 @@ class WebSocketClientController extends GetxController {
   String get serverUrl => _serverUrl.value;
   bool get wsClientAutoStart => _wsClientAutoStart.value;
   bool get wsClientBtnShow => _wsClientBtnShow.value;
+  bool get wsClientBtnShowFloating => _wsClientBtnShowFloating.value;
   bool get isReconnecting => _isReconnecting.value;
   List<String> get receivedMessages => _receivedMessages;
   PlayStatusData? get lastPlayStatus => _lastPlayStatus.value;
@@ -101,7 +104,9 @@ class WebSocketClientController extends GetxController {
 
       // 读取WebSocket客户端配置
       _wsClientAutoStart.value = settings['wsClientAutoStart'] ?? false;
-      _wsClientBtnShow.value = settings['wsClientBtnShow'] ?? true;
+      _wsClientBtnShow.value = settings['wsClientBtnShow'] ?? false;
+      _wsClientBtnShowFloating.value =
+          settings['wsClientBtnShowFloating'] ?? true;
       final address = settings['wsClientAddress'] as String?;
       final autoReconn = settings['wsClientAutoReconnect'] as bool?;
       final reconnInterval = settings['wsClientReconnectInterval'] as int?;
@@ -141,6 +146,7 @@ class WebSocketClientController extends GetxController {
       settings['wsClientAutoStart'] = _wsClientAutoStart.value;
       settings['wsClientBtnShow'] = _wsClientBtnShow.value;
       settings['wsClientAddress'] = _serverAddress.value;
+      settings['wsClientBtnShowFloating'] = _wsClientBtnShowFloating.value;
       settings['wsClientAutoReconnect'] = _autoReconnect.value;
       settings['wsClientReconnectInterval'] = _reconnectInterval.value;
       settings['wsClientHeartbeatInterval'] = _heartbeatInterval.value;
@@ -163,6 +169,11 @@ class WebSocketClientController extends GetxController {
   /// 更新客户端按钮显示设置
   void updateBtnShow(bool enabled) {
     _wsClientBtnShow.value = enabled;
+    saveWebSocketClientSettings();
+  }
+
+  void updateBtnShowFloating(bool enabled) {
+    _wsClientBtnShowFloating.value = enabled;
     saveWebSocketClientSettings();
   }
 

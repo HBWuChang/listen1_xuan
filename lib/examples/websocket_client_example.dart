@@ -741,6 +741,18 @@ class _WebSocketClientControlContentState
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('显示悬浮按钮', style: TextStyle(fontSize: 16)),
+                      ),
+                      Switch(
+                        value: ctrl.wsClientBtnShowFloating,
+                        onChanged: ctrl.updateBtnShowFloating,
+                      ),
+                    ],
+                  ),
                 ]),
 
                 const SizedBox(height: 24),
