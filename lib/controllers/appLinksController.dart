@@ -54,7 +54,7 @@ class Applinkscontroller extends GetxController {
           //   xuan_toast(msg: '正在通过 trackId 获取歌曲信息...');
         } else {
           debugPrint('No track information found in the app link.');
-          throw '无效的分享链接';
+          throw '无效的分享链接${appLink.value}';
         }
         appLink.value = Uri.parse('');
       }
