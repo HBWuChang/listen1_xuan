@@ -48,6 +48,7 @@ class Applinkscontroller extends GetxController {
           String trackUtf8Base64 = queryParameters['track']!;
           Track track = Track.fromBase64(trackUtf8Base64);
           song_dialog(Get.context!, track);
+          
           // }
           //  else if (queryParameters.containsKey('trackId')) {
           //   String trackId = queryParameters['trackId']!;
