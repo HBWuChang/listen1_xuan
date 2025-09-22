@@ -34,6 +34,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="http" android:host="listen1-xuan.040905.xyz" android:pathPrefix="/Apeiria" />
                 <data android:scheme="https" android:host="listen1-xuan.040905.xyz" android:pathPrefix="/Apeiria" />
+                <data android:scheme="listen1-xuan" />
             </intent-filter>
         </activity>
         <service android:name="com.ryanheise.audioservice.AudioService" 
