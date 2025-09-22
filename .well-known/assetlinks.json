@@ -1,0 +1,14 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.xiebian.listen1_xuan",
+            "sha256_cert_fingerprints": [
+                "66:4D:A7:B2:6A:FC:12:E9:E2:1B:B2:81:CC:BF:10:1A:17:2C:D4:3E:D9:0F:76:D4:20:16:40:88:93:F4:4A:3A"
+            ]
+        }
+    }
+]

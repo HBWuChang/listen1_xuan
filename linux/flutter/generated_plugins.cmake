@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
   charset_converter
+  gtk
   hotkey_manager_linux
   media_kit_libs_linux
   screen_retriever_linux

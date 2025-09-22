@@ -59,6 +59,15 @@ class Track {
       lyric_url: lyric_url,
     );
   }
+  factory Track.fromBase64(String base64Str) {
+    String jsonString = utf8.decode(base64Url.decode(base64Str));
+    Map<String, dynamic> jsonMap = jsonDecode(jsonString);
+    return Track.fromJson(jsonMap);
+  }
+  String toBase64() {
+    String jsonString = jsonEncode(toJson());
+    return base64Url.encode(utf8.encode(jsonString));
+  }
 
   // 转换为 JSON
   Map<String, dynamic> toJson() {

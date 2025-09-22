@@ -75,6 +75,7 @@ import 'package:ffmpeg_kit_flutter_new_min/signal.dart';
 import 'package:ffmpeg_kit_flutter_new_min/statistics.dart';
 import 'package:ffmpeg_kit_flutter_new_min/statistics_callback.dart';
 import 'package:ffmpeg_kit_flutter_new_min/stream_information.dart';
+import 'package:app_links/app_links.dart';
 
 final dio_with_cookie_manager = Dio();
 final dio_with_ProxyAdapter = Dio();
@@ -249,6 +250,8 @@ void main() async {
   Get.put(AudioHandlerController(), permanent: true);
   Get.put(LyricController(), permanent: true);
   Get.put(NowPlayingController(), permanent: true);
+  Get.put(Applinkscontroller(), permanent: true);
+
   if (is_windows) {
     SMTCWindows.initialize();
     enableThumbnailToolbar();
@@ -350,7 +353,15 @@ void main() async {
   //     return client;
   //   },
   // );
+  initDeepLinks();
   runApp(MyApp());
+}
+
+Future<void> initDeepLinks() async {
+  AppLinks().uriLinkStream.listen((uri) {
+    debugPrint('Received app link: $uri');
+    Get.find<Applinkscontroller>().appLink.value = uri;
+  });
 }
 
 class MyApp extends StatelessWidget {
@@ -649,6 +660,10 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   @override
   Widget build(BuildContext main_context) {
     _main_context = main_context;
+    // appLinks
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.find<Applinkscontroller>().processAppLink();
+    });
     return Focus(
       autofocus: true,
       onKeyEvent: (FocusNode node, KeyEvent event) {
@@ -1296,53 +1311,59 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                     }),
                 ],
               ),
-              floatingActionButton: Obx(() {
-                WebSocketClientController? controller;
-                try {
-                  controller = Get.find<WebSocketClientController>();
-                } catch (e) {
-                  return FloatingActionButton(
-                    tooltip: "WebSocket客户端",
+              floatingActionButton:
+                  // FloatingActionButton(
+                  //   onPressed: () {
+                  //     Get.find<Applinkscontroller>().processAppLink();
+                  //   },
+                  // ),
+                  Obx(() {
+                    WebSocketClientController? controller;
+                    try {
+                      controller = Get.find<WebSocketClientController>();
+                    } catch (e) {
+                      return FloatingActionButton(
+                        tooltip: "WebSocket客户端",
 
-                    onPressed: () async {
-                      await WebSocketClientHelper.showControlPanel();
-                    },
-                    child: Icon(Icons.cast_connected),
-                  );
-                }
+                        onPressed: () async {
+                          await WebSocketClientHelper.showControlPanel();
+                        },
+                        child: Icon(Icons.cast_connected),
+                      );
+                    }
 
-                // 检查是否应该显示按钮
-                if (!controller.wsClientBtnShowFloating) {
-                  return const SizedBox.shrink();
-                }
+                    // 检查是否应该显示按钮
+                    if (!controller.wsClientBtnShowFloating) {
+                      return const SizedBox.shrink();
+                    }
 
-                // 根据连接状态确定图标颜色和状态
-                Color iconColor;
-                String currentTooltip;
+                    // 根据连接状态确定图标颜色和状态
+                    Color iconColor;
+                    String currentTooltip;
 
-                if (controller.isConnecting || controller.isDisconnecting) {
-                  iconColor = Colors.amber;
-                  currentTooltip = controller.isConnecting
-                      ? "WebSocket客户端 (连接中...)"
-                      : "WebSocket客户端 (断开中...)";
-                } else if (controller.isConnected) {
-                  iconColor = Colors.blue;
-                  currentTooltip = "WebSocket客户端 (已连接)";
-                } else if (controller.isReconnecting) {
-                  iconColor = Colors.orange;
-                  currentTooltip = "WebSocket客户端 (重连中...)";
-                } else {
-                  iconColor = Colors.grey;
-                  currentTooltip = "WebSocket客户端 (未连接)";
-                }
-                return FloatingActionButton(
-                  tooltip: currentTooltip,
-                  onPressed: () async {
-                    await WebSocketClientHelper.showControlPanel();
-                  },
-                  child: Icon(Icons.cast_connected, color: iconColor),
-                );
-              }),
+                    if (controller.isConnecting || controller.isDisconnecting) {
+                      iconColor = Colors.amber;
+                      currentTooltip = controller.isConnecting
+                          ? "WebSocket客户端 (连接中...)"
+                          : "WebSocket客户端 (断开中...)";
+                    } else if (controller.isConnected) {
+                      iconColor = Colors.blue;
+                      currentTooltip = "WebSocket客户端 (已连接)";
+                    } else if (controller.isReconnecting) {
+                      iconColor = Colors.orange;
+                      currentTooltip = "WebSocket客户端 (重连中...)";
+                    } else {
+                      iconColor = Colors.grey;
+                      currentTooltip = "WebSocket客户端 (未连接)";
+                    }
+                    return FloatingActionButton(
+                      tooltip: currentTooltip,
+                      onPressed: () async {
+                        await WebSocketClientHelper.showControlPanel();
+                      },
+                      child: Icon(Icons.cast_connected, color: iconColor),
+                    );
+                  }),
             ),
           );
         },

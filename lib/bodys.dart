@@ -1,3 +1,4 @@
+import 'controllers/controllers.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/websocket_client_controller.dart';
@@ -56,15 +57,28 @@ Future<dynamic> song_dialog(
                 ? screenSize.height - dialogHeight
                 : top);
       Widget dialog = AlertDialog(
-        title: GestureDetector(
-          onTap: () {
-            Clipboard.setData(ClipboardData(text: track.title ?? '未知标题'));
-            xuan_toast(msg: '标题已复制到剪切板');
-          },
-          child: SelectableText(
-            track.title ?? '未知标题',
-            style: TextStyle(fontSize: 16),
-          ),
+        title: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: track.title ?? '未知标题'));
+                  xuan_toast(msg: '标题已复制到剪切板');
+                },
+                child: SelectableText(
+                  track.title ?? '未知标题',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+
+            IconButton(
+              icon: Icon(Icons.play_circle_fill_rounded),
+              onPressed: () {
+                playsong(track, true, false, true);
+              },
+            ),
+          ],
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -150,17 +164,36 @@ Future<dynamic> song_dialog(
                     xuan_toast(msg: '专辑已复制到剪切板');
                   },
                 ),
-              ListTile(
-                title: Text('歌曲链接'),
-                onTap: () {
-                  launchUrl(Uri.parse(track.source_url ?? ''));
-                },
-                onLongPress: () {
-                  Clipboard.setData(
-                    ClipboardData(text: track.source_url ?? ''),
-                  );
-                  xuan_toast(msg: '歌曲链接已复制到剪切板');
-                },
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                    child: ListTile(
+                      title: Text('歌曲链接'),
+                      onTap: () {
+                        launchUrl(Uri.parse(track.source_url ?? ''));
+                      },
+                      onLongPress: () {
+                        Clipboard.setData(
+                          ClipboardData(text: track.source_url ?? ''),
+                        );
+                        xuan_toast(msg: '歌曲链接已复制到剪切板');
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: ListTile(
+                      title: Text('分享链接'),
+                      onTap: () {
+                        String appLink = Get.find<Applinkscontroller>()
+                            .getShareAppLink(track);
+                        Clipboard.setData(ClipboardData(text: appLink));
+                        xuan_toast(msg: '已复制分享链接到剪切板');
+                      },
+                      onLongPress: null,
+                    ),
+                  ),
+                ],
               ),
               ListTile(
                 title: Text('添加到当前播放列表'),
@@ -185,17 +218,17 @@ Future<dynamic> song_dialog(
                   }
                 },
               ),
-              ListTile(
-                title: Text('添加到下载队列'),
-                onTap: () async {
-                  final ok = await add_to_download_tasks([track.id]);
-                  if (ok) {
-                    xuan_toast(msg: '已添加到下载队列');
-                  } else {
-                    xuan_toast(msg: '添加失败');
-                  }
-                },
-              ),
+              // ListTile(
+              //   title: Text('添加到下载队列'),
+              //   onTap: () async {
+              //     final ok = await add_to_download_tasks([track.id]);
+              //     if (ok) {
+              //       xuan_toast(msg: '已添加到下载队列');
+              //     } else {
+              //       xuan_toast(msg: '添加失败');
+              //     }
+              //   },
+              // ),
               ListTile(
                 title: Text('删除本地缓存'),
                 onTap: () async {

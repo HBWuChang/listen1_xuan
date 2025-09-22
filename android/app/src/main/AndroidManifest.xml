@@ -23,12 +23,20 @@
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme"
             />
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:host="listen1-xuan.040905.xyz" android:pathPrefix="/Apeiria" />
+                <data android:scheme="https" android:host="listen1-xuan.040905.xyz" android:pathPrefix="/Apeiria" />
+            </intent-filter>
         </activity>
-        <service android:name="com.ryanheise.audioservice.AudioService"
+        <service android:name="com.ryanheise.audioservice.AudioService" 
             android:foregroundServiceType="mediaPlayback"
             android:exported="true" tools:ignore="Instantiatable">
             <intent-filter>

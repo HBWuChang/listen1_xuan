@@ -4,7 +4,7 @@ description: "A new Flutter project."
 # Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 1.1.1+15
+version: 1.1.2+16
 
 environment:
   sdk: ^3.8.1
@@ -75,6 +75,9 @@ dependencies:
   wolt_modal_sheet: ^0.11.0
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.0.1
+  app_links: ^6.4.1
+  msix: ^3.16.12
+  win32_registry: ^2.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -90,3 +93,10 @@ flutter:
   assets:
     # Add assets from the images directory to the application.
     - assets/images/
+msix_config:
+  display_name: listen1_xuan
+  identity_name: com.xiebian.listen1_xuan
+  languages: zh-CN
+  install_certificate: false
+  protocol_activation: https, listen1-xuan # Add the protocols to activate the app
+  app_uri_handler_hosts: listen1-xuan.040905.xyz # Add the app uri handler hosts. You can't use patterns here.
