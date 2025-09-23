@@ -176,6 +176,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  bson:
+    dependency: "direct main"
+    description:
+      name: bson
+      sha256: f8c80be7a62a88f4add7c48cc83567c36a77532de107224df8328ef71f125045
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.7"
   build_cli_annotations:
     dependency: transitive
     description:
@@ -312,6 +320,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.10"
+  decimal:
+    dependency: transitive
+    description:
+      name: decimal
+      sha256: fc706a5618b81e5b367b01dd62621def37abc096f2b46a9bd9068b64c1fa36d0
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.4"
   device_info_plus:
     dependency: transitive
     description:
@@ -995,6 +1011,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  packages_extensions:
+    dependency: transitive
+    description:
+      name: packages_extensions
+      sha256: "1fb328695a9828c80d275ce1650a2bb5947690070de082dfa1dfac7429378daf"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
   path:
     dependency: transitive
     description:
@@ -1147,6 +1171,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.1"
+  power_extensions:
+    dependency: transitive
+    description:
+      name: power_extensions
+      sha256: ad0e8b2420090d996fe8b7fd32cdf02b9b924b6d4fc0fb0b559ff6aa5e24d5b0
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.3"
   preload_page_view:
     dependency: "direct main"
     description:
@@ -1179,6 +1211,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
+  rational:
+    dependency: transitive
+    description:
+      name: rational
+      sha256: cb808fb6f1a839e6fc5f7d8cb3b0a10e1db48b3be102de73938c627f0b636336
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.3"
   rxdart:
     dependency: transitive
     description:

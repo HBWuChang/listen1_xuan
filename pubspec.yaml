@@ -78,6 +78,7 @@ dependencies:
   app_links: ^6.4.1
   msix: ^3.16.12
   win32_registry: ^2.1.0
+  # bson: ^5.0.7
 dev_dependencies:
   flutter_test:
     sdk: flutter

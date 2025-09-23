@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:bson/bson.dart';
 import '../global_settings_animations.dart';
 import 'settings_controller.dart';
 import 'websocket_card_controller.dart';
@@ -71,18 +71,17 @@ class Track {
 
   // 转换为 JSON
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'artist': artist,
-      'artist_id': artist_id,
-      'album': album,
-      'album_id': album_id,
-      'source': source,
-      'source_url': source_url,
-      'img_url': img_url,
-      'lyric_url': lyric_url,
-    };
+    final map = <String, dynamic>{'id': id};
+    if (title != null) map['title'] = title;
+    if (artist != null) map['artist'] = artist;
+    if (artist_id != null) map['artist_id'] = artist_id;
+    if (album != null) map['album'] = album;
+    if (album_id != null) map['album_id'] = album_id;
+    if (source != null) map['source'] = source;
+    if (source_url != null) map['source_url'] = source_url;
+    if (img_url != null) map['img_url'] = img_url;
+    if (lyric_url != null) map['lyric_url'] = lyric_url;
+    return map;
   }
 }
 
