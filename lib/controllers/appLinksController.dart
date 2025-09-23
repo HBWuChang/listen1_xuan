@@ -7,10 +7,10 @@ import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
 import 'package:win32_registry/win32_registry.dart';
 import '../global_settings_animations.dart';
-import '../play.dart';
 
 class Applinkscontroller extends GetxController {
   var appLink = Uri.parse('').obs;
+  var xshow;
   Applinkscontroller.initWithAppLinks(Uri appLink) {
     this.appLink.value = appLink;
   }
@@ -48,6 +48,7 @@ class Applinkscontroller extends GetxController {
           String trackUtf8Base64 = queryParameters['track']!;
           Track track = Track.fromBase64(trackUtf8Base64);
           song_dialog(Get.context!, track);
+          xshow?.call();
           // }
           //  else if (queryParameters.containsKey('trackId')) {
           //   String trackId = queryParameters['trackId']!;

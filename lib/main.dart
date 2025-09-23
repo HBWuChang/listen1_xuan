@@ -475,6 +475,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
       );
 
     init_playlist_filters();
+    Get.find<Applinkscontroller>().xshow = xshow;
   }
 
   void updatePageControllers() {
@@ -521,6 +522,10 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   void onTrayIconMouseDown() {
     print('onTrayIconMouseDown');
     // do something, for example pop up the menu
+    xshow();
+  }
+
+  void xshow() {
     windowManager.show();
     windowManager.setSkipTaskbar(false);
     windowManager.setAlwaysOnTop(true);
@@ -538,10 +543,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   void onTrayMenuItemClick(MenuItem menuItem) {
     print('onTrayMenuItemClick: ${menuItem.key}');
     if (menuItem.key == 'show_window') {
-      windowManager.show();
-      windowManager.setSkipTaskbar(false);
-      windowManager.setAlwaysOnTop(true);
-      windowManager.setAlwaysOnTop(false);
+      xshow();
     } else if (menuItem.key == 'exit_app') {
       // do something
       exit(0);

@@ -1,4 +1,5 @@
 {
   "cmake.sourceDirectory": "E:/HB_WuChang/code/flutter/listen1_xuan/windows",
-  "dart.flutterSdkPath": ".fvm/versions/stable"
+  "dart.flutterSdkPath": ".fvm/versions/stable",
+  "C_Cpp.default.compilerPath": "E:/msys64/mingw64/bin/g++.exe"
 }
