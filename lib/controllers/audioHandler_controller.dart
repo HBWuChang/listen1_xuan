@@ -20,11 +20,11 @@ class AudioHandlerController extends GetxController {
     print('setNotification');
     audioHandler = await AudioService.init(
       builder: () => AudioPlayerHandler(),
-      config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.ryanheise.myapp.channel.audio',
-        androidNotificationChannelName: 'Audio playback',
-        androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
+      config: AudioServiceConfig(
+        androidNotificationChannelId: 'com.xiebian.listen1_xuan.channel',
+        androidNotificationChannelName: '音频播放',
+        androidNotificationOngoing: false,
+        androidStopForegroundOnPause: false,
       ),
       cacheManager: null,
     );

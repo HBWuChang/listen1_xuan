@@ -57,16 +57,20 @@ class LyricHelper {
   static double getLineSpaceHeight(LyricsLineModel element, LyricUI ui,
       {bool excludeInline = false}) {
     double spaceHeight = 0;
-    if (element.hasExt || element.hasMain) {
-      spaceHeight += ui.getLineSpace();
+    try {
+      if (element.hasExt || element.hasMain) {
+        spaceHeight += ui.getLineSpace();
+      }
+      if (element.hasExt && element.hasMain && !excludeInline) {
+        spaceHeight += ui.getInlineSpace();
+      }
+      if (!element.hasExt && !element.hasMain) {
+        spaceHeight += ui.getBlankLineHeight();
+      }
+      return spaceHeight;
+    } catch (e) {
+      return 0;
     }
-    if (element.hasExt && element.hasMain && !excludeInline) {
-      spaceHeight += ui.getInlineSpace();
-    }
-    if (!element.hasExt && !element.hasMain) {
-      spaceHeight += ui.getBlankLineHeight();
-    }
-    return spaceHeight;
   }
 
   static double centerOffset(

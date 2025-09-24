@@ -66,8 +66,10 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
       //最大偏移量不包含最后一行
       if (lyrics.isNotEmpty) {
         lyrics = lyrics.sublist(0, lyrics.length - 1);
-        lastLineSpace = LyricHelper.getLineSpaceHeight(lyrics.last, lyricUI,
-            excludeInline: true);
+        if (lyrics.isNotEmpty) {
+          lastLineSpace = LyricHelper.getLineSpaceHeight(lyrics.last, lyricUI,
+              excludeInline: true);
+        }
       }
       totalHeight = -LyricHelper.getTotalHeight(lyrics, playingIndex, lyricUI) +
           (model?.firstCenterOffset(playingIndex, lyricUI) ?? 0) -
