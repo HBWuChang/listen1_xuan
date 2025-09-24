@@ -1309,10 +1309,12 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     mediaItem.add(_item);
 
     // Load the player.
-    Get.find<PlayController>().music_player.setAudioSource(
-      AudioSource.uri(Uri.parse(_item.id)),
-      preload: false,
-    );
+    if (Get.find<PlayController>().music_player.audioSource == null) {
+      Get.find<PlayController>().music_player.setAudioSource(
+        AudioSource.uri(Uri.parse(_item.id)),
+        preload: false,
+      );
+    }
     Get.find<PlayController>().music_player.playerStateStream.listen((
       playerState,
     ) {

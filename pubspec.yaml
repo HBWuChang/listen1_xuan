@@ -27,7 +27,8 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   audio_service:
     path: packages/audio_service-0.18.18
-  just_audio: ^0.9.42
+  audio_session: ^0.2.2
+  just_audio: ^0.10.4
   encrypt: ^5.0.0
   webview_flutter: ^4.10.0
   webview_cookie_manager:
