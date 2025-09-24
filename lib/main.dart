@@ -47,7 +47,7 @@ import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:metadata_god/metadata_god.dart';
-import 'theme.dart';
+import 'controllers/theme.dart';
 import 'package:ffmpeg_kit_flutter_new_min/abstract_session.dart';
 import 'package:ffmpeg_kit_flutter_new_min/arch_detect.dart';
 import 'package:ffmpeg_kit_flutter_new_min/chapter.dart';
@@ -369,7 +369,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      creatThemeController();
+      createThemeController();
     });
 
     return ScreenUtilInit(

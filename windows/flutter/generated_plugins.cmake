@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   charset_converter
   connectivity_plus
+  dynamic_color
   hotkey_manager_windows
   media_kit_libs_windows_audio
   permission_handler_windows

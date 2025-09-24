@@ -1,11 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:listen1_xuan/settings.dart';
-
-import 'controllers/settings_controller.dart';
+import 'package:dynamic_color/dynamic_color.dart';
+import 'settings_controller.dart';
+import 'package:material_color_utilities/material_color_utilities.dart';
 
 class ThemeController extends GetxController {
+  // ColorScheme? _light;
+  final _light = Rx<ColorScheme?>(null);
+  // ColorScheme? _dark;
+  final _dark = Rx<ColorScheme?>(null);
   // 主题颜色选项
   final Map<String, Color> themeColors = {
     '默认蓝色': Colors.blue,
@@ -103,15 +110,68 @@ class ThemeController extends GetxController {
 
   // 应用主题
   Future<void> _applyTheme() async {
+    if (useDynamicColor.value) {
+      await initPlatformState();
+    }
     final lightTheme = _buildTheme(Brightness.light);
     final darkTheme = _buildTheme(Brightness.dark);
-WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       // 确保在框架渲染后应用主题
-      AdaptiveTheme.of(Get.context!).setTheme(
-        light: lightTheme,
-        dark: darkTheme,
-      );
+      AdaptiveTheme.of(
+        Get.context!,
+      ).setTheme(light: lightTheme, dark: darkTheme);
     });
+  }
+
+  // Platform messages are asynchronous, so we initialize in an async method.
+  Future<void> initPlatformState() async {
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      CorePalette? corePalette = await DynamicColorPlugin.getCorePalette();
+
+      // If the widget was removed from the tree while the asynchronous platform
+      // message was in flight, we want to discard the reply rather than calling
+      // setState to update our non-existent appearance.
+
+      if (corePalette != null) {
+        if (kDebugMode) {
+          debugPrint('dynamic_color: Core palette detected.');
+        }
+        _light.value = corePalette.toColorScheme();
+        _dark.value = corePalette.toColorScheme(brightness: Brightness.dark);
+        return;
+      }
+    } on PlatformException {
+      if (kDebugMode) {
+        debugPrint('dynamic_color: Failed to obtain core palette.');
+      }
+    }
+
+    try {
+      final Color? accentColor = await DynamicColorPlugin.getAccentColor();
+
+      if (accentColor != null) {
+        if (kDebugMode) {
+          debugPrint('dynamic_color: Accent color detected.');
+        }
+        _light.value = ColorScheme.fromSeed(
+          seedColor: accentColor,
+          brightness: Brightness.light,
+        );
+        _dark.value = ColorScheme.fromSeed(
+          seedColor: accentColor,
+          brightness: Brightness.dark,
+        );
+        return;
+      }
+    } on PlatformException {
+      if (kDebugMode) {
+        debugPrint('dynamic_color: Failed to obtain accent color.');
+      }
+    }
+    if (kDebugMode) {
+      debugPrint('dynamic_color: Dynamic color not detected on this device.');
+    }
   }
 
   // 构建主题
@@ -120,7 +180,10 @@ WidgetsBinding.instance.addPostFrameCallback((_) {
       return ThemeData(
         useMaterial3: true,
         brightness: brightness,
-        colorSchemeSeed: selectedThemeColor.value,
+        colorScheme: brightness == Brightness.light
+            ? _light.value
+            : _dark.value,
+        useSystemColors: true,
       );
     } else {
       return ThemeData(
@@ -185,7 +248,7 @@ WidgetsBinding.instance.addPostFrameCallback((_) {
   }
 }
 
-ThemeController creatThemeController() {
+ThemeController createThemeController() {
   if (Get.isRegistered<ThemeController>()) {
     return Get.find<ThemeController>();
   } else {
@@ -197,45 +260,40 @@ class ThemeToggleButton extends StatelessWidget {
   final double? iconSize;
   final EdgeInsetsGeometry? padding;
 
-  const ThemeToggleButton({
-    Key? key,
-    this.iconSize,
-    this.padding,
-  }) : super(key: key);
+  const ThemeToggleButton({Key? key, this.iconSize, this.padding})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final themeController = creatThemeController();
+    final themeController = createThemeController();
 
     return GestureDetector(
-        onLongPress: () {
-          _showThemeDialog(context);
+      onLongPress: () {
+        _showThemeDialog(context);
+      },
+      child: IconButton(
+        tooltip: GetPlatform.isWindows ? '长按打开主题设置' : null,
+        icon: Obx(() {
+          final currentMode = themeController.themeMode.value;
+          return Icon(
+            currentMode == AdaptiveThemeMode.light
+                ? Icons.light_mode
+                : currentMode == AdaptiveThemeMode.dark
+                ? Icons.dark_mode
+                : Icons.brightness_auto,
+            size: iconSize ?? 24.0,
+          );
+        }),
+        padding: padding ?? const EdgeInsets.all(8.0),
+        onPressed: () {
+          themeController.toggleThemeMode();
         },
-        child: IconButton(
-          tooltip: GetPlatform.isWindows ? '长按打开主题设置' : null,
-          icon: Obx(() {
-            final currentMode = themeController.themeMode.value;
-            return Icon(
-              currentMode == AdaptiveThemeMode.light
-                  ? Icons.light_mode
-                  : currentMode == AdaptiveThemeMode.dark
-                      ? Icons.dark_mode
-                      : Icons.brightness_auto,
-              size: iconSize ?? 24.0,
-            );
-          }),
-          padding: padding ?? const EdgeInsets.all(8.0),
-          onPressed: () {
-            themeController.toggleThemeMode();
-          },
-        ));
+      ),
+    );
   }
 
   void _showThemeDialog(BuildContext context) {
-    Get.dialog(
-      ThemeSettingsDialog(),
-      barrierDismissible: true,
-    );
+    Get.dialog(ThemeSettingsDialog(), barrierDismissible: true);
   }
 }
 
@@ -244,100 +302,98 @@ class ThemeSettingsDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
       child: Container(
-        constraints: BoxConstraints(
-          maxWidth: 400,
-          maxHeight: 600,
-        ),
+        constraints: BoxConstraints(maxWidth: 400, maxHeight: 600),
         padding: const EdgeInsets.all(24.0),
         child: SingleChildScrollView(
-            child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 标题
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '主题设置',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                IconButton(
-                  onPressed: () => Get.back(),
-                  icon: Icon(Icons.close),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // 主题模式选择
-            Text(
-              '主题模式',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 标题
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '主题设置',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _buildThemeModeChip(
-                  context,
-                  '亮色',
-                  Icons.light_mode,
-                  AdaptiveThemeMode.light,
-                  themeController,
-                ),
-                _buildThemeModeChip(
-                  context,
-                  '暗色',
-                  Icons.dark_mode,
-                  AdaptiveThemeMode.dark,
-                  themeController,
-                ),
-                _buildThemeModeChip(
-                  context,
-                  '系统',
-                  Icons.brightness_auto,
-                  AdaptiveThemeMode.system,
-                  themeController,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+                  IconButton(
+                    onPressed: () => Get.back(),
+                    icon: Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
 
-            // 动态颜色开关
-            Obx(() => SwitchListTile(
+              // 主题模式选择
+              Text(
+                '主题模式',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildThemeModeChip(
+                    context,
+                    '亮色',
+                    Icons.light_mode,
+                    AdaptiveThemeMode.light,
+                    themeController,
+                  ),
+                  _buildThemeModeChip(
+                    context,
+                    '暗色',
+                    Icons.dark_mode,
+                    AdaptiveThemeMode.dark,
+                    themeController,
+                  ),
+                  _buildThemeModeChip(
+                    context,
+                    '系统',
+                    Icons.brightness_auto,
+                    AdaptiveThemeMode.system,
+                    themeController,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // 动态颜色开关
+              Obx(
+                () => SwitchListTile(
                   title: Text('使用动态颜色'),
-                  subtitle: Text('根据壁纸自动调整颜色（Android 12+）'),
+                  subtitle: Text('根据壁纸自动调整颜色'),
                   value: themeController.useDynamicColor.value,
                   onChanged: (value) {
                     themeController.setUseDynamicColor(value);
                   },
                   contentPadding: EdgeInsets.zero,
-                )),
-            const SizedBox(height: 16),
+                ),
+              ),
+              const SizedBox(height: 16),
 
-            // 主题颜色选择
-            Text(
-              '主题颜色',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Obx(() => Wrap(
+              // 主题颜色选择
+              Text(
+                '主题颜色',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Obx(
+                () => Wrap(
                   spacing: 8.0,
                   runSpacing: 8.0,
                   children: themeController.themeColors.entries.map((entry) {
                     final isSelected =
                         themeController.selectedThemeColor.value ==
-                            entry.value as Color;
+                        entry.value as Color;
                     return GestureDetector(
                       onTap: () {
                         themeController.setThemeColor(entry.value as Color);
@@ -350,49 +406,45 @@ class ThemeSettingsDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(30),
                           border: isSelected
                               ? Border.all(
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                   width: 3,
                                 )
                               : null,
                         ),
                         child: isSelected
-                            ? Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 24,
-                              )
+                            ? Icon(Icons.check, color: Colors.white, size: 24)
                             : null,
                       ),
                     );
                   }).toList(),
-                )),
-            const SizedBox(height: 24),
+                ),
+              ),
+              const SizedBox(height: 24),
 
-            // 底部按钮
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Get.back(),
-                  child: Text('取消'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    Get.back();
-                    Get.snackbar(
-                      '主题设置',
-                      '设置已保存',
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                  },
-                  child: Text('确定'),
-                ),
-              ],
-            ),
-          ],
-        )),
+              // 底部按钮
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(onPressed: () => Get.back(), child: Text('取消')),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      Get.back();
+                      Get.snackbar(
+                        '主题设置',
+                        '设置已保存',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    },
+                    child: Text('确定'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -410,11 +462,7 @@ class ThemeSettingsDialog extends StatelessWidget {
     return FilterChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16),
-          const SizedBox(width: 4),
-          Text(label),
-        ],
+        children: [Icon(icon, size: 16), const SizedBox(width: 4), Text(label)],
       ),
       selected: isSelected,
       onSelected: (selected) {

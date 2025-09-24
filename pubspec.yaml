@@ -80,6 +80,7 @@ dependencies:
   msix: ^3.16.12
   win32_registry: ^2.1.0
   # bson: ^5.0.7
+  dynamic_color: ^1.8.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
