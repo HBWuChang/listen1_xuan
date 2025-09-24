@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -39,6 +38,9 @@ class WebSocketClientController extends GetxController {
   final RxInt _reconnectInterval = 5.obs; // 秒
   final RxInt _heartbeatInterval = 30.obs; // 秒
 
+  /// 历史地址管理
+  final RxList<String> _historyAddresses = <String>[].obs;
+
   /// 连接管理
   final RxBool _isReconnecting = false.obs;
   Timer? _reconnectTimer;
@@ -75,6 +77,7 @@ class WebSocketClientController extends GetxController {
   Rx<PlayStatusData?> get lastPlayStatusRx => _lastPlayStatus;
   RxDouble get volumeRx => _volume;
   RxBool get isDraggingVolumeRx => _isDraggingVolume;
+  RxList<String> get historyAddressesRx => _historyAddresses;
 
   // 保留原有的getter用于非响应式访问
   bool get isExpanded => _isExpanded.value;
@@ -95,6 +98,7 @@ class WebSocketClientController extends GetxController {
   PlayStatusData? get lastPlayStatus => _lastPlayStatus.value;
   double get volume => _volume.value;
   bool get isDraggingVolume => _isDraggingVolume.value;
+  List<String> get historyAddresses => _historyAddresses;
 
   /// 从设置控制器加载WebSocket客户端配置
   void loadWebSocketClientSettings() {
@@ -130,6 +134,14 @@ class WebSocketClientController extends GetxController {
         _heartbeatInterval.value = heartInterval;
       }
 
+      // 加载历史地址列表
+      final historyList = settings['wsClientHistoryAddresses'] as List<dynamic>?;
+      if (historyList != null) {
+        _historyAddresses.value = historyList.map((e) => e.toString()).toList();
+      } else {
+        _historyAddresses.value = [];
+      }
+
       _logger.i('$_tag 客户端配置加载完成: 自动启动=$wsClientAutoStart, 地址=$serverAddress');
     } catch (e) {
       _logger.w('$_tag 客户端配置加载失败: $e');
@@ -150,6 +162,9 @@ class WebSocketClientController extends GetxController {
       settings['wsClientAutoReconnect'] = _autoReconnect.value;
       settings['wsClientReconnectInterval'] = _reconnectInterval.value;
       settings['wsClientHeartbeatInterval'] = _heartbeatInterval.value;
+
+      // 保存历史地址列表
+      settings['wsClientHistoryAddresses'] = _historyAddresses.toList();
 
       // 触发设置保存
       settingsController.setSettings(settings);
@@ -188,6 +203,8 @@ class WebSocketClientController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // 加载设置
+    loadWebSocketClientSettings();
     _updateStatusMessage();
     _logger.i('$_tag 初始化完成');
     interval(_volume, (value) {
@@ -257,6 +274,123 @@ class WebSocketClientController extends GetxController {
     }
   }
 
+  /// 历史地址管理方法
+
+  /// 添加地址到历史列表（连接成功后自动调用）
+  void _addToHistoryAddresses(String address) {
+    if (address.isEmpty) return;
+    
+    // 移除已存在的相同地址
+    _historyAddresses.removeWhere((item) => item == address);
+    
+    // 将新地址添加到列表开头
+    _historyAddresses.insert(0, address);
+    
+    // 限制历史记录数量（最多保存20个）
+    if (_historyAddresses.length > 20) {
+      _historyAddresses.removeRange(20, _historyAddresses.length);
+    }
+    
+    // 保存到设置
+    saveWebSocketClientSettings();
+    _logger.i('$_tag 地址已添加到历史列表: $address');
+  }
+
+  /// 手动添加地址到历史列表
+  void addHistoryAddress(String address) {
+    if (address.isEmpty) {
+      _showError('地址不能为空');
+      return;
+    }
+    
+    // 验证地址格式
+    if (!_isValidAddress(address)) {
+      _showError('地址格式不正确，应为 "IP:端口" 格式');
+      return;
+    }
+    
+    _addToHistoryAddresses(address);
+    
+    // 自动选中新添加的地址
+    _serverAddress.value = address;
+    saveWebSocketClientSettings();
+    
+    _showSuccess('地址已添加并选中');
+  }
+
+  /// 编辑历史地址
+  void editHistoryAddress(int index, String newAddress) {
+    if (index < 0 || index >= _historyAddresses.length) {
+      _showError('索引超出范围');
+      return;
+    }
+    
+    if (newAddress.isEmpty) {
+      _showError('地址不能为空');
+      return;
+    }
+    
+    // 验证地址格式
+    if (!_isValidAddress(newAddress)) {
+      _showError('地址格式不正确，应为 "IP:端口" 格式');
+      return;
+    }
+    
+    final oldAddress = _historyAddresses[index];
+    
+    // 移除新地址的其他实例
+    _historyAddresses.removeWhere((item) => item == newAddress);
+    
+    // 更新指定位置的地址
+    if (index < _historyAddresses.length) {
+      _historyAddresses[index] = newAddress;
+    } else {
+      _historyAddresses.add(newAddress);
+    }
+    
+    // 如果当前选中的是被编辑的地址，则自动更新
+    if (_serverAddress.value == oldAddress) {
+      _serverAddress.value = newAddress;
+    }
+    
+    // 保存到设置
+    saveWebSocketClientSettings();
+    _logger.i('$_tag 历史地址已更新: $oldAddress -> $newAddress');
+    _showSuccess('地址已更新');
+  }
+
+  /// 删除历史地址
+  void deleteHistoryAddress(int index) {
+    if (index < 0 || index >= _historyAddresses.length) {
+      _showError('索引超出范围');
+      return;
+    }
+    
+    final address = _historyAddresses[index];
+    _historyAddresses.removeAt(index);
+    
+    // 保存到设置
+    saveWebSocketClientSettings();
+    _logger.i('$_tag 历史地址已删除: $address');
+    _showSuccess('地址已删除');
+  }
+
+  /// 验证地址格式
+  bool _isValidAddress(String address) {
+    if (address.isEmpty) return false;
+
+    final RegExp addressRegex = RegExp(
+      r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(?:[0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$',
+    );
+
+    // 也支持主机名格式
+    final RegExp hostnameRegex = RegExp(
+      r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*:[0-9]{1,5}$',
+    );
+
+    return addressRegex.hasMatch(address) || hostnameRegex.hasMatch(address);
+  }
+
   /// 开始拖动音量
   void startDraggingVolume() {
     _isDraggingVolume.value = true;
@@ -322,6 +456,9 @@ class WebSocketClientController extends GetxController {
       _updateStatusMessage('已连接');
       _showSuccess('WebSocket 客户端连接成功');
       _logger.i('$_tag WebSocket客户端连接成功: $uri');
+
+      // 连接成功后添加到历史地址列表
+      _addToHistoryAddresses(_serverAddress.value);
 
       // 停止重连定时器
       _stopReconnectTimer();

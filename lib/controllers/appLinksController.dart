@@ -18,7 +18,7 @@ class Applinkscontroller extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    register('listen1-xuan');
+    if (is_windows) register('listen1-xuan');
     ever(appLink, (Uri uri) {
       if (uri.toString() != '') {
         debugPrint('Received app link: $uri');

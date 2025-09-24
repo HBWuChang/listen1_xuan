@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:bson/bson.dart';
 import '../global_settings_animations.dart';
 import 'settings_controller.dart';
 import 'websocket_card_controller.dart';

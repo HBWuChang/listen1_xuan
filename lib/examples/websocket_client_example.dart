@@ -618,70 +618,8 @@ class _WebSocketClientControlContentState
                 _buildConfigSection('连接配置', [
                   Column(
                     children: [
-                      // 服务器地址显示和编辑
-                      InkWell(
-                        onTap: ctrl.isConnected
-                            ? null
-                            : () => _showServerAddressEditDialog(),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: ctrl.isConnected
-                                  ? Colors.grey.withOpacity(0.5)
-                                  : Colors.grey,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '服务器地址',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: ctrl.isConnected
-                                      ? Colors.grey
-                                      : Colors.grey[700],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Obx(
-                                      () => Text(
-                                        ctrl.serverAddress.isEmpty
-                                            ? 'IP:端口 (例如: 192.168.1.100:8080)'
-                                            : ctrl.serverAddress,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: ctrl.serverAddress.isEmpty
-                                              ? Colors.grey[500]
-                                              : (ctrl.isConnected
-                                                    ? Colors.grey[600]
-                                                    : Colors.black87),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  if (!ctrl.isConnected) ...[
-                                    const SizedBox(width: 8),
-                                    Icon(
-                                      Icons.edit,
-                                      size: 18,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      // 服务器地址历史列表和管理
+                      _buildServerAddressSection(ctrl),
                       const SizedBox(height: 12),
                       // 扫描二维码按钮（仅在Android显示）
                       if (Platform.isAndroid)
@@ -808,43 +746,6 @@ class _WebSocketClientControlContentState
     );
   }
 
-  Widget _buildInfoCard(String title, List<Widget> children) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(child: SelectableText(value)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildConfigSection(String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -882,24 +783,258 @@ class _WebSocketClientControlContentState
     );
   }
 
-  /// 显示服务器地址编辑对话框
-  Future<void> _showServerAddressEditDialog() async {
+  /// 构建服务器地址部分
+  Widget _buildServerAddressSection(WebSocketClientController controller) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '服务器地址',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (!controller.isConnected)
+                TextButton.icon(
+                  onPressed: () => _showAddAddressDialog(),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('添加'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Obx(() {
+            final historyAddresses = controller.historyAddresses;
+            
+            return Column(
+              children: [
+                // 下拉选择框
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.withOpacity(0.5)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonFormField<String>(
+                    value: controller.serverAddress.isEmpty ? null : controller.serverAddress,
+                    decoration: const InputDecoration(
+                      hintText: '选择或输入服务器地址',
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                    isExpanded: true,
+                    items: [
+                      // 当前选中的地址（如果不在历史列表中）
+                      if (controller.serverAddress.isNotEmpty && 
+                          !historyAddresses.contains(controller.serverAddress))
+                        DropdownMenuItem<String>(
+                          value: controller.serverAddress,
+                          child: Text(controller.serverAddress),
+                        ),
+                      // 历史地址列表
+                      ...historyAddresses.map((address) => 
+                        DropdownMenuItem<String>(
+                          value: address,
+                          child: Row(
+                            children: [
+                              Expanded(child: Text(address)),
+                              if (!controller.isConnected) ...[
+                                IconButton(
+                                  onPressed: () => _showEditAddressDialog(
+                                    historyAddresses.indexOf(address), 
+                                    address
+                                  ),
+                                  icon: const Icon(Icons.edit, size: 16),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                                  tooltip: '编辑',
+                                ),
+                                IconButton(
+                                  onPressed: () => _showDeleteAddressDialog(
+                                    historyAddresses.indexOf(address), 
+                                    address
+                                  ),
+                                  icon: const Icon(Icons.delete, size: 16, color: Colors.red),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                                  tooltip: '删除',
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ).toList(),
+                    ],
+                    onChanged: controller.isConnected ? null : (String? value) {
+                      if (value != null) {
+                        controller.updateServerAddress(value);
+                      }
+                    },
+                  ),
+                ),
+                // 如果没有历史地址，显示提示
+                if (historyAddresses.isEmpty && controller.serverAddress.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      '暂无历史连接地址，请点击添加按钮添加地址',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  /// 显示添加地址对话框
+  Future<void> _showAddAddressDialog() async {
     final controller = Get.find<WebSocketClientController>();
+    final textController = TextEditingController();
 
     final result = await Get.dialog<String>(
-      _ServerAddressEditDialog(initialAddress: controller.serverAddress),
+      AlertDialog(
+        title: const Text('添加服务器地址'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: textController,
+              decoration: const InputDecoration(
+                labelText: '服务器地址',
+                hintText: '例如: 192.168.1.100:8080',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '格式: IP地址:端口号 或 域名:端口号',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final address = textController.text.trim();
+              if (address.isNotEmpty) {
+                Get.back(result: address);
+              }
+            },
+            child: const Text('添加'),
+          ),
+        ],
+      ),
     );
 
     if (result != null && result.isNotEmpty) {
-      controller.updateServerAddress(result);
-      Get.snackbar(
-        '保存成功',
-        '服务器地址已更新为: $result',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.withOpacity(0.8),
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
+      controller.addHistoryAddress(result);
+    }
+  }
+
+  /// 显示编辑地址对话框
+  Future<void> _showEditAddressDialog(int index, String currentAddress) async {
+    final controller = Get.find<WebSocketClientController>();
+    final textController = TextEditingController(text: currentAddress);
+
+    final result = await Get.dialog<String>(
+      AlertDialog(
+        title: const Text('编辑服务器地址'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: textController,
+              decoration: const InputDecoration(
+                labelText: '服务器地址',
+                hintText: '例如: 192.168.1.100:8080',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '格式: IP地址:端口号 或 域名:端口号',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final address = textController.text.trim();
+              if (address.isNotEmpty) {
+                Get.back(result: address);
+              }
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      controller.editHistoryAddress(index, result);
+    }
+  }
+
+  /// 显示删除地址确认对话框
+  Future<void> _showDeleteAddressDialog(int index, String address) async {
+    final controller = Get.find<WebSocketClientController>();
+
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('删除地址'),
+        content: Text('确定要删除地址 "$address" 吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      controller.deleteHistoryAddress(index);
     }
   }
 
@@ -931,30 +1066,6 @@ class _WebSocketClientControlContentState
     }
   }
 
-  /// 构建状态信息组件
-  Widget _buildStatusInfo({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: color,
-            fontWeight: FontWeight.w500,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
   /// 扫描二维码获取服务器地址
   Future<void> _scanQRCode() async {
     try {
@@ -964,19 +1075,36 @@ class _WebSocketClientControlContentState
       );
 
       if (result != null && result.isNotEmpty) {
-        // 更新服务器地址
         final controller = Get.find<WebSocketClientController>();
-        controller.updateServerAddress(result);
-
-        // 显示成功提示
-        Get.snackbar(
-          '扫描成功',
-          '服务器地址已更新为: $result',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.green.withOpacity(0.8),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 3),
-        );
+        
+        // 检查地址是否已存在于历史列表中
+        if (controller.historyAddresses.contains(result)) {
+          // 如果地址已存在，直接选中
+          controller.updateServerAddress(result);
+          
+          // 显示成功提示
+          Get.snackbar(
+            '扫描成功',
+            '已选中历史地址: $result',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.blue.withOpacity(0.8),
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+          );
+        } else {
+          // 如果地址不存在，添加到历史列表并选中
+          controller.addHistoryAddress(result);
+          
+          // 显示成功提示
+          Get.snackbar(
+            '扫描成功',
+            '已添加并选中新地址: $result',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.green.withOpacity(0.8),
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+          );
+        }
       }
     } catch (e) {
       Get.snackbar(
