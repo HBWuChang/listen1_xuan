@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:listen1_xuan/settings.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import '../global_settings_animations.dart';
 import 'settings_controller.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
 
@@ -13,6 +14,10 @@ class ThemeController extends GetxController {
   final _light = Rx<ColorScheme?>(null);
   // ColorScheme? _dark;
   final _dark = Rx<ColorScheme?>(null);
+  
+  // Windows主题变化监听的MethodChannel
+  static const MethodChannel _themeChannel = MethodChannel('theme_monitor');
+  
   // 主题颜色选项
   final Map<String, Color> themeColors = {
     '默认蓝色': Colors.blue,
@@ -26,12 +31,40 @@ class ThemeController extends GetxController {
   };
 
   var selectedThemeColor = (Colors.purple as Color).obs;
-  RxBool useDynamicColor = false.obs;
+  RxBool useDynamicColor = true.obs;
   var themeMode = AdaptiveThemeMode.system.obs;
+  
   @override
   void onInit() {
     super.onInit();
     loadThemeSettings();
+    if (is_windows) _setupWindowsThemeListener();
+  }
+
+  @override
+  void onClose() {
+    // No cleanup needed for MethodChannel
+    super.onClose();
+  }
+
+  // 设置Windows主题变化监听
+  void _setupWindowsThemeListener() {
+    try {
+      // 设置MethodChannel的消息处理器
+      _themeChannel.setMethodCallHandler((MethodCall call) async {
+        if (call.method == 'themeChanged') {
+          debugPrint('收到来自C++的主题更新消息: ${call.arguments}');
+          // 在下一帧中更新主题
+          Future.microtask(() {
+            debugPrint('正在重新应用主题...');
+            applyTheme();
+          });
+        }
+      });
+      debugPrint('Windows主题变化监听已设置');
+    } catch (e) {
+      debugPrint('设置Windows主题变化监听失败: $e');
+    }
   }
 
   // 加载主题设置
@@ -67,9 +100,9 @@ class ThemeController extends GetxController {
       themeMode.value = AdaptiveThemeMode.system; // 默认使用系统模式
     }
     // 加载动态颜色设置
-    useDynamicColor.value = settings['use_dynamic_color'] ?? false;
+    useDynamicColor.value = settings['use_dynamic_color'] ?? true;
     // 应用主题
-    await _applyTheme();
+    await applyTheme();
   }
 
   // 保存主题设置
@@ -98,18 +131,18 @@ class ThemeController extends GetxController {
   Future<void> setThemeColor(Color color) async {
     selectedThemeColor.value = color;
     await saveThemeSettings();
-    await _applyTheme();
+    await applyTheme();
   }
 
   // 设置是否使用动态颜色
   Future<void> setUseDynamicColor(bool value) async {
     useDynamicColor.value = value;
     await saveThemeSettings();
-    await _applyTheme();
+    await applyTheme();
   }
 
   // 应用主题
-  Future<void> _applyTheme() async {
+  Future<void> applyTheme() async {
     if (useDynamicColor.value) {
       await initPlatformState();
     }
@@ -392,17 +425,16 @@ class ThemeSettingsDialog extends StatelessWidget {
                   runSpacing: 8.0,
                   children: themeController.themeColors.entries.map((entry) {
                     final isSelected =
-                        themeController.selectedThemeColor.value ==
-                        entry.value as Color;
+                        themeController.selectedThemeColor.value == entry.value;
                     return GestureDetector(
                       onTap: () {
-                        themeController.setThemeColor(entry.value as Color);
+                        themeController.setThemeColor(entry.value);
                       },
                       child: Container(
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
-                          color: entry.value as Color,
+                          color: entry.value,
                           borderRadius: BorderRadius.circular(30),
                           border: isSelected
                               ? Border.all(

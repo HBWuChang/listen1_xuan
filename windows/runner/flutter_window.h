@@ -3,6 +3,7 @@
 
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
+#include <flutter/method_channel.h>
 
 #include <memory>
 
@@ -14,6 +15,9 @@ class FlutterWindow : public Win32Window {
   // Creates a new FlutterWindow hosting a Flutter view running |project|.
   explicit FlutterWindow(const flutter::DartProject& project);
   virtual ~FlutterWindow();
+
+  // Get the theme method channel for sending theme change notifications
+  flutter::MethodChannel<flutter::EncodableValue>* GetThemeChannel() const;
 
  protected:
   // Win32Window:
@@ -28,6 +32,9 @@ class FlutterWindow : public Win32Window {
 
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
+  
+  // Theme monitoring method channel
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> theme_channel_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

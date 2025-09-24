@@ -247,7 +247,6 @@ void main() async {
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
     });
-    enableThumbnailToolbar();
   }
 
   // 初始化WebSocket控制器并加载配置

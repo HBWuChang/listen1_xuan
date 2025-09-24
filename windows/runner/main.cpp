@@ -1,13 +1,7 @@
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
-#include <windows.h>
-#include <psapi.h>
-#include "app_links/app_links_plugin_c_api.h"
-#include "flutter_window.h"
-#include "utils.h"
-
-#include <flutter/dart_project.h>
-#include <flutter/flutter_view_controller.h>
+#include <flutter/method_channel.h>
+#include <flutter/standard_method_codec.h>
 #include <windows.h>
 #include <psapi.h>
 #include "app_links/app_links_plugin_c_api.h"
@@ -19,6 +13,56 @@ struct FindWindowData
   const wchar_t *targetExeName;
   HWND foundHwnd;
 };
+
+// Global variables for theme monitoring
+static FlutterWindow* g_flutter_window = nullptr;
+static HWND g_app_hwnd = NULL;
+static WNDPROC g_original_wndproc = NULL;
+
+// Custom window procedure for theme monitoring
+LRESULT CALLBACK ThemeWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  // Monitor for DWM color changes or system setting changes
+  if (uMsg == WM_DWMCOLORIZATIONCOLORCHANGED || uMsg == WM_SETTINGCHANGE) {
+    OutputDebugStringA("Detected system color/setting change");
+    
+    // Send theme update message to Dart through platform channel
+    if (g_flutter_window) {
+      auto* channel = g_flutter_window->GetThemeChannel();
+      if (channel) {
+        try {
+          channel->InvokeMethod("themeChanged", 
+            std::make_unique<flutter::EncodableValue>("system_theme_changed"));
+          OutputDebugStringA("Sent theme update message to Dart");
+        } catch (...) {
+          OutputDebugStringA("Failed to send theme update message");
+        }
+      }
+    }
+  }
+  
+  // Call original window procedure
+  if (g_original_wndproc) {
+    return CallWindowProc(g_original_wndproc, hWnd, uMsg, wParam, lParam);
+  }
+  return DefWindowProc(hWnd, uMsg, wParam, lParam);
+}
+
+// Setup theme monitoring for the application window
+void SetupThemeMonitoring(HWND hwnd, FlutterWindow* flutter_window) {
+  if (hwnd == NULL) return;
+  
+  g_app_hwnd = hwnd;
+  g_flutter_window = flutter_window;
+  
+  // Subclass the window to monitor theme changes
+  g_original_wndproc = (WNDPROC)SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)ThemeWindowProc);
+  
+  if (g_original_wndproc) {
+    OutputDebugStringA("Successfully setup Windows theme monitoring");
+  } else {
+    OutputDebugStringA("Failed to setup Windows theme monitoring");
+  }
+}
 
 BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
 {
@@ -137,11 +181,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   }
   window.SetQuitOnClose(true);
 
+  // Setup theme monitoring after window creation
+  HWND app_hwnd = window.GetHandle();
+  if (app_hwnd) {
+    // Setup the theme monitoring with both window handle and flutter window pointer
+    SetupThemeMonitoring(app_hwnd, &window);
+    OutputDebugStringA("Theme monitoring initialized");
+  }
+
   ::MSG msg;
   while (::GetMessage(&msg, nullptr, 0, 0))
   {
     ::TranslateMessage(&msg);
     ::DispatchMessage(&msg);
+  }
+
+  // Cleanup
+  if (g_app_hwnd && g_original_wndproc) {
+    SetWindowLongPtr(g_app_hwnd, GWLP_WNDPROC, (LONG_PTR)g_original_wndproc);
   }
 
   ::CoUninitialize();
