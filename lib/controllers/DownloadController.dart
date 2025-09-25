@@ -27,11 +27,11 @@ class DownloadController extends GetxController {
   final maxDownloads = 0.obs;
   String get maxDownloadsKey => '${_settingsKeyPrefix}maxDownloads';
   final downloadProcess = <String, dynamic>{}.obs;
-  
+
   // UI 状态管理
   final isLoading = false.obs;
   final panelExpanded = [false, false, false, false].obs;
-  
+
   @override
   void onInit() {
     super.onInit();
@@ -99,9 +99,15 @@ class DownloadController extends GetxController {
   void loadSettings() async {
     appDocDir = await xuan_getdataDirectory();
     final settings = Get.find<SettingsController>().settings;
-    toDownloadList.value = Map<String, String>.from(settings[toDownloadListKey] ?? {});
-    downloadingList.value = Map<String, String>.from(settings[downloadingListKey] ?? {});
-    downloadedList.value = Map<String, String>.from(settings[downloadedListKey] ?? {});
+    toDownloadList.value = Map<String, String>.from(
+      settings[toDownloadListKey] ?? {},
+    );
+    downloadingList.value = Map<String, String>.from(
+      settings[downloadingListKey] ?? {},
+    );
+    downloadedList.value = Map<String, String>.from(
+      settings[downloadedListKey] ?? {},
+    );
     failedList.value = Map<String, String>.from(settings[failedListKey] ?? {});
     everAll([toDownloadList, downloadingList, maxDownloads], (_) {
       checkAndStartDownloads();
@@ -130,16 +136,23 @@ class DownloadController extends GetxController {
     settings.setSetting(maxDownloadsKey, maxDownloads.value);
   }
 
-  void addToDownloadList(
+  Future<void> addToDownloadList(
     Map<String, String> newItems, {
     Map<String, String> localFiles = const {},
-  }) {
+  }) async {
     newItems.removeWhere((key, value) => localFiles.containsKey(key));
     Map<String, String> toAdd = {};
     newItems.forEach((key, value) {
-      if (toDownloadList.containsKey(key) ||
-          downloadingList.containsKey(key) ||
-          downloadedList.containsKey(key)) {
+      if (toDownloadList.containsKey(key) || downloadingList.containsKey(key)) {
+        return;
+      }
+      if (downloadedList.containsKey(key)) {
+        get_local_cache(key).then((localPath) {
+          if (localPath.isEmpty) {
+            downloadedList.remove(key);
+            toDownloadList[key] = value;
+          }
+        });
         return;
       }
       if (failedList.containsKey(key)) {
