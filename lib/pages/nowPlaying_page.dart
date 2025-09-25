@@ -153,6 +153,7 @@ class NowPlayingPage extends StatelessWidget {
           child: TextField(
             controller: controller.searchController,
             autofocus: true,
+            focusNode: controller.searchFocusNode,
             decoration: InputDecoration(
               hintText: '搜索歌曲、艺术家或专辑...',
               hintStyle: theme.textTheme.bodyMedium?.copyWith(

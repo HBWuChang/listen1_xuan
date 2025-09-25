@@ -127,8 +127,7 @@ class DownloadPage extends StatelessWidget {
         if (filteredCacheMap.isNotEmpty) {
           // 获取本地缓存列表
           final cacheController = Get.find<CacheController>();
-          final localCacheMap = cacheController.localCacheList;
-
+          final localCacheMap = await cacheController.localCacheList();
           // 调用 addToDownloadList 方法
           downloadController.addToDownloadList(
             filteredCacheMap,

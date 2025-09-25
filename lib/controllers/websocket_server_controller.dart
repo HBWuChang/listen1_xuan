@@ -674,7 +674,7 @@ class WebSocketServerController extends GetxController {
           final cacheController = Get.find<CacheController>();
 
           // 获取所有缓存项的 key 列表
-          final cacheKeys = cacheController.localCacheList;
+          final cacheKeys =await cacheController.localCacheList();
 
           request.response
             ..statusCode = HttpStatus.ok

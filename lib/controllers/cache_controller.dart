@@ -18,6 +18,7 @@ import 'package:listen1_xuan/models/Track.dart';
 import 'package:mime/mime.dart';
 import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
+import 'package:path/path.dart';
 
 class CacheController extends GetxController {
   final String _localCacheListKey = 'local-cache-list';
@@ -28,11 +29,22 @@ class CacheController extends GetxController {
   final _toDelFiles = <String>{}.obs;
   Set<String> saveMetadataToCacheWorkingIds = {};
 
-  Map<String, String> get localCacheList => Map.fromEntries(
-    _localCacheList.entries
-        .where((entry) => !entry.key.contains('lyric'))
-        .map((entry) => MapEntry(entry.key, entry.value)),
-  );
+  Future<Map<String, String>> localCacheList() async {
+    Map<String, String> res = Map<String, String>.fromEntries(
+      _localCacheList.entries
+          .where((entry) => !entry.key.contains('lyric'))
+          .map((entry) => MapEntry(entry.key, entry.value)),
+    );
+    var downDir = await xuan_getdataDirectory();
+    Set<String> files = {};
+    for (var element in (await downDir.list().toList())) {
+      if (element is File) {
+        files.add(basename(element.path));
+      }
+    }
+    res.removeWhere((key, value) => !files.contains(value));
+    return res;
+  }
 
   String get ffmpegPathWindows {
     String? ffmpegPath = Get.find<PlayController>().getPlayerSettings(
@@ -247,7 +259,9 @@ class CacheController extends GetxController {
           ], runInShell: true);
 
           if (result.exitCode == 0) {
-            _toDelFiles.add(filePath);
+            if (basename(filePath) != basename(outPath)) {
+              _toDelFiles.add(filePath);
+            }
             _localCacheList[id] = outPath.split('/').last.split('\\').last;
             File? cover = await getCachedImageFile(track.img_url ?? '');
             String? mimeType = cover != null
@@ -350,7 +364,9 @@ class CacheController extends GetxController {
         returnCode = await session.getReturnCode();
         debugPrint('FFmpeg执行结果: ${await session.getOutput()}');
         if (ReturnCode.isSuccess(returnCode)) {
-          _toDelFiles.add(filePath);
+          if (basename(filePath) != basename(outPath)) {
+            _toDelFiles.add(filePath);
+          }
           _localCacheList[id] = outPath.split('/').last.split('\\').last;
           File? cover = await getCachedImageFile(track.img_url ?? '');
           String? mimeType = cover != null ? lookupMimeType(cover.path) : null;

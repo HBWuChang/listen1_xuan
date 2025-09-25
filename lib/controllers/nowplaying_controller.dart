@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter/services.dart';
+import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:listen1_xuan/play.dart';
 import 'play_controller.dart';
 import 'myPlaylist_controller.dart';
@@ -12,7 +13,7 @@ class NowPlayingController extends GetxController {
   var showScrollButton = false.obs;
   var searchQuery = ''.obs;
   var isSearching = false.obs;
-
+  FocusNode searchFocusNode = FocusNode();
   // 获取其他控制器
   PlayController get playController => Get.find<PlayController>();
   MyPlayListController get playlistController =>
@@ -24,7 +25,13 @@ class NowPlayingController extends GetxController {
     scrollController = ScrollController();
     searchController = TextEditingController();
     scrollController.addListener(_onScroll);
-
+    searchFocusNode.addListener(() {
+      if (searchFocusNode.hasFocus) {
+        set_inapp_hotkey(false);
+      } else {
+        set_inapp_hotkey(true);
+      }
+    });
     // 监听搜索框变化
     searchController.addListener(() {
       searchQuery.value = searchController.text;
@@ -41,6 +48,7 @@ class NowPlayingController extends GetxController {
     scrollController.removeListener(_onScroll);
     scrollController.dispose();
     searchController.dispose();
+    searchFocusNode.dispose();
     super.onClose();
   }
 
@@ -62,7 +70,8 @@ class NowPlayingController extends GetxController {
       platform = 'macOS';
     else if (GetPlatform.isLinux)
       platform = 'Linux';
-    else if (GetPlatform.isWeb) platform = 'Web';
+    else if (GetPlatform.isWeb)
+      platform = 'Web';
 
     print('当前平台: $platform');
     print('使用的项目高度: $itemHeight');
@@ -74,8 +83,9 @@ class NowPlayingController extends GetxController {
       final playingList = filteredPlayingList; // 使用过滤后的列表
       final currentTrackId =
           playController.getPlayerSettings("nowplaying_track_id") ?? '';
-      final currentIndex =
-          playingList.indexWhere((track) => track.id == currentTrackId);
+      final currentIndex = playingList.indexWhere(
+        (track) => track.id == currentTrackId,
+      );
 
       if (currentIndex != -1) {
         final currentItemOffset = currentIndex * itemHeight;
@@ -84,7 +94,8 @@ class NowPlayingController extends GetxController {
             viewportTop + scrollController.position.viewportDimension;
 
         // 判断当前播放项目是否在可视区域内
-        final isCurrentVisible = currentItemOffset >= viewportTop &&
+        final isCurrentVisible =
+            currentItemOffset >= viewportTop &&
             currentItemOffset <= viewportBottom;
 
         showScrollButton.value = !isCurrentVisible;
@@ -98,8 +109,9 @@ class NowPlayingController extends GetxController {
         playController.getPlayerSettings("nowplaying_track_id") ?? '';
 
     // 找到当前播放歌曲的索引
-    final currentIndex =
-        playingList.indexWhere((track) => track.id == currentTrackId);
+    final currentIndex = playingList.indexWhere(
+      (track) => track.id == currentTrackId,
+    );
 
     if (currentIndex != -1 && scrollController.hasClients) {
       // 计算滚动位置 - 使用动态高度

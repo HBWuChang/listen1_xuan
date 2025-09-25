@@ -136,6 +136,14 @@ class DownloadController extends GetxController {
     settings.setSetting(maxDownloadsKey, maxDownloads.value);
   }
 
+  Future<void> checkLocal(String key, String value) async {
+    String localPath = await Get.find<CacheController>().getLocalCache(key);
+    if (localPath.isEmpty) {
+      downloadedList.remove(key);
+      toDownloadList[key] = value;
+    }
+  }
+
   Future<void> addToDownloadList(
     Map<String, String> newItems, {
     Map<String, String> localFiles = const {},
@@ -146,14 +154,9 @@ class DownloadController extends GetxController {
       if (toDownloadList.containsKey(key) || downloadingList.containsKey(key)) {
         return;
       }
+      // netrack_2612360323
       if (downloadedList.containsKey(key)) {
-        get_local_cache(key).then((localPath) {
-          if (localPath.isEmpty) {
-            downloadedList.remove(key);
-            toDownloadList[key] = value;
-          }
-        });
-        return;
+        downloadedList.remove(key);
       }
       if (failedList.containsKey(key)) {
         failedList.remove(key);
