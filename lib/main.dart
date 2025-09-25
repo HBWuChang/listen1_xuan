@@ -209,6 +209,12 @@ void enableThumbnailToolbar() async {
 
 void main() async {
   await WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter框架已初始化
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: Colors.transparent, // 设置导航栏背景色为透明
+      systemNavigationBarDividerColor: Colors.transparent, // 设置导航栏分割线为透明
+    ),
+  );
   if (is_windows) {
     MetadataGod.initialize();
   }
@@ -230,7 +236,6 @@ void main() async {
   Get.put(NowPlayingController(), permanent: true);
   Get.put(DownloadController(), permanent: true);
   Get.put(Applinkscontroller(), permanent: true);
-
 
   if (is_windows) {
     SMTCWindows.initialize();
@@ -1282,14 +1287,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                     horizon: global_horizon,
                   ),
                   // 竖屏状态下添加额外的占位空间
-                  if (!global_horizon)
-                    Obx(() {
-                      SettingsController controller =
-                          Get.find<SettingsController>();
-                      return SizedBox(
-                        height: controller.portraitBottomBarPadding.value,
-                      );
-                    }),
+                  if (!global_horizon) SafeArea(child: SizedBox.shrink()),
                 ],
               ),
               floatingActionButton:

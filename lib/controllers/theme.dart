@@ -14,10 +14,10 @@ class ThemeController extends GetxController {
   final _light = Rx<ColorScheme?>(null);
   // ColorScheme? _dark;
   final _dark = Rx<ColorScheme?>(null);
-  
+
   // Windows主题变化监听的MethodChannel
   static const MethodChannel _themeChannel = MethodChannel('theme_monitor');
-  
+
   // 主题颜色选项
   final Map<String, Color> themeColors = {
     '默认蓝色': Colors.blue,
@@ -33,7 +33,7 @@ class ThemeController extends GetxController {
   var selectedThemeColor = (Colors.purple as Color).obs;
   RxBool useDynamicColor = true.obs;
   var themeMode = AdaptiveThemeMode.system.obs;
-  
+
   @override
   void onInit() {
     super.onInit();
@@ -217,6 +217,13 @@ class ThemeController extends GetxController {
             ? _light.value
             : _dark.value,
         useSystemColors: true,
+        appBarTheme: AppBarTheme(
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: brightness,
+            systemNavigationBarColor: Get.theme.colorScheme.surface,
+          ),
+        ),
       );
     } else {
       return ThemeData(
@@ -225,6 +232,13 @@ class ThemeController extends GetxController {
         colorScheme: ColorScheme.fromSeed(
           seedColor: selectedThemeColor.value,
           brightness: brightness,
+        ),
+        appBarTheme: AppBarTheme(
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: brightness,
+            systemNavigationBarColor: Get.theme.colorScheme.surface,
+          ),
         ),
       );
     }

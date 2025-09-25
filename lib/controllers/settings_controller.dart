@@ -11,7 +11,6 @@ import 'myPlaylist_controller.dart';
 
 class SettingsController extends GetxController {
   var settings = <String, dynamic>{}.obs;
-  var portraitBottomBarPadding = 0.0.obs;
   var showLyricTranslation = true.obs; // 歌词翻译显示设置
   // var hideOrMinimize = false.obs;
   bool get hideOrMinimize => settings['hideOrMinimize'] ?? false;
@@ -32,11 +31,6 @@ class SettingsController extends GetxController {
       saveSettings();
     });
 
-    // 监听 portraitBottomBarPadding 变化并保存到 settings
-    ever(portraitBottomBarPadding, (value) {
-      settings['portraitBottomBarPadding'] = value;
-    });
-
     // 监听 showLyricTranslation 变化并保存到 settings
     ever(showLyricTranslation, (value) {
       settings['showLyricTranslation'] = value;
@@ -49,10 +43,6 @@ class SettingsController extends GetxController {
     if (jsonString != null) {
       settings.value = jsonDecode(jsonString);
     }
-    // 加载 portraitBottomBarPadding 的值
-    portraitBottomBarPadding.value =
-        (settings['portraitBottomBarPadding'] ?? 0.0).toDouble();
-
     // 加载 showLyricTranslation 的值
     showLyricTranslation.value = settings['showLyricTranslation'] ?? true;
     final localCacheListJson =
