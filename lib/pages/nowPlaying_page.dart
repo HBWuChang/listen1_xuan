@@ -5,6 +5,7 @@ import '../bodys.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/nowplaying_controller.dart';
 import '../myplaylist.dart';
+import 'package:listen1_xuan/models/Track.dart';
 
 class NowPlayingPage extends StatelessWidget {
   @override

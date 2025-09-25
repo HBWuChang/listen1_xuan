@@ -5,6 +5,7 @@ import 'controllers/play_controller.dart';
 import 'lowebutil.dart';
 import 'dart:math';
 import 'global_settings_animations.dart';
+import 'package:listen1_xuan/models/Track.dart';
 
 class MyPlaylist {
   final MyPlayListController _myPlayListController =

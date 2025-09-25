@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:listen1_xuan/play.dart';
 import 'play_controller.dart';
 import 'myPlaylist_controller.dart';
+import 'package:listen1_xuan/models/Track.dart';
 
 class NowPlayingController extends GetxController {
   late ScrollController scrollController;

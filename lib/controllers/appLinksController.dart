@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/bodys.dart';
-import 'package:listen1_xuan/controllers/play_controller.dart';
+import 'package:listen1_xuan/models/Track.dart';
 import 'package:win32_registry/win32_registry.dart';
 import '../global_settings_animations.dart';
 
@@ -28,7 +28,7 @@ class Applinkscontroller extends GetxController {
   }
 
   String getShareAppLink(Track track) {
-    String base64Track = track.toBase64();
+    String base64Track = track.toBase64WithGzip();
     Uri appLink = Uri(
       scheme: 'https',
       host: 'listen1-xuan.040905.xyz',
@@ -46,7 +46,7 @@ class Applinkscontroller extends GetxController {
         debugPrint('Query Parameters: $queryParameters');
         if (queryParameters.containsKey('track')) {
           String trackUtf8Base64 = queryParameters['track']!;
-          Track track = Track.fromBase64(trackUtf8Base64);
+          Track track = Track.fromBase64MaybeGzip(trackUtf8Base64);
           song_dialog(Get.context!, track);
           xshow?.call();
           // }

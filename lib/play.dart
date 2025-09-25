@@ -30,6 +30,7 @@ import 'package:smtc_windows/smtc_windows.dart';
 import 'package:windows_taskbar/windows_taskbar.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:listen1_xuan/models/Track.dart';
 
 class FileLogOutput extends LogOutput {
   final File file;

@@ -13,6 +13,7 @@ import 'lowebutil.dart';
 import 'package:marquee/marquee.dart';
 import 'main.dart';
 import 'global_settings_animations.dart';
+import 'package:listen1_xuan/models/Track.dart';
 
 final bilibili = Bilibili();
 

@@ -7,6 +7,7 @@ import 'package:listen1_xuan/controllers/websocket_client_controller.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:listen1_xuan/pages/qr_scanner_page.dart';
+import 'package:listen1_xuan/models/Track.dart';
 
 import '../bodys.dart';
 

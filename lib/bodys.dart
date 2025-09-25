@@ -21,6 +21,7 @@ import 'global_settings_animations.dart';
 import 'package:get/get.dart';
 import 'package:extended_image/extended_image.dart';
 import 'settings.dart';
+import 'package:listen1_xuan/models/Track.dart';
 
 Future<dynamic> song_dialog(
   BuildContext context,

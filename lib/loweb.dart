@@ -10,6 +10,7 @@ import 'myplaylist.dart';
 import 'play.dart';
 import 'qq.dart';
 import 'kugou.dart';
+import 'package:listen1_xuan/models/Track.dart';
 
 class Provider {
   final String name;
