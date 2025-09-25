@@ -6,10 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
-import 'package:listen1_xuan/controllers/settings_controller.dart';
-import 'package:listen1_xuan/funcs.dart';
-import 'package:flutter_audio_tagger/flutter_audio_tagger.dart';
-import 'package:flutter_audio_tagger/tag.dart';
 import 'package:listen1_xuan/pages/lyric_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'controllers/audioHandler_controller.dart';
@@ -90,6 +86,15 @@ void addAndCleanReapeatRoute(Route route, String name) {
     });
   }
   top_routeWithName.add(routeWithName(route, name));
+}
+
+Future<void> closeApp() async {
+  Get.dialog(
+    AlertDialog(title: Text('正在保存设置'), content: CircularProgressIndicator()),
+    barrierDismissible: false,
+  );
+  await Get.find<SettingsController>().saveSettings();
+  exit(0);
 }
 
 class MyHttpOverrides extends HttpOverrides {
@@ -223,7 +228,9 @@ void main() async {
   Get.put(AudioHandlerController(), permanent: true);
   Get.put(LyricController(), permanent: true);
   Get.put(NowPlayingController(), permanent: true);
+  Get.put(DownloadController(), permanent: true);
   Get.put(Applinkscontroller(), permanent: true);
+
 
   if (is_windows) {
     SMTCWindows.initialize();
@@ -518,7 +525,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
       xshow();
     } else if (menuItem.key == 'exit_app') {
       // do something
-      exit(0);
+      closeApp();
     }
   }
 
@@ -615,7 +622,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
       if (kDebugMode) {
         print("exit(0)");
       } else {
-        exit(0);
+        closeApp();
       }
     } else {
       xuan_toast(
@@ -708,7 +715,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                           }
                           if (event.kind == PointerDeviceKind.mouse &&
                               event.buttons == kMiddleMouseButton) {
-                            exit(0);
+                            closeApp();
                           }
                         },
                         child: Tooltip(
@@ -863,7 +870,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                             tooltip: "关闭",
                                             icon: Icon(Icons.close, size: 13),
                                             onPressed: () {
-                                              exit(0);
+                                              closeApp();
                                             },
                                           ),
                                         ],

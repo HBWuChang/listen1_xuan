@@ -16,34 +16,8 @@ import 'settings_controller.dart';
 import 'package:metadata_god/metadata_god.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:mime/mime.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:ffmpeg_kit_flutter_new_min/abstract_session.dart';
-import 'package:ffmpeg_kit_flutter_new_min/arch_detect.dart';
-import 'package:ffmpeg_kit_flutter_new_min/chapter.dart';
-import 'package:ffmpeg_kit_flutter_new_min/extensions.dart';
 import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit_config.dart';
-import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_session.dart';
-import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_session_complete_callback.dart';
-import 'package:ffmpeg_kit_flutter_new_min/ffprobe_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_min/ffprobe_session.dart';
-import 'package:ffmpeg_kit_flutter_new_min/ffprobe_session_complete_callback.dart';
-import 'package:ffmpeg_kit_flutter_new_min/level.dart';
-import 'package:ffmpeg_kit_flutter_new_min/log.dart';
-import 'package:ffmpeg_kit_flutter_new_min/log_callback.dart';
-import 'package:ffmpeg_kit_flutter_new_min/log_redirection_strategy.dart';
-import 'package:ffmpeg_kit_flutter_new_min/media_information.dart';
-import 'package:ffmpeg_kit_flutter_new_min/media_information_json_parser.dart';
-import 'package:ffmpeg_kit_flutter_new_min/media_information_session.dart';
-import 'package:ffmpeg_kit_flutter_new_min/media_information_session_complete_callback.dart';
-import 'package:ffmpeg_kit_flutter_new_min/packages.dart';
 import 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
-import 'package:ffmpeg_kit_flutter_new_min/session.dart';
-import 'package:ffmpeg_kit_flutter_new_min/session_state.dart';
-import 'package:ffmpeg_kit_flutter_new_min/signal.dart';
-import 'package:ffmpeg_kit_flutter_new_min/statistics.dart';
-import 'package:ffmpeg_kit_flutter_new_min/statistics_callback.dart';
-import 'package:ffmpeg_kit_flutter_new_min/stream_information.dart';
 
 class CacheController extends GetxController {
   final String _localCacheListKey = 'local-cache-list';
@@ -53,6 +27,13 @@ class CacheController extends GetxController {
   bool _firstCheck = true;
   final _toDelFiles = <String>{}.obs;
   Set<String> saveMetadataToCacheWorkingIds = {};
+
+  Map<String, String> get localCacheList => Map.fromEntries(
+    _localCacheList.entries
+        .where((entry) => !entry.key.contains('lyric'))
+        .map((entry) => MapEntry(entry.key, entry.value)),
+  );
+
   String get ffmpegPathWindows {
     String? ffmpegPath = Get.find<PlayController>().getPlayerSettings(
       'ffmpegPath',
@@ -130,7 +111,8 @@ class CacheController extends GetxController {
         Get.find<SettingsController>().CacheController_localCacheList;
     var t = Get.find<SettingsController>().settings['toDelFiles'] ?? [];
     try {
-      _toDelFiles.value = Set<String>.from(t);
+      _toDelFiles.clear();
+      _toDelFiles.addAll(Set<String>.from(t));
     } catch (e) {
       debugPrint('加载待删除文件列表失败: $e');
     }

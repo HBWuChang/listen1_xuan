@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 import 'myPlaylist_controller.dart';
-import 'play_controller.dart';
 
 class SettingsController extends GetxController {
   var settings = <String, dynamic>{}.obs;

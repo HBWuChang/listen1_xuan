@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/play.dart';
 import 'dart:io';
@@ -25,6 +26,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:webview_cookie_manager/webview_cookie_manager.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'pages/download_page.dart';
 import 'qq.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:dio/dio.dart';
@@ -976,13 +978,24 @@ class _SettingsPageState extends State<SettingsPage> {
                 onPressed: () {
                   wscc.sendGetCookieMessage();
                 },
-                child: Text('从WebSocket客户端获取登录信息'),
+                child: Text('从WebSocket服务器获取登录信息'),
               );
             }),
             Wrap(
               alignment: WrapAlignment.spaceAround,
               direction: Axis.horizontal,
               children: [
+                Obx(() {
+                  WebSocketClientController wscc =
+                      Get.find<WebSocketClientController>();
+                  if (!wscc.isConnected) return SizedBox.shrink();
+                  return ElevatedButton(
+                    onPressed: () {
+                      Get.to(() => DownloadPage(), id: 1);
+                    },
+                    child: Text('从WebSocket服务器获取缓存文件'),
+                  );
+                }),
                 ElevatedButton(
                   onPressed: () => outputAllSettingsToFile(),
                   child: const Text('保存配置到文件'),

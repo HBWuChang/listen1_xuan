@@ -30,6 +30,7 @@ flutter version 3.32.1
 - 托盘左键单击为显示应用，右键单击为显示菜单
 - windows下载最新测试版后可能会弹出cmd请求管理员权限的提示，请点击允许以更新版本。若程序关闭后无法打开，请手动运行windows默认下载地址/Listen1/scripts.bat以更新版本
 # TODO
+- [x] 从WebSocket服务器下载缓存文件（连接服务器后在设置页面可进入
 - [ ] @piano弱音
   - [x] 适配一下安卓Material You的自动配色
     - [x] (应用运行过程中壁纸变化自动更新颜色)

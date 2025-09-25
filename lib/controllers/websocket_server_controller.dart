@@ -12,6 +12,7 @@ import '../settings.dart';
 import 'play_controller.dart';
 import '../play.dart';
 import 'settings_controller.dart';
+import 'cache_controller.dart';
 
 /// WebSocket 服务器控制器
 /// 支持 IPv4/IPv6 配置，包含 ping/pong 心跳机制和资源释放
@@ -638,8 +639,15 @@ class WebSocketServerController extends GetxController {
   }
 
   /// 处理 HTTP 请求（根路径）
-  void _handleHttpRequest(HttpRequest request) {
+  void _handleHttpRequest(HttpRequest request) async {
     final uri = request.uri.path;
+
+    // 检查是否为 /downloadById/{id} 路由
+    if (uri.startsWith('/downloadById/')) {
+      final id = uri.substring('/downloadById/'.length);
+      await _handleDownloadById(request, id);
+      return;
+    }
 
     switch (uri) {
       case '/':
@@ -660,6 +668,33 @@ class WebSocketServerController extends GetxController {
           ..headers.contentType = ContentType.json
           ..write(json.encode(status));
         break;
+      case '/allCacheList':
+        try {
+          // 获取 CacheController 实例
+          final cacheController = Get.find<CacheController>();
+
+          // 获取所有缓存项的 key 列表
+          final cacheKeys = cacheController.localCacheList;
+
+          request.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType.json
+            ..write(json.encode(cacheKeys));
+
+          _logger.i('$_tag 返回缓存列表: ${cacheKeys.length} 个项目');
+        } catch (e) {
+          _logger.e('$_tag 获取缓存列表失败', error: e);
+          request.response
+            ..statusCode = HttpStatus.internalServerError
+            ..headers.contentType = ContentType.json
+            ..write(
+              json.encode({
+                'error': 'Internal server error',
+                'message': 'Failed to get cache list: $e',
+              }),
+            );
+        }
+        break;
       default:
         request.response
           ..statusCode = HttpStatus.notFound
@@ -667,6 +702,91 @@ class WebSocketServerController extends GetxController {
     }
 
     request.response.close();
+  }
+
+  /// 处理根据 ID 下载文件的请求
+  Future<void> _handleDownloadById(HttpRequest request, String id) async {
+    try {
+      // 获取 CacheController 实例
+      final cacheController = Get.find<CacheController>();
+
+      // 从缓存中获取文件路径
+      final filePath = await cacheController.getLocalCache(id);
+
+      if (filePath.isEmpty) {
+        // 文件不存在
+        request.response
+          ..statusCode = HttpStatus.notFound
+          ..headers.contentType = ContentType.json
+          ..write(
+            json.encode({
+              'error': 'File not found',
+              'message': 'No cached file found for ID: $id',
+            }),
+          );
+        request.response.close();
+        return;
+      }
+
+      final file = File(filePath);
+      if (!await file.exists()) {
+        // 文件路径存在但文件实际不存在
+        request.response
+          ..statusCode = HttpStatus.notFound
+          ..headers.contentType = ContentType.json
+          ..write(
+            json.encode({
+              'error': 'File not found',
+              'message': 'Cached file does not exist: $filePath',
+            }),
+          );
+        request.response.close();
+        return;
+      }
+
+      // 获取文件信息
+      final fileStats = await file.stat();
+      final fileName = file.path.split(Platform.pathSeparator).last;
+
+      // 对文件名进行URL编码以支持非ASCII字符
+      final encodedFileName = Uri.encodeComponent(fileName);
+
+      // 设置响应头
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..headers.set(HttpHeaders.contentTypeHeader, 'application/octet-stream')
+        ..headers.set(
+          HttpHeaders.contentLengthHeader,
+          fileStats.size.toString(),
+        )
+        ..headers.set(
+          'content-disposition',
+          'attachment; filename*=UTF-8\'\'$encodedFileName',
+        );
+
+      // 读取并发送文件内容
+      final fileStream = file.openRead();
+      await fileStream.pipe(request.response);
+
+      _logger.i('$_tag 成功处理文件下载请求: ID=$id, 文件=$fileName');
+    } catch (e, stackTrace) {
+      _logger.e('$_tag 处理文件下载请求失败: ID=$id', error: e, stackTrace: stackTrace);
+
+      try {
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..headers.contentType = ContentType.json
+          ..write(
+            json.encode({
+              'error': 'Internal server error',
+              'message': 'Failed to process download request: $e',
+            }),
+          );
+        request.response.close();
+      } catch (closeError) {
+        _logger.e('$_tag 关闭错误响应失败', error: closeError);
+      }
+    }
   }
 
   /// 获取播放模式文本描述
