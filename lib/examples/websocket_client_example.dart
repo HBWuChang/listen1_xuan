@@ -532,6 +532,46 @@ class _WebSocketClientControlContentState
                               ),
                             ],
                           ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Slider(
+                                  value:
+                                      ctrl.processTime.value.inMilliseconds /
+                                      (ctrl.totalTime.value.inMilliseconds <= 0
+                                          ? 1
+                                          : ctrl
+                                                .totalTime
+                                                .value
+                                                .inMilliseconds),
+                                  min: 0.0,
+                                  max: 1.0,
+                                  divisions: 100,
+                                  label:
+                                      '${(ctrl.processTime.value.inMilliseconds / 1000).round()}s',
+                                  onChangeStart: (value) {
+                                    ctrl.startDraggingProcess();
+                                  },
+                                  onChanged: (value) {
+                                    ctrl.updateProcess(value);
+                                  },
+                                  onChangeEnd: (value) {
+                                    ctrl.stopDraggingProcess(value);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                width: 48,
+                                child: Text(
+                                  '${(ctrl.volume * 100).round()}%',
+                                  style: const TextStyle(fontSize: 12),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
 
                           // 音量控制滑块
                           const SizedBox(height: 16),
@@ -800,10 +840,7 @@ class _WebSocketClientControlContentState
             children: [
               const Text(
                 '服务器地址',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               if (!controller.isConnected)
                 TextButton.icon(
@@ -812,7 +849,10 @@ class _WebSocketClientControlContentState
                   label: const Text('添加'),
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                   ),
                 ),
             ],
@@ -820,7 +860,7 @@ class _WebSocketClientControlContentState
           const SizedBox(height: 12),
           Obx(() {
             final historyAddresses = controller.historyAddresses;
-            
+
             return Column(
               children: [
                 // 下拉选择框
@@ -830,72 +870,89 @@ class _WebSocketClientControlContentState
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: DropdownButtonFormField<String>(
-                    value: controller.serverAddress.isEmpty ? null : controller.serverAddress,
+                    value: controller.serverAddress.isEmpty
+                        ? null
+                        : controller.serverAddress,
                     decoration: const InputDecoration(
                       hintText: '选择或输入服务器地址',
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                     ),
                     isExpanded: true,
                     items: [
                       // 当前选中的地址（如果不在历史列表中）
-                      if (controller.serverAddress.isNotEmpty && 
+                      if (controller.serverAddress.isNotEmpty &&
                           !historyAddresses.contains(controller.serverAddress))
                         DropdownMenuItem<String>(
                           value: controller.serverAddress,
                           child: Text(controller.serverAddress),
                         ),
                       // 历史地址列表
-                      ...historyAddresses.map((address) => 
-                        DropdownMenuItem<String>(
-                          value: address,
-                          child: Row(
-                            children: [
-                              Expanded(child: Text(address)),
-                              if (!controller.isConnected) ...[
-                                IconButton(
-                                  onPressed: () => _showEditAddressDialog(
-                                    historyAddresses.indexOf(address), 
-                                    address
-                                  ),
-                                  icon: const Icon(Icons.edit, size: 16),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                                  tooltip: '编辑',
-                                ),
-                                IconButton(
-                                  onPressed: () => _showDeleteAddressDialog(
-                                    historyAddresses.indexOf(address), 
-                                    address
-                                  ),
-                                  icon: const Icon(Icons.delete, size: 16, color: Colors.red),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                                  tooltip: '删除',
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ).toList(),
+                      ...historyAddresses
+                          .map(
+                            (address) => DropdownMenuItem<String>(
+                              value: address,
+                              child: Row(
+                                children: [
+                                  Expanded(child: Text(address)),
+                                  if (!controller.isConnected) ...[
+                                    IconButton(
+                                      onPressed: () => _showEditAddressDialog(
+                                        historyAddresses.indexOf(address),
+                                        address,
+                                      ),
+                                      icon: const Icon(Icons.edit, size: 16),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 24,
+                                        minHeight: 24,
+                                      ),
+                                      tooltip: '编辑',
+                                    ),
+                                    IconButton(
+                                      onPressed: () => _showDeleteAddressDialog(
+                                        historyAddresses.indexOf(address),
+                                        address,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        size: 16,
+                                        color: Colors.red,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 24,
+                                        minHeight: 24,
+                                      ),
+                                      tooltip: '删除',
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ],
-                    onChanged: controller.isConnected ? null : (String? value) {
-                      if (value != null) {
-                        controller.updateServerAddress(value);
-                      }
-                    },
+                    onChanged: controller.isConnected
+                        ? null
+                        : (String? value) {
+                            if (value != null) {
+                              controller.updateServerAddress(value);
+                            }
+                          },
                   ),
                 ),
                 // 如果没有历史地址，显示提示
-                if (historyAddresses.isEmpty && controller.serverAddress.isEmpty)
+                if (historyAddresses.isEmpty &&
+                    controller.serverAddress.isEmpty)
                   const Padding(
                     padding: EdgeInsets.only(top: 8),
                     child: Text(
                       '暂无历史连接地址，请点击添加按钮添加地址',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -936,10 +993,7 @@ class _WebSocketClientControlContentState
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('取消'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('取消')),
           ElevatedButton(
             onPressed: () {
               final address = textController.text.trim();
@@ -987,10 +1041,7 @@ class _WebSocketClientControlContentState
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('取消'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('取消')),
           ElevatedButton(
             onPressed: () {
               final address = textController.text.trim();
@@ -1077,12 +1128,12 @@ class _WebSocketClientControlContentState
 
       if (result != null && result.isNotEmpty) {
         final controller = Get.find<WebSocketClientController>();
-        
+
         // 检查地址是否已存在于历史列表中
         if (controller.historyAddresses.contains(result)) {
           // 如果地址已存在，直接选中
           controller.updateServerAddress(result);
-          
+
           // 显示成功提示
           Get.snackbar(
             '扫描成功',
@@ -1095,7 +1146,7 @@ class _WebSocketClientControlContentState
         } else {
           // 如果地址不存在，添加到历史列表并选中
           controller.addHistoryAddress(result);
-          
+
           // 显示成功提示
           Get.snackbar(
             '扫描成功',

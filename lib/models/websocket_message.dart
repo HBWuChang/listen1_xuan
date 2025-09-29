@@ -85,6 +85,8 @@ class PlayStatusData {
   final bool isPlaying;
   final double volume;
   final int playMode;
+  final Duration processTime;
+  final Duration totalTime;
   final DateTime timestamp;
 
   PlayStatusData({
@@ -92,6 +94,8 @@ class PlayStatusData {
     required this.isPlaying,
     required this.volume,
     required this.playMode,
+    required this.processTime,
+    required this.totalTime,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
@@ -106,12 +110,23 @@ class PlayStatusData {
     if (json['timestamp'] != null) {
       timestamp = DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int);
     }
-
+    Duration processTime = Duration.zero;
+    if (json['processTime'] != null) {
+      final int processMillis = json['processTime'] as int;
+      processTime = Duration(milliseconds: processMillis);
+    }
+    Duration totalTime = Duration(minutes: 1);
+    if (json['totalTime'] != null) {
+      final int totalMillis = json['totalTime'] as int;
+      totalTime = Duration(milliseconds: totalMillis);
+    }
     return PlayStatusData(
       currentTrack: track,
       isPlaying: json['isPlaying'] as bool,
       volume: json['volume'] as double? ?? 0.5,
       playMode: json['playMode'] as int? ?? 0,
+      processTime: processTime,
+      totalTime: totalTime,
       timestamp: timestamp,
     );
   }
@@ -123,6 +138,8 @@ class PlayStatusData {
       'isPlaying': isPlaying,
       'volume': volume,
       'playMode': playMode,
+      'processTime': processTime.inMilliseconds,
+      'totalTime': totalTime.inMilliseconds,
       'timestamp': timestamp.millisecondsSinceEpoch,
     };
   }
@@ -136,6 +153,12 @@ class PlayStatusData {
       isPlaying: controller.isplaying.value,
       volume: controller.currentVolume,
       playMode: controller.getPlayerSettings("playmode") ?? 0,
+      processTime: Duration(
+        milliseconds: controller.music_player.position.inMilliseconds,
+      ),
+      totalTime: Duration(
+        milliseconds: controller.music_player.duration?.inMilliseconds ?? 0,
+      ),
     );
   }
 
