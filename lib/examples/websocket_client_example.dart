@@ -10,6 +10,7 @@ import 'package:listen1_xuan/pages/qr_scanner_page.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 import '../bodys.dart';
+import '../play.dart';
 
 /// WebSocket 客户端控制面板
 /// 提供详细的客户端配置和管理功能
@@ -548,8 +549,7 @@ class _WebSocketClientControlContentState
                                   min: 0.0,
                                   max: 1.0,
                                   divisions: 100,
-                                  label:
-                                      '${(ctrl.processTime.value.inMilliseconds / 1000).round()}s',
+                                  label: formatDuration(ctrl.processTime.value),
                                   onChangeStart: (value) {
                                     ctrl.startDraggingProcess();
                                   },
@@ -562,13 +562,10 @@ class _WebSocketClientControlContentState
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              SizedBox(
-                                width: 48,
-                                child: Text(
-                                  '${(ctrl.volume * 100).round()}%',
-                                  style: const TextStyle(fontSize: 12),
-                                  textAlign: TextAlign.center,
-                                ),
+                              Text(
+                                '${formatDuration(ctrl.processTime.value)}/${formatDuration(ctrl.totalTime.value)}',
+                                style: const TextStyle(fontSize: 12),
+                                textAlign: TextAlign.center,
                               ),
                             ],
                           ),

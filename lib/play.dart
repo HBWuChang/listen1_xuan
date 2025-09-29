@@ -458,14 +458,6 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
     Get.toNamed('/lyric', id: 1);
   }
 
-  /// 格式化时长
-  String formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$twoDigitMinutes:$twoDigitSeconds';
-  }
-
   late Offset position;
   final GlobalKey _buttonKey = GlobalKey();
 
@@ -1421,4 +1413,15 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       queueIndex: event.currentIndex,
     );
   }
+}
+
+/// 格式化时长
+String formatDuration(Duration duration) {
+  String twoDigits(int n) => n.toString().padLeft(2, '0');
+  String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+  String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+  if (duration.inHours > 0) {
+    return '${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds';
+  }
+  return '$twoDigitMinutes:$twoDigitSeconds';
 }
