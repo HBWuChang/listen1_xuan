@@ -1162,7 +1162,19 @@ Future<void> global_pause() async {
   Get.find<PlayController>().music_player.pause();
 }
 
-Future<void> global_seek(Duration position) async {
+Future<void> global_seek(Duration? position, {double? process}) async {
+  if (position == null && process != null) {
+    position = Duration(
+      milliseconds:
+          (process *
+                  (Get.find<PlayController>()
+                          .music_player
+                          .duration
+                          ?.inMilliseconds ??
+                      0))
+              .round(),
+    );
+  }
   Get.find<PlayController>().music_player.seek(position);
 }
 

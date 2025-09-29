@@ -28,7 +28,7 @@ class LyricController extends GetxController {
 
   /// 获取缓存控制器
   CacheController get _cacheController => Get.find<CacheController>();
-  
+
   /// 获取设置控制器
   SettingsController get _settingsController => Get.find<SettingsController>();
 
@@ -53,16 +53,19 @@ class LyricController extends GetxController {
 
       // 主歌词文件
       final lyricFileName = _getLyricCacheFileName(trackId);
-      final lyricFilePath =
-          is_windows ? '$tempPath\\$lyricFileName' : '$tempPath/$lyricFileName';
+      final lyricFilePath = is_windows
+          ? '$tempPath\\$lyricFileName'
+          : '$tempPath/$lyricFileName';
 
       if (await File(lyricFilePath).exists()) {
         result['lyric'] = await File(lyricFilePath).readAsString();
       }
 
       // 翻译歌词文件
-      final tlyricFileName =
-          _getLyricCacheFileName(trackId, isTranslation: true);
+      final tlyricFileName = _getLyricCacheFileName(
+        trackId,
+        isTranslation: true,
+      );
       final tlyricFilePath = is_windows
           ? '$tempPath\\$tlyricFileName'
           : '$tempPath/$tlyricFileName';
@@ -78,22 +81,30 @@ class LyricController extends GetxController {
   }
 
   /// 保存歌词到本地缓存
-  Future<void> _saveLyricToCache(String trackId, String lyric,
-      {bool isTranslation = false}) async {
+  Future<void> _saveLyricToCache(
+    String trackId,
+    String lyric, {
+    bool isTranslation = false,
+  }) async {
     try {
       final tempDir = await xuan_getdataDirectory();
       final tempPath = tempDir.path;
 
-      final fileName =
-          _getLyricCacheFileName(trackId, isTranslation: isTranslation);
-      final filePath =
-          is_windows ? '$tempPath\\$fileName' : '$tempPath/$fileName';
+      final fileName = _getLyricCacheFileName(
+        trackId,
+        isTranslation: isTranslation,
+      );
+      final filePath = is_windows
+          ? '$tempPath\\$fileName'
+          : '$tempPath/$fileName';
 
       await File(filePath).writeAsString(lyric);
 
       // 将歌词文件添加到缓存管理
       _cacheController.setLocalCache(
-          isTranslation ? '${trackId}_tlyric' : '${trackId}_lyric', fileName);
+        isTranslation ? '${trackId}_tlyric' : '${trackId}_lyric',
+        fileName,
+      );
     } catch (e) {
       print('保存歌词到缓存失败: $e');
     }
@@ -112,10 +123,10 @@ class LyricController extends GetxController {
 
   /// 加载歌词
   Future<void> loadLyric() async {
-    String trackId =
-        Get.find<PlayController>().getPlayerSettings("nowplaying_track_id");
+    String trackId = Get.find<PlayController>().getPlayerSettings(
+      "nowplaying_track_id",
+    );
     if (trackId.isEmpty) return;
-
     isLyricLoading.value = true;
     hasLyric.value = false;
     currentLyric.value = '';
@@ -150,8 +161,10 @@ class LyricController extends GetxController {
     // 使用 MediaService.getLyric 获取歌词
     var lyricResult;
     if (trackId.contains('kgtrack')) {
-      lyricResult = await MediaService.getLyric(trackId,
-          albumId: Get.find<PlayController>().currentTrack.album_id);
+      lyricResult = await MediaService.getLyric(
+        trackId,
+        albumId: Get.find<PlayController>().currentTrack.album_id,
+      );
     } else {
       lyricResult = await MediaService.getLyric(trackId);
     }
@@ -220,7 +233,8 @@ class LyricController extends GetxController {
 
   /// 切换翻译显示状态
   void toggleTranslation() {
-    _settingsController.showLyricTranslation.value = !_settingsController.showLyricTranslation.value;
+    _settingsController.showLyricTranslation.value =
+        !_settingsController.showLyricTranslation.value;
     _rebuildLyricModel();
   }
 
@@ -231,7 +245,8 @@ class LyricController extends GetxController {
     var builder = LyricsModelBuilder.create().bindLyricToMain(_originalLyric);
 
     // 只有在开启翻译显示且有翻译内容时才绑定翻译歌词
-    if (_settingsController.showLyricTranslation.value && _originalTranslation.isNotEmpty) {
+    if (_settingsController.showLyricTranslation.value &&
+        _originalTranslation.isNotEmpty) {
       builder = builder.bindLyricToExt(_originalTranslation);
     }
 

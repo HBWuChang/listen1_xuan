@@ -52,9 +52,14 @@ class WebSocketClientController extends GetxController {
   final RxDouble _volume = 0.5.obs;
   final RxBool _isDraggingVolume = false.obs;
 
+  /// 进度控制
+  final RxDouble setProcessTime = 0.0.obs;
+  final Rx<Duration> processTime = Duration.zero.obs;
+  final Rx<Duration> totalTime = Duration(minutes: 1).obs;
+  final RxBool _isDraggingProcess = false.obs;
+
   /// 消息控制器
   final TextEditingController messageController = TextEditingController();
-  final RxList<String> _receivedMessages = <String>[].obs;
 
   /// 播放状态数据
   final Rx<PlayStatusData?> _lastPlayStatus = Rx<PlayStatusData?>(null);
@@ -74,7 +79,6 @@ class WebSocketClientController extends GetxController {
   RxBool get wsClientBtnShowRx => _wsClientBtnShow;
   RxBool get wsClientBtnShowFloatingRx => _wsClientBtnShowFloating;
   RxBool get isReconnectingRx => _isReconnecting;
-  RxList<String> get receivedMessagesRx => _receivedMessages;
   Rx<PlayStatusData?> get lastPlayStatusRx => _lastPlayStatus;
   RxDouble get volumeRx => _volume;
   RxBool get isDraggingVolumeRx => _isDraggingVolume;
@@ -95,7 +99,6 @@ class WebSocketClientController extends GetxController {
   bool get wsClientBtnShow => _wsClientBtnShow.value;
   bool get wsClientBtnShowFloating => _wsClientBtnShowFloating.value;
   bool get isReconnecting => _isReconnecting.value;
-  List<String> get receivedMessages => _receivedMessages;
   PlayStatusData? get lastPlayStatus => _lastPlayStatus.value;
   double get volume => _volume.value;
   bool get isDraggingVolume => _isDraggingVolume.value;
@@ -136,7 +139,8 @@ class WebSocketClientController extends GetxController {
       }
 
       // 加载历史地址列表
-      final historyList = settings['wsClientHistoryAddresses'] as List<dynamic>?;
+      final historyList =
+          settings['wsClientHistoryAddresses'] as List<dynamic>?;
       if (historyList != null) {
         _historyAddresses.value = historyList.map((e) => e.toString()).toList();
       } else {
@@ -213,6 +217,11 @@ class WebSocketClientController extends GetxController {
         sendVolumeControlMessage(value);
       }
     }, time: const Duration(milliseconds: 100));
+    interval(setProcessTime, (value) {
+      if (isConnected) {
+        sendProgressControlMessage(value);
+      }
+    }, time: const Duration(milliseconds: 100));
   }
 
   @override
@@ -280,18 +289,18 @@ class WebSocketClientController extends GetxController {
   /// 添加地址到历史列表（连接成功后自动调用）
   void _addToHistoryAddresses(String address) {
     if (address.isEmpty) return;
-    
+
     // 移除已存在的相同地址
     _historyAddresses.removeWhere((item) => item == address);
-    
+
     // 将新地址添加到列表开头
     _historyAddresses.insert(0, address);
-    
+
     // 限制历史记录数量（最多保存20个）
     if (_historyAddresses.length > 20) {
       _historyAddresses.removeRange(20, _historyAddresses.length);
     }
-    
+
     // 保存到设置
     saveWebSocketClientSettings();
     _logger.i('$_tag 地址已添加到历史列表: $address');
@@ -303,19 +312,19 @@ class WebSocketClientController extends GetxController {
       _showError('地址不能为空');
       return;
     }
-    
+
     // 验证地址格式
     if (!_isValidAddress(address)) {
       _showError('地址格式不正确，应为 "IP:端口" 格式');
       return;
     }
-    
+
     _addToHistoryAddresses(address);
-    
+
     // 自动选中新添加的地址
     _serverAddress.value = address;
     saveWebSocketClientSettings();
-    
+
     _showSuccess('地址已添加并选中');
   }
 
@@ -325,35 +334,35 @@ class WebSocketClientController extends GetxController {
       _showError('索引超出范围');
       return;
     }
-    
+
     if (newAddress.isEmpty) {
       _showError('地址不能为空');
       return;
     }
-    
+
     // 验证地址格式
     if (!_isValidAddress(newAddress)) {
       _showError('地址格式不正确，应为 "IP:端口" 格式');
       return;
     }
-    
+
     final oldAddress = _historyAddresses[index];
-    
+
     // 移除新地址的其他实例
     _historyAddresses.removeWhere((item) => item == newAddress);
-    
+
     // 更新指定位置的地址
     if (index < _historyAddresses.length) {
       _historyAddresses[index] = newAddress;
     } else {
       _historyAddresses.add(newAddress);
     }
-    
+
     // 如果当前选中的是被编辑的地址，则自动更新
     if (_serverAddress.value == oldAddress) {
       _serverAddress.value = newAddress;
     }
-    
+
     // 保存到设置
     saveWebSocketClientSettings();
     _logger.i('$_tag 历史地址已更新: $oldAddress -> $newAddress');
@@ -366,10 +375,10 @@ class WebSocketClientController extends GetxController {
       _showError('索引超出范围');
       return;
     }
-    
+
     final address = _historyAddresses[index];
     _historyAddresses.removeAt(index);
-    
+
     // 保存到设置
     saveWebSocketClientSettings();
     _logger.i('$_tag 历史地址已删除: $address');
@@ -390,6 +399,29 @@ class WebSocketClientController extends GetxController {
     );
 
     return addressRegex.hasMatch(address) || hostnameRegex.hasMatch(address);
+  }
+
+  /// 开始拖动进度
+  void startDraggingProcess() {
+    _isDraggingProcess.value = true;
+  }
+
+  /// 结束拖动进度
+  void stopDraggingProcess(double newProcess) {
+    updateProcess(newProcess);
+    _isDraggingProcess.value = false;
+    // 拖动结束后发送最终的进度值
+    if (isConnected) {
+      sendProgressControlMessage(setProcessTime.value);
+    }
+  }
+
+  /// 更新进度值
+  void updateProcess(double newProcess) {
+    processTime.value = Duration(
+      milliseconds: (newProcess * totalTime.value.inMilliseconds).round(),
+    );
+    setProcessTime.value = newProcess;
   }
 
   /// 开始拖动音量
@@ -424,6 +456,22 @@ class WebSocketClientController extends GetxController {
       _logger.i('$_tag 发送音量控制命令: $volume');
     } catch (e) {
       _logger.e('$_tag 发送音量控制消息失败', error: e);
+    }
+  }
+
+  /// 发送进度控制消息
+  void sendProgressControlMessage(double progress) {
+    if (!isConnected) return;
+
+    try {
+      final message = WebSocketMessage(
+        type: 'ctrl',
+        content: 'process_${progress.toString()}',
+      );
+      _webSocket!.add(message.toJsonString());
+      _logger.i('$_tag 发送进度控制命令: $progress');
+    } catch (e) {
+      _logger.e('$_tag 发送进度控制消息失败', error: e);
     }
   }
 
@@ -727,12 +775,6 @@ class WebSocketClientController extends GetxController {
     }
   }
 
-  /// 清除消息记录
-  void clearMessages() {
-    _receivedMessages.clear();
-    _showInfo('消息记录已清除');
-  }
-
   /// 处理接收到的消息
   void _onMessage(dynamic data) {
     try {
@@ -742,15 +784,10 @@ class WebSocketClientController extends GetxController {
         message = WebSocketMessage.fromJsonString(data.toString());
       } catch (e) {
         // 如果解析失败，作为普通文本处理
-        final timestamp = DateTime.now().toIso8601String();
-        final logMessage = '[$timestamp] 收到文本: $data';
-        _receivedMessages.add(logMessage);
 
         _logger.d('$_tag 收到文本消息: $data');
         return;
       }
-
-      final timestamp = DateTime.now().toIso8601String();
 
       // 根据消息类型进行特殊处理
       switch (message.type) {
@@ -768,14 +805,12 @@ class WebSocketClientController extends GetxController {
             if (!_isDraggingVolume.value) {
               _volume.value = statusData.volume;
             }
-
-            final logMessage =
-                '[$timestamp] 播放状态: ${statusData.isPlaying ? "播放中" : "已暂停"} - ${statusData.currentTrack?.title ?? "无曲目"} - 音量: ${(statusData.volume * 100).toInt()}% - 模式: ${_getPlayModeText(statusData.playMode)}';
-            _receivedMessages.add(logMessage);
+            if (!_isDraggingProcess.value) {
+              processTime.value = statusData.processTime;
+              totalTime.value = statusData.totalTime;
+            }
             _logger.i('$_tag 收到播放状态: $statusData');
           } catch (e) {
-            final logMessage = '[$timestamp] 状态消息解析失败: ${message.content}';
-            _receivedMessages.add(logMessage);
             _logger.w('$_tag 状态消息解析失败', error: e);
           }
           break;
@@ -808,41 +843,20 @@ class WebSocketClientController extends GetxController {
 
         case WebSocketMessageType.welcome:
           // 处理欢迎消息
-          final contentMap = message.parseContentAsMap();
-          final welcomeMsg = contentMap?['message'] ?? '连接成功';
-          final logMessage = '[$timestamp] 欢迎消息: $welcomeMsg';
-          _receivedMessages.add(logMessage);
           break;
         case WebSocketMessageType.error:
           // 处理错误消息
-          final contentMap = message.parseContentAsMap();
-          final errorMsg = contentMap?['error'] ?? message.content;
-          final logMessage = '[$timestamp] 错误: $errorMsg';
-          _receivedMessages.add(logMessage);
           break;
         case WebSocketMessageType.pong:
           // 处理 pong 消息
-          final logMessage = '[$timestamp] 收到心跳响应';
-          _receivedMessages.add(logMessage);
           break;
         default:
           // 处理其他类型消息
-          final logMessage =
-              '[$timestamp] 收到 ${message.type}: ${message.content}';
-          _receivedMessages.add(logMessage);
-      }
-
-      // 限制消息记录数量
-      if (_receivedMessages.length > 100) {
-        _receivedMessages.removeAt(0);
+          break;
       }
 
       _logger.d('$_tag 收到消息: ${message.type}');
     } catch (e) {
-      final timestamp = DateTime.now().toIso8601String();
-      final logMessage = '[$timestamp] 消息处理失败: $data';
-      _receivedMessages.add(logMessage);
-
       _logger.e('$_tag 消息处理失败', error: e);
     }
   }
@@ -943,20 +957,6 @@ class WebSocketClientController extends GetxController {
       } else {
         _statusMessage.value = '未连接';
       }
-    }
-  }
-
-  /// 获取播放模式文本描述
-  String _getPlayModeText(int playMode) {
-    switch (playMode) {
-      case 0:
-        return '循环播放';
-      case 1:
-        return '随机播放';
-      case 2:
-        return '单曲循环';
-      default:
-        return '未知模式';
     }
   }
 

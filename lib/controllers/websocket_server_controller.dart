@@ -360,7 +360,17 @@ class WebSocketServerController extends GetxController {
               return;
             }
           }
-
+          if (command.startsWith('process_')) {
+            final processValue = double.tryParse(command.substring(8));
+            if (processValue != null &&
+                processValue >= 0.0 &&
+                processValue <= 1.0) {
+              // 这是进度控制命令
+              _logger.i('$_tag 收到进度控制命令: $processValue');
+              global_seek(null, process: processValue);
+              return;
+            }
+          }
           // 尝试解析为音量控制命令
           final volumeValue = double.tryParse(command);
           if (volumeValue != null && volumeValue >= 0.0 && volumeValue <= 1.0) {
@@ -674,7 +684,7 @@ class WebSocketServerController extends GetxController {
           final cacheController = Get.find<CacheController>();
 
           // 获取所有缓存项的 key 列表
-          final cacheKeys =await cacheController.localCacheList();
+          final cacheKeys = await cacheController.localCacheList();
 
           request.response
             ..statusCode = HttpStatus.ok
