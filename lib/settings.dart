@@ -260,7 +260,11 @@ Map<String, dynamic> settings_getsettings() {
   return Get.find<SettingsController>().settings;
 }
 
-String? outputPlatformToken(String platform) {
+Future<String?> outputPlatformToken(String platform) async {
+  if (platform == 'github') {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('githubOauthAccessKey');
+  }
   return Get.find<SettingsController>().settings[platform];
 }
 
@@ -269,6 +273,11 @@ Future<void> savePlatformToken(
   String token, {
   bool saveRightNow = true,
 }) async {
+  if (platform == 'github') {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('githubOauthAccessKey', token);
+    return;
+  }
   final settings = Get.find<SettingsController>().settings;
   settings[platform] = token;
   if (saveRightNow) Get.find<SettingsController>().saveSettings();

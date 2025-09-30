@@ -226,7 +226,7 @@ class WebSocketServerController extends GetxController {
           }
           Map<String, String> cookiesMap = {};
           for (var k in toOpr) {
-            final token = outputPlatformToken(k);
+            final token = await outputPlatformToken(k);
             if (token != null) {
               cookiesMap[k] = token;
             }

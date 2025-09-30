@@ -219,6 +219,7 @@ Map<String, String> getCookieCommandsMap = {
   '哔哩哔哩': GetCookieCommands.bl,
   '网易云音乐': GetCookieCommands.ne,
   'QQ音乐': GetCookieCommands.qq,
+  'Github': GetCookieCommands.github,
 };
 
 class GetCookieCommands {
@@ -226,7 +227,8 @@ class GetCookieCommands {
   static const String bl = 'bl';
   static const String ne = 'ne';
   static const String qq = 'qq';
-  static const List<String> values = [bl, ne, qq];
+  static const String github = 'github';
+  static const List<String> values = [bl, ne, qq, github];
 }
 
 /// WebSocket 消息构建器
