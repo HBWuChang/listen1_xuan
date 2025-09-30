@@ -85,3 +85,19 @@ void showSuccessSnackbar(String title, String message,
     debugPrint("Error showing snackbar: $e");
   }
 }
+bool isEmpty(dynamic str) {
+  if (str == null) return true;
+  if (str is String) {
+    return str.trim().isEmpty;
+  }
+  if (str is List) {
+    return str.isEmpty;
+  }
+  if (str is int) {
+    return str <= 0;
+  }
+  // if (str is double) {
+  //   return str <= 0.0;
+  // }
+  return str == null;
+}

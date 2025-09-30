@@ -1720,6 +1720,19 @@ class _SettingsPageState extends State<SettingsPage> {
                       },
                     ),
                   ),
+                if (!is_windows)
+                  Obx(
+                    () => SwitchListTile(
+                      title: const Text('尝试在通知中显示歌词'),
+                      value: Get.find<SettingsController>()
+                          .tryShowLyricInNotification,
+                      onChanged: (bool value) {
+                        Get.find<SettingsController>()
+                                .tryShowLyricInNotification =
+                            value;
+                      },
+                    ),
+                  ),
                 SizedBox(height: 16),
                 if (is_windows)
                   FutureBuilder(

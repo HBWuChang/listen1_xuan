@@ -227,8 +227,6 @@ class _WebSocketClientControlContentState
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16),
-
                 // 歌曲信息卡片
                 if (playStatus?.currentTrack != null) ...[
                   Card(

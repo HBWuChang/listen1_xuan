@@ -11,6 +11,13 @@ import 'myPlaylist_controller.dart';
 
 class SettingsController extends GetxController {
   var settings = <String, dynamic>{}.obs;
+  
+  bool get tryShowLyricInNotification =>
+      settings['tryShowLyricInNotification'] ?? true;
+  set tryShowLyricInNotification(bool value) {
+    settings['tryShowLyricInNotification'] = value;
+  }
+
   var showLyricTranslation = true.obs; // 歌词翻译显示设置
   // var hideOrMinimize = false.obs;
   bool get hideOrMinimize => settings['hideOrMinimize'] ?? false;
@@ -45,12 +52,14 @@ class SettingsController extends GetxController {
     }
     // 加载 showLyricTranslation 的值
     showLyricTranslation.value = settings['showLyricTranslation'] ?? true;
-    final localCacheListJson =
-        prefs.getString(CacheController_localCacheListKey);
+    final localCacheListJson = prefs.getString(
+      CacheController_localCacheListKey,
+    );
     if (localCacheListJson != null) {
       final localCacheList = jsonDecode(localCacheListJson);
       CacheController_localCacheList.assignAll(
-          Map<String, String>.from(localCacheList));
+        Map<String, String>.from(localCacheList),
+      );
     } else {
       CacheController_localCacheList.clear();
     }
@@ -74,17 +83,20 @@ class SettingsController extends GetxController {
     for (var playlist in playlists ?? []) {
       final playlistJson = prefs.getString(playlist);
       if (playlistJson != null) {
-        MyPlayListController_playerlists[playlist] =
-            PlayList.fromJson(jsonDecode(playlistJson));
+        MyPlayListController_playerlists[playlist] = PlayList.fromJson(
+          jsonDecode(playlistJson),
+        );
       }
     }
-    List<String>? favoritePlaylists =
-        prefs.getStringList('favoriteplayerlists');
+    List<String>? favoritePlaylists = prefs.getStringList(
+      'favoriteplayerlists',
+    );
     for (var playlist in favoritePlaylists ?? []) {
       final playlistJson = prefs.getString(playlist);
       if (playlistJson != null) {
-        MyPlayListController_favoriteplayerlists[playlist] =
-            PlayList.fromJson(jsonDecode(playlistJson));
+        MyPlayListController_favoriteplayerlists[playlist] = PlayList.fromJson(
+          jsonDecode(playlistJson),
+        );
       }
     }
   }

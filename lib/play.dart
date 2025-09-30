@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:flutter_lyric/lyrics_reader_model.dart';
 import 'package:listen1_xuan/bodys.dart';
+import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/nowplaying_controller.dart';
 import 'package:listen1_xuan/main.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:extended_image/extended_image.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:media_kit/generated/libmpv/bindings.dart';
 import 'package:rxdart/rxdart.dart' as rxdart;
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -179,8 +182,28 @@ Future<void> bind_smtc() async {
   }
 }
 
-Future<void> change_playback_state(Track track) async {
+MediaItem? _currentMediaItem;
+Future<void> change_playback_state(
+  Track? track, {
+  LyricsLineModel? lyric,
+}) async {
   try {
+    if (lyric != null) {
+      if (_currentMediaItem == null) return;
+      MediaItem _item = _currentMediaItem!.copyWith(
+        displayTitle: lyric.mainText,
+        // displaySubtitle: lyric.extText,
+      );
+      if (Get.find<SettingsController>().showLyricTranslation.value) {
+        _item = _item.copyWith(
+          displaySubtitle: lyric.hasExt ? lyric.extText : null,
+        );
+      }
+      (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
+          .change_playbackstate(_item);
+      return;
+    }
+    if (track == null) return;
     debugPrint('开始更新播放状态');
     broadcastWs();
     // 使用 Completer 来等待 _duration 被赋值
@@ -197,8 +220,7 @@ Future<void> change_playback_state(Track track) async {
     // 获取音频文件的时长
 
     final _duration = await Get.find<PlayController>().music_player.duration;
-    print(_duration);
-    dynamic _item;
+    MediaItem _item;
     _item = MediaItem(
       id: track.id,
       title: track.title!,
@@ -210,6 +232,7 @@ Future<void> change_playback_state(Track track) async {
       ),
       duration: _duration,
     );
+    _currentMediaItem = _item;
     (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
         .change_playbackstate(_item);
     // smtc.updateMetadata(

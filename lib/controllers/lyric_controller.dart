@@ -1,12 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_lyric/lyrics_reader_model.dart';
 import 'package:flutter_lyric/lyrics_model_builder.dart';
 import 'dart:io';
+import '../funcs.dart';
 import '../loweb.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/cache_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../global_settings_animations.dart';
+import '../play.dart';
 
 class LyricController extends GetxController {
   // 歌词显示相关
@@ -14,6 +17,7 @@ class LyricController extends GetxController {
   var translationLyric = ''.obs;
   var isLyricLoading = false.obs;
   var hasLyric = false.obs;
+  final updFormatShowLyric = LyricsLineModel().obs;
   // showTranslation 已移至 SettingsController
 
   // 歌词解析相关
@@ -119,6 +123,12 @@ class LyricController extends GetxController {
         _updateCurrentLyric(position);
       }
     });
+    ever(updFormatShowLyric, (value) {
+      if (is_windows) return;
+      if (!value.hasMain) return;
+      if (!_settingsController.tryShowLyricInNotification) return;
+      change_playback_state(null, lyric: value);
+    });
   }
 
   /// 加载歌词
@@ -205,9 +215,26 @@ class LyricController extends GetxController {
     hasLyric.value = true;
   }
 
+  String formatShowLyric(LyricsLineModel? line) {
+    if (line == null) return '';
+    String mainText = line.mainText ?? '';
+    String extText = line.extText ?? '';
+
+    if (_settingsController.showLyricTranslation.value && !isEmpty(extText)) {
+      return '$mainText\n$extText';
+    } else {
+      return mainText;
+    }
+  }
+
   /// 更新当前显示的歌词
   void _updateCurrentLyric(Duration position) {
     if (lyricModel == null) return;
+    LyricsLineModel? line =
+        lyricModel!.lyrics[lyricModel!.getCurrentLine(position.inMilliseconds)];
+    // debugPrint('更新歌词: ${formatShowLyric(line)}');
+    // updFormatShowLyric.value = formatShowLyric(line);
+    updFormatShowLyric.value = line ?? LyricsLineModel();
 
     // 这里可以添加更复杂的歌词高亮逻辑
     // 目前只是简单的存储，实际的歌词高亮由 flutter_lyric 组件处理
