@@ -710,10 +710,9 @@ packages:
   install_plugin:
     dependency: "direct main"
     description:
-      name: install_plugin
-      sha256: "6fb67ba0781e75de4f2f2266ed25e835bfd277c5bfc2ed034af52774355857c6"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/install_plugin-2.1.0"
+      relative: true
+    source: path
     version: "2.1.0"
   intl:
     dependency: transitive
