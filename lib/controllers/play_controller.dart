@@ -13,10 +13,18 @@ import 'websocket_card_controller.dart';
 
 class PlayController extends GetxController {
   final music_player = AudioPlayer();
-  var _player_settings = <String, dynamic>{}.obs;
-  var _current_playing = <Track>[].obs;
+  final _player_settings = <String, dynamic>{}.obs;
+  final _current_playing = <Track>[].obs;
+
+  final _next_track = Rx<Track?>(null);
+  set nextTrack(Track? track) {
+    _next_track.value = track;
+  }
+
+  Track? get nextTrack => _next_track.value;
 
   var isplaying = false.obs;
+
   double get currentVolume => (_player_settings['volume'] ?? 50.0) / 100.0;
   set currentVolume(double value) {
     _player_settings['volume'] = value * 100.0;

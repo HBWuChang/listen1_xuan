@@ -700,6 +700,25 @@ class WebSocketClientController extends GetxController {
     }
   }
 
+  void sendTrackNextMessage(Track trackData) {
+    if (!isConnected) {
+      _showError('未连接到服务器');
+      return;
+    }
+
+    try {
+      final trackMessage = WebSocketMessageBuilder.createTrackNextMessage(
+        trackData,
+      );
+      _webSocket!.add(trackMessage.toJsonString());
+
+      _logger.i('$_tag 发送播放下一首歌曲命令');
+    } catch (e) {
+      _showError('发送播放歌曲命令失败: $e');
+      _logger.e('$_tag 发送播放歌曲命令失败', error: e);
+    }
+  }
+
   /// 发送获取指定平台cookie信息
   void sendGetCookieMessage() async {
     if (!isConnected) {

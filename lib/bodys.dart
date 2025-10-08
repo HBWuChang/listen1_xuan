@@ -113,16 +113,34 @@ Future<dynamic> song_dialog(
               ),
               Obx(
                 () => Get.find<WebSocketClientController>().isConnected
-                    ? ListTile(
-                        title: Text('发送到被控端'),
-                        onTap: () {
-                          WebSocketClientHelper.sendTrack(track);
-                          Navigator.of(context).pop();
-                          WebSocketClientHelper.showControlPanel();
-                        },
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: ListTile(
+                              title: Text('发送到被控端'),
+                              onTap: () {
+                                WebSocketClientHelper.sendTrack(track);
+                                Navigator.of(context).pop();
+                                WebSocketClientHelper.showControlPanel();
+                              },
+                            ),
+                          ),
+                          Flexible(
+                            child: ListTile(
+                              title: Text('发送到被控端下一首'),
+                              onTap: () {
+                                WebSocketClientHelper.sendNextTrack(track);
+                                xuan_toast(msg: '已发送');
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          ),
+                        ],
                       )
                     : SizedBox.shrink(),
               ),
+
               ListTile(
                 title: Text('搜索此音乐'),
                 onTap: () {
@@ -196,14 +214,32 @@ Future<dynamic> song_dialog(
                   ),
                 ],
               ),
-              ListTile(
-                title: Text('添加到当前播放列表'),
-                onTap: () {
-                  add_current_playing([track]);
-                  xuan_toast(msg: '已添加到当前播放列表');
-                  Navigator.of(context).pop();
-                },
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: ListTile(
+                      title: Text('添加到当前播放列表'),
+                      onTap: () {
+                        add_current_playing([track]);
+                        xuan_toast(msg: '已添加到当前播放列表');
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: ListTile(
+                      title: Text('下一首播放'),
+                      onTap: () {
+                        Get.find<PlayController>().nextTrack = track;
+                        xuan_toast(msg: '已添加到下一首播放');
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
+                ],
               ),
+
               ListTile(
                 title: Text('添加到歌单'),
                 onTap: () {

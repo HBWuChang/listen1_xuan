@@ -63,6 +63,11 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
   if (current_playing.length == 1 && force_next) {
     return;
   }
+  if (Get.find<PlayController>().nextTrack != null) {
+    await playsong(Get.find<PlayController>().nextTrack!);
+    Get.find<PlayController>().nextTrack = null;
+    return;
+  }
   if (nowplaying_track['index'] != -1) {
     final index = nowplaying_track['index'];
     switch (playmode.value) {

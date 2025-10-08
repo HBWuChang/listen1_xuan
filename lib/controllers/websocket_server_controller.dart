@@ -198,6 +198,9 @@ class WebSocketServerController extends GetxController {
         case WebSocketMessageType.track:
           _handleTrackMessage(connection, message);
           break;
+        case WebSocketMessageType.trackNext:
+          _handleTrackNextMessage(connection, message);
+          break;
         case WebSocketMessageType.pong:
           connection.lastPong = DateTime.now();
           _logger.d('$_tag 收到 pong from ${connection.id}');
@@ -447,6 +450,32 @@ class WebSocketServerController extends GetxController {
         '开始播放歌曲: ${track.title} - ${track.artist}',
       );
       _sendMessage(connection, successMessage);
+
+      _logger.i('$_tag 播放歌曲命令已执行: ${track.title}');
+    } catch (e) {
+      _logger.e('$_tag 处理播放歌曲消息失败', error: e);
+      final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+        '播放歌曲失败: $e',
+      );
+      _sendMessage(connection, errorMessage);
+    }
+  }
+
+  void _handleTrackNextMessage(
+    WebSocketConnection connection,
+    WebSocketMessage message,
+  ) {
+    try {
+      _logger.i('$_tag 收到播放下一首请求 from ${connection.id}');
+
+      // 解析歌曲数据
+      final trackData = json.decode(message.content);
+
+      // 将Map转换为Track对象
+      final track = Track.fromJson(trackData);
+
+      _logger.i('$_tag 准备播放歌曲: ${track.title} - ${track.artist}');
+      Get.find<PlayController>().nextTrack = track;
 
       _logger.i('$_tag 播放歌曲命令已执行: ${track.title}');
     } catch (e) {

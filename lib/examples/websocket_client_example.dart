@@ -1355,4 +1355,14 @@ class WebSocketClientHelper {
       print('发送歌曲播放请求失败: $e');
     }
   }
+
+  /// 发送播放指定歌曲的消息
+  static void sendNextTrack(dynamic trackData) {
+    try {
+      final controller = Get.find<WebSocketClientController>();
+      controller.sendTrackNextMessage(trackData);
+    } catch (e) {
+      print('发送歌曲播放请求失败: $e');
+    }
+  }
 }

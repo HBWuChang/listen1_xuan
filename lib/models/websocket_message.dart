@@ -181,6 +181,7 @@ class WebSocketMessageType {
 
   /// 播放指定歌曲消息
   static const String track = 'track';
+  static const String trackNext = 'trackNext';
 
   /// 心跳消息
   static const String ping = 'ping';
@@ -322,6 +323,14 @@ class WebSocketMessageBuilder {
     final trackJson = jsonEncode(trackData.toJson());
     return WebSocketMessage(
       type: WebSocketMessageType.track,
+      content: trackJson,
+    );
+  }
+
+  static WebSocketMessage createTrackNextMessage(Track trackData) {
+    final trackJson = jsonEncode(trackData.toJson());
+    return WebSocketMessage(
+      type: WebSocketMessageType.trackNext,
       content: trackJson,
     );
   }
