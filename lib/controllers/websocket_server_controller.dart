@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:get/get.dart';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 import '../models/websocket_message.dart';
 import '../settings.dart';
+import 'BroadcastWsController.dart';
 import 'play_controller.dart';
 import '../play.dart';
 import 'settings_controller.dart';
@@ -76,7 +78,7 @@ class WebSocketServerController extends GetxController {
 
       _isRunning.value = true;
       _logger.i('$_tag WebSocket 服务器启动成功: $serverUrl');
-
+      Get.find<BroadcastWsController>().startBroadcast('$_host:$_port');
       // 监听请求
       _server!.listen((HttpRequest request) async {
         if (WebSocketTransformer.isUpgradeRequest(request)) {
@@ -113,6 +115,11 @@ class WebSocketServerController extends GetxController {
 
   /// 停止 WebSocket 服务器
   Future<void> stopServer() async {
+    try {
+      Get.find<BroadcastWsController>().stopBroadcast();
+    } catch (e) {
+      showErrorSnackbar('停止地址广播失败', e.toString());
+    }
     if (!_isRunning.value) {
       return;
     }

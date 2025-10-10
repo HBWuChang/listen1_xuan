@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/BroadcastWsController.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 import '../controllers/play_controller.dart';
@@ -301,6 +303,7 @@ class WebSocketMessageBuilder {
     return WebSocketMessage.withContent(WebSocketMessageType.welcome, {
       'message': '连接成功！',
       'clientId': clientId,
+      'deviceId': Get.find<BroadcastWsController>().deviceId,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     });
   }

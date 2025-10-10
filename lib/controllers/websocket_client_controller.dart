@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
@@ -41,6 +43,8 @@ class WebSocketClientController extends GetxController {
 
   /// 历史地址管理
   final RxList<String> _historyAddresses = <String>[].obs;
+  final RxString lastConnectedDeviceId = ''.obs;
+  final RxString lastConnectedDeviceNewAddr = ''.obs;
 
   /// 连接管理
   final RxBool _isReconnecting = false.obs;
@@ -146,7 +150,7 @@ class WebSocketClientController extends GetxController {
       } else {
         _historyAddresses.value = [];
       }
-
+      lastConnectedDeviceId.value = settings['lastConnectedDeviceId'] ?? '';
       _logger.i('$_tag 客户端配置加载完成: 自动启动=$wsClientAutoStart, 地址=$serverAddress');
     } catch (e) {
       _logger.w('$_tag 客户端配置加载失败: $e');
@@ -222,6 +226,9 @@ class WebSocketClientController extends GetxController {
         sendProgressControlMessage(value);
       }
     }, time: const Duration(milliseconds: 100));
+    ever(lastConnectedDeviceId, (value) {
+      Get.find<SettingsController>().settings['lastConnectedDeviceId'] = value;
+    });
   }
 
   @override
@@ -862,6 +869,12 @@ class WebSocketClientController extends GetxController {
 
         case WebSocketMessageType.welcome:
           // 处理欢迎消息
+          if (message.content.isNotEmpty) {
+            String deviceId = jsonDecode(message.content)['deviceId'] ?? '';
+            if (!isEmpty(deviceId)) {
+              lastConnectedDeviceId.value = deviceId;
+            }
+          }
           break;
         case WebSocketMessageType.error:
           // 处理错误消息

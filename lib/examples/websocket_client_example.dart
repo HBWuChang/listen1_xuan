@@ -656,29 +656,6 @@ class _WebSocketClientControlContentState
                     children: [
                       // 服务器地址历史列表和管理
                       _buildServerAddressSection(ctrl),
-                      const SizedBox(height: 12),
-                      // 扫描二维码按钮（仅在Android显示）
-                      if (Platform.isAndroid)
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: ctrl.isConnected ? null : _scanQRCode,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange.withOpacity(0.1),
-                              foregroundColor: Colors.orange,
-                              elevation: 0,
-                              side: BorderSide(
-                                color: Colors.orange.withOpacity(0.3),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            icon: const Icon(Icons.qr_code_scanner, size: 20),
-                            label: const Text('扫描服务器二维码'),
-                          ),
-                        ),
                     ],
                   ),
                 ]),
@@ -837,6 +814,30 @@ class _WebSocketClientControlContentState
                 '服务器地址',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
+              if (!controller.isConnected)
+                Obx(
+                  () => controller.lastConnectedDeviceNewAddr.value.isNotEmpty
+                      ? Flexible(
+                          child: TextButton.icon(
+                            onPressed: () {
+                              controller.updateServerAddress(
+                                controller.lastConnectedDeviceNewAddr.value,
+                              );
+                              controller.lastConnectedDeviceNewAddr.value = '';
+                            },
+                            icon: const Icon(Icons.update, size: 18),
+                            label: const Text('更新为上次连接设备地址'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                            ),
+                          ),
+                        )
+                      : SizedBox.shrink(),
+                ),
               if (!controller.isConnected)
                 TextButton.icon(
                   onPressed: () => _showAddAddressDialog(),

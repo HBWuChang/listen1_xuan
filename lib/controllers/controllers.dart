@@ -13,3 +13,5 @@ export 'websocket_card_controller.dart';
 export 'websocket_client_controller.dart';
 export 'appLinksController.dart';
 export 'DownloadController.dart';
+export 'BroadcastWsController.dart';
+export 'ScanBroadcastController.dart';

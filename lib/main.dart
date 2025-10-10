@@ -234,6 +234,8 @@ void main() async {
   Get.put(AudioHandlerController(), permanent: true);
   Get.put(LyricController(), permanent: true);
   Get.put(NowPlayingController(), permanent: true);
+  Get.put(BroadcastWsController(), permanent: true);
+  Get.put(ScanBroadcastController(), permanent: true);
   Get.put(DownloadController(), permanent: true);
   Get.put(Applinkscontroller(), permanent: true);
 

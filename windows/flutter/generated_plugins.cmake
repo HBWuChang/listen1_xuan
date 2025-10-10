@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   audioplayers_windows
+  bonsoir_windows
   charset_converter
   connectivity_plus
   dynamic_color
