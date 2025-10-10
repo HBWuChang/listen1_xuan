@@ -479,13 +479,13 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
         "currentIndex: $currentIndex, sources.length: ${sources.length}",
       );
       currentIndex = currentIndex + 1;
-      source = sources[currentIndex];
+      source.value = sources[currentIndex];
       show_filter.value = show_filters[currentIndex];
       _selectedIndex.value = currentIndex;
     });
     _pageControllerPortrait.addListener(() {
       int index = _pageControllerPortrait.page!.round();
-      source = sources[index];
+      source.value = sources[index];
       show_filter.value = show_filters[index];
       _selectedIndex.value = index;
     });
@@ -539,11 +539,11 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   var _selectedIndex = 0.obs;
   List<int> offsets = List.generate(sources.length, (i) => 0);
   bool main_is_my = false;
-  String source = 'myplaylist';
-  List<Map<String, dynamic>> filters = List.generate(
+  final source = 'myplaylist'.obs;
+  RxList<Map<String, dynamic>> filters = List.generate(
     sources.length,
-    (i) => {'id': '', 'name': '全部'},
-  );
+    (i) => {'id': 1, 'name': '全部'},
+  ).obs;
   var show_filter = false.obs;
   // bool show_more = false;
   List<Map<String, dynamic>> filter_details = List.generate(
@@ -566,7 +566,10 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   void change_fliter(dynamic id, String name) {
     print('change_fliter{id: $id, name: $name}');
     play_list_setstate(() {
-      filters[sources.indexOf(source)] = {'id': id, 'name': name};
+      filters[sources.indexOf(source.value)] = (Map<String, Object>.from({
+        'id': id,
+        'name': name,
+      }));
     });
   }
 
@@ -917,53 +920,65 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                               context,
                                                             ).size.width -
                                                             200,
-                                                        child: Obx(
-                                                          () => Stack(
-                                                            children: [
-                                                              Positioned(
-                                                                top: 0,
-                                                                child: Container(
-                                                                  height: 40,
-                                                                  width:
-                                                                      MediaQuery.of(
-                                                                        context,
-                                                                      ).size.width -
-                                                                      300,
-                                                                  child: AnimatedTabBarWidget(
-                                                                    pageController:
-                                                                        _pageControllerHorizon,
-                                                                    tabLabels: platforms
-                                                                        .sublist(
-                                                                          1,
-                                                                        )
-                                                                        .map(
-                                                                          (
-                                                                            platform,
-                                                                          ) => TextSpan(
-                                                                            text:
-                                                                                platform,
-                                                                          ),
-                                                                        )
-                                                                        .toList(),
-                                                                    containerHeight:
-                                                                        40,
-                                                                    spacing: 0,
-                                                                  ),
+                                                        child: Stack(
+                                                          children: [
+                                                            Positioned(
+                                                              top: 0,
+                                                              child: Container(
+                                                                height: 40,
+                                                                width:
+                                                                    MediaQuery.of(
+                                                                      context,
+                                                                    ).size.width -
+                                                                    300,
+                                                                child: AnimatedTabBarWidget(
+                                                                  pageController:
+                                                                      _pageControllerHorizon,
+                                                                  tabLabels: platforms
+                                                                      .sublist(
+                                                                        1,
+                                                                      )
+                                                                      .map(
+                                                                        (
+                                                                          platform,
+                                                                        ) => TextSpan(
+                                                                          text:
+                                                                              platform,
+                                                                        ),
+                                                                      )
+                                                                      .toList(),
+                                                                  containerHeight:
+                                                                      40,
+                                                                  spacing: 0,
                                                                 ),
                                                               ),
-                                                              if (show_filter
-                                                                  .value)
-                                                                Positioned(
-                                                                  top:
-                                                                      is_windows
-                                                                      ? 5
-                                                                      : -5,
-                                                                  right: 20,
+                                                            ),
+
+                                                            Positioned(
+                                                              top: is_windows
+                                                                  ? 5
+                                                                  : -5,
+                                                              right: 20,
+                                                              child: Obx(
+                                                                () => AnimatedOpacity(
+                                                                  opacity:
+                                                                      show_filter
+                                                                          .value
+                                                                      ? 1.0
+                                                                      : 0.0,
+                                                                  duration:
+                                                                      const Duration(
+                                                                        milliseconds:
+                                                                            300,
+                                                                      ),
                                                                   child: TextButton(
-                                                                    child: Text(
-                                                                      filters[sources.indexOf(
-                                                                        source,
-                                                                      )]['name'],
+                                                                    child: Obx(
+                                                                      () => Text(
+                                                                        filters[sources.indexOf(
+                                                                          source
+                                                                              .value,
+                                                                        )]['name'],
+                                                                      ),
                                                                     ),
                                                                     onPressed: () {
                                                                       Map<
@@ -985,15 +1000,17 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                                         context_in_1,
                                                                         tfilter,
                                                                         filters[sources.indexOf(
-                                                                          source,
+                                                                          source
+                                                                              .value,
                                                                         )]['id'],
                                                                         change_fliter,
                                                                       );
                                                                     },
                                                                   ),
                                                                 ),
-                                                            ],
-                                                          ),
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ),
                                                       ),
                                                     ],
@@ -1096,60 +1113,73 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                             children: [
                                               Container(
                                                 height: 45,
-                                                child: Obx(
-                                                  () => Row(
-                                                    children: [
-                                                      Expanded(
-                                                        child: AnimatedTabBarWidget(
-                                                          pageController:
-                                                              _pageControllerPortrait,
-                                                          tabLabels: platforms
-                                                              .map(
-                                                                (
-                                                                  platform,
-                                                                ) => TextSpan(
-                                                                  text:
-                                                                      platform,
-                                                                ),
-                                                              )
-                                                              .toList(),
-                                                          containerHeight: 45,
-                                                          spacing: 0,
-                                                        ),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: AnimatedTabBarWidget(
+                                                        pageController:
+                                                            _pageControllerPortrait,
+                                                        tabLabels: platforms
+                                                            .map(
+                                                              (
+                                                                platform,
+                                                              ) => TextSpan(
+                                                                text: platform,
+                                                              ),
+                                                            )
+                                                            .toList(),
+                                                        containerHeight: 45,
+                                                        spacing: 0,
                                                       ),
-                                                      if (show_filter.value)
-                                                        TextButton(
-                                                          child: Text(
-                                                            filters[sources
-                                                                .indexOf(
-                                                                  source,
-                                                                )]['name'],
-                                                          ),
-                                                          onPressed: () {
-                                                            Map<String, dynamic>
-                                                            tfilter = {};
-                                                            tfilter["推荐"] =
-                                                                filter_details[_selectedIndex
-                                                                    .value]["recommend"];
-                                                            for (var item
-                                                                in filter_details[_selectedIndex
-                                                                    .value]["all"]) {
-                                                              tfilter[item["category"]] =
-                                                                  item["filters"];
-                                                            }
-                                                            _showFilterSelection(
-                                                              context_in_1,
-                                                              tfilter,
-                                                              filters[sources
-                                                                  .indexOf(
-                                                                    source,
-                                                                  )]['id'],
-                                                              change_fliter,
-                                                            );
-                                                          },
-                                                        ),
-                                                    ],
-                                                  ),
+                                                    ),
+                                                    Obx(
+                                                      () => AnimatedSize(
+                                                        duration:
+                                                            const Duration(
+                                                              milliseconds: 300,
+                                                            ),
+                                                        child: show_filter.value
+                                                            ? TextButton(
+                                                                child: Obx(
+                                                                  () => Text(
+                                                                    filters[sources
+                                                                        .indexOf(
+                                                                          source
+                                                                              .value,
+                                                                        )]['name'],
+                                                                  ),
+                                                                ),
+                                                                onPressed: () {
+                                                                  Map<
+                                                                    String,
+                                                                    dynamic
+                                                                  >
+                                                                  tfilter = {};
+                                                                  tfilter["推荐"] =
+                                                                      filter_details[_selectedIndex
+                                                                          .value]["recommend"];
+                                                                  for (var item
+                                                                      in filter_details[_selectedIndex
+                                                                          .value]["all"]) {
+                                                                    tfilter[item["category"]] =
+                                                                        item["filters"];
+                                                                  }
+                                                                  _showFilterSelection(
+                                                                    context_in_1,
+                                                                    tfilter,
+                                                                    filters[sources
+                                                                        .indexOf(
+                                                                          source
+                                                                              .value,
+                                                                        )]['id'],
+                                                                    change_fliter,
+                                                                  );
+                                                                },
+                                                              )
+                                                            : SizedBox.shrink(),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                               // 长灰色细分割线
