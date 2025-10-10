@@ -106,18 +106,6 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
-late SendPort download_sendport;
-var download_receiveport = ReceivePort();
-
-Future<bool> add_to_download_tasks(List<String> download_tasks) async {
-  try {
-    download_sendport.send(download_tasks);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
 @pragma('vm:entry-point')
 void downloadtasks_background(SendPort mainPort) async {
   Future get_download_tasks() async {
@@ -447,19 +435,6 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
       _init();
       init_hotkeys();
     }
-
-    download_receiveport.listen((message) {
-      if (message is SendPort) {
-        print('download_sendport初始化');
-        download_sendport = message;
-      }
-    });
-    if (!is_windows)
-      FlutterIsolate.spawn(
-        downloadtasks_background,
-        download_receiveport.sendPort,
-      );
-
     init_playlist_filters();
     Get.find<Applinkscontroller>().xshow = xshow;
   }
@@ -540,9 +515,9 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   List<int> offsets = List.generate(sources.length, (i) => 0);
   bool main_is_my = false;
   final source = 'myplaylist'.obs;
-  RxList<Map<String, dynamic>> filters = List.generate(
+  RxList<Map<String, dynamic>> filters = List<Map<String, dynamic>>.generate(
     sources.length,
-    (i) => {'id': 1, 'name': '全部'},
+    (i) => {'id': '', 'name': '全部'},
   ).obs;
   var show_filter = false.obs;
   // bool show_more = false;
@@ -561,16 +536,12 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     }
   }
 
-  var play_list_setstate;
-
   void change_fliter(dynamic id, String name) {
     print('change_fliter{id: $id, name: $name}');
-    play_list_setstate(() {
-      filters[sources.indexOf(source.value)] = (Map<String, Object>.from({
-        'id': id,
-        'name': name,
-      }));
-    });
+    filters[sources.indexOf(source.value)] = (Map<String, Object>.from({
+      'id': id,
+      'name': name,
+    }));
   }
 
   void change_main_status(
@@ -690,6 +661,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
             debugPrint('当前为竖屏模式');
             SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
           }
+          source.value = sources[_selectedIndex.value];
           bool flag = false;
           if (orientation == Orientation.portrait) {
             // 竖屏逻辑
@@ -980,32 +952,32 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                                         )]['name'],
                                                                       ),
                                                                     ),
-                                                                    onPressed: () {
-                                                                      Map<
-                                                                        String,
-                                                                        dynamic
-                                                                      >
-                                                                      tfilter =
-                                                                          {};
-                                                                      tfilter["推荐"] =
-                                                                          filter_details[_selectedIndex
-                                                                              .value]["recommend"];
-                                                                      for (var item
-                                                                          in filter_details[_selectedIndex
-                                                                              .value]["all"]) {
-                                                                        tfilter[item["category"]] =
-                                                                            item["filters"];
-                                                                      }
-                                                                      _showFilterSelection(
-                                                                        context_in_1,
-                                                                        tfilter,
-                                                                        filters[sources.indexOf(
-                                                                          source
-                                                                              .value,
-                                                                        )]['id'],
-                                                                        change_fliter,
-                                                                      );
-                                                                    },
+                                                                    onPressed:
+                                                                        show_filter
+                                                                            .value
+                                                                        ? () {
+                                                                            Map<
+                                                                              String,
+                                                                              dynamic
+                                                                            >
+                                                                            tfilter =
+                                                                                {};
+                                                                            tfilter["推荐"] =
+                                                                                filter_details[_selectedIndex.value]["recommend"];
+                                                                            for (var item
+                                                                                in filter_details[_selectedIndex.value]["all"]) {
+                                                                              tfilter[item["category"]] = item["filters"];
+                                                                            }
+                                                                            _showFilterSelection(
+                                                                              context_in_1,
+                                                                              tfilter,
+                                                                              filters[sources.indexOf(
+                                                                                source.value,
+                                                                              )]['id'],
+                                                                              change_fliter,
+                                                                            );
+                                                                          }
+                                                                        : null,
                                                                   ),
                                                                 ),
                                                               ),
@@ -1018,40 +990,33 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                 ),
                                               ),
                                               Expanded(
-                                                child: StatefulBuilder(
-                                                  builder: (context, setState) {
-                                                    play_list_setstate =
-                                                        setState;
-                                                    return PreloadPageView.builder(
-                                                      physics:
-                                                          BouncingScrollPhysics(),
-                                                      controller:
-                                                          _pageControllerHorizon, // 使用 PageController
-                                                      itemCount:
-                                                          sources.length -
-                                                          1, // 页面数量
-                                                      preloadPagesCount:
-                                                          sources.length - 1,
+                                                child: PreloadPageView.builder(
+                                                  physics:
+                                                      BouncingScrollPhysics(),
+                                                  controller:
+                                                      _pageControllerHorizon, // 使用 PageController
+                                                  itemCount:
+                                                      sources.length -
+                                                      1, // 页面数量
+                                                  preloadPagesCount:
+                                                      sources.length - 1,
 
-                                                      itemBuilder: (context, index) {
-                                                        index = index + 1;
-                                                        // 其他页面：动态生成
-                                                        return Playlist(
-                                                          source:
-                                                              sources[index],
-                                                          offset:
-                                                              offsets[index],
-                                                          filter:
-                                                              filters[index],
-                                                          onPlaylistTap:
-                                                              change_main_status,
-                                                          key: Key(
-                                                            filters[index]
-                                                                .toString(),
-                                                          ),
-                                                        );
-                                                      },
-                                                    );
+                                                  itemBuilder: (context, index) {
+                                                    index = index + 1;
+                                                    // 其他页面：动态生成
+                                                    return Obx(() {
+                                                      return Playlist(
+                                                        source: sources[index],
+                                                        offset: offsets[index],
+                                                        filter: filters[index],
+                                                        onPlaylistTap:
+                                                            change_main_status,
+                                                        key: Key(
+                                                          filters[index]
+                                                              .toString(),
+                                                        ),
+                                                      );
+                                                    });
                                                   },
                                                 ),
                                               ),
@@ -1149,32 +1114,33 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                                         )]['name'],
                                                                   ),
                                                                 ),
-                                                                onPressed: () {
-                                                                  Map<
-                                                                    String,
-                                                                    dynamic
-                                                                  >
-                                                                  tfilter = {};
-                                                                  tfilter["推荐"] =
-                                                                      filter_details[_selectedIndex
-                                                                          .value]["recommend"];
-                                                                  for (var item
-                                                                      in filter_details[_selectedIndex
-                                                                          .value]["all"]) {
-                                                                    tfilter[item["category"]] =
-                                                                        item["filters"];
-                                                                  }
-                                                                  _showFilterSelection(
-                                                                    context_in_1,
-                                                                    tfilter,
-                                                                    filters[sources
-                                                                        .indexOf(
-                                                                          source
-                                                                              .value,
-                                                                        )]['id'],
-                                                                    change_fliter,
-                                                                  );
-                                                                },
+                                                                onPressed:
+                                                                    show_filter
+                                                                        .value
+                                                                    ? () {
+                                                                        Map<
+                                                                          String,
+                                                                          dynamic
+                                                                        >
+                                                                        tfilter =
+                                                                            {};
+                                                                        tfilter["推荐"] =
+                                                                            filter_details[_selectedIndex.value]["recommend"];
+                                                                        for (var item
+                                                                            in filter_details[_selectedIndex.value]["all"]) {
+                                                                          tfilter[item["category"]] =
+                                                                              item["filters"];
+                                                                        }
+                                                                        _showFilterSelection(
+                                                                          context_in_1,
+                                                                          tfilter,
+                                                                          filters[sources.indexOf(
+                                                                            source.value,
+                                                                          )]['id'],
+                                                                          change_fliter,
+                                                                        );
+                                                                      }
+                                                                    : null,
                                                               )
                                                             : SizedBox.shrink(),
                                                       ),
@@ -1188,46 +1154,42 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                 color: Colors.grey[300],
                                               ),
                                               Expanded(
-                                                child: StatefulBuilder(
-                                                  builder: (context, setState) {
-                                                    play_list_setstate =
-                                                        setState;
-                                                    return PreloadPageView.builder(
-                                                      physics:
-                                                          BouncingScrollPhysics(),
-                                                      controller:
-                                                          _pageControllerPortrait, // 使用 PageController
-                                                      itemCount: sources
-                                                          .length, // 页面数量
-                                                      preloadPagesCount:
-                                                          sources.length,
+                                                child: PreloadPageView.builder(
+                                                  physics:
+                                                      BouncingScrollPhysics(),
+                                                  controller:
+                                                      _pageControllerPortrait, // 使用 PageController
+                                                  itemCount:
+                                                      sources.length, // 页面数量
+                                                  preloadPagesCount:
+                                                      sources.length,
 
-                                                      itemBuilder: (context, index) {
-                                                        if (index == 0) {
-                                                          // 第一个页面：我的歌单
-                                                          return MyPlaylist(
-                                                            onPlaylistTap:
-                                                                change_main_status,
-                                                          );
-                                                        } else {
-                                                          // 其他页面：动态生成
-                                                          return Playlist(
-                                                            source:
-                                                                sources[index],
-                                                            offset:
-                                                                offsets[index],
-                                                            filter:
-                                                                filters[index],
-                                                            onPlaylistTap:
-                                                                change_main_status,
-                                                            key: Key(
-                                                              filters[index]
-                                                                  .toString(),
-                                                            ),
-                                                          );
-                                                        }
-                                                      },
-                                                    );
+                                                  itemBuilder: (context, index) {
+                                                    if (index == 0) {
+                                                      // 第一个页面：我的歌单
+                                                      return MyPlaylist(
+                                                        onPlaylistTap:
+                                                            change_main_status,
+                                                      );
+                                                    } else {
+                                                      // 其他页面：动态生成
+                                                      return Obx(() {
+                                                        return Playlist(
+                                                          source:
+                                                              sources[index],
+                                                          offset:
+                                                              offsets[index],
+                                                          filter:
+                                                              filters[index],
+                                                          onPlaylistTap:
+                                                              change_main_status,
+                                                          key: Key(
+                                                            filters[index]
+                                                                .toString(),
+                                                          ),
+                                                        );
+                                                      });
+                                                    }
                                                   },
                                                 ),
                                               ),
