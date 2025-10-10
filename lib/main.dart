@@ -773,7 +773,9 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                       child: Divider(
                         height: 1,
                         thickness: 2,
-                        color: Colors.grey[300],
+                        color: AdaptiveTheme.of(
+                          Get.context!,
+                        ).theme.colorScheme.tertiaryContainer,
                       ),
                     ),
                   Expanded(

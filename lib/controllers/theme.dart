@@ -141,6 +141,7 @@ class ThemeController extends GetxController {
     await applyTheme();
   }
 
+  final toUpd = 0.obs;
   // 应用主题
   Future<void> applyTheme() async {
     if (useDynamicColor.value) {
@@ -153,6 +154,7 @@ class ThemeController extends GetxController {
       AdaptiveTheme.of(
         Get.context!,
       ).setTheme(light: lightTheme, dark: darkTheme);
+      toUpd.value = (toUpd.value + 1) % 2;
     });
   }
 

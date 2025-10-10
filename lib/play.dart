@@ -1153,7 +1153,7 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
     bool h = false,
   }) => IconButton(
     icon: Icon(iconData),
-    iconSize: h ? 120.0.h : 100.0.w,
+    iconSize: h ? 32 : 100.0.w,
     alignment: Alignment.center,
     onPressed: onPressed,
   );
