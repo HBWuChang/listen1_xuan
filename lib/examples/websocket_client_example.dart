@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -61,11 +62,13 @@ class _WebSocketClientControlContentState
     _heartbeatController = TextEditingController(
       text: controller.heartbeatInterval.toString(),
     );
-    
+
     // 初始化ScrollController
-    _scrollController = ScrollController();
+    _scrollController = ScrollController(
+      initialScrollOffset: controller.isConnected ? 64.0 : 0.0,
+    );
     _wasConnected = controller.isConnected;
-    
+
     // 监听连接状态变化
     ever(controller.isConnectedRx, (bool isConnected) {
       if (isConnected && !_wasConnected) {
@@ -88,10 +91,12 @@ class _WebSocketClientControlContentState
 
   /// 滚动到收起状态
   void _scrollToCollapsed() {
-    if (_scrollController.hasClients) {
+    if (_scrollController.hasClients &&
+        _scrollController.offset < 64.0 &&
+        mounted) {
       // expandedHeight为120，收起状态需要滚动到这个位置
       const double expandedHeight = 120.0;
-      
+
       _scrollController.animateTo(
         expandedHeight - 56.0, // 56是AppBar的默认高度
         duration: const Duration(milliseconds: 300),
@@ -108,156 +113,182 @@ class _WebSocketClientControlContentState
       height: MediaQuery.of(context).size.height * 0.7,
       child: CustomScrollView(
         controller: _scrollController,
+        // 添加平滑滚动配置
+        scrollBehavior: const MaterialScrollBehavior().copyWith(
+          scrollbars: false,
+          // 启用平滑滚动
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          // 自定义滚动行为以获得更平滑的效果
+          dragDevices: {
+            PointerDeviceKind.touch,
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.trackpad,
+          },
+        ),
         slivers: [
           // SliverAppBar 包含标题、状态和连接按钮
           Obx(() {
             final ctrl = Get.find<WebSocketClientController>();
-            return SliverAppBar(
-              // backgroundColor: Colors.transparent,
-              elevation: 0,
-              expandedHeight: 120.0,
-              floating: false,
-              pinned: true,
-              automaticallyImplyLeading: false,
-              centerTitle: true,
-              actions: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  margin: const EdgeInsets.only(right: 16),
-                  decoration: BoxDecoration(
-                    color: ctrl.isConnected ? Colors.blue : Colors.grey,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    ctrl.statusMessage,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ),
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                titlePadding: EdgeInsets.zero,
-                title: LayoutBuilder(
-                  builder: (context, constraints) {
-                    // 计算收缩比例，constraints.biggest.height从120收缩到56左右
-                    final double shrinkRatio =
-                        ((120.0 - constraints.biggest.height) / (120.0 - 56.0))
-                            .clamp(0.0, 1.0);
 
-                    // 使用动画曲线计算右侧padding，收缩时逐渐增加
-                    final double curvedRatio = Curves.easeInOut.transform(
-                      shrinkRatio,
-                    );
-                    final double rightPadding =
-                        12.0 + (curvedRatio * 80.0); // 从12增加到92
+            // 当连接时，使用 NotificationListener 来阻止滚动通知到达 SliverAppBar
+            return NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification notification) {
+                // 当已连接时，拦截滚动通知，不让 SliverAppBar 响应
+                return ctrl.isConnected;
+              },
+              child: SliverAppBar(
+                // backgroundColor: Colors.transparent,
+                elevation: 0,
+                expandedHeight: 120.0,
+                floating: false,
+                pinned: true,
+                automaticallyImplyLeading: false,
+                centerTitle: true,
+                actions: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    margin: const EdgeInsets.only(right: 16),
+                    decoration: BoxDecoration(
+                      color: ctrl.isConnected ? Colors.blue : Colors.grey,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      ctrl.statusMessage,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  titlePadding: EdgeInsets.zero,
+                  title: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // 计算收缩比例，constraints.biggest.height从120收缩到56左右
+                      final double shrinkRatio =
+                          ((120.0 - constraints.biggest.height) /
+                                  (120.0 - 56.0))
+                              .clamp(0.0, 1.0);
 
-                    return Container(
-                      padding: EdgeInsets.only(
-                        left: 12,
-                        bottom: is_windows ? 12 : 4,
-                        right: rightPadding,
-                      ),
-                      alignment: Alignment.bottomCenter,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed:
-                                  ctrl.isConnecting || ctrl.isDisconnecting
-                                  ? null
-                                  : ctrl.isConnected
-                                  ? ctrl.disconnect
-                                  : ctrl.connect,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: ctrl.isConnected
-                                    ? Colors.red.withOpacity(0.9)
-                                    : Colors.blue.withOpacity(0.9),
-                                foregroundColor: Colors.white,
-                                elevation: 2,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                maximumSize: Size(double.infinity, 40),
-                              ),
-                              icon: Icon(
-                                ctrl.isConnecting
-                                    ? Icons.hourglass_empty
-                                    : ctrl.isDisconnecting
-                                    ? Icons.hourglass_empty
-                                    : ctrl.isConnected
-                                    ? Icons.link_off
-                                    : Icons.link,
-                                size: 18,
-                              ),
-                              label: Text(
-                                ctrl.isConnecting
-                                    ? '连接中...'
-                                    : ctrl.isDisconnecting
-                                    ? '断开中...'
-                                    : ctrl.isConnected
-                                    ? '断开连接'
-                                    : '连接服务器',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                      // 使用动画曲线计算右侧padding，收缩时逐渐增加
+                      final double curvedRatio = Curves.easeInOut.transform(
+                        shrinkRatio,
+                      );
+                      final double rightPadding =
+                          12.0 + (curvedRatio * 80.0); // 从12增加到92
 
-                background: Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.cast_connected,
-                            color: ctrl.isConnected ? Colors.blue : Colors.grey,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'WebSocket 客户端控制面板',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
-                      if (ctrl.autoReconnect && ctrl.isReconnecting) ...[
-                        const SizedBox(height: 8),
-                        Row(
+                      return Container(
+                        padding: EdgeInsets.only(
+                          left: 12,
+                          bottom: is_windows ? 12 : 4,
+                          right: rightPadding,
+                        ),
+                        alignment: Alignment.bottomCenter,
+                        child: Row(
                           children: [
-                            const Icon(
-                              Icons.autorenew,
-                              color: Colors.orange,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '自动重连已启用',
-                              style: TextStyle(
-                                color: Colors.orange[700],
-                                fontSize: 12,
-                              ),
-                            ),
-                            const Spacer(),
-                            TextButton(
-                              onPressed: () => ctrl.updateAutoReconnect(false),
-                              child: const Text(
-                                '取消重连',
-                                style: TextStyle(fontSize: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed:
+                                    ctrl.isConnecting || ctrl.isDisconnecting
+                                    ? null
+                                    : ctrl.isConnected
+                                    ? ctrl.disconnect
+                                    : ctrl.connect,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ctrl.isConnected
+                                      ? Colors.red.withOpacity(0.9)
+                                      : Colors.blue.withOpacity(0.9),
+                                  foregroundColor: Colors.white,
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  maximumSize: Size(double.infinity, 40),
+                                ),
+                                icon: Icon(
+                                  ctrl.isConnecting
+                                      ? Icons.hourglass_empty
+                                      : ctrl.isDisconnecting
+                                      ? Icons.hourglass_empty
+                                      : ctrl.isConnected
+                                      ? Icons.link_off
+                                      : Icons.link,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  ctrl.isConnecting
+                                      ? '连接中...'
+                                      : ctrl.isDisconnecting
+                                      ? '断开中...'
+                                      : ctrl.isConnected
+                                      ? '断开连接'
+                                      : '连接服务器',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
                               ),
                             ),
                           ],
                         ),
+                      );
+                    },
+                  ),
+
+                  background: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.cast_connected,
+                              color: ctrl.isConnected
+                                  ? Colors.blue
+                                  : Colors.grey,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'WebSocket 客户端控制面板',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            const Spacer(),
+                          ],
+                        ),
+                        if (ctrl.autoReconnect && ctrl.isReconnecting) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.autorenew,
+                                color: Colors.orange,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '自动重连已启用',
+                                style: TextStyle(
+                                  color: Colors.orange[700],
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const Spacer(),
+                              TextButton(
+                                onPressed: () =>
+                                    ctrl.updateAutoReconnect(false),
+                                child: const Text(
+                                  '取消重连',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
