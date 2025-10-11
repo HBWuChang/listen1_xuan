@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/websocket_client_controller.dart';
+import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:listen1_xuan/pages/qr_scanner_page.dart';
@@ -23,6 +24,8 @@ class WebSocketClientControlPanel {
         return [
           WoltModalSheetPage(
             hasTopBarLayer: false,
+            isTopBarLayerAlwaysVisible: false,
+            enableDrag: false,
             child: WebSocketClientControlContent(),
           ),
         ];
@@ -43,6 +46,8 @@ class _WebSocketClientControlContentState
     extends State<WebSocketClientControlContent> {
   late TextEditingController _reconnectController;
   late TextEditingController _heartbeatController;
+  late ScrollController _scrollController;
+  bool _wasConnected = false;
 
   @override
   void initState() {
@@ -56,13 +61,43 @@ class _WebSocketClientControlContentState
     _heartbeatController = TextEditingController(
       text: controller.heartbeatInterval.toString(),
     );
+    
+    // 初始化ScrollController
+    _scrollController = ScrollController();
+    _wasConnected = controller.isConnected;
+    
+    // 监听连接状态变化
+    ever(controller.isConnectedRx, (bool isConnected) {
+      if (isConnected && !_wasConnected) {
+        // 从未连接变为已连接时，滚动到收起状态
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToCollapsed();
+        });
+      }
+      _wasConnected = isConnected;
+    });
   }
 
   @override
   void dispose() {
     _reconnectController.dispose();
     _heartbeatController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 滚动到收起状态
+  void _scrollToCollapsed() {
+    if (_scrollController.hasClients) {
+      // expandedHeight为120，收起状态需要滚动到这个位置
+      const double expandedHeight = 120.0;
+      
+      _scrollController.animateTo(
+        expandedHeight - 56.0, // 56是AppBar的默认高度
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   @override
@@ -72,6 +107,7 @@ class _WebSocketClientControlContentState
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.7,
       child: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           // SliverAppBar 包含标题、状态和连接按钮
           Obx(() {
@@ -120,7 +156,7 @@ class _WebSocketClientControlContentState
                     return Container(
                       padding: EdgeInsets.only(
                         left: 12,
-                        bottom: 12,
+                        bottom: is_windows ? 12 : 4,
                         right: rightPadding,
                       ),
                       alignment: Alignment.bottomCenter,
