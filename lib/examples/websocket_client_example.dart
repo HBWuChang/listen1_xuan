@@ -22,37 +22,8 @@ class WebSocketClientControlPanel {
       pageListBuilder: (modalSheetContext) {
         return [
           WoltModalSheetPage(
+            hasTopBarLayer: false,
             child: WebSocketClientControlContent(),
-            isTopBarLayerAlwaysVisible: true,
-            topBarTitle: Obx(() {
-              final ctrl = Get.find<WebSocketClientController>();
-              return Row(
-                children: [
-                  Icon(
-                    Icons.cast_connected,
-                    color: ctrl.isConnected ? Colors.blue : Colors.grey,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('WebSocket 客户端控制面板'),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: ctrl.isConnected ? Colors.blue : Colors.grey,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      ctrl.statusMessage,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ],
-              );
-            }),
           ),
         ];
       },
@@ -100,123 +71,171 @@ class _WebSocketClientControlContentState
 
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.7,
-      child: Column(
-        children: [
-          // 客户端控制按钮行
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Obx(() {
-              final ctrl = Get.find<WebSocketClientController>();
-              return Column(
-                children: [
-                  // 连接控制按钮
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: ctrl.isConnecting || ctrl.isDisconnecting
-                              ? null
-                              : ctrl.isConnected
-                              ? ctrl.disconnect
-                              : ctrl.connect,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ctrl.isConnected
-                                ? Colors.red.withOpacity(0.9)
-                                : Colors.blue.withOpacity(0.9),
-                            foregroundColor: Colors.white,
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          icon: Icon(
-                            ctrl.isConnecting
-                                ? Icons.hourglass_empty
-                                : ctrl.isDisconnecting
-                                ? Icons.hourglass_empty
-                                : ctrl.isConnected
-                                ? Icons.link_off
-                                : Icons.link,
-                            size: 18,
-                          ),
-                          label: Text(
-                            ctrl.isConnecting
-                                ? '连接中...'
-                                : ctrl.isDisconnecting
-                                ? '断开中...'
-                                : ctrl.isConnected
-                                ? '断开连接'
-                                : '连接服务器',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12), // 扫描二维码按钮（仅在Android显示）
-                      if (Platform.isAndroid)
-                        SizedBox(
-                          width: 100,
-                          child: ElevatedButton.icon(
-                            onPressed: ctrl.isConnected ? null : _scanQRCode,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange.withOpacity(0.1),
-                              foregroundColor: Colors.orange,
-                              elevation: 0,
-                              side: BorderSide(
-                                color: Colors.orange.withOpacity(0.3),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            icon: const Icon(Icons.qr_code_scanner, size: 20),
-                            label: const Text('扫码'),
-                          ),
-                        ),
-                    ],
+      child: CustomScrollView(
+        slivers: [
+          // SliverAppBar 包含标题、状态和连接按钮
+          Obx(() {
+            final ctrl = Get.find<WebSocketClientController>();
+            return SliverAppBar(
+              // backgroundColor: Colors.transparent,
+              elevation: 0,
+              expandedHeight: 120.0,
+              floating: false,
+              pinned: true,
+              automaticallyImplyLeading: false,
+              centerTitle: true,
+              actions: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
+                  margin: const EdgeInsets.only(right: 16),
+                  decoration: BoxDecoration(
+                    color: ctrl.isConnected ? Colors.blue : Colors.grey,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    ctrl.statusMessage,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: EdgeInsets.zero,
+                title: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // 计算收缩比例，constraints.biggest.height从120收缩到56左右
+                    final double shrinkRatio =
+                        ((120.0 - constraints.biggest.height) / (120.0 - 56.0))
+                            .clamp(0.0, 1.0);
 
-                  if (ctrl.autoReconnect && ctrl.isReconnecting) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.autorenew,
-                          color: Colors.orange,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '自动重连已启用',
-                          style: TextStyle(
-                            color: Colors.orange[700],
-                            fontSize: 12,
+                    // 使用动画曲线计算右侧padding，收缩时逐渐增加
+                    final double curvedRatio = Curves.easeInOut.transform(
+                      shrinkRatio,
+                    );
+                    final double rightPadding =
+                        12.0 + (curvedRatio * 80.0); // 从12增加到92
+
+                    return Container(
+                      padding: EdgeInsets.only(
+                        left: 12,
+                        bottom: 12,
+                        right: rightPadding,
+                      ),
+                      alignment: Alignment.bottomCenter,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed:
+                                  ctrl.isConnecting || ctrl.isDisconnecting
+                                  ? null
+                                  : ctrl.isConnected
+                                  ? ctrl.disconnect
+                                  : ctrl.connect,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: ctrl.isConnected
+                                    ? Colors.red.withOpacity(0.9)
+                                    : Colors.blue.withOpacity(0.9),
+                                foregroundColor: Colors.white,
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                maximumSize: Size(double.infinity, 40),
+                              ),
+                              icon: Icon(
+                                ctrl.isConnecting
+                                    ? Icons.hourglass_empty
+                                    : ctrl.isDisconnecting
+                                    ? Icons.hourglass_empty
+                                    : ctrl.isConnected
+                                    ? Icons.link_off
+                                    : Icons.link,
+                                size: 18,
+                              ),
+                              label: Text(
+                                ctrl.isConnecting
+                                    ? '连接中...'
+                                    : ctrl.isDisconnecting
+                                    ? '断开中...'
+                                    : ctrl.isConnected
+                                    ? '断开连接'
+                                    : '连接服务器',
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: () => ctrl.updateAutoReconnect(false),
-                          child: const Text(
-                            '取消重连',
-                            style: TextStyle(fontSize: 12),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+
+                background: Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.cast_connected,
+                            color: ctrl.isConnected ? Colors.blue : Colors.grey,
+                            size: 20,
                           ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'WebSocket 客户端控制面板',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                      if (ctrl.autoReconnect && ctrl.isReconnecting) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.autorenew,
+                              color: Colors.orange,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '自动重连已启用',
+                              style: TextStyle(
+                                color: Colors.orange[700],
+                                fontSize: 12,
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () => ctrl.updateAutoReconnect(false),
+                              child: const Text(
+                                '取消重连',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
-                ],
-              );
-            }),
-          ),
-          // Tab 内容
-          Expanded(child: _buildStatusTab(controller)),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+          // 内容部分
+          SliverToBoxAdapter(child: _buildStatusTab(controller)),
         ],
       ),
     );
   }
 
   Widget _buildStatusTab(WebSocketClientController controller) {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
@@ -950,6 +969,25 @@ class _WebSocketClientControlContentState
                       '暂无历史连接地址，请点击添加按钮添加地址',
                       style: TextStyle(fontSize: 12, color: Colors.grey),
                       textAlign: TextAlign.center,
+                    ),
+                  ),
+                if (Platform.isAndroid)
+                  SizedBox(
+                    width: 100,
+                    child: ElevatedButton.icon(
+                      onPressed: controller.isConnected ? null : _scanQRCode,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange.withOpacity(0.1),
+                        foregroundColor: Colors.orange,
+                        elevation: 0,
+                        side: BorderSide(color: Colors.orange.withOpacity(0.3)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      icon: const Icon(Icons.qr_code_scanner, size: 20),
+                      label: const Text('扫码'),
                     ),
                   ),
               ],
