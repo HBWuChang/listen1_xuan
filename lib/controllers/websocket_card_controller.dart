@@ -39,17 +39,10 @@ class WebSocketCardController extends GetxController {
   final RxBool _wsServerBtnShow = true.obs;
 
   /// 服务器配置
-  final RxString _host = '127.0.0.1'.obs;
+  final RxString _host = '0.0.0.0'.obs; // 固定使用0.0.0.0监听所有地址
   final RxInt _port = 25917.obs;
   final RxInt _pingInterval = 30.obs; // 秒
   final RxInt _pongTimeout = 5.obs; // 秒
-
-  /// 网络接口管理
-  final RxList<String> _availableIpAddresses = <String>[].obs;
-  final RxBool _isLoadingIpAddresses = false.obs;
-
-  /// 历史IP地址管理（不包含端口，最多10个，用户不可见）
-  final RxList<String> _historyIpAddresses = <String>[].obs;
 
   /// 广播消息控制器
   final TextEditingController messageController = TextEditingController();
@@ -68,8 +61,6 @@ class WebSocketCardController extends GetxController {
   RxString get serverUrlRx => _serverUrl;
   RxBool get wsServerAutoStartRx => _wsServerAutoStart;
   RxBool get wsServerBtnShowRx => _wsServerBtnShow;
-  RxList<String> get availableIpAddressesRx => _availableIpAddresses;
-  RxBool get isLoadingIpAddressesRx => _isLoadingIpAddresses;
 
   // 保留原有的getter用于非响应式访问
   bool get isExpanded => _isExpanded.value;
@@ -86,9 +77,6 @@ class WebSocketCardController extends GetxController {
   String get serverUrl => _serverUrl.value;
   bool get wsServerAutoStart => _wsServerAutoStart.value;
   bool get wsServerBtnShow => _wsServerBtnShow.value;
-  List<String> get availableIpAddresses => _availableIpAddresses;
-  bool get isLoadingIpAddresses => _isLoadingIpAddresses.value;
-  List<String> get historyIpAddresses => _historyIpAddresses;
 
   /// 从设置控制器加载WebSocket配置
   void loadWebSocketSettings() {
@@ -99,23 +87,13 @@ class WebSocketCardController extends GetxController {
       // 读取WebSocket服务器配置
       _wsServerAutoStart.value = settings['wsServerAutoStart'] ?? false;
       _wsServerBtnShow.value = settings['wsServerBtnShow'] ?? true;
-      final serverAddress = settings['wsServerAddress'] as String?;
       final serverPort = settings['wsServerPort'] as int?;
 
-      if (serverAddress != null && serverAddress.isNotEmpty) {
-        _host.value = serverAddress;
-      }
+      // 固定使用0.0.0.0地址，不再从设置中读取
+      _host.value = '0.0.0.0';
 
       if (serverPort != null && serverPort >= 1024 && serverPort <= 65535) {
         _port.value = serverPort;
-      }
-
-      // 加载历史IP地址列表
-      final historyList = settings['wsServerHistoryIpAddresses'] as List<dynamic>?;
-      if (historyList != null) {
-        _historyIpAddresses.value = historyList.map((e) => e.toString()).toList();
-      } else {
-        _historyIpAddresses.value = [];
       }
 
       _logger.i('$_tag 配置加载完成: 自动启动=$wsServerAutoStart, 地址=$host:$port');
@@ -133,11 +111,8 @@ class WebSocketCardController extends GetxController {
       // 保存WebSocket服务器配置
       settings['wsServerAutoStart'] = _wsServerAutoStart.value;
       settings['wsServerBtnShow'] = _wsServerBtnShow.value;
-      settings['wsServerAddress'] = _host.value;
+      // 不再保存地址配置，固定使用0.0.0.0
       settings['wsServerPort'] = _port.value;
-
-      // 保存历史IP地址列表
-      settings['wsServerHistoryIpAddresses'] = _historyIpAddresses.toList();
 
       // 触发设置保存
       settingsController.setSettings(settings);
@@ -160,45 +135,13 @@ class WebSocketCardController extends GetxController {
     saveWebSocketSettings();
   }
 
-  /// 如果设置了自动启动，则启动WebSocket服务器
+    /// 如果设置了自动启动，则启动WebSocket服务器
   Future<void> autoStartServerIfNeeded() async {
     if (_wsServerAutoStart.value) {
       _logger.i('$_tag 自动启动WebSocket服务器');
-      
-      // 先刷新IP地址列表
-      await refreshIpAddresses();
-      
-      // 尝试使用当前配置的IP地址启动
-      final originalHost = _host.value;
-      bool success = await _tryStartServer();
-      
-      // 如果第一次启动失败，尝试历史IP地址
-      if (!success) {
-        final availableHistoryIps = _getAvailableHistoryIps();
-        
-        _logger.i('$_tag 首次启动失败，尝试历史IP地址: $availableHistoryIps');
-        
-        for (final historyIp in availableHistoryIps) {
-          if (isServerRunning) break; // 如果已经启动成功，跳出循环
-          
-          _logger.i('$_tag 尝试使用历史IP地址: $historyIp');
-          _host.value = historyIp;
-          success = await _tryStartServer();
-          
-          if (success) {
-            _logger.i('$_tag 使用历史IP地址启动成功: $historyIp');
-            break;
-          }
-        }
-        
-        // 如果所有历史IP都失败，恢复原来的IP地址
-        if (!success) {
-          _host.value = originalHost;
-          _logger.w('$_tag 所有历史IP地址启动都失败，恢复原IP地址: $originalHost');
-        }
-      }
-    } else {
-      refreshIpAddresses();
+
+      // 直接尝试启动服务器（使用固定的0.0.0.0地址）
+      await _tryStartServer();
     }
   }
 
@@ -226,9 +169,6 @@ class WebSocketCardController extends GetxController {
         _serverUrl.value = wsServerController!.serverUrl;
         _updateStatusMessage('运行中');
         _logger.i('$_tag WebSocket服务器启动成功: $serverUrl');
-
-        // 启动成功后添加IP地址到历史列表（不包含127.0.0.1）
-        _addToHistoryIpAddresses(_host.value);
 
         // 启动状态监听
         _startStatusMonitoring();
@@ -276,168 +216,6 @@ class WebSocketCardController extends GetxController {
     _isExpanded.value = !_isExpanded.value;
   }
 
-  /// 刷新本地IP地址列表
-  Future<void> refreshIpAddresses() async {
-    if (_isLoadingIpAddresses.value) return;
-
-    try {
-      _isLoadingIpAddresses.value = true;
-      _logger.i('$_tag 正在获取本地IP地址...');
-
-      final List<String> ipList = <String>[]; // 不包含默认的0.0.0.0
-
-      // 获取网络接口列表
-      List<NetworkInterface> interfaces = await NetworkInterface.list(
-        includeLoopback: true, // 是否包含回环接口
-        includeLinkLocal: true, // 是否包含链路本地接口（例如IPv6的自动配置地址）。
-        type: InternetAddressType.any,
-      );
-
-      // 筛选IPv4地址，并按优先级排序
-      final List<String> localAreaNetworkIps = <String>[];
-      final List<String> otherIps = <String>[];
-      final List<String> loopbackIps = <String>[];
-
-      for (NetworkInterface interface in interfaces) {
-        for (InternetAddress address in interface.addresses) {
-          if (address.type == InternetAddressType.IPv4) {
-            final ip = address.address;
-            if (ip == '127.0.0.1') {
-              // 回环地址优先级最低
-              if (!loopbackIps.contains(ip)) {
-                loopbackIps.add(ip);
-              }
-            } else if (ip.startsWith('192.168.') ||
-                ip.startsWith('10.') ||
-                ip.startsWith('172.')) {
-              // 局域网地址优先级较高
-              if (!localAreaNetworkIps.contains(ip)) {
-                localAreaNetworkIps.add(ip);
-              }
-            } else {
-              // 其他地址（可能是公网地址）
-              if (!otherIps.contains(ip)) {
-                otherIps.add(ip);
-              }
-            }
-          }
-        }
-      }
-
-      // 按优先级顺序添加：局域网地址 > 其他地址 > 回环地址
-      ipList.addAll(localAreaNetworkIps);
-      ipList.addAll(otherIps);
-      ipList.addAll(loopbackIps);
-
-      _availableIpAddresses.value = ipList;
-      _logger.i('$_tag 获取到IP地址: $ipList');
-
-      // 检查当前选中的地址是否在列表中，如果不在则自动选择最优地址
-      if (!ipList.contains(_host.value)) {
-        final newHost = _selectBestAvailableAddress(ipList);
-        _logger.w('$_tag 当前选中的地址 ${_host.value} 不在可用列表中，自动切换到: $newHost');
-        _host.value = newHost;
-        saveWebSocketSettings();
-      }
-    } catch (e) {
-      _logger.e('$_tag 获取IP地址失败', error: e);
-      _showError('获取IP地址失败: $e');
-      // 设置默认值（仅包含回环地址）
-      _availableIpAddresses.value = ['127.0.0.1'];
-      if (!_availableIpAddresses.contains(_host.value)) {
-        _host.value = '127.0.0.1';
-        saveWebSocketSettings();
-      }
-    } finally {
-      _isLoadingIpAddresses.value = false;
-    }
-  }
-
-  /// 选择最佳可用地址
-  /// 优先级：历史地址中最优的 > 局域网地址 > 其他地址 > 回环地址(127.0.0.1)
-  String _selectBestAvailableAddress(List<String> addresses) {
-    if (addresses.isEmpty) {
-      return '127.0.0.1'; // 最后的fallback
-    }
-
-    // 首先尝试从历史地址列表中选择最优的可用地址
-    for (final historyIp in _historyIpAddresses) {
-      if (addresses.contains(historyIp)) {
-        // 找到历史地址中第一个可用的地址，直接返回（历史地址按使用时间排序，越前面越新）
-        return historyIp;
-      }
-    }
-
-    // 如果没有可用的历史地址，执行原有逻辑
-    // 优先选择局域网地址
-    for (final ip in addresses) {
-      if (ip.startsWith('192.168.') ||
-          ip.startsWith('10.') ||
-          ip.startsWith('172.')) {
-        return ip;
-      }
-    }
-
-    // 其次选择其他非回环地址
-    for (final ip in addresses) {
-      if (ip != '127.0.0.1') {
-        return ip;
-      }
-    }
-
-    // 最后选择回环地址
-    return addresses.first;
-  }
-
-  /// 更新主机地址（从下拉列表选择）
-  void updateHost(String newHost) {
-    if (isServerRunning) {
-      _showError('服务器运行时不能更改配置');
-      return;
-    }
-
-    if (!_availableIpAddresses.contains(newHost)) {
-      _showError('选中的IP地址无效');
-      return;
-    }
-
-    _host.value = newHost;
-    saveWebSocketSettings();
-    _logger.i('$_tag 主机地址已更新为: $newHost');
-  }
-
-  /// 历史IP地址管理方法
-
-  /// 添加IP地址到历史列表（服务器启动成功后自动调用）
-  void _addToHistoryIpAddresses(String ip) {
-    // 过滤掉127.0.0.1和空地址
-    if (ip.isEmpty || ip == '127.0.0.1') return;
-    
-    // 移除已存在的相同IP地址
-    _historyIpAddresses.removeWhere((item) => item == ip);
-    
-    // 将新IP地址添加到列表开头
-    _historyIpAddresses.insert(0, ip);
-    
-    // 限制历史记录数量（最多保存10个）
-    if (_historyIpAddresses.length > 10) {
-      _historyIpAddresses.removeRange(10, _historyIpAddresses.length);
-    }
-    
-    // 保存到设置
-    saveWebSocketSettings();
-    _logger.i('$_tag IP地址已添加到历史列表: $ip');
-  }
-
-  /// 获取可用的历史IP地址（在当前可用IP列表中且不为127.0.0.1）
-  List<String> _getAvailableHistoryIps() {
-    return _historyIpAddresses
-        .where((historyIp) => 
-            historyIp != '127.0.0.1' && 
-            _availableIpAddresses.contains(historyIp))
-        .toList();
-  }
-
   /// 更新端口
   void updatePort(int newPort) {
     if (isServerRunning) {
@@ -474,18 +252,9 @@ class WebSocketCardController extends GetxController {
   Future<void> startServer() async {
     if (isServerRunning || _isStarting.value) return;
 
-    // 启动前刷新IP地址列表并验证当前选中的地址
-    await refreshIpAddresses();
-
-    // 再次检查当前地址是否有效
-    if (!_availableIpAddresses.contains(_host.value)) {
-      _logger.w('$_tag 当前地址无效，使用默认地址');
-      _host.value = '0.0.0.0';
-      saveWebSocketSettings();
-    }
-
+    // 直接尝试启动服务器（使用固定的0.0.0.0地址）
     final success = await _tryStartServer();
-    
+
     if (success) {
       _showSuccess('WebSocket 服务器启动成功');
     } else {

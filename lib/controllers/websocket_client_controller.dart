@@ -46,11 +46,16 @@ class WebSocketClientController extends GetxController {
   final RxString lastConnectedDeviceId = ''.obs;
   final RxString lastConnectedDeviceNewAddr = ''.obs;
 
+  final RxSet<String> canAddAddr = <String>{}.obs;
+
   /// 连接管理
   final RxBool _isReconnecting = false.obs;
   Timer? _reconnectTimer;
   Timer? _heartbeatTimer;
   Timer? _statusPollingTimer;
+  
+  /// 连接取消控制
+  bool _connectionCancelled = false;
 
   /// 音量控制
   final RxDouble _volume = 0.5.obs;
@@ -488,6 +493,7 @@ class WebSocketClientController extends GetxController {
 
     try {
       _isConnecting.value = true;
+      _connectionCancelled = false; // 重置取消标志
       _updateStatusMessage('正在连接...');
 
       // 解析服务器地址
@@ -505,8 +511,22 @@ class WebSocketClientController extends GetxController {
       final uri = 'ws://$host:$port';
       _serverUrl.value = uri;
 
+      // 检查是否已取消连接
+      if (_connectionCancelled) {
+        _updateStatusMessage('连接已取消');
+        return;
+      }
+
       // 创建WebSocket连接
       _webSocket = await WebSocket.connect(uri);
+
+      // 再次检查是否已取消连接
+      if (_connectionCancelled) {
+        await _webSocket?.close();
+        _webSocket = null;
+        _updateStatusMessage('连接已取消');
+        return;
+      }
 
       _isConnected.value = true;
       _updateStatusMessage('已连接');
@@ -537,13 +557,18 @@ class WebSocketClientController extends GetxController {
     } catch (e) {
       _isConnected.value = false;
       _serverUrl.value = '';
-      _updateStatusMessage('连接失败');
-      _showError('连接失败: $e');
-      _logger.e('$_tag 连接失败', error: e);
+      
+      if (_connectionCancelled) {
+        _updateStatusMessage('连接已取消');
+      } else {
+        _updateStatusMessage('连接失败');
+        _showError('连接失败: $e');
+        _logger.e('$_tag 连接失败', error: e);
 
-      // 如果启用了自动重连，开始重连
-      if (_autoReconnect.value && !_isReconnecting.value) {
-        _startReconnectTimer();
+        // 如果启用了自动重连，开始重连
+        if (_autoReconnect.value && !_isReconnecting.value) {
+          _startReconnectTimer();
+        }
       }
     } finally {
       _isConnecting.value = false;
@@ -553,6 +578,24 @@ class WebSocketClientController extends GetxController {
   /// 断开连接
   Future<void> disconnect() async {
     await _disconnect(manual: true);
+  }
+  
+  /// 取消正在进行的连接
+  void cancelConnection() {
+    if (_isConnecting.value) {
+      _connectionCancelled = true;
+      _logger.i('$_tag 用户取消连接');
+      _showInfo('正在取消连接...');
+    }
+    
+    // 如果正在重连，也停止重连
+    if (_isReconnecting.value) {
+      _stopReconnectTimer();
+      _isReconnecting.value = false;
+      _updateStatusMessage('重连已取消');
+      _logger.i('$_tag 用户取消重连');
+      _showInfo('重连已取消');
+    }
   }
 
   Future<void> _disconnect({bool manual = false}) async {
@@ -933,7 +976,7 @@ class WebSocketClientController extends GetxController {
     _reconnectTimer = Timer(
       Duration(seconds: _reconnectInterval.value),
       () async {
-        if (_autoReconnect.value && !_isConnected.value) {
+        if (_autoReconnect.value && !_isConnected.value && !_connectionCancelled) {
           _logger.i('$_tag 尝试自动重连...');
           await connect();
         }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/websocket_card_controller.dart';
+import 'package:listen1_xuan/controllers/BroadcastWsController.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -219,7 +220,9 @@ class _WebSocketControlContentState extends State<WebSocketControlContent> {
 
   /// 显示二维码对话框
   void _showQrCodeDialog(WebSocketCardController controller) {
-    final qrData = '${controller.host}:${controller.port}';
+    // 使用BroadcastWsController的deviceId作为二维码数据
+    final broadcastController = Get.find<BroadcastWsController>();
+    final qrData = broadcastController.deviceId;
 
     Get.dialog(
       Dialog(
@@ -285,7 +288,7 @@ class _WebSocketControlContentState extends State<WebSocketControlContent> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '连接地址',
+                      '设备ID',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -315,7 +318,7 @@ class _WebSocketControlContentState extends State<WebSocketControlContent> {
                         Clipboard.setData(ClipboardData(text: qrData));
                         Get.snackbar(
                           '成功',
-                          '连接信息已复制到剪贴板',
+                          '设备ID已复制到剪贴板',
                           snackPosition: SnackPosition.BOTTOM,
                           backgroundColor: Colors.green.withOpacity(0.8),
                           colorText: Colors.white,
@@ -494,126 +497,6 @@ class _WebSocketControlContentState extends State<WebSocketControlContent> {
               ),
 
             _buildConfigSection('网络配置', [
-              // IP地址下拉选择框
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '主机地址',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: ctrl.isServerRunning
-                                ? Colors.grey
-                                : Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: ctrl.isServerRunning
-                                  ? Colors.grey.shade300
-                                  : Colors.grey.shade400,
-                            ),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value:
-                                  ctrl.availableIpAddresses.contains(ctrl.host)
-                                  ? ctrl.host
-                                  : (ctrl.availableIpAddresses.isNotEmpty
-                                        ? ctrl.availableIpAddresses.first
-                                        : '127.0.0.1'),
-                              isExpanded: true,
-                              onChanged: ctrl.isServerRunning
-                                  ? null
-                                  : (String? newValue) {
-                                      if (newValue != null) {
-                                        ctrl.updateHost(newValue);
-                                      }
-                                    },
-                              items: ctrl.availableIpAddresses
-                                  .map<DropdownMenuItem<String>>((
-                                    String value,
-                                  ) {
-                                    String displayText = value;
-                                    String description = '';
-
-                                    if (value == '127.0.0.1') {
-                                      description = ' (本地回环)';
-                                    } else if (value.startsWith('192.168.') ||
-                                        value.startsWith('10.') ||
-                                        value.startsWith('172.')) {
-                                      description = ' (局域网)';
-                                    } else {
-                                      description = ' (公网)';
-                                    }
-
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(
-                                        '$displayText$description',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: ctrl.isServerRunning
-                                              ? Colors.grey
-                                              : null,
-                                        ),
-                                      ),
-                                    );
-                                  })
-                                  .toList(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // 刷新IP按钮
-                  Tooltip(
-                    message: '刷新IP地址列表',
-                    child: Container(
-                      margin: const EdgeInsets.only(top: 20),
-                      child: IconButton(
-                        onPressed: ctrl.isLoadingIpAddresses
-                            ? null
-                            : () async {
-                                await ctrl.refreshIpAddresses();
-                              },
-                        icon: ctrl.isLoadingIpAddresses
-                            ? SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Icon(Icons.refresh, size: 20),
-                        iconSize: 20,
-                        padding: EdgeInsets.all(8),
-                        constraints: BoxConstraints(
-                          minWidth: 36,
-                          minHeight: 36,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.grey.shade100,
-                          foregroundColor: Colors.grey.shade700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
               _buildTextField(
                 controller: portController,
                 label: '端口号',
@@ -695,43 +578,6 @@ class _WebSocketControlContentState extends State<WebSocketControlContent> {
     );
   }
 
-  Widget _buildInfoCard(String title, List<Widget> children) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(child: SelectableText(value)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildConfigSection(String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -789,7 +635,7 @@ class WebSocketHelper {
     String tag = 'websocket_card',
   }) async {
     final controller = Get.put(WebSocketCardController());
-    controller.updateHost(host);
+    // 不再需要设置host，固定使用0.0.0.0
     controller.updatePort(port);
     await controller.startServer();
   }

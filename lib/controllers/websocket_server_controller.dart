@@ -78,7 +78,7 @@ class WebSocketServerController extends GetxController {
 
       _isRunning.value = true;
       _logger.i('$_tag WebSocket 服务器启动成功: $serverUrl');
-      Get.find<BroadcastWsController>().startBroadcast('$_host:$_port');
+      Get.find<BroadcastWsController>().startBroadcast(_port);
       // 监听请求
       _server!.listen((HttpRequest request) async {
         if (WebSocketTransformer.isUpgradeRequest(request)) {
@@ -706,7 +706,6 @@ class WebSocketServerController extends GetxController {
         final status = {
           'running': _isRunning.value,
           'clientCount': _clientCount.value,
-          'serverUrl': serverUrl,
           'uptime': DateTime.now().millisecondsSinceEpoch,
         };
         request.response

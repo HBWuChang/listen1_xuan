@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:bonsoir/bonsoir.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/funcs.dart';
@@ -26,14 +24,14 @@ class BroadcastWsController extends GetxController {
     }
   }
 
-  Future<void> startBroadcast(String serverAddress) async {
+  Future<void> startBroadcast(int port) async {
     try {
       await stopBroadcast();
       BonsoirService service = BonsoirService(
         name: deviceId,
         type: broadcastType,
         port: 3030,
-        attributes: {'address': serverAddress},
+        attributes: {'port': port.toString()},
       );
 
       broadcast = BonsoirBroadcast(service: service);

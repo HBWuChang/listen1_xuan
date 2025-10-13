@@ -191,15 +191,18 @@ class _WebSocketClientControlContentState
                           children: [
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed:
-                                    ctrl.isConnecting || ctrl.isDisconnecting
+                                onPressed: ctrl.isDisconnecting
                                     ? null
+                                    : (ctrl.isConnecting || ctrl.isReconnecting)
+                                    ? ctrl.cancelConnection
                                     : ctrl.isConnected
                                     ? ctrl.disconnect
                                     : ctrl.connect,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: ctrl.isConnected
                                       ? Colors.red.withOpacity(0.9)
+                                      : (ctrl.isConnecting || ctrl.isReconnecting)
+                                      ? Colors.orange.withOpacity(0.9)
                                       : Colors.blue.withOpacity(0.9),
                                   foregroundColor: Colors.white,
                                   elevation: 2,
@@ -209,8 +212,8 @@ class _WebSocketClientControlContentState
                                   maximumSize: Size(double.infinity, 40),
                                 ),
                                 icon: Icon(
-                                  ctrl.isConnecting
-                                      ? Icons.hourglass_empty
+                                  (ctrl.isConnecting || ctrl.isReconnecting)
+                                      ? Icons.close
                                       : ctrl.isDisconnecting
                                       ? Icons.hourglass_empty
                                       : ctrl.isConnected
@@ -220,7 +223,9 @@ class _WebSocketClientControlContentState
                                 ),
                                 label: Text(
                                   ctrl.isConnecting
-                                      ? '连接中...'
+                                      ? '取消连接'
+                                      : ctrl.isReconnecting
+                                      ? '取消重连'
                                       : ctrl.isDisconnecting
                                       ? '断开中...'
                                       : ctrl.isConnected
@@ -982,10 +987,21 @@ class _WebSocketClientControlContentState
                                   Expanded(child: Text(address)),
                                   if (!controller.isConnected) ...[
                                     IconButton(
-                                      onPressed: () => _showEditAddressDialog(
-                                        historyAddresses.indexOf(address),
-                                        address,
-                                      ),
+                                      onPressed: () async {
+                                        // 检查是否是当前选中的地址
+                                        bool isCurrentSelected = controller.serverAddress == address;
+                                        
+                                        if (!isCurrentSelected) {
+                                          // 只有在下拉框展开时才关闭下拉框
+                                          Navigator.of(context).pop();
+                                        }
+                                        
+                                        // 然后显示编辑对话框
+                                        await _showEditAddressDialog(
+                                          historyAddresses.indexOf(address),
+                                          address,
+                                        );
+                                      },
                                       icon: const Icon(Icons.edit, size: 16),
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(
@@ -995,10 +1011,21 @@ class _WebSocketClientControlContentState
                                       tooltip: '编辑',
                                     ),
                                     IconButton(
-                                      onPressed: () => _showDeleteAddressDialog(
-                                        historyAddresses.indexOf(address),
-                                        address,
-                                      ),
+                                      onPressed: () async {
+                                        // 检查是否是当前选中的地址
+                                        bool isCurrentSelected = controller.serverAddress == address;
+                                        
+                                        if (!isCurrentSelected) {
+                                          // 只有在下拉框展开时才关闭下拉框
+                                          Navigator.of(context).pop();
+                                        }
+                                        
+                                        // 然后显示删除对话框
+                                        await _showDeleteAddressDialog(
+                                          historyAddresses.indexOf(address),
+                                          address,
+                                        );
+                                      },
                                       icon: const Icon(
                                         Icons.delete,
                                         size: 16,
@@ -1077,11 +1104,81 @@ class _WebSocketClientControlContentState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 附近设备地址选择区域
+            Obx(() {
+              final nearbyAddresses = controller.canAddAddr.toList();
+
+              if (nearbyAddresses.isNotEmpty) {
+                return Container(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        '附近设备',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 200),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: nearbyAddresses.length > 4
+                            ? Scrollbar(
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: nearbyAddresses.length,
+                                  itemBuilder: (context, index) {
+                                    final address = nearbyAddresses[index];
+                                    return _buildAddressListTile(
+                                      address,
+                                      textController,
+                                    );
+                                  },
+                                ),
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: nearbyAddresses
+                                    .map(
+                                      (address) => _buildAddressListTile(
+                                        address,
+                                        textController,
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '手动输入',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                );
+              } else {
+                return const SizedBox.shrink();
+              }
+            }),
+
             TextField(
               controller: textController,
               decoration: const InputDecoration(
                 labelText: '服务器地址',
-                hintText: '例如: 192.168.1.100:8080',
+                hintText: '例如: Xiebian.local:25917或192.168.1.100:25917',
                 border: OutlineInputBorder(),
               ),
               autofocus: true,
@@ -1217,6 +1314,24 @@ class _WebSocketClientControlContentState
       default:
         return Icons.help_outline;
     }
+  }
+
+  /// 构建附近设备地址列表项
+  Widget _buildAddressListTile(
+    String address,
+    TextEditingController textController,
+  ) {
+    return ListTile(
+      dense: true,
+      title: Text(address, style: const TextStyle(fontSize: 14)),
+      leading: const Icon(Icons.devices, size: 20, color: Colors.blue),
+      onTap: () {
+        // 点击后直接填入输入框并确定
+        textController.text = address;
+        Get.back(result: address);
+      },
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+    );
   }
 
   /// 扫描二维码获取服务器地址

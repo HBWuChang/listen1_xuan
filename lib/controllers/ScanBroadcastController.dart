@@ -19,6 +19,22 @@ class ScanBroadcastController extends GetxController {
     startScan();
   }
 
+  void foundService(BonsoirDiscoveryEvent event) {
+    String? deviceId = event.service?.name;
+    String? host = event.service?.host;
+    String? port = event.service?.attributes['port'];
+    if (isEmpty(host) || isEmpty(port) || isEmpty(deviceId)) return;
+
+    String serverAddress = '$host:$port';
+    Get.find<WebSocketClientController>().canAddAddr.add(serverAddress);
+    if (Get.find<WebSocketClientController>().lastConnectedDeviceId.value ==
+            deviceId &&
+        Get.find<WebSocketClientController>().serverAddress != serverAddress) {
+      Get.find<WebSocketClientController>().lastConnectedDeviceNewAddr.value =
+          serverAddress!;
+    }
+  }
+
   Future<void> startScan() async {
     try {
       await discovery.initialize();
@@ -32,31 +48,27 @@ class ScanBroadcastController extends GetxController {
               event.service!.resolve(
                 discovery.serviceResolver,
               ); // Should be called when the user wants to connect to this service.
+              foundService(event);
               break;
             case BonsoirDiscoveryServiceResolvedEvent():
               // print('Service resolved : ${event.service.toJson()}');
+              foundService(event);
               break;
             case BonsoirDiscoveryServiceUpdatedEvent():
               // print('Service updated : ${event.service.toJson()}');
-              String deviceId = event.service.name;
-              String? serverAddress = event.service.attributes['address'];
-              if (isEmpty(deviceId) || isEmpty(serverAddress)) return;
-              if (deviceId == Get.find<BroadcastWsController>().deviceId)
-                return;
-              if (Get.find<WebSocketClientController>()
-                          .lastConnectedDeviceId
-                          .value ==
-                      deviceId &&
-                  Get.find<WebSocketClientController>().serverAddress !=
-                      serverAddress) {
-                Get.find<WebSocketClientController>()
-                        .lastConnectedDeviceNewAddr
-                        .value =
-                    serverAddress!;
-              }
+              foundService(event);
               break;
             case BonsoirDiscoveryServiceLostEvent():
               // print('Service lost : ${event.service.toJson()}');
+              String deviceId = event.service.name;
+              String? host = event.service.host;
+              String? port = event.service.attributes['port'];
+              if (isEmpty(host) || isEmpty(port) || isEmpty(deviceId)) return;
+
+              String serverAddress = '$host:$port';
+              Get.find<WebSocketClientController>().canAddAddr.remove(
+                serverAddress,
+              );
               break;
             default:
               // print('Another event occurred : $event.');
