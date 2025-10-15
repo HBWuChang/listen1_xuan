@@ -775,7 +775,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                         thickness: 2,
                         color: AdaptiveTheme.of(
                           Get.context!,
-                        ).theme.colorScheme.tertiaryContainer,
+                        ).theme.colorScheme.secondaryContainer,
                       ),
                     ),
                   Expanded(
