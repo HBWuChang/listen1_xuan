@@ -100,6 +100,17 @@ class PlaylistController extends GetxController {
     }
   }
 
+  Future<void> refreshData() async {
+    try {
+      playlists.clear();
+      currentOffset.value = initialOffset;
+      hasMore.value = true;
+      await loadData();
+    } catch (e) {
+      print(e);
+    }
+  }
+
   void onPlaylistTapped(Map<String, dynamic> playlist) {
     Get.toNamed(
       playlist['id'],
@@ -165,6 +176,31 @@ class Playlist extends GetView<PlaylistController> {
 
   Widget _buildPlaylistLayout(BuildContext context) {
     return Obx(() {
+      // 如果加载完成且没有歌单数据，显示刷新按钮
+      if (!controller.loading.value && controller.playlists.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.music_note_outlined,
+                size: 64,
+                color: Colors.grey,
+              ),
+              SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => controller.refreshData(),
+                icon: Icon(Icons.refresh),
+                label: Text('重新加载'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
       return SingleChildScrollView(
         controller: controller.scrollController,
         

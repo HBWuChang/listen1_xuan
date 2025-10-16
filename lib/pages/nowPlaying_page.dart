@@ -489,6 +489,7 @@ class NowPlayingPage extends StatelessWidget {
       maxLines: 1,
       // 禁用默认的文本选择工具栏，避免与列表项交互冲突
       showCursor: false,
+      onTap: voidCallback,
       toolbarOptions: ToolbarOptions(
         copy: true,
         selectAll: false,
