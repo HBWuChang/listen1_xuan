@@ -36,10 +36,9 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
 
     // 初始化控制器
     lyricController = Get.find<LyricController>();
-    lyricController.loadLyric();
     playController = Get.find<PlayController>();
     settingsController = Get.find<SettingsController>();
-    lyricController.loadLyric();
+    WidgetsBinding.instance.addPostFrameCallback((_) => lyricController.loadLyric());
 
     _backgroundController = AnimationController(
       duration: Duration(milliseconds: 500),
@@ -257,7 +256,7 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              global_loading_anime,
+              globalLoadingAnime,
               SizedBox(height: 16),
               Text('加载歌词中...'),
             ],

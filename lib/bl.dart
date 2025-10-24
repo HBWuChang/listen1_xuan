@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get/get.dart' as getx;
 import 'package:listen1_xuan/loweb.dart';
 import 'package:listen1_xuan/settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +10,7 @@ import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' show parse;
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
+import 'controllers/settings_controller.dart';
 import 'lowebutil.dart';
 import 'package:marquee/marquee.dart';
 import 'main.dart';
@@ -27,10 +29,7 @@ class Bilibili {
     final settings = settings_getsettings();
     final cookie = settings['bl'];
 
-    var headers = {
-      'content-type': 'application/json',
-      'cookie': cookie,
-    };
+    var headers = {'content-type': 'application/json', 'cookie': cookie};
     final dio = Dio();
     try {
       print(headers);
@@ -87,9 +86,11 @@ class Bilibili {
         });
       }
       // return retdata.cast<PlayList>();
-      return List.from(retdata.map((item) {
-        return PlayList.fromJson(item);
-      }));
+      return List.from(
+        retdata.map((item) {
+          return PlayList.fromJson(item);
+        }),
+      );
     } on DioException catch (e) {
       print('请求失败: ${e.message}');
       if (e.response != null) {
@@ -115,7 +116,7 @@ class Bilibili {
       return {
         'success': (fn) {
           fn({'info': {}, 'tracks': []});
-        }
+        },
       };
     }
     try {
@@ -126,13 +127,12 @@ class Bilibili {
         url =
             'https://api.bilibili.com/x/v3/fav/resource/list?ps=20&keyword&order=mtime&type=0&tid=0&platform=web&';
         var turl = '${url}pn=1&media_id=${selectmid.substring(2)}';
-        final headers = {
-          'content-type': 'application/json',
-          'cookie': cookie,
-        };
+        final headers = {'content-type': 'application/json', 'cookie': cookie};
         var medias = [];
-        var response =
-            await Dio().get(turl, options: Options(headers: headers));
+        var response = await Dio().get(
+          turl,
+          options: Options(headers: headers),
+        );
         var res = response.data;
         final data = response.data['data'];
         final info = {
@@ -149,8 +149,10 @@ class Bilibili {
           var pn = 2;
           do {
             turl = '${url}pn=$pn&media_id=${selectmid.substring(2)}';
-            response =
-                await Dio().get(turl, options: Options(headers: headers));
+            response = await Dio().get(
+              turl,
+              options: Options(headers: headers),
+            );
             res = response.data;
             res["data"]['medias'].forEach((element) {
               medias.add(element);
@@ -166,7 +168,7 @@ class Bilibili {
         return {
           'success': (fn) {
             fn({'info': info, 'tracks': tracks});
-          }
+          },
         };
       } else {
         final settings = settings_getsettings();
@@ -175,13 +177,12 @@ class Bilibili {
         url =
             'https://api.bilibili.com/x/space/fav/season/list?pn=1&ps=20&season_id=';
         var turl = url + selectmid.toString();
-        final headers = {
-          'content-type': 'application/json',
-          'cookie': cookie,
-        };
+        final headers = {'content-type': 'application/json', 'cookie': cookie};
         var medias = [];
-        var response =
-            await Dio().get(turl, options: Options(headers: headers));
+        var response = await Dio().get(
+          turl,
+          options: Options(headers: headers),
+        );
         var res = response.data;
         final data = response.data['data'];
         final info = {
@@ -204,7 +205,7 @@ class Bilibili {
         return {
           'success': (fn) {
             fn({'info': info, 'tracks': tracks});
-          }
+          },
         };
       }
     } catch (e) {
@@ -213,19 +214,13 @@ class Bilibili {
       return {
         'success': (fn) {
           fn({'info': {}, 'tracks': []});
-        }
+        },
       };
     }
   }
 
   static Future<Map<String, dynamic>> _getsettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? jsonString = prefs.getString('settings');
-    print("jsonString: $jsonString");
-    if (jsonString == null) {
-      return {};
-    }
-    return jsonDecode(jsonString);
+    return getx.Get.find<SettingsController>().settings;
   }
 
   Future<String> check_bl_cookie() async {
@@ -266,16 +261,21 @@ class Bilibili {
   }
 
   static Future<Map<String, String>> fetch_wbi_key() async {
-    final response =
-        await Dio().get('https://api.bilibili.com/x/web-interface/nav');
+    final response = await Dio().get(
+      'https://api.bilibili.com/x/web-interface/nav',
+    );
     final jsonContent = response.data;
     final imgUrl = jsonContent['data']['wbi_img']['img_url'];
     final subUrl = jsonContent['data']['wbi_img']['sub_url'];
     return {
       'img_key': imgUrl.substring(
-          imgUrl.lastIndexOf('/') + 1, imgUrl.lastIndexOf('.')),
+        imgUrl.lastIndexOf('/') + 1,
+        imgUrl.lastIndexOf('.'),
+      ),
       'sub_key': subUrl.substring(
-          subUrl.lastIndexOf('/') + 1, subUrl.lastIndexOf('.')),
+        subUrl.lastIndexOf('/') + 1,
+        subUrl.lastIndexOf('.'),
+      ),
     };
   }
 
@@ -379,7 +379,8 @@ class Bilibili {
     final sortedKeys = params.keys.toList()..sort();
     for (var key in sortedKeys) {
       query.add(
-          '${Uri.encodeComponent(key)}=${Uri.encodeComponent(params[key].toString().replaceAll(chrFilter, ''))}');
+        '${Uri.encodeComponent(key)}=${Uri.encodeComponent(params[key].toString().replaceAll(chrFilter, ''))}',
+      );
     }
     final queryString = query.join('&');
     final wbiSign = md5.convert(utf8.encode(queryString + mixinKey)).toString();
@@ -387,7 +388,9 @@ class Bilibili {
   }
 
   static Future<dynamic> wrap_wbi_request(
-      String url, Map<String, dynamic> params) async {
+    String url,
+    Map<String, dynamic> params,
+  ) async {
     final queryString = await encWbi(params);
     final targetUrl = '$url?$queryString';
     String cookie = '';
@@ -397,26 +400,28 @@ class Bilibili {
     } else {
       cookie = 'buvid3=0';
     }
-    var t = await Dio().get(targetUrl,
-        options: Options(
-          headers: {
-            "User-Agent":
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
-            "Connection": "keep-alive",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Encoding": "gzip, deflate, br",
-            "accept-language": "zh-CN",
-            "referer": "https://www.bilibili.com/",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "cross-site",
-            'cookie': cookie,
-          },
-          validateStatus: (status) {
-            // 允许 412 状态码不抛出异常
-            return status != null && status < 500;
-          },
-        ));
+    var t = await Dio().get(
+      targetUrl,
+      options: Options(
+        headers: {
+          "User-Agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
+          "Connection": "keep-alive",
+          "Accept": "application/json, text/plain, */*",
+          "Accept-Encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN",
+          "referer": "https://www.bilibili.com/",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "cross-site",
+          'cookie': cookie,
+        },
+        validateStatus: (status) {
+          // 允许 412 状态码不抛出异常
+          return status != null && status < 500;
+        },
+      ),
+    );
     return t;
   }
 
@@ -520,10 +525,7 @@ class Bilibili {
 
   Future<Map<String, dynamic>> bi_album(String url) async {
     return {
-      'success': (Function fn) => fn({
-            'tracks': [],
-            'info': {},
-          }),
+      'success': (Function fn) => fn({'tracks': [], 'info': {}}),
     };
   }
 
@@ -552,8 +554,12 @@ class Bilibili {
     };
   }
 
-  static Map<String, dynamic> bi_convert_song3(Map<String, dynamic> songInfo,
-      String bvid, Map<String, dynamic> author, String defaultImg) {
+  static Map<String, dynamic> bi_convert_song3(
+    Map<String, dynamic> songInfo,
+    String bvid,
+    Map<String, dynamic> author,
+    String defaultImg,
+  ) {
     String imgUrl = songInfo['first_frame'] ?? defaultImg;
     if (imgUrl.startsWith('//')) {
       imgUrl = 'https:$imgUrl';
@@ -576,8 +582,9 @@ class Bilibili {
         try {
           String targetUrl;
           final response = await wrap_wbi_request(
-              'https://api.bilibili.com/x/space/wbi/acc/info',
-              {'mid': artistId});
+            'https://api.bilibili.com/x/space/wbi/acc/info',
+            {'mid': artistId},
+          );
           final info = {
             'cover_img_url': response.data['data']['face'],
             'title': response.data['data']['name'],
@@ -593,13 +600,15 @@ class Bilibili {
           }
           if (getParameterByName('list_id', url)?.split('_').length == 3) {
             final res = await wrap_wbi_request(
-                'https://api.bilibili.com/x/space/wbi/arc/search', {
-              'mid': artistId,
-              'pn': 1,
-              'ps': 25,
-              'order': 'click',
-              'index': 1
-            });
+              'https://api.bilibili.com/x/space/wbi/arc/search',
+              {
+                'mid': artistId,
+                'pn': 1,
+                'ps': 25,
+                'order': 'click',
+                'index': 1,
+              },
+            );
             final tracks = res.data['data']['list']['vlist'].map((item) {
               return bi_convert_song2(item);
             }).toList();
@@ -607,10 +616,10 @@ class Bilibili {
           } else {
             targetUrl =
                 'https://api.bilibili.com/audio/music-service-c/web/song/upper?pn=1&ps=0&order=2&uid=$artistId';
-            final res = await Dio().get(targetUrl,
-                options: Options(headers: {
-                  'cookie': cookie,
-                }));
+            final res = await Dio().get(
+              targetUrl,
+              options: Options(headers: {'cookie': cookie}),
+            );
             final tracks = res.data['data']['data'].map((item) {
               return bi_convert_song(item);
             }).toList();
@@ -620,7 +629,7 @@ class Bilibili {
           print(e);
           fn({'tracks': [], 'info': {}});
         }
-      }
+      },
     };
   }
 
@@ -630,16 +639,16 @@ class Bilibili {
     Map<String, dynamic>? result;
     if (match != null) {
       final playlistId = match.group(1);
-      result = {
-        'type': 'playlist',
-        'id': 'biplaylist_$playlistId',
-      };
+      result = {'type': 'playlist', 'id': 'biplaylist_$playlistId'};
     }
     return result ?? {};
   }
 
   Future<void> bootstrap_track(
-      Track track, Function success, Function failure) async {
+    Track track,
+    Function success,
+    Function failure,
+  ) async {
     final trackId = track.id;
     if (trackId.startsWith('bitrack_v_')) {
       final sound = {};
@@ -664,8 +673,9 @@ class Bilibili {
           final audioList = response2.data['data']['dash']['audio'];
           if (audioList.isNotEmpty) {
             // 找到最大的 id 对应的元素
-            final maxAudio =
-                audioList.reduce((a, b) => a['id'] > b['id'] ? a : b);
+            final maxAudio = audioList.reduce(
+              (a, b) => a['id'] > b['id'] ? a : b,
+            );
             final url = maxAudio['baseUrl'];
             sound['url'] = url;
             sound['platform'] = 'bilibili';
@@ -723,20 +733,14 @@ class Bilibili {
           cookie = 'buvid3=0';
         }
         Dio()
-            .get(targetUrl,
-                options: Options(headers: {
-                  'cookie': cookie,
-                }))
+            .get(targetUrl, options: Options(headers: {'cookie': cookie}))
             .then((response) {
-          final result = response.data['data']['result'].map((song) {
-            return bi_convert_song2(song);
-          }).toList();
-          final total = response.data['data']['numResults'];
-          fn({
-            'result': result,
-            'total': total,
-          });
-        });
+              final result = response.data['data']['result'].map((song) {
+                return bi_convert_song2(song);
+              }).toList();
+              final total = response.data['data']['numResults'];
+              fn({'result': result, 'total': total});
+            });
       },
     };
   }
@@ -744,9 +748,7 @@ class Bilibili {
   static Future<Map<String, dynamic>> lyric() async {
     return {
       'success': (Function fn) {
-        fn({
-          'lyric': '',
-        });
+        fn({'lyric': ''});
       },
     };
   }
@@ -777,11 +779,11 @@ class Bilibili {
     };
   }
 
-// static get_user() {
-//     return {
-//       success: (fn) => fn({ status: 'fail', data: {} }),
-//     };
-//   }
+  // static get_user() {
+  //     return {
+  //       success: (fn) => fn({ status: 'fail', data: {} }),
+  //     };
+  //   }
   static Future<Map<String, dynamic>> get_user() async {
     return {'status': 'fail', 'data': {}};
   }

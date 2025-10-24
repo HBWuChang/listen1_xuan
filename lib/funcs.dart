@@ -9,9 +9,7 @@ void showLoadingDialog(RxString message) {
       child: AlertDialog(
         content: Row(
           children: [
-            CircularProgressIndicator(
-              strokeWidth: 4.w,
-            ),
+            CircularProgressIndicator(strokeWidth: 4.w),
             SizedBox(width: 20.w),
             Obx(() => Text(message.value, style: TextStyle(fontSize: 16.sp))),
           ],
@@ -22,8 +20,11 @@ void showLoadingDialog(RxString message) {
   );
 }
 
-void showErrorSnackbar(String title, String message,
-    {SnackPosition snackPosition = SnackPosition.TOP}) {
+void showErrorSnackbar(
+  String title,
+  String message, {
+  SnackPosition snackPosition = SnackPosition.TOP,
+}) {
   try {
     Get.closeAllSnackbars();
     Get.snackbar(
@@ -38,8 +39,11 @@ void showErrorSnackbar(String title, String message,
   }
 }
 
-void showWarningSnackbar(String title, String message,
-    {SnackPosition snackPosition = SnackPosition.TOP}) {
+void showWarningSnackbar(
+  String title,
+  String message, {
+  SnackPosition snackPosition = SnackPosition.TOP,
+}) {
   try {
     Get.closeAllSnackbars();
     Get.snackbar(
@@ -54,8 +58,11 @@ void showWarningSnackbar(String title, String message,
   }
 }
 
-void showInfoSnackbar(String title, String message,
-    {SnackPosition snackPosition = SnackPosition.TOP}) {
+void showInfoSnackbar(
+  String title,
+  String message, {
+  SnackPosition snackPosition = SnackPosition.TOP,
+}) {
   try {
     Get.closeAllSnackbars();
     Get.snackbar(
@@ -70,8 +77,11 @@ void showInfoSnackbar(String title, String message,
   }
 }
 
-void showSuccessSnackbar(String title, String message,
-    {SnackPosition snackPosition = SnackPosition.TOP}) {
+void showSuccessSnackbar(
+  String title,
+  String message, {
+  SnackPosition snackPosition = SnackPosition.TOP,
+}) {
   try {
     Get.closeAllSnackbars();
     Get.snackbar(
@@ -85,6 +95,57 @@ void showSuccessSnackbar(String title, String message,
     debugPrint("Error showing snackbar: $e");
   }
 }
+
+enum ConfirmLevel { info, warning, danger }
+
+Future<bool> showConfirmDialog(
+  String message,
+  String title, {
+  ConfirmLevel confirmLevel = ConfirmLevel.info,
+  String confirmText = '确认',
+  String cancelText = '取消',
+}) async {
+  ButtonStyle style;
+  switch (confirmLevel) {
+    case ConfirmLevel.info:
+      style = ElevatedButton.styleFrom(
+        foregroundColor: Get.theme.colorScheme.primary,
+        backgroundColor: Get.theme.colorScheme.onPrimary,
+      );
+      break;
+    case ConfirmLevel.warning:
+      style = ElevatedButton.styleFrom(
+        foregroundColor: Get.theme.colorScheme.onSecondary,
+        backgroundColor: Get.theme.colorScheme.secondary,
+      );
+      break;
+    case ConfirmLevel.danger:
+      style = ElevatedButton.styleFrom(
+        foregroundColor: Get.theme.colorScheme.onError,
+        backgroundColor: Get.theme.colorScheme.error,
+      );
+      break;
+  }
+  bool? result = await Get.dialog<bool>(
+    AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text(cancelText),
+        ),
+        ElevatedButton(
+          style: style,
+          onPressed: () => Get.back(result: true),
+          child: Text(confirmText),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
+}
+
 bool isEmpty(dynamic str) {
   if (str == null) return true;
   if (str is String) {

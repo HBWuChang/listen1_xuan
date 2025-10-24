@@ -1,3 +1,4 @@
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -36,7 +37,7 @@ Future<Directory> xuan_getdataDirectory() async {
         throw Exception('Storage permission not granted');
     }
   }
- 
+
   return await xuan_getdownloadDirectory();
 }
 
@@ -306,8 +307,10 @@ List<Widget> create_hotkey_btns(context, _msg) {
   ];
 }
 
-Widget global_loading_anime = LoadingBouncingGrid.square(
-  backgroundColor: Colors.indigo,
+Widget get globalLoadingAnime => LoadingBouncingGrid.square(
+  backgroundColor: AdaptiveTheme.of(
+    Get.context!,
+  ).theme.colorScheme.primary,
 );
 Widget search_Animation({
   required Animation<double> animation,

@@ -218,14 +218,14 @@ class PlayControlCommands {
 }
 
 Map<String, String> getCookieCommandsMap = {
-  '所有': GetCookieCommands.all,
-  '哔哩哔哩': GetCookieCommands.bl,
-  '网易云音乐': GetCookieCommands.ne,
-  'QQ音乐': GetCookieCommands.qq,
-  'Github': GetCookieCommands.github,
+  '所有': PlantformCodes.all,
+  '哔哩哔哩': PlantformCodes.bl,
+  '网易云音乐': PlantformCodes.ne,
+  'QQ音乐': PlantformCodes.qq,
+  'Github': PlantformCodes.github,
 };
 
-class GetCookieCommands {
+class PlantformCodes {
   static const String all = 'all';
   static const String bl = 'bl';
   static const String ne = 'ne';

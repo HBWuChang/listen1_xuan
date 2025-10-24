@@ -229,8 +229,8 @@ class WebSocketServerController extends GetxController {
           break;
         case WebSocketMessageType.getCookie:
           Set<String> toOpr = {};
-          if (message.content == GetCookieCommands.all) {
-            toOpr.addAll(GetCookieCommands.values);
+          if (message.content == PlantformCodes.all) {
+            toOpr.addAll(PlantformCodes.values);
           } else {
             toOpr.add(message.content);
           }
@@ -253,7 +253,7 @@ class WebSocketServerController extends GetxController {
           try {
             final contentMap = message.parseContentAsMap();
             if (contentMap != null) {
-              for (var k in GetCookieCommands.values) {
+              for (var k in PlantformCodes.values) {
                 if (contentMap.containsKey(k)) {
                   await savePlatformToken(
                     k,

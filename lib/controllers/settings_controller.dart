@@ -2,16 +2,25 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
+import 'package:listen1_xuan/models/websocket_message.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
+import '../bl.dart';
+import '../main.dart';
+import '../netease.dart';
+import '../qq.dart';
+import '../settings.dart';
 import 'myPlaylist_controller.dart';
 
 class SettingsController extends GetxController {
-  var settings = <String, dynamic>{}.obs;
-  
+  final settings = <String, dynamic>{}.obs;
+
   bool get tryShowLyricInNotification =>
       settings['tryShowLyricInNotification'] ?? true;
   set tryShowLyricInNotification(bool value) {
@@ -24,6 +33,9 @@ class SettingsController extends GetxController {
   set hideOrMinimize(bool value) {
     settings['hideOrMinimize'] = value;
   }
+
+  RxSet<int> settingsPageExpansion = <int>{}.obs;
+  Set<int> _lastSettingsPageExpansion = <int>{};
 
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
@@ -41,6 +53,14 @@ class SettingsController extends GetxController {
     // 监听 showLyricTranslation 变化并保存到 settings
     ever(showLyricTranslation, (value) {
       settings['showLyricTranslation'] = value;
+    });
+    ever(settingsPageExpansion, (callback) async {
+      settings['settingsPageExpansion'] = callback.toList();
+      if (callback.contains(0) &&
+          _lastSettingsPageExpansion.contains(0) == false) {
+        refreshLoginData();
+      }
+      _lastSettingsPageExpansion = Set<int>.from(callback); // 创建新的 Set 副本
     });
   }
 
@@ -63,6 +83,11 @@ class SettingsController extends GetxController {
     } else {
       CacheController_localCacheList.clear();
     }
+    settingsPageExpansion.value = Set<int>.from(
+      settings['settingsPageExpansion'],
+    );
+    _lastSettingsPageExpansion = Set<int>.from(settingsPageExpansion.value);
+    
     final player_settings = await prefs.getString('player-settings');
     if (player_settings != null) {
       try {
@@ -113,5 +138,60 @@ class SettingsController extends GetxController {
 
   setSetting(String key, dynamic value) {
     settings[key] = value;
+  }
+
+  final readmeContent = ''.obs;
+  bool get hasReadmeContent =>
+      readmeContent.value.isNotEmpty && readmeContent.value != '加载失败';
+  Future<void> loadReadme() async {
+    try {
+      readmeContent.value = '';
+      final treadmeContent = await dio_with_ProxyAdapter.get(
+        'https://api.github.com/repos/HBWuChang/listen1_xuan/readme',
+      );
+      String decodeBase64(String data) {
+        return utf8.decode(base64Decode(data));
+      }
+
+      // 使用base64对content进行解码
+      // _readmeContent_setstate(() {
+      readmeContent.value = decodeBase64(
+        treadmeContent.data['content'].replaceAll("\n", ''),
+      );
+      // });
+    } catch (e) {
+      // _readmeContent_setstate(() {
+      //   _readmeContent = '加载失败';
+      // });
+      readmeContent.value = '加载失败';
+    }
+  }
+
+  final loginData = <String, dynamic>{}.obs;
+  final loginDataLoading = Set().obs;
+  Future<void> refreshLoginData() async {
+    final tasks = Future.wait([
+      Future.microtask(() async {
+        loginDataLoading.add(PlantformCodes.bl);
+        loginData[PlantformCodes.bl] = await bilibili.check_bl_cookie();
+        loginDataLoading.remove(PlantformCodes.bl);
+      }),
+      Future.microtask(() async {
+        loginDataLoading.add(PlantformCodes.ne);
+        loginData[PlantformCodes.ne] = await netease.get_user();
+        loginDataLoading.remove(PlantformCodes.ne);
+      }),
+      Future.microtask(() async {
+        loginDataLoading.add(PlantformCodes.qq);
+        loginData[PlantformCodes.qq] = await qq.get_user();
+        loginDataLoading.remove(PlantformCodes.qq);
+      }),
+      Future.microtask(() async {
+        loginDataLoading.add(PlantformCodes.github);
+        loginData[PlantformCodes.github] = await Github.updateStatus();
+        loginDataLoading.remove(PlantformCodes.github);
+      }),
+    ]);
+    await tasks;
   }
 }

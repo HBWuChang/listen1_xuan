@@ -74,17 +74,17 @@ class PlaylistController extends GetxController {
 
   Future<void> loadMoreData() async {
     if (loadingMore.value || !hasMore.value) return;
-    
+
     try {
       loadingMore.value = true;
       currentOffset.value += perPage.value;
-      
+
       Map<String, dynamic> result = await MediaService.showPlaylistArray(
         source,
         currentOffset.value,
         filter['id'],
       );
-      
+
       result['success']((data) {
         print(data); // 打印实际的数据
         if (data.length == 0) {
@@ -153,19 +153,25 @@ class Playlist extends GetView<PlaylistController> {
   @override
   Widget build(BuildContext context) {
     // Initialize controller with unique tag based on source and filter
-    final String controllerTag = PlaylistController.getControllerTag(source, filter);
-    Get.put(PlaylistController(
-      source: source,
-      initialOffset: offset,
-      filter: filter,
-      onPlaylistTap: onPlaylistTap,
-    ), tag: controllerTag);
+    final String controllerTag = PlaylistController.getControllerTag(
+      source,
+      filter,
+    );
+    Get.put(
+      PlaylistController(
+        source: source,
+        initialOffset: offset,
+        filter: filter,
+        onPlaylistTap: onPlaylistTap,
+      ),
+      tag: controllerTag,
+    );
 
     return Scaffold(
       body: Center(
         child: Obx(() {
           if (controller.loading.value) {
-            return global_loading_anime;
+            return globalLoadingAnime;
           }
 
           return _buildPlaylistLayout(context);
@@ -182,11 +188,7 @@ class Playlist extends GetView<PlaylistController> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.music_note_outlined,
-                size: 64,
-                color: Colors.grey,
-              ),
+              Icon(Icons.music_note_outlined, size: 64, color: Colors.grey),
               SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () => controller.refreshData(),
@@ -203,7 +205,7 @@ class Playlist extends GetView<PlaylistController> {
 
       return SingleChildScrollView(
         controller: controller.scrollController,
-        
+
         child: Column(
           children: [
             _buildPlaylistWrap(context),
@@ -227,10 +229,7 @@ class Playlist extends GetView<PlaylistController> {
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
                   '没有更多数据了',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
                 ),
               ),
           ],
@@ -245,22 +244,23 @@ class Playlist extends GetView<PlaylistController> {
     final isLandscape = screenWidth > MediaQuery.of(context).size.height;
     final padding = isLandscape ? 40.0 : 20.0;
     final availableWidth = screenWidth - padding;
-    
+
     // Adaptive item width (minimum 120, maximum 200)
     const double minItemWidth = 120.0;
     const double maxItemWidth = 200.0;
     const double itemSpacing = 10.0;
-    
+
     // Calculate how many items can fit in one row
     int itemsPerRow = (availableWidth / (minItemWidth + itemSpacing)).floor();
     if (itemsPerRow < 1) itemsPerRow = 1;
-    
+
     // Calculate actual item width
-    double actualItemWidth = (availableWidth - (itemsPerRow - 1) * itemSpacing) / itemsPerRow;
+    double actualItemWidth =
+        (availableWidth - (itemsPerRow - 1) * itemSpacing) / itemsPerRow;
     if (actualItemWidth > maxItemWidth) {
       actualItemWidth = maxItemWidth;
     }
-    
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: padding / 2),
       child: Wrap(
@@ -273,7 +273,11 @@ class Playlist extends GetView<PlaylistController> {
     );
   }
 
-  Widget _buildPlaylistItem(BuildContext context, Map<String, dynamic> playlist, double itemWidth) {
+  Widget _buildPlaylistItem(
+    BuildContext context,
+    Map<String, dynamic> playlist,
+    double itemWidth,
+  ) {
     return GestureDetector(
       onTap: () => controller.onPlaylistTapped(playlist),
       child: Container(

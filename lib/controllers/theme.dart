@@ -469,27 +469,6 @@ class ThemeSettingsDialog extends StatelessWidget {
                   }).toList(),
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // 底部按钮
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(onPressed: () => Get.back(), child: Text('取消')),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      Get.back();
-                      Get.snackbar(
-                        '主题设置',
-                        '设置已保存',
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    },
-                    child: Text('确定'),
-                  ),
-                ],
-              ),
             ],
           ),
         ),

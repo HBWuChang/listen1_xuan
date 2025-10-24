@@ -477,13 +477,12 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
 
   /// 打开歌词页面
   void _openLyricPage() {
-    // 确保 LyricController 已经被初始化
-    if (!Get.isRegistered<LyricController>()) {
-      Get.put(LyricController());
-    }
-
     // 使用路由导航到歌词页面
-    Get.toNamed('/lyric', id: 1);
+    if (Get.find<RouteController>().inLyricPage.value) {
+      Get.back(id: 1);
+    } else {
+      Get.toNamed(RouteName.lyricPage, id: 1);
+    }
   }
 
   late Offset position;
@@ -494,7 +493,7 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
     Widget ctx_bu = GetBuilder<AudioHandlerController>(
       builder: (controller) {
         if (controller.loading.value) {
-          return Center(child: global_loading_anime);
+          return Center(child: globalLoadingAnime);
         } else {
           Widget t_w = Container(
             height: widget.horizon ? 60 : 256.w,
@@ -733,7 +732,10 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                   tooltip: '正在播放列表',
                                   icon: Icon(Icons.playlist_play_rounded),
                                   onPressed: () async {
-                                    Get.toNamed('/nowPlayingPage', id: 1);
+                                    Get.toNamed(
+                                      RouteName.nowPlayingPage,
+                                      id: 1,
+                                    );
                                   },
                                 ),
                                 Text(
@@ -947,7 +949,7 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                                   ),
                                                   onPressed: () async {
                                                     Get.toNamed(
-                                                      '/nowPlayingPage',
+                                                      RouteName.nowPlayingPage,
                                                       id: 1,
                                                     );
                                                   },

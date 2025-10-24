@@ -15,7 +15,9 @@ import 'controllers/nowplaying_controller.dart';
 import 'controllers/play_controller.dart';
 import 'examples/websocket_server_example.dart';
 import 'examples/websocket_client_example.dart';
+import 'pages/download_page.dart';
 import 'pages/nowPlaying_page.dart';
+import 'pages/settings/settings_readme.dart';
 import 'settings.dart';
 import 'loweb.dart';
 import 'bodys.dart';
@@ -49,53 +51,7 @@ import 'package:app_links/app_links.dart';
 final dio_with_cookie_manager = Dio();
 final dio_with_ProxyAdapter = Dio();
 
-int disposedByClean = 0;
-
-class ListenPopMiddleware extends GetMiddleware {
-  @override
-  void onPageDispose() {
-    print("onPageDispose: ${Get.currentRoute}");
-    if (disposedByClean > 0) {
-      disposedByClean--;
-    } else {
-      top_routeWithName.removeLast();
-    }
-  }
-}
-
 int last_dir = 0;
-
-class routeWithName {
-  final Route route;
-  final String name;
-  routeWithName(this.route, this.name);
-}
-
-List<routeWithName> top_routeWithName = List.empty(growable: true);
-
-void addAndCleanReapeatRoute(Route route, String name) {
-  if (top_routeWithName.isNotEmpty) {
-    // 清除重复的路由
-    top_routeWithName.removeWhere((r) {
-      if (r.route.settings.name == route.settings.name) {
-        disposedByClean++;
-        Get.removeRoute(r.route, id: 1);
-        return true;
-      }
-      return false;
-    });
-  }
-  top_routeWithName.add(routeWithName(route, name));
-}
-
-Future<void> closeApp() async {
-  Get.dialog(
-    AlertDialog(title: Text('正在保存设置'), content: CircularProgressIndicator()),
-    barrierDismissible: false,
-  );
-  await Get.find<SettingsController>().saveSettings();
-  exit(0);
-}
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -211,7 +167,7 @@ void main() async {
     permanent: true,
   );
   await settingsController.loadSettings();
-
+  Get.put(RouteController(), permanent: true);
   Get.put(PlayController(), permanent: true);
   Get.find<PlayController>().loadDatas();
   CacheController cacheController = Get.put(CacheController(), permanent: true);
@@ -318,6 +274,9 @@ void main() async {
 
   // 将 PersistCookieJar 添加到 Dio 的拦截器中
   dio_with_cookie_manager.interceptors.add(CookieManager(cookieJar));
+  if (settingsController.settingsPageExpansion.contains(0)) {
+    settingsController.refreshLoginData();
+  }
   // dio_with_cookie_manager.httpClientAdapter = IOHttpClientAdapter(
   //   createHttpClient: () {
   //     final client = HttpClient();
@@ -556,7 +515,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
       if (search_text != "") {
         input_text_Controller.text = search_text;
         Get.toNamed(
-          '/search',
+          RouteName.searchPage,
           arguments: {
             'input_text_Controller': input_text_Controller,
             'onPlaylistTap': change_main_status,
@@ -585,39 +544,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   late bool global_horizon;
 
   late BuildContext _main_context;
-  int last_pop_time = 0;
   bool left_to_right_reverse = true;
-  void _pop() {
-    print("didPop: didPop,");
-    if (top_routeWithName.isNotEmpty) {
-      Get.back(id: 1);
-      return;
-    }
-
-    if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
-      if (is_windows) {
-        windowManager.minimize();
-        windowManager.setSkipTaskbar(false);
-        return;
-      }
-      if (kDebugMode) {
-        print("exit(0)");
-      } else {
-        closeApp();
-      }
-    } else {
-      xuan_toast(
-        msg: is_windows ? "再按一次以最小化" : "再按一次退出",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.black54,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-      last_pop_time = DateTime.now().millisecondsSinceEpoch;
-    }
-  }
 
   @override
   Widget build(BuildContext main_context) {
@@ -718,7 +645,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                   readOnly: true,
                   onTap: () async {
                     Get.toNamed(
-                      '/search',
+                      RouteName.searchPage,
                       arguments: {
                         'input_text_Controller': input_text_Controller,
                         'onPlaylistTap': change_main_status,
@@ -748,7 +675,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                       tooltip: "设置",
                       icon: Icon(Icons.settings),
                       onPressed: () {
-                        Get.toNamed('/settings', id: 1);
+                        Get.toNamed(RouteName.settingsPage, id: 1);
                       },
                     ),
                   ],
@@ -760,7 +687,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
           return PopScope(
             canPop: false,
             onPopInvokedWithResult: (didPop, result) {
-              _pop();
+              router_pop();
             },
             child: Scaffold(
               body: Row(
@@ -783,7 +710,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                       onPointerDown: (event) {
                         if (event.kind == PointerDeviceKind.mouse &&
                             event.buttons == kSecondaryMouseButton) {
-                          _pop();
+                          router_pop();
                         }
                         if (event.kind == PointerDeviceKind.mouse &&
                             event.buttons == kMiddleMouseButton) {
@@ -813,7 +740,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                     IconButton(
                                       tooltip: "返回",
                                       onPressed: () {
-                                        _pop();
+                                        router_pop();
                                       },
                                       icon: Icon(
                                         Icons.arrow_back_ios_new,
@@ -867,11 +794,11 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                           Expanded(
                             child: Navigator(
                               key: Get.nestedKey(1),
-                              initialRoute: '/',
+                              initialRoute: RouteName.defaultPage,
                               onGenerateRoute: (RouteSettings settings) {
                                 WidgetBuilder builder;
                                 switch (settings.name) {
-                                  case '/':
+                                  case RouteName.defaultPage:
                                     // 在函数内部定义默认页面
                                     if (global_horizon) {
                                       builder = (context_in_1) {
@@ -1049,7 +976,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                     readOnly: true,
                                                     onTap: () async {
                                                       Get.toNamed(
-                                                        '/search',
+                                                        RouteName.searchPage,
                                                         id: 1,
                                                       );
                                                     },
@@ -1068,7 +995,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                                   icon: Icon(Icons.settings),
                                                   onPressed: () {
                                                     Get.toNamed(
-                                                      '/settings',
+                                                      RouteName.settingsPage,
                                                       id: 1,
                                                     );
                                                   },
@@ -1201,7 +1128,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                       };
                                       break;
                                     }
-                                  case '/search':
+                                  case RouteName.searchPage:
                                     var route = GetPageRoute(
                                       settings: settings,
                                       page: () => Searchlistinfo(
@@ -1212,17 +1139,23 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                       transition: Transition.upToDown,
                                       middlewares: [ListenPopMiddleware()],
                                     );
-                                    addAndCleanReapeatRoute(route, '/search');
+                                    addAndCleanReapeatRoute(
+                                      route,
+                                      RouteName.searchPage,
+                                    );
                                     return route;
-                                  case '/settings':
+                                  case RouteName.settingsPage:
                                     var route = GetPageRoute(
                                       settings: settings,
                                       page: () => SettingsPage(),
                                       middlewares: [ListenPopMiddleware()],
                                     );
-                                    addAndCleanReapeatRoute(route, '/settings');
+                                    addAndCleanReapeatRoute(
+                                      route,
+                                      RouteName.settingsPage,
+                                    );
                                     return route;
-                                  case '/nowPlayingPage':
+                                  case RouteName.nowPlayingPage:
                                     var route = GetPageRoute(
                                       settings: settings,
                                       transition: Transition.downToUp,
@@ -1231,17 +1164,46 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                     );
                                     addAndCleanReapeatRoute(
                                       route,
-                                      '/nowPlayingPage',
+                                      RouteName.nowPlayingPage,
                                     );
                                     return route;
-                                  case '/lyric':
+                                  case RouteName.lyricPage:
                                     var route = GetPageRoute(
                                       settings: settings,
                                       transition: Transition.downToUp,
                                       page: () => LyricPage(),
                                       middlewares: [ListenPopMiddleware()],
                                     );
-                                    addAndCleanReapeatRoute(route, '/lyric');
+                                    addAndCleanReapeatRoute(
+                                      route,
+                                      RouteName.lyricPage,
+                                    );
+                                    return route;
+                                  case RouteName.settingsReadmePage:
+                                    var route = GetPageRoute(
+                                      settings: settings,
+                                      transition:
+                                          Transition.rightToLeftWithFade,
+                                      page: () => SettingsReadmePage(),
+                                      middlewares: [ListenPopMiddleware()],
+                                    );
+                                    addAndCleanReapeatRoute(
+                                      route,
+                                      RouteName.settingsReadmePage,
+                                    );
+                                    return route;
+                                  case RouteName.downloadPage:
+                                    var route = GetPageRoute(
+                                      settings: settings,
+                                      transition:
+                                          Transition.rightToLeftWithFade,
+                                      page: () => DownloadPage(),
+                                      middlewares: [ListenPopMiddleware()],
+                                    );
+                                    addAndCleanReapeatRoute(
+                                      route,
+                                      RouteName.downloadPage,
+                                    );
                                     return route;
                                   default:
                                     var route = GetPageRoute(

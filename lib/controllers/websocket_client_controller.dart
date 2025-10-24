@@ -38,7 +38,7 @@ class WebSocketClientController extends GetxController {
 
   /// 客户端配置
   final RxString _serverAddress = '127.0.0.1:25917'.obs;
-  final RxBool _autoReconnect = true.obs;
+  final RxBool _autoReconnect = false.obs;
   final RxInt _reconnectInterval = 5.obs; // 秒
   final RxInt _heartbeatInterval = 30.obs; // 秒
 
@@ -54,7 +54,7 @@ class WebSocketClientController extends GetxController {
   Timer? _reconnectTimer;
   Timer? _heartbeatTimer;
   Timer? _statusPollingTimer;
-  
+
   /// 连接取消控制
   bool _connectionCancelled = false;
 
@@ -567,7 +567,7 @@ class WebSocketClientController extends GetxController {
     } catch (e) {
       _isConnected.value = false;
       _serverUrl.value = '';
-      
+
       if (_connectionCancelled) {
         _updateStatusMessage('连接已取消');
       } else {
@@ -589,7 +589,7 @@ class WebSocketClientController extends GetxController {
   Future<void> disconnect() async {
     await _disconnect(manual: true);
   }
-  
+
   /// 取消正在进行的连接
   void cancelConnection() {
     if (_isConnecting.value) {
@@ -597,7 +597,7 @@ class WebSocketClientController extends GetxController {
       _logger.i('$_tag 用户取消连接');
       _showInfo('正在取消连接...');
     }
-    
+
     // 如果正在重连，也停止重连
     if (_isReconnecting.value) {
       _stopReconnectTimer();
@@ -898,7 +898,7 @@ class WebSocketClientController extends GetxController {
             try {
               final contentMap = message.parseContentAsMap();
               if (contentMap != null) {
-                for (var k in GetCookieCommands.values) {
+                for (var k in PlantformCodes.values) {
                   if (contentMap.containsKey(k)) {
                     await savePlatformToken(
                       k,
@@ -986,7 +986,9 @@ class WebSocketClientController extends GetxController {
     _reconnectTimer = Timer(
       Duration(seconds: _reconnectInterval.value),
       () async {
-        if (_autoReconnect.value && !_isConnected.value && !_connectionCancelled) {
+        if (_autoReconnect.value &&
+            !_isConnected.value &&
+            !_connectionCancelled) {
           _logger.i('$_tag 尝试自动重连...');
           await connect();
         }
@@ -1061,7 +1063,7 @@ class WebSocketClientController extends GetxController {
 
   /// 显示错误消息
   void _showError(String message) {
-    showErrorSnackbar(message,'');
+    showErrorSnackbar(message, '');
   }
 
   /// 显示信息消息
@@ -1094,10 +1096,10 @@ class WebSocketClientController extends GetxController {
     try {
       // 使用 punycode 包来编码主机名
       // 需要对每个域名部分分别编码
-      
+
       final parts = host.split('.');
       final encodedParts = <String>[];
-      
+
       for (final part in parts) {
         if (_containsNonAscii(part)) {
           // 使用 punycode 包编码这个部分
@@ -1115,7 +1117,7 @@ class WebSocketClientController extends GetxController {
           encodedParts.add(part);
         }
       }
-      
+
       final result = encodedParts.join('.');
       return result;
     } catch (e) {

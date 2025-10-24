@@ -637,7 +637,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                             );
                           }).toList(),
                         )
-                      : Center(child: global_loading_anime),
+                      : Center(child: globalLoadingAnime),
                   isExpanded: _isExpandedFav,
                 ),
                 ExpansionPanel(
@@ -698,7 +698,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                             );
                           }).toList(),
                         )
-                      : Center(child: global_loading_anime),
+                      : Center(child: globalLoadingAnime),
                   isExpanded: _isExpandedBl,
                 ),
                 ExpansionPanel(
@@ -754,7 +754,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                             );
                           }).toList(),
                         )
-                      : Center(child: global_loading_anime),
+                      : Center(child: globalLoadingAnime),
                   isExpanded: _isExpandedNe,
                 ),
                 ExpansionPanel(
@@ -817,7 +817,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                             );
                           }).toList(),
                         )
-                      : Center(child: global_loading_anime),
+                      : Center(child: globalLoadingAnime),
                   isExpanded: _isExpandedQq,
                 ),
               ],
@@ -1016,7 +1016,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
     return Scaffold(
       body: Center(
         child: _loading
-            ? global_loading_anime
+            ? globalLoadingAnime
             : _loadfailed
             ? Text('加载失败')
             : CustomScrollView(
@@ -1581,7 +1581,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
       ),
       body: Center(
         child: _loading
-            ? global_loading_anime
+            ? globalLoadingAnime
             : CustomScrollView(
                 controller: _scrollController,
                 slivers: [

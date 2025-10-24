@@ -15,3 +15,4 @@ export 'appLinksController.dart';
 export 'DownloadController.dart';
 export 'BroadcastWsController.dart';
 export 'ScanBroadcastController.dart';
+export 'routeController.dart';
