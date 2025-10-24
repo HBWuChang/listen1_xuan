@@ -83,6 +83,7 @@ dependencies:
   # bson: ^5.0.7
   dynamic_color: ^1.8.1
   bonsoir: ^6.0.1
+  punycode: ^1.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

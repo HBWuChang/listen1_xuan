@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:punycode/punycode.dart';
 
 import '../global_settings_animations.dart';
 import '../models/websocket_message.dart';
@@ -321,14 +322,15 @@ class WebSocketClientController extends GetxController {
   /// 手动添加地址到历史列表
   void addHistoryAddress(String address) {
     if (address.isEmpty) {
-      _showError('地址不能为空');
-      return;
+      // _showError('地址不能为空');
+      throw '地址不能为空';
     }
 
     // 验证地址格式
     if (!_isValidAddress(address)) {
-      _showError('地址格式不正确，应为 "IP:端口" 格式');
-      return;
+      // _showError('地址格式不正确，应为 "IP:端口" 格式');
+      // return;
+      throw '地址格式不正确，应为 "IP:端口" 格式';
     }
 
     _addToHistoryAddresses(address);
@@ -399,6 +401,7 @@ class WebSocketClientController extends GetxController {
 
   /// 验证地址格式
   bool _isValidAddress(String address) {
+    return true;
     if (address.isEmpty) return false;
 
     final RegExp addressRegex = RegExp(
@@ -502,10 +505,17 @@ class WebSocketClientController extends GetxController {
         throw Exception('服务器地址格式错误，应为 "IP:端口"');
       }
 
-      final host = addressParts[0];
+      String host = addressParts[0];
       final port = int.tryParse(addressParts[1]);
       if (port == null || port < 1 || port > 65535) {
         throw Exception('端口号无效');
+      }
+
+      // 如果主机名包含非 ASCII 字符，转换为 Punycode 编码
+      if (_containsNonAscii(host)) {
+        final originalHost = host;
+        host = _encodeToPunycode(host);
+        _logger.i('$_tag 检测到非 ASCII 主机名，转换为 Punycode: $originalHost -> $host');
       }
 
       final uri = 'ws://$host:$port';
@@ -1051,16 +1061,7 @@ class WebSocketClientController extends GetxController {
 
   /// 显示错误消息
   void _showError(String message) {
-    // try {
-    //   Get.snackbar(
-    //     '错误',
-    //     message,
-    //     backgroundColor: Colors.red.withOpacity(0.8),
-    //     colorText: Colors.white,
-    //     duration: const Duration(seconds: 3),
-    //     snackPosition: SnackPosition.TOP,
-    //   );
-    // } catch (e) {}
+    showErrorSnackbar(message,'');
   }
 
   /// 显示信息消息
@@ -1075,5 +1076,51 @@ class WebSocketClientController extends GetxController {
     //     snackPosition: SnackPosition.TOP,
     //   );
     // } catch (e) {}
+  }
+
+  /// 检查字符串是否包含非 ASCII 字符（用于检测中文等字符）
+  bool _containsNonAscii(String text) {
+    for (int i = 0; i < text.length; i++) {
+      if (text.codeUnitAt(i) > 127) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// 将包含非 ASCII 字符的主机名转换为 Punycode 编码
+  /// 例如: "神山識.local" -> "xn--rhtz68drkm.local"
+  String _encodeToPunycode(String host) {
+    try {
+      // 使用 punycode 包来编码主机名
+      // 需要对每个域名部分分别编码
+      
+      final parts = host.split('.');
+      final encodedParts = <String>[];
+      
+      for (final part in parts) {
+        if (_containsNonAscii(part)) {
+          // 使用 punycode 包编码这个部分
+          try {
+            final encoded = punycodeEncode(part);
+            encodedParts.add('xn--$encoded');
+            _logger.d('$_tag Punycode 编码: $part -> xn--$encoded');
+          } catch (e) {
+            _logger.w('$_tag 无法对部分 "$part" 进行 Punycode 编码: $e');
+            // 如果编码失败，保持原样（虽然可能会导致连接失败）
+            encodedParts.add(part);
+          }
+        } else {
+          // ASCII 部分直接使用
+          encodedParts.add(part);
+        }
+      }
+      
+      final result = encodedParts.join('.');
+      return result;
+    } catch (e) {
+      _logger.e('$_tag Punycode 编码失败: $e');
+      return host; // 编码失败时返回原主机名
+    }
   }
 }

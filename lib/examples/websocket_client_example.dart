@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/websocket_client_controller.dart';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:extended_image/extended_image.dart';
@@ -201,7 +202,8 @@ class _WebSocketClientControlContentState
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: ctrl.isConnected
                                       ? Colors.red.withOpacity(0.9)
-                                      : (ctrl.isConnecting || ctrl.isReconnecting)
+                                      : (ctrl.isConnecting ||
+                                            ctrl.isReconnecting)
                                       ? Colors.orange.withOpacity(0.9)
                                       : Colors.blue.withOpacity(0.9),
                                   foregroundColor: Colors.white,
@@ -989,13 +991,14 @@ class _WebSocketClientControlContentState
                                     IconButton(
                                       onPressed: () async {
                                         // 检查是否是当前选中的地址
-                                        bool isCurrentSelected = controller.serverAddress == address;
-                                        
+                                        bool isCurrentSelected =
+                                            controller.serverAddress == address;
+
                                         if (!isCurrentSelected) {
                                           // 只有在下拉框展开时才关闭下拉框
                                           Navigator.of(context).pop();
                                         }
-                                        
+
                                         // 然后显示编辑对话框
                                         await _showEditAddressDialog(
                                           historyAddresses.indexOf(address),
@@ -1013,13 +1016,14 @@ class _WebSocketClientControlContentState
                                     IconButton(
                                       onPressed: () async {
                                         // 检查是否是当前选中的地址
-                                        bool isCurrentSelected = controller.serverAddress == address;
-                                        
+                                        bool isCurrentSelected =
+                                            controller.serverAddress == address;
+
                                         if (!isCurrentSelected) {
                                           // 只有在下拉框展开时才关闭下拉框
                                           Navigator.of(context).pop();
                                         }
-                                        
+
                                         // 然后显示删除对话框
                                         await _showDeleteAddressDialog(
                                           historyAddresses.indexOf(address),
@@ -1093,11 +1097,23 @@ class _WebSocketClientControlContentState
   }
 
   /// 显示添加地址对话框
-  Future<void> _showAddAddressDialog() async {
+  void _showAddAddressDialog() {
     final controller = Get.find<WebSocketClientController>();
     final textController = TextEditingController();
+    void checkAndRet() {
+      final address = textController.text.trim();
+      if (address.isNotEmpty) {
+        try {
+          controller.addHistoryAddress(address);
+        } catch (e) {
+          showErrorSnackbar('添加地址失败', e.toString());
+          return;
+        }
+        Get.back();
+      }
+    }
 
-    final result = await Get.dialog<String>(
+    Get.dialog<String>(
       AlertDialog(
         title: const Text('添加服务器地址'),
         content: Column(
@@ -1139,6 +1155,7 @@ class _WebSocketClientControlContentState
                                     return _buildAddressListTile(
                                       address,
                                       textController,
+                                      checkAndRet,
                                     );
                                   },
                                 ),
@@ -1150,6 +1167,7 @@ class _WebSocketClientControlContentState
                                       (address) => _buildAddressListTile(
                                         address,
                                         textController,
+                                        checkAndRet,
                                       ),
                                     )
                                     .toList(),
@@ -1192,22 +1210,10 @@ class _WebSocketClientControlContentState
         ),
         actions: [
           TextButton(onPressed: () => Get.back(), child: const Text('取消')),
-          ElevatedButton(
-            onPressed: () {
-              final address = textController.text.trim();
-              if (address.isNotEmpty) {
-                Get.back(result: address);
-              }
-            },
-            child: const Text('添加'),
-          ),
+          ElevatedButton(onPressed: checkAndRet, child: const Text('添加')),
         ],
       ),
     );
-
-    if (result != null && result.isNotEmpty) {
-      controller.addHistoryAddress(result);
-    }
   }
 
   /// 显示编辑地址对话框
@@ -1320,6 +1326,7 @@ class _WebSocketClientControlContentState
   Widget _buildAddressListTile(
     String address,
     TextEditingController textController,
+    VoidCallback onAddressSelected,
   ) {
     return ListTile(
       dense: true,
@@ -1328,7 +1335,7 @@ class _WebSocketClientControlContentState
       onTap: () {
         // 点击后直接填入输入框并确定
         textController.text = address;
-        Get.back(result: address);
+        onAddressSelected();
       },
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
     );
@@ -1360,7 +1367,7 @@ class _WebSocketClientControlContentState
             duration: const Duration(seconds: 3),
           );
         } else {
-          // 如果地址不存在，添加到历史列表并选中
+          // 如果地址不存在，添加到历史列表F并选中
           controller.addHistoryAddress(result);
 
           // 显示成功提示
@@ -1377,7 +1384,7 @@ class _WebSocketClientControlContentState
     } catch (e) {
       Get.snackbar(
         '扫描失败',
-        '无法打开摄像头或扫描过程出错',
+        e.toString(),
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.withOpacity(0.8),
         colorText: Colors.white,
