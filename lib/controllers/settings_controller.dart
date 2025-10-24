@@ -84,7 +84,7 @@ class SettingsController extends GetxController {
       CacheController_localCacheList.clear();
     }
     settingsPageExpansion.value = Set<int>.from(
-      settings['settingsPageExpansion'],
+      settings['settingsPageExpansion'] ?? <int>[],
     );
     _lastSettingsPageExpansion = Set<int>.from(settingsPageExpansion.value);
     
