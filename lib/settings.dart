@@ -345,14 +345,13 @@ class _SettingsPageState extends State<SettingsPage> {
                     focusNode: _focusNode,
                     decoration: const InputDecoration(labelText: '请输入B站cookie'),
                     onSubmitted: (String value) async {
-                      await savePlatformToken('bl', value);
-                      // _msg('设置成功', 1.0);
+                      await savePlatformToken(PlantformCodes.bl, value);
                       showSuccessSnackbar('设置成功', null);
                       Navigator.pop(context);
                       setState(() {});
                     },
                     onChanged: (value) async {
-                      await savePlatformToken('bl', value);
+                      await savePlatformToken(PlantformCodes.bl, value);
                     },
                     controller: blCookieController,
                   ),
@@ -545,7 +544,6 @@ class _SettingsPageState extends State<SettingsPage> {
                         isExpanded: settingsController.settingsPageExpansion
                             .contains(0),
                         body: Column(
-                          mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             IntrinsicHeight(
                               child: Row(
@@ -554,7 +552,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Column(
-                                    mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
                                     children: [
@@ -588,7 +585,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                     ].map((e) => Center(child: e)).toList(),
                                   ),
                                   Column(
-                                    mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
                                     children: [
@@ -665,7 +661,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                     ].map((e) => Center(child: e)).toList(),
                                   ),
                                   Column(
-                                    mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
                                     children:

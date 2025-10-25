@@ -2,6 +2,7 @@ import 'dart:ffi';
 import 'package:listen1_xuan/models/Track.dart';
 
 import 'package:dio/dio.dart';
+import 'package:listen1_xuan/models/websocket_message.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
@@ -40,7 +41,9 @@ Future<String> get_csrf() async {
 class CookieInterceptors extends InterceptorsWrapper {
   @override
   void onRequest(
-      RequestOptions options, RequestInterceptorHandler handler) async {
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     final tokens = settings_getsettings();
     final _cookies = tokens['ne'];
     dynamic tcookies = _cookies.split(';');
@@ -79,7 +82,9 @@ class Netease {
   }
 
   Future<dynamic> dio_post_with_cookie_and_csrf(
-      String url, dynamic data) async {
+    String url,
+    dynamic data,
+  ) async {
     print("dio_post_with_cookie_and_csrf");
     final tokens = settings_getsettings();
     try {
@@ -95,29 +100,33 @@ class Netease {
       } else {
         url = url + '?csrf_token=$_csrf';
       }
-      final dio = dio_with_cookie_manager;
-      return await dio.post(
+      return await dio_with_cookie_manager.post(
         url,
         data: data,
-        options: Options(headers: {
-          "user-agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
-          "referer": "https://music.163.com/",
-          "origin": "https://music.163.com",
-          "host": "music.163.com",
-          "sec-fetch-site": "same-origin",
-          "sec-fetch-mode": "cors",
-          "sec-fetch-dest": "empty",
-          "accept-encoding": "gzip, deflate",
-          "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-          "accept": "*/*",
-          "sec-ch-ua-platform": "\"Windows\"",
-          // "cookie": _cookies,
-        }, contentType: 'application/x-www-form-urlencoded'),
+        options: Options(
+          headers: {
+            "user-agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+            "referer": "https://music.163.com/",
+            "origin": "https://music.163.com",
+            "host": "music.163.com",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-dest": "empty",
+            "accept-encoding": "gzip, deflate",
+            "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            "accept": "*/*",
+            "sec-ch-ua-platform": "\"Windows\"",
+            // "cookie": _cookies,
+          },
+          contentType: 'application/x-www-form-urlencoded',
+        ),
       );
     } catch (e) {
-      return await dio_with_cookie_manager.post(url,
-          data: FormData.fromMap(data));
+      return await dio_with_cookie_manager.post(
+        url,
+        data: FormData.fromMap(data),
+      );
     }
   }
 
@@ -130,10 +139,11 @@ class Netease {
     // return '1234567890123456';
     const choice = '012345679abcdef';
     final result = List.generate(size, (index) {
-      final randomIndex = (choice.length *
-              (new DateTime.now().millisecondsSinceEpoch % 1000) /
-              1000)
-          .floor();
+      final randomIndex =
+          (choice.length *
+                  (new DateTime.now().millisecondsSinceEpoch % 1000) /
+                  1000)
+              .floor();
       return choice[randomIndex];
     });
     return result.join('');
@@ -144,9 +154,12 @@ class Netease {
     final iv = utf8.encode('0102030405060708');
     final encrypter = CBCBlockCipher(AESEngine())
       ..init(
-          true,
-          ParametersWithIV(
-              KeyParameter(Uint8List.fromList(key)), Uint8List.fromList(iv)));
+        true,
+        ParametersWithIV(
+          KeyParameter(Uint8List.fromList(key)),
+          Uint8List.fromList(iv),
+        ),
+      );
     final paddedText = _pad(utf8.encode(text), encrypter.blockSize);
     final encrypted = Uint8List(paddedText.length);
     var offset = 0;
@@ -184,10 +197,7 @@ class Netease {
     // print(t4);
     final encText = t4;
     final encSecKey = _rsaEncrypt(secKey, pubKey, modulus);
-    return {
-      'params': encText,
-      'encSecKey': encSecKey,
-    };
+    return {'params': encText, 'encSecKey': encSecKey};
   }
 
   Uint8List _aesEncrypt2(String text, String secKey, String algo) {
@@ -224,9 +234,7 @@ class Netease {
     final data = '$url-36cd479b6b5-$text-36cd479b6b5-$digest';
     final encrypted = _aesEncrypt2(data, eapiKey, 'AES-ECB');
     final hexString = _bytesToHex(encrypted).toUpperCase();
-    return {
-      'params': hexString,
-    };
+    return {'params': hexString};
   }
 
   Future<Map<String, dynamic>> ne_show_toplist(int? offset) async {
@@ -277,15 +285,18 @@ class Netease {
         try {
           final response = await dio_get_with_cookie_and_csrf(targetUrl);
           final document = parse(response.data);
-          final listElements =
-              document.getElementsByClassName('m-cvrlst')[0].children;
+          final listElements = document
+              .getElementsByClassName('m-cvrlst')[0]
+              .children;
           final result = listElements.map((item) {
             final imgElement = item.getElementsByTagName('img')[0];
             final divElement = item.getElementsByTagName('div')[0];
             final aElement = divElement.getElementsByTagName('a')[0];
             return {
-              'cover_img_url': imgElement.attributes['src']!
-                  .replaceAll('140y140', '512y512'),
+              'cover_img_url': imgElement.attributes['src']!.replaceAll(
+                '140y140',
+                '512y512',
+              ),
               'title': aElement.attributes['title']!,
               'id':
                   'neplaylist_${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
@@ -312,7 +323,7 @@ class Netease {
       final nnidValue = '$nuidValue,${DateTime.now().millisecondsSinceEpoch}';
       final expire =
           DateTime.now().add(Duration(days: 365 * 100)).millisecondsSinceEpoch /
-              1000;
+          1000;
 
       await prefs.setString(nuidName, nuidValue);
       await prefs.setString(nnidName, nnidValue);
@@ -323,10 +334,11 @@ class Netease {
   }
 
   Future<void> async_process_list(
-      List<dynamic> dataList,
-      Future<dynamic> Function(int, dynamic, List<dynamic>) handler,
-      List<dynamic> handlerExtraParamList,
-      Function callback) async {
+    List<dynamic> dataList,
+    Future<dynamic> Function(int, dynamic, List<dynamic>) handler,
+    List<dynamic> handlerExtraParamList,
+    Function callback,
+  ) async {
     try {
       final futures = dataList.asMap().entries.map((entry) {
         final index = entry.key;
@@ -342,7 +354,10 @@ class Netease {
   }
 
   Future<void> ng_render_playlist_result_item(
-      int index, dynamic item, Function callback) async {
+    int index,
+    dynamic item,
+    Function callback,
+  ) async {
     const targetUrl = 'https://music.163.com/weapi/v3/song/detail';
     final queryIds = [item['id']];
     final d = {
@@ -371,8 +386,9 @@ class Netease {
     return {
       'success': (fn) async {
         try {
-          final listId =
-              Uri.parse(url).queryParameters['list_id']!.split('_').last;
+          final listId = Uri.parse(
+            url,
+          ).queryParameters['list_id']!.split('_').last;
           const targetUrl = 'https://music.163.com/weapi/v3/playlist/detail';
           final data = weapi({
             'id': listId,
@@ -391,8 +407,10 @@ class Netease {
             'source_url': 'https://music.163.com/#/playlist?id=$listId',
           };
           final maxAllowSize = 1000;
-          final trackIdsArray =
-              _splitArray(resData['playlist']['trackIds'], maxAllowSize);
+          final trackIdsArray = _splitArray(
+            resData['playlist']['trackIds'],
+            maxAllowSize,
+          );
 
           final tracks = <Map<String, dynamic>>[];
           for (final trackIds in trackIdsArray) {
@@ -403,7 +421,7 @@ class Netease {
         } catch (e) {
           fn({'tracks': [], 'info': {}});
         }
-      }
+      },
     };
   }
 
@@ -419,7 +437,8 @@ class Netease {
   }
 
   Future<List<Map<String, dynamic>>> ng_parse_playlist_tracks(
-      List<dynamic> trackIds) async {
+    List<dynamic> trackIds,
+  ) async {
     const targetUrl = 'https://music.163.com/weapi/v3/song/detail';
     Map<String, dynamic> t = {'c': "", 'ids': ""};
     trackIds.forEach((element) {
@@ -430,11 +449,14 @@ class Netease {
     t['ids'] = '[' + t['ids'].substring(0, t['ids'].length - 1) + ']';
     final data = weapi(t);
     final datastr = FormData.fromMap(data);
-    final response = await dio_with_cookie_manager.post(targetUrl,
-        data: data,
-        options: Options(contentType: 'application/x-www-form-urlencoded'));
-    final tracks =
-        (jsonDecode(response.data)['songs'] as List).map((trackJson) {
+    final response = await dio_with_cookie_manager.post(
+      targetUrl,
+      data: data,
+      options: Options(contentType: 'application/x-www-form-urlencoded'),
+    );
+    final tracks = (jsonDecode(response.data)['songs'] as List).map((
+      trackJson,
+    ) {
       return {
         'id': 'netrack_${trackJson['id']}',
         'title': trackJson['name'],
@@ -451,7 +473,10 @@ class Netease {
   }
 
   Future<void> bootstrap_track(
-      Track track, Function success, Function failure) async {
+    Track track,
+    Function success,
+    Function failure,
+  ) async {
     try {
       final sound = <String, dynamic>{};
       const targetUrl =
@@ -459,11 +484,9 @@ class Netease {
       var songId = track.id.toString().replaceFirst('netrack_', '');
       const eapiUrl = '/api/song/enhance/player/url';
 
-      final data = eapi(eapiUrl, {
-        'ids': '[$songId]',
-        'br': 999000,
-      });
-      final expire = (DateTime.now().millisecondsSinceEpoch +
+      final data = eapi(eapiUrl, {'ids': '[$songId]', 'br': 999000});
+      final expire =
+          (DateTime.now().millisecondsSinceEpoch +
               1e3 * 60 * 60 * 24 * 365 * 100) /
           1000;
 
@@ -506,8 +529,10 @@ class Netease {
     return {
       'success': (fn) async {
         try {
-          final response =
-              await dio_post_with_cookie_and_csrf(targetUrl, reqData);
+          final response = await dio_post_with_cookie_and_csrf(
+            targetUrl,
+            reqData,
+          );
           final data = jsonDecode(response.data);
           var result = <Map<String, dynamic>>[];
           var total = 0;
@@ -561,8 +586,9 @@ class Netease {
     const targetUrl = 'https://music.163.com/api/album/';
     return {
       'success': (fn) async {
-        final response =
-            await dio_get_with_cookie_and_csrf(targetUrl + albumId);
+        final response = await dio_get_with_cookie_and_csrf(
+          targetUrl + albumId,
+        );
         final data = jsonDecode(response.data);
         final info = {
           'cover_img_url': data['album']['picUrl'],
@@ -596,8 +622,9 @@ class Netease {
     const targetUrl = 'https://music.163.com/api/artist/';
     return {
       'success': (fn) async {
-        final response =
-            await dio_get_with_cookie_and_csrf(targetUrl + artistId);
+        final response = await dio_get_with_cookie_and_csrf(
+          targetUrl + artistId,
+        );
         final data = jsonDecode(response.data);
         final info = {
           'cover_img_url': data['artist']['picUrl'],
@@ -658,35 +685,33 @@ class Netease {
     var result;
     var id = '';
     url = url.replaceAll(
-        'music.163.com/#/discover/toplist?', 'music.163.com/#/playlist?');
+      'music.163.com/#/discover/toplist?',
+      'music.163.com/#/playlist?',
+    );
     url = url.replaceAll('music.163.com/#/my/m/music/', 'music.163.com/');
     url = url.replaceAll('music.163.com/#/m/', 'music.163.com/');
     url = url.replaceAll('music.163.com/#/', 'music.163.com/');
     if (url.contains('//music.163.com/playlist')) {
-      final match =
-          RegExp(r'\/\/music.163.com\/playlist\/([0-9]+)').firstMatch(url);
+      final match = RegExp(
+        r'\/\/music.163.com\/playlist\/([0-9]+)',
+      ).firstMatch(url);
       id = match != null
           ? match.group(1)!
           : Uri.parse(url).queryParameters['id']!;
-      result = {
-        'type': 'playlist',
-        'id': 'neplaylist_$id',
-      };
+      result = {'type': 'playlist', 'id': 'neplaylist_$id'};
     } else if (url.contains('//music.163.com/artist')) {
       result = {
         'type': 'playlist',
         'id': 'neartist_${Uri.parse(url).queryParameters['id']}',
       };
     } else if (url.contains('//music.163.com/album')) {
-      final match =
-          RegExp(r'\/\/music.163.com\/album\/([0-9]+)').firstMatch(url);
+      final match = RegExp(
+        r'\/\/music.163.com\/album\/([0-9]+)',
+      ).firstMatch(url);
       id = match != null
           ? match.group(1)!
           : Uri.parse(url).queryParameters['id']!;
-      result = {
-        'type': 'playlist',
-        'id': 'nealbum_$id',
-      };
+      result = {'type': 'playlist', 'id': 'nealbum_$id'};
     }
     return {
       'success': (fn) {
@@ -835,7 +860,9 @@ class Netease {
   }
 
   Future<Map<String, dynamic>> get_user_playlist(
-      String url, String playlistType) async {
+    String url,
+    String playlistType,
+  ) async {
     final userId = Uri.parse(url).queryParameters['user_id'];
     const targetUrl = 'https://music.163.com/api/user/playlist';
 
@@ -848,33 +875,38 @@ class Netease {
     return {
       'success': (fn) async {
         try {
-          final response =
-              await dio_post_with_cookie_and_csrf(targetUrl, reqData);
-          final playlists =
-              (jsonDecode(response.data)['playlist'] as List).where((item) {
-            if (playlistType == 'created' && item['subscribed'] != false) {
-              return false;
-            }
-            if (playlistType == 'favorite' && item['subscribed'] != true) {
-              return false;
-            }
-            return true;
-          }).map((item) {
-            return {
-              'cover_img_url': item['coverImgUrl'],
-              'id': 'neplaylist_${item['id']}',
-              'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
-              'title': item['name'],
-            };
-          }).toList();
+          final response = await dio_post_with_cookie_and_csrf(
+            targetUrl,
+            reqData,
+          );
+          final playlists = (jsonDecode(response.data)['playlist'] as List)
+              .where((item) {
+                if (playlistType == 'created' && item['subscribed'] != false) {
+                  return false;
+                }
+                if (playlistType == 'favorite' && item['subscribed'] != true) {
+                  return false;
+                }
+                return true;
+              })
+              .map((item) {
+                return {
+                  'cover_img_url': item['coverImgUrl'],
+                  'id': 'neplaylist_${item['id']}',
+                  'source_url':
+                      'https://music.163.com/#/playlist?id=${item['id']}',
+                  'title': item['name'],
+                };
+              })
+              .toList();
           fn({
             'status': 'success',
-            'data': {'playlists': playlists}
+            'data': {'playlists': playlists},
           });
         } catch (e) {
           fn({
             'status': 'fail',
-            'data': {'playlists': []}
+            'data': {'playlists': []},
           });
         }
       },
@@ -897,17 +929,15 @@ class Netease {
   Future<Map<String, dynamic>> get_recommend_playlist() async {
     const targetUrl = 'https://music.163.com/weapi/personalized/playlist';
 
-    final reqData = {
-      'limit': 30,
-      'total': true,
-      'n': 1000,
-    };
+    final reqData = {'limit': 30, 'total': true, 'n': 1000};
 
     final encryptReqData = weapi(reqData);
     return {
       'success': (fn) async {
-        final response =
-            await dio_post_with_cookie_and_csrf(targetUrl, encryptReqData);
+        final response = await dio_post_with_cookie_and_csrf(
+          targetUrl,
+          encryptReqData,
+        );
         final playlists = (response.data['result'] as List).map((item) {
           return {
             'cover_img_url': item['picUrl'],
@@ -918,7 +948,7 @@ class Netease {
         }).toList();
         fn({
           'status': 'success',
-          'data': {'playlists': playlists}
+          'data': {'playlists': playlists},
         });
       },
     };
@@ -930,7 +960,7 @@ class Netease {
 
       // final encryptReqData = weapi({});
       final tokens = settings_getsettings();
-      final _cookies = tokens['ne'] ?? '';
+      final _cookies = tokens[PlantformCodes.ne] ?? '';
 
       final _csrf = _cookies
           .split(';')
@@ -944,7 +974,7 @@ class Netease {
       // print(encryptReqData);
       // print(jsonEncode(encryptReqData));
       encryptReqData = weapi(encryptReqData);
-      print(encryptReqData);
+      // print(encryptReqData);
       final response = await dio_post_with_cookie_and_csrf(url, encryptReqData);
       dynamic result = {'is_login': false};
       var status = 'fail';

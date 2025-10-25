@@ -249,30 +249,7 @@ class WebSocketServerController extends GetxController {
             ),
           );
           break;
-        case WebSocketMessageType.setCookie:
-          try {
-            final contentMap = message.parseContentAsMap();
-            if (contentMap != null) {
-              for (var k in PlantformCodes.values) {
-                if (contentMap.containsKey(k)) {
-                  await savePlatformToken(
-                    k,
-                    contentMap[k]!,
-                    saveRightNow: false,
-                  );
-                }
-              }
-              // 保存设置
-              Get.find<SettingsController>().saveSettings();
-              showSuccessSnackbar('Cookie 设置成功', null);
-            } else {
-              throw '内容格式错误，无法解析为 Map';
-            }
-          } catch (e) {
-            _logger.e('$_tag 处理设置 Cookie 消息失败', error: e);
-            showErrorSnackbar('Cookie 设置失败', e.toString());
-          }
-          break;
+       
         case WebSocketMessageType.message:
           // 处理普通消息（可以根据需要添加逻辑）
           _logger.d('$_tag 收到普通消息: ${message.content}');

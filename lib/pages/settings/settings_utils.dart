@@ -170,27 +170,42 @@ Future<void> savePlatformToken(
   String token, {
   bool saveRightNow = true,
 }) async {
-  if (platform == 'github') {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setString('githubOauthAccessKey', token);
-    return;
-  }
-  final settings = Get.find<SettingsController>().settings;
-  settings[platform] = token;
-  if (saveRightNow) Get.find<SettingsController>().saveSettings();
-  List<Cookie> cookies = [];
-  for (var item in token.split(';')) {
-    // 除去两端空格
-    var cookie = item.trim().split('=');
-    var cookieName = cookie[0].trim();
-    var cookieValue = Uri.encodeComponent(cookie[1].trim());
-    cookies.add(Cookie(cookieName, cookieValue));
-  }
-
-  if (_cookieUrls.containsKey(platform)) {
-    for (var url in _cookieUrls[platform]!) {
-      await setSaveCookie(url: url, cookies: cookies);
+  try {
+    if (platform == 'github') {
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setString('githubOauthAccessKey', token);
+      return;
     }
+    final settings = Get.find<SettingsController>().settings;
+    settings[platform] = token;
+    if (saveRightNow) Get.find<SettingsController>().saveSettings();
+    List<Cookie> cookies = [];
+    for (var item in token.split(';')) {
+      // 除去两端空格
+      var cookie = item.trim().split('=');
+      var cookieName = cookie[0].trim();
+      var cookieValue = Uri.encodeComponent(cookie[1].trim());
+      cookies.add(Cookie(cookieName, cookieValue));
+    }
+
+    if (_cookieUrls.containsKey(platform)) {
+      for (var url in _cookieUrls[platform]!) {
+        await setSaveCookie(url: url, cookies: cookies);
+      }
+    }
+    dio_with_cookie_manager.interceptors.clear();
+    dio_with_cookie_manager.interceptors.add(
+      CookieManager(
+        PersistCookieJar(
+          ignoreExpires: true,
+          storage: FileStorage(
+            cookiePath(await getApplicationDocumentsDirectory()),
+          ),
+        ),
+      ),
+    );
+  } catch (e) {
+    showErrorSnackbar('保存Cookie时出错', '$e');
   }
 }
 

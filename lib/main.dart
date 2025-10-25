@@ -283,7 +283,7 @@ void main() async {
   //   createHttpClient: () {
   //     final client = HttpClient();
   //     client.findProxy = (uri) {
-  //       return 'PROXY localhost:9000';
+  //       return 'PROXY 192.168.1.15:9000';
   //     };
   //     return client;
   //   },
