@@ -545,6 +545,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         isExpanded: settingsController.settingsPageExpansion
                             .contains(0),
                         body: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             IntrinsicHeight(
                               child: Row(
@@ -553,6 +554,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Column(
+                                    mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
                                     children: [
@@ -583,89 +585,87 @@ class _SettingsPageState extends State<SettingsPage> {
                                           Get.context!,
                                         ).theme.iconTheme.color,
                                       ),
-                                    ].map((e) => Expanded(child: Center(child: e))).toList(),
-                                  ),
-                                  Flexible(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        Obx(() {
-                                          bool isLoading = settingsController
-                                              .loginDataLoading
-                                              .contains(PlantformCodes.bl);
-                                          final data = settingsController
-                                              .loginData[PlantformCodes.bl];
-                                          if (isLoading) {
-                                            return globalLoadingAnime;
-                                          } else {
-                                            if (data == '') {
-                                              return const Text('cookie未设置或失效');
-                                            } else {
-                                              return Text(data ?? 'Loading...');
-                                            }
-                                          }
-                                        }),
-                                        Obx(() {
-                                          bool isLoading = settingsController
-                                              .loginDataLoading
-                                              .contains(PlantformCodes.ne);
-                                          final data = settingsController
-                                              .loginData[PlantformCodes.ne];
-                                          if (isLoading) {
-                                            return globalLoadingAnime;
-                                          } else {
-                                            if (data == '') {
-                                              return const Text('cookie未设置或失效');
-                                            } else {
-                                              return Text(
-                                                data?['result']?['nickname'] ??
-                                                    '未知用户',
-                                              );
-                                            }
-                                          }
-                                        }),
-                                        Obx(() {
-                                          bool isLoading = settingsController
-                                              .loginDataLoading
-                                              .contains(PlantformCodes.qq);
-                                          final data = settingsController
-                                              .loginData[PlantformCodes.qq];
-                                          if (isLoading) {
-                                            return globalLoadingAnime;
-                                          } else {
-                                            if (data == '') {
-                                              return const Text('cookie未设置或失效');
-                                            } else {
-                                              return Text(
-                                                data?['data']?['nickname'] ??
-                                                    '未知用户',
-                                              );
-                                            }
-                                          }
-                                        }),
-                                        Obx(() {
-                                          bool isLoading = settingsController
-                                              .loginDataLoading
-                                              .contains(PlantformCodes.github);
-                                          final data = settingsController
-                                              .loginData[PlantformCodes.github];
-                                          if (isLoading) {
-                                            return globalLoadingAnime;
-                                          } else {
-                                            if (data == '') {
-                                              return const Text('cookie未设置或失效');
-                                            } else {
-                                              return Text(
-                                                Github.getStatusText(),
-                                              );
-                                            }
-                                          }
-                                        }),
-                                      ].map((e) => Expanded(child: Center(child: e))).toList(),
-                                    ),
+                                    ].map((e) => Center(child: e)).toList(),
                                   ),
                                   Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Obx(() {
+                                        bool isLoading = settingsController
+                                            .loginDataLoading
+                                            .contains(PlantformCodes.bl);
+                                        final data = settingsController
+                                            .loginData[PlantformCodes.bl];
+                                        if (isLoading) {
+                                          return globalLoadingAnime;
+                                        } else {
+                                          if (data == '') {
+                                            return const Text('cookie未设置或失效');
+                                          } else {
+                                            return Text(data ?? 'Loading...');
+                                          }
+                                        }
+                                      }),
+                                      Obx(() {
+                                        bool isLoading = settingsController
+                                            .loginDataLoading
+                                            .contains(PlantformCodes.ne);
+                                        final data = settingsController
+                                            .loginData[PlantformCodes.ne];
+                                        if (isLoading) {
+                                          return globalLoadingAnime;
+                                        } else {
+                                          if (data == '') {
+                                            return const Text('cookie未设置或失效');
+                                          } else {
+                                            return Text(
+                                              data?['result']?['nickname'] ??
+                                                  '未知用户',
+                                            );
+                                          }
+                                        }
+                                      }),
+                                      Obx(() {
+                                        bool isLoading = settingsController
+                                            .loginDataLoading
+                                            .contains(PlantformCodes.qq);
+                                        final data = settingsController
+                                            .loginData[PlantformCodes.qq];
+                                        if (isLoading) {
+                                          return globalLoadingAnime;
+                                        } else {
+                                          if (data == '') {
+                                            return const Text('cookie未设置或失效');
+                                          } else {
+                                            return Text(
+                                              data?['data']?['nickname'] ??
+                                                  '未知用户',
+                                            );
+                                          }
+                                        }
+                                      }),
+                                      Obx(() {
+                                        bool isLoading = settingsController
+                                            .loginDataLoading
+                                            .contains(PlantformCodes.github);
+                                        final data = settingsController
+                                            .loginData[PlantformCodes.github];
+                                        if (isLoading) {
+                                          return globalLoadingAnime;
+                                        } else {
+                                          if (data == '') {
+                                            return const Text('cookie未设置或失效');
+                                          } else {
+                                            return Text(Github.getStatusText());
+                                          }
+                                        }
+                                      }),
+                                    ].map((e) => Center(child: e)).toList(),
+                                  ),
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
                                     children:
@@ -695,11 +695,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                 ),
                                               ),
                                             ]
-                                            .map(
-                                              (e) => Expanded(
-                                                child: Center(child: e),
-                                              ),
-                                            )
+                                            .map((e) => Center(child: e))
                                             .map(
                                               (e) => Padding(
                                                 padding: EdgeInsets.symmetric(
@@ -1502,7 +1498,10 @@ class _SettingsPageState extends State<SettingsPage> {
                                           'githubOauthAccessKey',
                                         );
                                         if (token == null) {
-                                          showWarningSnackbar('请先登录Github', null);
+                                          showWarningSnackbar(
+                                            '请先登录Github',
+                                            null,
+                                          );
                                           return;
                                         }
                                         final response =
@@ -1811,10 +1810,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
                                       showSuccessSnackbar('清理成功', null);
                                     } else {
-                                      showErrorSnackbar(
-                                        '没有权限访问存储空间',
-                                        null,
-                                      );
+                                      showErrorSnackbar('没有权限访问存储空间', null);
                                     }
                                   },
                                   child: const Text('清除安装包缓存'),
