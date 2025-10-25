@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 import 'package:get/get.dart';
@@ -85,13 +86,13 @@ class PlayController extends GetxController {
     if (key == 'playmode') {
       switch (value) {
         case 0:
-          xuan_toast(msg: '循环');
+          showInfoSnackbar('循环', null);
           break;
         case 1:
-          xuan_toast(msg: '随机');
+          showInfoSnackbar('随机', null);
           break;
         case 2:
-          xuan_toast(msg: '单曲');
+          showInfoSnackbar('单曲', null);
           break;
         default:
           break;

@@ -52,314 +52,7 @@ import 'package:iconify_flutter_plus/iconify_flutter_plus.dart';
 import 'package:iconify_flutter_plus/icons/octicon.dart';
 import 'package:iconify_flutter_plus/icons/ri.dart';
 import 'package:iconify_flutter_plus/icons/mdi.dart';
-
-// Future<void> outputAllSettingsToFile([bool toJsonString = false]) async {
-Future<Map<String, dynamic>> outputAllSettingsToFile([
-  bool toJsonString = false,
-]) async {
-  final prefs = await SharedPreferences.getInstance();
-  Map<String, dynamic> settings = {};
-  final allkeys = prefs.getKeys();
-  for (var key in allkeys) {
-    switch (key) {
-      case 'playerlists':
-        settings[key] = prefs.getStringList(key);
-        break;
-      case 'auto_choose_source_list':
-        settings[key] = prefs.getStringList(key);
-        break;
-      case 'favoriteplayerlists':
-        settings[key] = prefs.getStringList(key);
-        break;
-      case 'settings':
-        if (toJsonString) continue;
-      case 'local-cache-list':
-        continue;
-      default:
-        try {
-          settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
-        } catch (e) {
-          try {
-            settings[key] = prefs.get(key);
-          } catch (e) {}
-        }
-    }
-  }
-  if (toJsonString) {
-    settings.remove('githubOauthAccessKey');
-    return settings;
-  }
-  // 申请所有文件访问权限
-  if (await Permission.manageExternalStorage.request().isGranted ||
-      await Permission.storage.request().isGranted) {
-    try {
-      // 确保路径存在
-      final outputPath = await xuan_getdownloadDirectory(path: 'settings.json');
-      final file = File(outputPath);
-      // 将设置写入 JSON 文件
-      await file.writeAsString(jsonEncode(settings));
-      xuan_toast(
-        msg: 'Settings saved to $outputPath',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.blue,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    } catch (e) {
-      xuan_toast(
-        msg: '保存设置时出错: $e',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    }
-  } else {
-    xuan_toast(
-      msg: '存储权限未授予',
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.CENTER,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-  }
-  return {};
-}
-
-Future<void> importSettingsFromFile(
-// [bool fromjson = false, String jsonString = '']) async {
-[bool fromjson = false, Map<String, dynamic> jsonString = const {}]) async {
-  Future<void> _sets(Map<String, dynamic> settings) async {
-    final prefs = await SharedPreferences.getInstance();
-    for (var key in settings.keys) {
-      switch (key) {
-        case 'playerlists':
-          // settings[key] = prefs.getStringList(key);
-          prefs.setStringList(key, settings[key].cast<String>());
-          break;
-        case 'auto_choose_source_list':
-          prefs.setStringList(key, settings[key].cast<String>());
-          break;
-        case 'favoriteplayerlists':
-          prefs.setStringList(key, settings[key].cast<String>());
-          break;
-        case 'settings':
-          continue;
-        default:
-          try {
-            prefs.setString(key, jsonEncode(settings[key]));
-          } catch (e) {}
-      }
-    }
-    await Get.find<SettingsController>().loadSettings();
-    Get.find<PlayController>().loadDatas();
-    Get.find<MyPlayListController>().loadDatas();
-    xuan_toast(
-      msg: 'Settings imported successfully',
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.CENTER,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.blue,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-  }
-
-  if (fromjson) {
-    // final settings = jsonDecode(jsonString) as Map<String, dynamic>;
-    final settings = jsonString;
-    await _sets(settings);
-    return;
-  }
-  // 申请所有文件访问权限
-  if (await Permission.manageExternalStorage.request().isGranted ||
-      await Permission.storage.request().isGranted) {
-    try {
-      // 弹出系统文件选择器选择文件
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.any,
-      );
-
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        final content = await file.readAsString();
-        final settings = jsonDecode(content) as Map<String, dynamic>;
-
-        await _sets(settings);
-      } else {
-        xuan_toast(
-          msg: '未选择文件',
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-      }
-    } catch (e) {
-      xuan_toast(
-        msg: '导入设置时出错: $e',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    }
-  } else {
-    xuan_toast(
-      msg: '存储权限未授予',
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.CENTER,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-  }
-}
-
-String cookiePath(Directory dir) {
-  return is_windows ? '${dir.path}\\.cookies\\' : '${dir.path}/.cookies/';
-}
-
-Future<void> setSaveCookie({
-  required String url,
-  required List<Cookie> cookies,
-}) async {
-  //Save cookies
-  final tempDir = await getApplicationDocumentsDirectory();
-  final _cookiePath = cookiePath(tempDir);
-  await PersistCookieJar(
-    ignoreExpires: true,
-    storage: FileStorage(_cookiePath),
-  ).delete(Uri.parse(url));
-  await PersistCookieJar(
-    ignoreExpires: true,
-    storage: FileStorage(_cookiePath),
-  ).saveFromResponse(Uri.parse(url), cookies);
-}
-
-Map<String, List<String>> _cookieUrls = {
-  'bl': ['https://api.bilibili.com', 'https://www.bilibili.com'],
-  'ne': ['https://music.163.com', 'https://interface3.music.163.com'],
-  'qq': ['https://u.y.qq.com'],
-};
-
-void g_launchURL(Uri url) async {
-  if (await canLaunchUrl(url)) {
-    await launchUrl(url);
-  } else {
-    throw 'Could not launch $url';
-  }
-}
-
-Map<String, dynamic> settings_getsettings() {
-  return Get.find<SettingsController>().settings;
-}
-
-Future<String?> outputPlatformToken(String platform) async {
-  if (platform == 'github') {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('githubOauthAccessKey');
-  }
-  return Get.find<SettingsController>().settings[platform];
-}
-
-Future<void> savePlatformToken(
-  String platform,
-  String token, {
-  bool saveRightNow = true,
-}) async {
-  if (platform == 'github') {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setString('githubOauthAccessKey', token);
-    return;
-  }
-  final settings = Get.find<SettingsController>().settings;
-  settings[platform] = token;
-  if (saveRightNow) Get.find<SettingsController>().saveSettings();
-  List<Cookie> cookies = [];
-  for (var item in token.split(';')) {
-    // 除去两端空格
-    var cookie = item.trim().split('=');
-    var cookieName = cookie[0].trim();
-    var cookieValue = Uri.encodeComponent(cookie[1].trim());
-    cookies.add(Cookie(cookieName, cookieValue));
-  }
-
-  if (_cookieUrls.containsKey(platform)) {
-    for (var url in _cookieUrls[platform]!) {
-      await setSaveCookie(url: url, cookies: cookies);
-    }
-  }
-}
-
-Future<void> createAndRunBatFile(String tempPath, String executableDir) async {
-  // 定义文件夹路径
-  final folderA = executableDir;
-  final folderB = '$tempPath\\canary';
-
-  // 定义 .bat 文件路径
-  final batFilePath = '$tempPath\\script.bat';
-
-  // 创建 .bat 文件内容，使用 \r\n 作为换行符
-  String batContent =
-      '''
-@echo off\r
-:: Check if running as administrator\r
-net session >nul 2>&1\r
-if %errorlevel% neq 0 (\r
-    echo Requesting administrator privileges...\r
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"\r
-    exit /b\r
-)\r
-\r
-:: Terminate listen1_xuan.exe process\r
-echo Terminating listen1_xuan.exe process...\r
-taskkill /F /IM listen1_xuan.exe >nul 2>&1\r
-\r
-:: Wait for 5 seconds\r
-echo Waiting for 5 seconds before proceeding...\r
-timeout /t 5 /nobreak >nul\r
-\r
-:: Delete all data in folder A\r
-echo Deleting all data in folder A...\r
-rmdir /S /Q "$folderA"\r
-\r
-:: Copy all data from folder B to folder A\r
-echo Copying all data from folder B to folder A...\r
-xcopy "$folderB\\*" "$folderA\\" /E /H /C /I\r
-\r
-:: Start the specified program in folder A\r
-echo Starting the program...\r
-start "" "$folderA\\listen1_xuan.exe"\r
-\r
-''';
-
-  // 将内容转换为 GBK 编码的字节
-  Uint8List gbkBytes = await CharsetConverter.encode("gb2312", batContent);
-
-  // 写入文件
-  File file = File(batFilePath);
-  await file.writeAsBytes(gbkBytes, flush: true);
-
-  // 像双击一样运行 .bat 文件
-  try {
-    await Process.run('cmd', ['/c', batFilePath], runInShell: true);
-    print('Script executed successfully');
-  } catch (e) {
-    print('Error while executing script: $e');
-  }
-}
+part 'pages/settings/settings_utils.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -368,23 +61,23 @@ class SettingsPage extends StatefulWidget {
   _SettingsPageState createState() => _SettingsPageState();
 }
 
-class login_webview extends StatefulWidget {
+class LoginWebview extends StatefulWidget {
   final dynamic controller;
   final String config_key;
   final String open_url;
-  const login_webview({
+  const LoginWebview({
     super.key,
     required this.controller,
     required this.config_key,
     required this.open_url,
   });
   @override
-  _login_webviewState createState() => _login_webviewState();
+  _LoginWebviewState createState() => _LoginWebviewState();
 }
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
-class _login_webviewState extends State<login_webview> {
+class _LoginWebviewState extends State<LoginWebview> {
   final List<StreamSubscription> _subscriptions = [];
   late String nowurl;
   Future<void> get__cookie() async {
@@ -392,7 +85,8 @@ class _login_webviewState extends State<login_webview> {
       case 'github':
         final url = is_windows ? nowurl : await widget.controller.currentUrl();
         if (url == null) {
-          _msg('获取cookie失败', 3.0);
+          // _msg('获取cookie失败', 3.0);
+          showErrorSnackbar('获取cookie失败', null);
           return;
         }
         print(url);
@@ -410,7 +104,8 @@ class _login_webviewState extends State<login_webview> {
           }
           cookies = cookies.substring(0, cookies.length - 1);
           await savePlatformToken(widget.config_key, cookies);
-          _msg('设置成功$cookies', 3.0);
+          // _msg('设置成功$cookies', 3.0);
+          showSuccessSnackbar('设置成功', null);
         } else {
           final cookieManager = WebviewCookieManager();
 
@@ -424,18 +119,10 @@ class _login_webviewState extends State<login_webview> {
           }
           cookies = cookies.substring(0, cookies.length - 1);
           await savePlatformToken(widget.config_key, cookies);
-          _msg('设置成功$cookies', 3.0);
+          // _msg('设置成功$cookies', 3.0);
+          showSuccessSnackbar('设置成功', null);
         }
     }
-  }
-
-  void _msg(String msg, [double showtime = 3.0]) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        duration: Duration(milliseconds: (showtime * 1000).toInt()),
-      ),
-    );
   }
 
   @override
@@ -659,7 +346,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     decoration: const InputDecoration(labelText: '请输入B站cookie'),
                     onSubmitted: (String value) async {
                       await savePlatformToken('bl', value);
-                      _msg('设置成功', 1.0);
+                      // _msg('设置成功', 1.0);
+                      showSuccessSnackbar('设置成功', null);
                       Navigator.pop(context);
                       setState(() {});
                     },
@@ -703,7 +391,7 @@ class _SettingsPageState extends State<SettingsPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => login_webview(
+        builder: (context) => LoginWebview(
           controller: controller,
           config_key: 'ne',
           open_url: 'https://music.163.com/',
@@ -738,7 +426,7 @@ class _SettingsPageState extends State<SettingsPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => login_webview(
+        builder: (context) => LoginWebview(
           controller: controller,
           config_key: 'qq',
           open_url: 'https://y.qq.com/',
@@ -756,15 +444,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void set_useHttpOverrides(bool value) async {
     Get.find<SettingsController>().setSettings({'useHttpOverrides': value});
-    xuan_toast(
-      msg: '重启应用后生效',
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.CENTER,
-      timeInSecForIosWeb: 1,
-      backgroundColor: const Color.fromARGB(255, 250, 76, 1),
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
+    showWarningSnackbar('重启应用后生效', null);
   }
 
   @override
@@ -865,14 +545,51 @@ class _SettingsPageState extends State<SettingsPage> {
                         isExpanded: settingsController.settingsPageExpansion
                             .contains(0),
                         body: Column(
-                          children:
-                              <Widget>[
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: <Widget>[
-                                        Iconify(Ri.bilibili_fill), // widget
+                          children: <Widget>[
+                            IntrinsicHeight(
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Iconify(
+                                        Ri.bilibili_fill,
+                                        color: AdaptiveTheme.of(
+                                          Get.context!,
+                                        ).theme.iconTheme.color,
+                                      ),
 
+                                      ExtendedImage.network(
+                                        "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
+                                        width: 18,
+                                        height: 18,
+                                        cache: true,
+                                      ),
+
+                                      ExtendedImage.network(
+                                        "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
+                                        cache: true,
+                                        width: 18,
+                                        height: 18,
+                                      ),
+
+                                      Iconify(
+                                        Mdi.github,
+                                        color: AdaptiveTheme.of(
+                                          Get.context!,
+                                        ).theme.iconTheme.color,
+                                      ),
+                                    ].map((e) => Expanded(child: Center(child: e))).toList(),
+                                  ),
+                                  Flexible(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
                                         Obx(() {
                                           bool isLoading = settingsController
                                               .loginDataLoading
@@ -889,25 +606,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                             }
                                           }
                                         }),
-                                        ElevatedButton(
-                                          onPressed: () => open_bl_login(),
-                                          child: const Text(
-                                            '设置bilibili cookie',
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: <Widget>[
-                                        ExtendedImage.network(
-                                          "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
-                                          width: 18,
-                                          height: 18,
-                                          cache: true,
-                                        ),
-
                                         Obx(() {
                                           bool isLoading = settingsController
                                               .loginDataLoading
@@ -927,23 +625,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                             }
                                           }
                                         }),
-                                        ElevatedButton(
-                                          onPressed: () => open_netease_login(),
-                                          child: const Text('登录网易云'),
-                                        ),
-                                      ],
-                                    ),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: <Widget>[
-                                        ExtendedImage.network(
-                                          "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
-                                          cache: true,
-                                          width: 18,
-                                          height: 18,
-                                        ),
-
                                         Obx(() {
                                           bool isLoading = settingsController
                                               .loginDataLoading
@@ -963,17 +644,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                             }
                                           }
                                         }),
-                                        ElevatedButton(
-                                          onPressed: () => open_qq_login(),
-                                          child: const Text('登录QQ音乐'),
-                                        ),
-                                      ],
-                                    ),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: <Widget>[
-                                        Iconify(Mdi.github), // widget
                                         Obx(() {
                                           bool isLoading = settingsController
                                               .loginDataLoading
@@ -992,33 +662,71 @@ class _SettingsPageState extends State<SettingsPage> {
                                             }
                                           }
                                         }),
-                                        ElevatedButton(
-                                          onPressed: () =>
-                                              Github.openAuthUrl(context),
-                                          child: const Text('登录Github(建议使用魔法'),
-                                        ),
-                                      ],
+                                      ].map((e) => Expanded(child: Center(child: e))).toList(),
                                     ),
-                                    Obx(() {
-                                      WebSocketClientController wscc =
-                                          Get.find<WebSocketClientController>();
-                                      return ElevatedButton(
-                                        onPressed: !wscc.isConnected
-                                            ? null
-                                            : () {
-                                                wscc.sendGetCookieMessage();
-                                              },
-                                        child: Text('从WebSocket服务器获取登录信息'),
-                                      );
-                                    }),
-                                  ]
-                                  .map(
-                                    (e) => Padding(
-                                      padding: EdgeInsets.all(8.0),
-                                      child: e,
-                                    ),
-                                  )
-                                  .toList(),
+                                  ),
+                                  Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children:
+                                        [
+                                              ElevatedButton(
+                                                onPressed: () =>
+                                                    open_bl_login(),
+                                                child: const Text(
+                                                  '设置bilibili cookie',
+                                                ),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () =>
+                                                    open_netease_login(),
+                                                child: const Text('登录网易云'),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () =>
+                                                    open_qq_login(),
+                                                child: const Text('登录QQ音乐'),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () =>
+                                                    Github.openAuthUrl(context),
+                                                child: const Text(
+                                                  '登录Github(建议使用魔法',
+                                                ),
+                                              ),
+                                            ]
+                                            .map(
+                                              (e) => Expanded(
+                                                child: Center(child: e),
+                                              ),
+                                            )
+                                            .map(
+                                              (e) => Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                  vertical: 4.0,
+                                                ),
+                                                child: e,
+                                              ),
+                                            )
+                                            .toList(),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            Obx(() {
+                              WebSocketClientController wscc =
+                                  Get.find<WebSocketClientController>();
+                              return ElevatedButton(
+                                onPressed: !wscc.isConnected
+                                    ? null
+                                    : () {
+                                        wscc.sendGetCookieMessage();
+                                      },
+                                child: Text('从WebSocket服务器获取登录信息'),
+                              );
+                            }),
+                          ].map((e) => Padding(padding: EdgeInsets.all(8.0), child: e)).toList(),
                         ),
                       ),
                       ExpansionPanel(
@@ -1060,149 +768,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 children: [
                                   Expanded(
                                     child: ElevatedButton.icon(
-                                      onPressed: () async {
-                                        if (Github.status != 2) {
-                                          _msg('请先登录Github', 1.0);
-                                          return;
-                                        }
-                                        var playlists =
-                                            await Github.listExistBackup();
-                                        print(playlists);
-
-                                        try {
-                                          showDialog(
-                                            context: context,
-                                            builder: (BuildContext context) {
-                                              return AlertDialog(
-                                                title: Text('导出歌单到Github Gist'),
-                                                content: Container(
-                                                  width: double.maxFinite,
-                                                  child: ListView.builder(
-                                                    shrinkWrap: true,
-                                                    itemCount: playlists.length,
-                                                    itemBuilder:
-                                                        (
-                                                          BuildContext context,
-                                                          int index,
-                                                        ) {
-                                                          final playlist =
-                                                              playlists[index];
-                                                          return ListTile(
-                                                            title: Text(
-                                                              playlist['id'],
-                                                            ),
-                                                            subtitle: Text(
-                                                              playlist['description'],
-                                                            ),
-                                                            onTap: () async {
-                                                              try {
-                                                                xuan_toast(
-                                                                  msg: '正在导出',
-                                                                );
-                                                                final settings =
-                                                                    await outputAllSettingsToFile(
-                                                                      true,
-                                                                    );
-                                                                final jsfile =
-                                                                    Github.json2gist(
-                                                                      settings,
-                                                                    );
-                                                                await Github.backupMySettings2Gist(
-                                                                  jsfile,
-                                                                  playlist['id'],
-                                                                  playlist['public'],
-                                                                );
-                                                                xuan_toast(
-                                                                  msg: '导出成功',
-                                                                );
-                                                                Navigator.of(
-                                                                  context,
-                                                                ).pop();
-                                                              } catch (e) {
-                                                                xuan_toast(
-                                                                  msg: '导出失败$e',
-                                                                );
-                                                              }
-                                                            },
-                                                          );
-                                                        },
-                                                  ),
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () async {
-                                                      try {
-                                                        xuan_toast(msg: '正在导出');
-                                                        final settings =
-                                                            await outputAllSettingsToFile(
-                                                              true,
-                                                            );
-                                                        final jsfile =
-                                                            Github.json2gist(
-                                                              settings,
-                                                            );
-                                                        await Github.backupMySettings2Gist(
-                                                          jsfile,
-                                                          null,
-                                                          true,
-                                                        );
-                                                        xuan_toast(msg: '导出成功');
-                                                        Navigator.of(
-                                                          context,
-                                                        ).pop();
-                                                      } catch (e) {
-                                                        xuan_toast(
-                                                          msg: '导出失败$e',
-                                                        );
-                                                      }
-                                                    },
-                                                    child: Text('创建公开备份'),
-                                                  ),
-                                                  TextButton(
-                                                    onPressed: () async {
-                                                      try {
-                                                        xuan_toast(msg: '正在导出');
-                                                        final settings =
-                                                            await outputAllSettingsToFile(
-                                                              true,
-                                                            );
-                                                        final jsfile =
-                                                            Github.json2gist(
-                                                              settings,
-                                                            );
-                                                        await Github.backupMySettings2Gist(
-                                                          jsfile,
-                                                          null,
-                                                          false,
-                                                        );
-                                                        xuan_toast(msg: '导出成功');
-                                                        Navigator.of(
-                                                          context,
-                                                        ).pop();
-                                                      } catch (e) {
-                                                        xuan_toast(
-                                                          msg: '导出失败$e',
-                                                        );
-                                                      }
-                                                    },
-                                                    child: Text('创建私有备份'),
-                                                  ),
-                                                  TextButton(
-                                                    onPressed: () {
-                                                      Navigator.of(
-                                                        context,
-                                                      ).pop();
-                                                    },
-                                                    child: Text('取消'),
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          );
-                                        } catch (e) {
-                                          xuan_toast(msg: '添加失败${e}');
-                                        }
-                                      },
+                                      onPressed: outputPlaylistToGithubGist,
                                       icon: Icon(Icons.playlist_play),
                                       label: Text('导出歌单到Github Gist'),
                                     ),
@@ -1212,7 +778,11 @@ class _SettingsPageState extends State<SettingsPage> {
                                     child: ElevatedButton.icon(
                                       onPressed: () async {
                                         if (Github.status != 2) {
-                                          _msg('请先登录Github', 1.0);
+                                          // _msg('请先登录Github', 1.0);
+                                          showWarningSnackbar(
+                                            '请先登录Github Gist',
+                                            null,
+                                          );
                                           return;
                                         }
                                         var playlists =
@@ -1246,8 +816,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                                             ),
                                                             onTap: () async {
                                                               try {
-                                                                xuan_toast(
-                                                                  msg: '正在导入',
+                                                                showInfoSnackbar(
+                                                                  '正在导入',
+                                                                  null,
                                                                 );
 
                                                                 final jsfile =
@@ -1265,12 +836,14 @@ class _SettingsPageState extends State<SettingsPage> {
                                                                 Navigator.of(
                                                                   context,
                                                                 ).pop();
-                                                                xuan_toast(
-                                                                  msg: '导入成功',
+                                                                showSuccessSnackbar(
+                                                                  '导入成功',
+                                                                  null,
                                                                 );
                                                               } catch (e) {
-                                                                xuan_toast(
-                                                                  msg: '导入失败$e',
+                                                                showErrorSnackbar(
+                                                                  '导入失败',
+                                                                  e.toString(),
                                                                 );
                                                               }
                                                             },
@@ -1292,7 +865,10 @@ class _SettingsPageState extends State<SettingsPage> {
                                             },
                                           );
                                         } catch (e) {
-                                          xuan_toast(msg: '添加失败${e}');
+                                          showErrorSnackbar(
+                                            '添加失败',
+                                            e.toString(),
+                                          );
                                         }
                                       },
 
@@ -1309,7 +885,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {
                           return ListTile(
-                            leading: Iconify(Octicon.cache_16), // widget
+                            leading: Iconify(
+                              Octicon.cache_16,
+                              color: AdaptiveTheme.of(
+                                Get.context!,
+                              ).theme.iconTheme.color,
+                            ),
                             title: Text('缓存'),
                           );
                         },
@@ -1389,7 +970,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
                                             children: create_hotkey_btns(
                                               context,
-                                              _msg,
                                             ),
                                           ),
                                           FutureBuilder(
@@ -1423,9 +1003,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                                             .setSettings({
                                                               'proxy': value,
                                                             });
-                                                        _msg(
+                                                        showInfoSnackbar(
                                                           '设置成功$value，重启应用生效',
-                                                          1.0,
+                                                          null,
                                                         );
                                                       },
                                                     );
@@ -1622,7 +1202,11 @@ class _SettingsPageState extends State<SettingsPage> {
                                                 Get.find<SettingsController>()
                                                         .hideOrMinimize =
                                                     value;
-                                                _msg('设置成功', 1.0);
+                                                // _msg('设置成功', 1.0);
+                                                showSuccessSnackbar(
+                                                  '设置成功',
+                                                  null,
+                                                );
                                               },
                                             ),
                                           ),
@@ -1664,17 +1248,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         canTapOnHeader: true,
                         isExpanded: settingsController.settingsPageExpansion
                             .contains(4),
-                        body: Column(
+                        body: Wrap(
+                          alignment: WrapAlignment.center,
                           children: [
                             ...[
                               ElevatedButton(
-                                onLongPress: () {
-                                  g_launchURL(
-                                    Uri.parse(
-                                      'https://github.com/HBWuChang/listen1_xuan/releases',
-                                    ),
-                                  );
-                                },
                                 onPressed: () async {
                                   var dia_context;
 
@@ -1693,15 +1271,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                         'githubOauthAccessKey',
                                       );
                                       if (token == null) {
-                                        xuan_toast(
-                                          msg: '请先登录Github',
-                                          toastLength: Toast.LENGTH_SHORT,
-                                          gravity: ToastGravity.CENTER,
-                                          timeInSecForIosWeb: 1,
-                                          backgroundColor: Colors.red,
-                                          textColor: Colors.white,
-                                          fontSize: 16.0,
-                                        );
+                                        showWarningSnackbar('请先登录Github', null);
                                         return;
                                       }
                                       final response =
@@ -1840,16 +1410,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                           print('关闭进度条对话框失败: $e');
                                         }
                                       }
-                                      xuan_toast(
-                                        msg: '下载成功',
-                                        toastLength: Toast.LENGTH_SHORT,
-                                        gravity: ToastGravity.CENTER,
-                                        timeInSecForIosWeb: 1,
-                                        backgroundColor: Colors.blue,
-                                        textColor: Colors.white,
-                                        fontSize: 16.0,
-                                      );
-
+                                      showSuccessSnackbar('下载成功', null);
                                       // 解压 ZIP 文件
                                       final bytes = File(
                                         filePath,
@@ -1896,15 +1457,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                       } catch (e) {
                                         print('关闭进度条对话框失败: $e');
                                       }
-                                      xuan_toast(
-                                        msg: '下载失败$e',
-                                        toastLength: Toast.LENGTH_SHORT,
-                                        gravity: ToastGravity.CENTER,
-                                        timeInSecForIosWeb: 1,
-                                        backgroundColor: Colors.red,
-                                        textColor: Colors.white,
-                                        fontSize: 16.0,
-                                      );
+                                      showErrorSnackbar('下载失败', e.toString());
                                     }
                                   } else {
                                     try {
@@ -1949,15 +1502,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                           'githubOauthAccessKey',
                                         );
                                         if (token == null) {
-                                          xuan_toast(
-                                            msg: '请先登录Github',
-                                            toastLength: Toast.LENGTH_SHORT,
-                                            gravity: ToastGravity.CENTER,
-                                            timeInSecForIosWeb: 1,
-                                            backgroundColor: Colors.red,
-                                            textColor: Colors.white,
-                                            fontSize: 16.0,
-                                          );
+                                          showWarningSnackbar('请先登录Github', null);
                                           return;
                                         }
                                         final response =
@@ -2163,25 +1708,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                             print('安装APK失败: $e');
                                           }
                                         } else {
-                                          xuan_toast(
-                                            msg: 'APK 文件未找到',
-                                            toastLength: Toast.LENGTH_SHORT,
-                                            gravity: ToastGravity.CENTER,
-                                            timeInSecForIosWeb: 1,
-                                            backgroundColor: Colors.red,
-                                            textColor: Colors.white,
-                                            fontSize: 16.0,
-                                          );
+                                          showErrorSnackbar('APK 文件未找到', null);
                                         }
-                                        xuan_toast(
-                                          msg: '下载成功',
-                                          toastLength: Toast.LENGTH_SHORT,
-                                          gravity: ToastGravity.CENTER,
-                                          timeInSecForIosWeb: 1,
-                                          backgroundColor: Colors.blue,
-                                          textColor: Colors.white,
-                                          fontSize: 16.0,
-                                        );
+                                        showSuccessSnackbar('下载成功', null);
                                       } else {
                                         throw Exception("没有权限访问存储空间");
                                       }
@@ -2193,19 +1722,21 @@ class _SettingsPageState extends State<SettingsPage> {
                                       } catch (e) {
                                         print('关闭进度条对话框失败: $e');
                                       }
-                                      xuan_toast(
-                                        msg: '下载失败$e',
-                                        toastLength: Toast.LENGTH_SHORT,
-                                        gravity: ToastGravity.CENTER,
-                                        timeInSecForIosWeb: 1,
-                                        backgroundColor: Colors.red,
-                                        textColor: Colors.white,
-                                        fontSize: 16.0,
-                                      );
+                                      showErrorSnackbar('下载失败', e.toString());
                                     }
                                   }
                                 },
                                 child: const Text('下载最新测试版'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  g_launchURL(
+                                    Uri.parse(
+                                      'https://github.com/HBWuChang/listen1_xuan/releases',
+                                    ),
+                                  );
+                                },
+                                child: Text('打开GitHub Release页面'),
                               ),
                               if (!is_windows)
                                 ElevatedButton(
@@ -2278,24 +1809,11 @@ class _SettingsPageState extends State<SettingsPage> {
                                         await file.delete();
                                       }
 
-                                      xuan_toast(
-                                        msg: '清理成功',
-                                        toastLength: Toast.LENGTH_SHORT,
-                                        gravity: ToastGravity.CENTER,
-                                        timeInSecForIosWeb: 1,
-                                        backgroundColor: Colors.blue,
-                                        textColor: Colors.white,
-                                        fontSize: 16.0,
-                                      );
+                                      showSuccessSnackbar('清理成功', null);
                                     } else {
-                                      xuan_toast(
-                                        msg: '没有权限访问存储空间',
-                                        toastLength: Toast.LENGTH_SHORT,
-                                        gravity: ToastGravity.CENTER,
-                                        timeInSecForIosWeb: 1,
-                                        backgroundColor: Colors.red,
-                                        textColor: Colors.white,
-                                        fontSize: 16.0,
+                                      showErrorSnackbar(
+                                        '没有权限访问存储空间',
+                                        null,
                                       );
                                     }
                                   },
@@ -2365,24 +1883,6 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-
-  void _msg(String msg, [double showtime = 3.0]) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        duration: Duration(milliseconds: (showtime * 1000).toInt()),
-      ),
-    );
-  }
-}
-
-void _msg(String msg, BuildContext context, [double showtime = 3.0]) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(msg),
-      duration: Duration(milliseconds: (showtime * 1000).toInt()),
-    ),
-  );
 }
 
 class Github {
@@ -2397,7 +1897,8 @@ class Github {
   static bool usedefault = false;
 
   static Future<void> handleCallback(String code, BuildContext context) async {
-    _msg('正在向Github请求信息', context, 1.0);
+    // _msg('正在向Github请求信息', context, 1.0);
+    showInfoSnackbar('正在向Github请求信息', '');
     String res = "";
     try {
       final url = '$OAUTH_URL/access_token';
@@ -2416,7 +1917,8 @@ class Github {
         );
         res = response.data.toString();
       } catch (e) {
-        _msg('代理适配请求失败,尝试使用默认Dio请求...', context, 1.0);
+        // _msg('代理适配请求失败,尝试使用默认Dio请求...', context, 1.0);
+        showInfoSnackbar('代理适配请求失败,尝试使用默认Dio请求...', null);
         response = await Dio().post(
           url,
           queryParameters: params,
@@ -2428,10 +1930,10 @@ class Github {
       final prefs = await SharedPreferences.getInstance();
       prefs.setString('githubOauthAccessKey', accessToken);
 
-      _msg('设置成功', context, 1.0);
+      showInfoSnackbar('设置成功', null);
     } catch (e) {
       Clipboard.setData(ClipboardData(text: e.toString() + res));
-      _msg('设置失败，错误信息已复制到剪切板$e\n网络请求返回值：$res', context, 1.0);
+      showInfoSnackbar('设置失败，错误信息已复制到剪切板$e\n网络请求返回值：$res', null);
     }
   }
 
@@ -2462,7 +1964,7 @@ class Github {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => login_webview(
+        builder: (context) => LoginWebview(
           controller: controller,
           config_key: 'github',
           open_url: url,

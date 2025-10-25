@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'controllers/audioHandler_controller.dart';
@@ -52,6 +53,7 @@ final dio_with_cookie_manager = Dio();
 final dio_with_ProxyAdapter = Dio();
 
 int last_dir = 0;
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -318,7 +320,7 @@ class MyApp extends StatelessWidget {
             title: 'Listen1',
             builder: (context, widget) {
               // 先应用 BotToastInit（如果是 Windows）
-
+              widget = FToastBuilder()(context, widget);
               // 处理 MediaQuery 异常问题，特别是小米澎湃系统
               MediaQueryData mediaQuery = MediaQuery.of(context);
               double safeTop = mediaQuery.padding.top;
@@ -339,10 +341,10 @@ class MyApp extends StatelessWidget {
                     .copyWith(
                       padding: mediaQuery.padding.copyWith(top: safeTop),
                     ),
-                child: widget!,
+                child: widget,
               );
             },
-
+            navigatorKey: navigatorKey,
             theme: theme,
             darkTheme: darkTheme,
             localizationsDelegates: [
@@ -386,8 +388,8 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   bool volumeSliderVisible = false;
   @override
   void initState() {
-    trayManager.addListener(this);
     super.initState();
+    trayManager.addListener(this);
     updatePageControllers();
     main_showVolumeSlider = showVolumeSlider;
     if (is_windows) {
@@ -396,6 +398,10 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     }
     init_playlist_filters();
     Get.find<Applinkscontroller>().xshow = xshow;
+
+    fToast = FToast();
+    // if you want to use context from globally instead of content we need to pass navigatorKey.currentContext!
+    fToast.init(navigatorKey.currentContext!);
   }
 
   void updatePageControllers() {

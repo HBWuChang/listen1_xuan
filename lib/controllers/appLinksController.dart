@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:win32_registry/win32_registry.dart';
+import '../funcs.dart';
 import '../global_settings_animations.dart';
 
 class Applinkscontroller extends GetxController {
@@ -60,7 +61,7 @@ class Applinkscontroller extends GetxController {
         appLink.value = Uri.parse('');
       }
     } catch (e) {
-      xuan_toast(msg: '$e');
+      showErrorSnackbar('处理分享链接出错', e.toString());
       Clipboard.setData(ClipboardData(text: e.toString()));
     }
   }

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -74,15 +75,7 @@ void router_pop() {
       closeApp();
     }
   } else {
-    xuan_toast(
-      msg: is_windows ? "再按一次以最小化" : "再按一次退出",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.black54,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
+    showInfoSnackbar(is_windows ? "再按一次以最小化" : "再按一次退出", null);
     last_pop_time = DateTime.now().millisecondsSinceEpoch;
   }
 }

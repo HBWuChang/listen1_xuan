@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_audio_tagger/flutter_audio_tagger.dart';
 import 'package:flutter_audio_tagger/tag.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -464,12 +465,12 @@ class CacheController extends GetxController {
       try {
         await File(path).delete();
         _localCacheList.remove(id);
-        xuan_toast(msg: '已清理');
+        showInfoSnackbar('已清理', null);
       } catch (e) {
-        xuan_toast(msg: '清理失败: $e');
+        showErrorSnackbar('清理失败', e.toString());
       }
     } else {
-      xuan_toast(msg: '没有可清理的缓存文件');
+      showWarningSnackbar('没有可清理的缓存文件', null);
     }
   }
 
@@ -598,9 +599,9 @@ class CacheController extends GetxController {
   /// 显示清理结果
   void _showCleanResult(int count) {
     if (count > 0) {
-      xuan_toast(msg: '清理了$count个缓存文件');
+      showInfoSnackbar('清理了$count个缓存文件', null);
     } else {
-      xuan_toast(msg: '没有可清理的缓存文件');
+      showWarningSnackbar('没有可清理的缓存文件', null);
     }
   }
 

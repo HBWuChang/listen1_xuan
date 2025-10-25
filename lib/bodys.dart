@@ -1,3 +1,5 @@
+import 'package:listen1_xuan/funcs.dart';
+
 import 'controllers/controllers.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
@@ -66,7 +68,7 @@ Future<dynamic> song_dialog(
               child: GestureDetector(
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: track.title ?? '未知标题'));
-                  xuan_toast(msg: '标题已复制到剪切板');
+                  showSuccessSnackbar('标题已复制到剪切板', null);
                 },
                 child: SelectableText(
                   track.title ?? '未知标题',
@@ -90,7 +92,7 @@ Future<dynamic> song_dialog(
               GestureDetector(
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: track.title ?? '未知标题'));
-                  xuan_toast(msg: '标题已复制到剪切板');
+                  showSuccessSnackbar('标题已复制到剪切板', null);
                 },
                 onLongPress: () {
                   // Clipboard.setData(
@@ -120,8 +122,8 @@ Future<dynamic> song_dialog(
                         children: [
                           Flexible(
                             child: ListTile(
-                              title: Text('发送到被控端'),
-                              onTap: () {
+                                title: Text('发送到被控端'),
+                                onTap: () {
                                 WebSocketClientHelper.sendTrack(track);
                                 Navigator.of(context).pop();
                                 WebSocketClientHelper.showControlPanel();
@@ -133,7 +135,7 @@ Future<dynamic> song_dialog(
                               title: Text('发送到被控端下一首'),
                               onTap: () {
                                 WebSocketClientHelper.sendNextTrack(track);
-                                xuan_toast(msg: '已发送');
+                                showSuccessSnackbar('已发送', null);
                                 Navigator.of(context).pop();
                               },
                             ),
@@ -155,7 +157,7 @@ Future<dynamic> song_dialog(
                   Clipboard.setData(
                     ClipboardData(text: track.artist ?? '未知艺术家'),
                   );
-                  xuan_toast(msg: '作者已复制到剪切板');
+                  showSuccessSnackbar('作者已复制到剪切板', null);
                 },
               ),
               ListTile(
@@ -170,7 +172,7 @@ Future<dynamic> song_dialog(
                   Clipboard.setData(
                     ClipboardData(text: track.artist ?? '未知艺术家'),
                   );
-                  xuan_toast(msg: '作者已复制到剪切板');
+                  showSuccessSnackbar('作者已复制到剪切板', null);
                 },
               ),
               if (track.album != null)
@@ -182,7 +184,7 @@ Future<dynamic> song_dialog(
                   },
                   onLongPress: () {
                     Clipboard.setData(ClipboardData(text: track.album!));
-                    xuan_toast(msg: '专辑已复制到剪切板');
+                    showSuccessSnackbar('专辑已复制到剪切板', null);
                   },
                 ),
               Row(
@@ -198,7 +200,7 @@ Future<dynamic> song_dialog(
                         Clipboard.setData(
                           ClipboardData(text: track.source_url ?? ''),
                         );
-                        xuan_toast(msg: '歌曲链接已复制到剪切板');
+                        showSuccessSnackbar('歌曲链接已复制到剪切板', null);
                       },
                     ),
                   ),
@@ -209,7 +211,7 @@ Future<dynamic> song_dialog(
                         String appLink = Get.find<Applinkscontroller>()
                             .getShareAppLink(track);
                         Clipboard.setData(ClipboardData(text: appLink));
-                        xuan_toast(msg: '已复制分享链接到剪切板');
+                        showSuccessSnackbar('已复制分享链接到剪切板', null);
                       },
                       onLongPress: null,
                     ),
@@ -224,7 +226,7 @@ Future<dynamic> song_dialog(
                       title: Text('添加到当前播放列表'),
                       onTap: () {
                         add_current_playing([track]);
-                        xuan_toast(msg: '已添加到当前播放列表');
+                        showSuccessSnackbar('已添加到当前播放列表', null);
                         Navigator.of(context).pop();
                       },
                     ),
@@ -234,7 +236,7 @@ Future<dynamic> song_dialog(
                       title: Text('下一首播放'),
                       onTap: () {
                         Get.find<PlayController>().nextTrack = track;
-                        xuan_toast(msg: '已添加到下一首播放');
+                        showSuccessSnackbar('已添加到下一首播放', null);
                         Navigator.of(context).pop();
                       },
                     ),
@@ -367,7 +369,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
         _isFavDataLoaded = true;
       });
     } catch (e) {
-      xuan_toast(msg: '收藏歌单加载失败');
+      showErrorSnackbar('收藏歌单加载失败', e.toString());
     }
   }
 
@@ -438,7 +440,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
         check();
       });
     } catch (e) {
-      xuan_toast(msg: '网易云音乐歌单加载失败');
+      showErrorSnackbar('网易云音乐歌单加载失败', e.toString());
     }
   }
 
@@ -497,7 +499,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
         check();
       });
     } catch (e) {
-      xuan_toast(msg: 'QQ音乐歌单加载失败');
+      showErrorSnackbar('QQ音乐歌单加载失败', e.toString());
     }
   }
 
@@ -929,11 +931,11 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
 
   void _onReorder(int oldIndex, int newIndex) {
     if (!widget.is_my) {
-      xuan_toast(msg: '只有自己创建的歌单才能排序');
+      showErrorSnackbar('只有自己创建的歌单才能排序', null);
       return;
     }
     if (_searchController.text.toLowerCase().isNotEmpty) {
-      xuan_toast(msg: '搜索状态下无法排序');
+      showErrorSnackbar('搜索状态下无法排序', null);
       return;
     }
     MediaService.insertTrackToMyPlaylist(
@@ -1097,7 +1099,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                       tracks,
                                     );
                                     add_current_playing(trackList);
-                                    xuan_toast(msg: '已添加到当前播放列表');
+                                    showSuccessSnackbar('已添加到当前播放列表', null);
                                   },
                                   icon: Icon(Icons.add_box_outlined),
                                 ),
@@ -1131,7 +1133,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                             Get.back(result: {"refresh": true}, id: 1);
                           } catch (e) {
                             // print(e);
-                            xuan_toast(msg: '添加失败${e}');
+                            showErrorSnackbar('添加失败', e.toString());
                           }
                         },
                       ),
@@ -1231,7 +1233,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                               _titleController.text,
                                               _coverImgUrlController.text,
                                             );
-                                            xuan_toast(msg: '编辑成功');
+                                            showSuccessSnackbar('编辑成功', null);
                                             Navigator.of(context_dialog).pop();
                                             Get.back(
                                               result: {"refresh": true},
@@ -1260,11 +1262,11 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                     widget.listId,
                                   );
                                   check_fav();
-                                  xuan_toast(msg: '已取消收藏');
+                                  showInfoSnackbar('已取消收藏', null);
                                 } else {
                                   myplaylist.saveMyPlaylist('favorite', result);
                                   check_fav();
-                                  xuan_toast(msg: '已添加到我的收藏');
+                                  showSuccessSnackbar('已添加到我的收藏', null);
                                 }
                               },
                             ),
@@ -1317,7 +1319,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                             },
                           ),
                           onTap: () {
-                            xuan_toast(msg: '尝试播放：${track.title}');
+                            showInfoSnackbar('尝试播放：${track.title}', null);
                             playsong(track, true, false, true);
                           },
                         );
@@ -1615,7 +1617,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                             },
                           ),
                           onTap: () {
-                            xuan_toast(msg: '尝试播放：${track.title}');
+                            showInfoSnackbar('尝试播放：${track.title}', null);
                             playsong(track, true, false, true);
                           },
                         );

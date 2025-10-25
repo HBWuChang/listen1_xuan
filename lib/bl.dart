@@ -11,6 +11,7 @@ import 'package:html/parser.dart' show parse;
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
+import 'funcs.dart';
 import 'lowebutil.dart';
 import 'package:marquee/marquee.dart';
 import 'main.dart';
@@ -104,7 +105,7 @@ class Bilibili {
       return [];
     } catch (e) {
       print('未知错误: $e');
-      xuan_toast(msg: '未知错误: $e');
+      showErrorSnackbar('Bilibili获取歌单未知错误', e.toString());
       return [];
     }
   }

@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
+import 'funcs.dart';
 import 'lowebutil.dart';
 import 'dart:math';
 import 'global_settings_animations.dart';
@@ -50,9 +51,7 @@ class MyPlaylist {
                     final playlistId = playlist.info.id;
                     addTrackToMyPlaylist(playlistId, tracks);
                     Get.back();
-                    xuan_toast(
-                      msg: '添加成功',
-                    );
+                    showSuccessSnackbar('添加成功', null);
                   },
                 );
               },
@@ -96,9 +95,7 @@ class MyPlaylist {
                               cover_img_url ?? "images/mycover.jpg");
                           Get.back();
                           Get.back();
-                          xuan_toast(
-                            msg: '添加成功',
-                          );
+                          showSuccessSnackbar('添加成功', null);
                         },
                         child: Text('确定'),
                       ),
@@ -125,9 +122,7 @@ class MyPlaylist {
       );
     } catch (e) {
       // print(e);
-      xuan_toast(
-        msg: '添加失败${e}',
-      );
+      showErrorSnackbar('添加失败', e.toString());
     }
   }
 

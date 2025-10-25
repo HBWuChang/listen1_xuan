@@ -72,50 +72,6 @@ Future<dynamic> xuan_getdownloadDirectory({String? path}) async {
 }
 
 final bool is_windows = universal_io.Platform.isWindows;
-dynamic xuan_toast({
-  required String msg,
-  Toast? toastLength,
-  int timeInSecForIosWeb = 2,
-  double? fontSize,
-  String? fontAsset,
-  ToastGravity? gravity,
-  Color? backgroundColor,
-  Color? textColor,
-  bool webShowClose = false,
-  webBgColor = "linear-gradient(to right, #00b09b, #96c93d)",
-  webPosition = "right",
-}) {
-  try {
-    if (is_windows) {
-      return Get.snackbar(
-        '提示',
-        msg,
-        snackPosition: SnackPosition.TOP,
-        duration: Duration(seconds: timeInSecForIosWeb),
-        backgroundColor: backgroundColor,
-        colorText: textColor,
-        isDismissible: true,
-        margin: EdgeInsets.all(10),
-        borderRadius: 5,
-      );
-    }
-    return Fluttertoast.showToast(
-      msg: msg,
-      toastLength: toastLength ?? Toast.LENGTH_SHORT,
-      gravity: gravity ?? ToastGravity.BOTTOM,
-      timeInSecForIosWeb: timeInSecForIosWeb,
-      fontSize: fontSize,
-      backgroundColor: backgroundColor,
-      textColor: textColor,
-      webBgColor: webBgColor,
-      webPosition: webPosition,
-      webShowClose: webShowClose,
-    );
-  } catch (e) {
-    debugPrint("Error in xuan_toast: $e");
-    return null;
-  }
-}
 
 void init_hotkeys() async {
   var settings = settings_getsettings();
@@ -230,7 +186,7 @@ Future<void> set_hotkey(s_hotkey, hotkey, name) async {
 
 var enable_hotkey_setstate;
 var enable_hotkey;
-List<Widget> create_hotkey_btns(context, _msg) {
+List<Widget> create_hotkey_btns(context) {
   if (!is_windows) return [];
   var s_hotkeys = [
     {"name": "播放/暂停", "hotkey": "play_pause"},
@@ -286,7 +242,8 @@ List<Widget> create_hotkey_btns(context, _msg) {
                     child: const Text('确定'),
                     onPressed: () async {
                       if (hotkey == null) {
-                        _msg('请设置热键', 1.0);
+                        // _msg('请设置热键', 1.0);
+                        showWarningSnackbar('请设置热键', null);
                         return;
                       }
                       hotkeys[_hotkey['hotkey']] = hotkey!.toJson();

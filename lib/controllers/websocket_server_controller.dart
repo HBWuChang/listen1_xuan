@@ -264,13 +264,13 @@ class WebSocketServerController extends GetxController {
               }
               // 保存设置
               Get.find<SettingsController>().saveSettings();
-              xuan_toast(msg: 'Cookie 设置成功');
+              showSuccessSnackbar('Cookie 设置成功', null);
             } else {
               throw '内容格式错误，无法解析为 Map';
             }
           } catch (e) {
             _logger.e('$_tag 处理设置 Cookie 消息失败', error: e);
-            xuan_toast(msg: 'Cookie 设置失败: $e');
+            showErrorSnackbar('Cookie 设置失败', e.toString());
           }
           break;
         case WebSocketMessageType.message:
