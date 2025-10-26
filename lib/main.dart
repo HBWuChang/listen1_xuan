@@ -187,7 +187,6 @@ void main() async {
 
   if (is_windows) {
     SMTCWindows.initialize();
-    enableThumbnailToolbar();
     JustAudioMediaKit.ensureInitialized(
       linux: false, // default: true  - dependency: media_kit_libs_linux
       windows:
@@ -196,15 +195,31 @@ void main() async {
     // Must add this line.
     await windowManager.ensureInitialized();
     await hotKeyManager.unregisterAll();
-    WindowOptions windowOptions = WindowOptions(
-      size: Size(1000, 700),
-      minimumSize: Size(400, 700),
-      center: true,
-      backgroundColor: Colors.transparent,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden,
-    );
+    late WindowOptions windowOptions;
+    if (settingsController.rememberWindowsSizeAndPosition) {
+      Rect bounds = settingsController.windowsWindowBounds;
+      windowOptions = WindowOptions(
+        size: Size(bounds.width, bounds.height),
+        minimumSize: Size(400, 700),
+        center: true,
+        backgroundColor: Colors.transparent,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.hidden,
+      );
+    } else {
+      windowOptions = WindowOptions(
+        size: Size(1000, 700),
+        minimumSize: Size(400, 700),
+        center: true,
+        backgroundColor: Colors.transparent,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.hidden,
+      );
+    }
     windowManager.waitUntilReadyToShow(windowOptions, () async {
+      if (settingsController.isWindowMaximized) {
+        await windowManager.maximize();
+      }
       await windowManager.show();
     });
   }
@@ -375,7 +390,8 @@ List<bool> show_filters = [false, false, true, true, false];
 
 var main_showVolumeSlider;
 
-class _MyHomePageState extends State<MyHomePage> with TrayListener {
+class _MyHomePageState extends State<MyHomePage>
+    with TrayListener, WindowListener {
   final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
   TextEditingController input_text_Controller = TextEditingController();
   FocusNode _focusNode = FocusNode();
@@ -393,8 +409,9 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     updatePageControllers();
     main_showVolumeSlider = showVolumeSlider;
     if (is_windows) {
-      _init();
+      _initTrayManager();
       init_hotkeys();
+      windowManager.addListener(this);
     }
     init_playlist_filters();
     Get.find<Applinkscontroller>().xshow = xshow;
@@ -431,7 +448,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
     });
   }
 
-  void _init() async {
+  void _initTrayManager() async {
     await trayManager.setIcon('assets/images/flutter_logo.ico');
     await trayManager.setToolTip('Listen1_xuan');
     await trayManager.setContextMenu(
@@ -534,8 +551,10 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
 
   @override
   void dispose() {
-    trayManager.removeListener(this);
-
+    if (is_windows) {
+      trayManager.removeListener(this);
+      windowManager.removeListener(this);
+    }
     _focusNode.dispose();
     _timer?.cancel();
     _focusNode2.dispose();
@@ -961,6 +980,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
                                       };
                                       break;
                                     } else {
+                                      //竖屏
                                       builder = (context_in_1) {
                                         return Scaffold(
                                           appBar: AppBar(
@@ -1312,6 +1332,33 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
         },
       ),
     );
+  }
+
+  bool _windowManagerOnce = false;
+  @override
+  void onWindowFocus() {
+    // 确保只调用一次
+    if (!_windowManagerOnce) {
+      _windowManagerOnce = true;
+      enableThumbnailToolbar();
+      setState(() {});
+      // 做些什么
+    }
+  }
+
+  @override
+  void onWindowResized() {
+    Get.find<SettingsController>().saveWindowsSizeAndPosition();
+  }
+
+  @override
+  void onWindowMaximize() {
+    Get.find<SettingsController>().onWindowMaximize();
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    Get.find<SettingsController>().onWindowUnmaximize();
   }
 
   void showVolumeSlider() async {

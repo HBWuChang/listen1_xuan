@@ -1201,6 +1201,26 @@ class _SettingsPageState extends State<SettingsPage> {
                                               },
                                             ),
                                           ),
+                                          Obx(
+                                            () => SwitchListTile(
+                                              title: const Text(
+                                                '记住窗口大小',
+                                              ),
+                                              value:
+                                                  Get.find<SettingsController>()
+                                                      .rememberWindowsSizeAndPosition,
+                                              onChanged: (bool value) {
+                                                Get.find<SettingsController>()
+                                                        .rememberWindowsSizeAndPosition =
+                                                    value;
+                                                // _msg('设置成功', 1.0);
+                                                showSuccessSnackbar(
+                                                  '设置成功',
+                                                  null,
+                                                );
+                                              },
+                                            ),
+                                          ),
                                         ]
                                         .map(
                                           (e) => Padding(

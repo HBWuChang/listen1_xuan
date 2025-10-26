@@ -10,8 +10,10 @@ import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/models/websocket_message.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../bl.dart';
+import '../global_settings_animations.dart';
 import '../main.dart';
 import '../netease.dart';
 import '../qq.dart';
@@ -87,7 +89,7 @@ class SettingsController extends GetxController {
       settings['settingsPageExpansion'] ?? <int>[],
     );
     _lastSettingsPageExpansion = Set<int>.from(settingsPageExpansion.value);
-    
+
     final player_settings = await prefs.getString('player-settings');
     if (player_settings != null) {
       try {
@@ -193,5 +195,68 @@ class SettingsController extends GetxController {
       }),
     ]);
     await tasks;
+  }
+
+  // windows 窗口大小及是否全屏
+  static const String windowsWindowWidth = 'windowWidth';
+  static const String windowsWindowHeight = 'windowHeight';
+  static const String windowsWindowX = 'windowX';
+  static const String windowsWindowY = 'windowY';
+  static const String windowsWindowIsMaximized = 'isWindowMaximized';
+  static const String windowsRememberWindowSizeAndPosition =
+      'rememberWindowSizeAndPosition';
+  bool get rememberWindowsSizeAndPosition {
+    if (is_windows) {
+      return settings[windowsRememberWindowSizeAndPosition] ?? true;
+    }
+    throw 'Not Windows platform';
+  }
+
+  set rememberWindowsSizeAndPosition(bool value) {
+    if (is_windows) {
+      settings[windowsRememberWindowSizeAndPosition] = value;
+    } else
+      throw 'Not Windows platform';
+  }
+
+  bool get isWindowMaximized {
+    if (is_windows) {
+      return settings[windowsWindowIsMaximized] ?? false;
+    }
+    throw 'Not Windows platform';
+  }
+
+  Rect get windowsWindowBounds {
+    if (is_windows) {
+      double width = (settings[windowsWindowWidth] ?? 1000).toDouble();
+      double height = (settings[windowsWindowHeight] ?? 700).toDouble();
+      double x = (settings[windowsWindowX] ?? 100).toDouble();
+      double y = (settings[windowsWindowY] ?? 100).toDouble();
+      return Rect.fromLTWH(x, y, width, height);
+    }
+    throw 'Not Windows platform';
+  }
+
+  void saveWindowsSizeAndPosition() {
+    if (is_windows) {
+      windowManager.getBounds().then((bounds) {
+        settings[windowsWindowWidth] = bounds.width;
+        settings[windowsWindowHeight] = bounds.height;
+        settings[windowsWindowX] = bounds.left;
+        settings[windowsWindowY] = bounds.top;
+      });
+    }
+  }
+
+  void onWindowMaximize() {
+    if (is_windows) {
+      settings[windowsWindowIsMaximized] = true;
+    }
+  }
+
+  void onWindowUnmaximize() {
+    if (is_windows) {
+      settings[windowsWindowIsMaximized] = false;
+    }
   }
 }
