@@ -82,6 +82,7 @@ flutter version 3.32.1
 - 调整主题颜色
 - win添加可记忆窗口大小选项
 - android添加在通知中显示歌词功能（目前是通过直接更改displayTitle实现的；虽然通知更改成功，但在朋友车机上测试并没有卵用，据朋友说其车机只有汽水音乐可显示歌词；继续改进遇到现实阻力 ~~我没车（机）~~
+- 图标感谢[Chris蒂娜じゃない](https://space.bilibili.com/104313435)
 ~~~dart
 if (lyric != null) {
   if (_currentMediaItem == null) return;
