@@ -449,7 +449,7 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   void _initTrayManager() async {
-    await trayManager.setIcon('assets/images/icon.png');
+    await trayManager.setIcon('assets/images/app_icon.ico');
     await trayManager.setToolTip('Listen1_xuan');
     await trayManager.setContextMenu(
       Menu(
