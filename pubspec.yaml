@@ -85,6 +85,7 @@ dependencies:
   bonsoir: ^6.0.1
   punycode: ^1.0.0
   iconify_flutter_plus: ^1.0.4
+  flutter_launcher_icons: ^0.14.4
 dev_dependencies:
   flutter_test:
     sdk: flutter

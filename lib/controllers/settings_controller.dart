@@ -169,6 +169,7 @@ class SettingsController extends GetxController {
     }
   }
 
+  // 登陆管理
   final loginData = <String, dynamic>{}.obs;
   final loginDataLoading = Set().obs;
   Future<void> refreshLoginData() async {

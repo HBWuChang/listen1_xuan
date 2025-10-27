@@ -70,6 +70,37 @@ flutter version 3.32.1
 ![alt text](readme/Screenshot_2025-06-26-23-19-29-460_com.xiebian.listen1_xuan.jpg) 
 ## 更新日志
 ---
+1.1.3+18
+- 添加WebSocket功能
+  - 可基本控制服务端音乐播放
+  - 可下载服务端缓存文件到本地
+  - 可获取服务端的各平台登录
+  - 可在歌曲弹窗中发送歌曲到服务端播放（当已连接WebSocket服务器时显示按钮）
+- 添加分享功能 ~~（目前学习意义大于实用意义~~
+  - 可从链接打开应用
+- 优化设置页面布局
+- 调整主题颜色
+- win添加可记忆窗口大小选项
+- android添加在通知中显示歌词功能（目前是通过直接更改displayTitle实现的；虽然通知更改成功，但在朋友车机上测试并没有卵用，据朋友说其车机只有汽水音乐可显示歌词；继续改进遇到现实阻力 ~~我没车（机）~~
+~~~dart
+if (lyric != null) {
+  if (_currentMediaItem == null) return;
+  MediaItem _item = _currentMediaItem!.copyWith(
+    displayTitle: lyric.mainText,
+    // displaySubtitle: lyric.extText,
+  );
+  if (Get.find<SettingsController>().showLyricTranslation.value) {
+    _item = _item.copyWith(
+      displaySubtitle: lyric.hasExt ? lyric.extText : null,
+    );
+  }
+  (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
+      .change_playbackstate(_item);
+    return;
+}
+~~~
+- 修改~~应该是~~所有的消息样式
+---
 1.1.1+15
 - 添加下载功能，windows若原无ffmpeg则可在设置中下载（由于封了个ffmpeg导致安卓安装包变大了两倍多QAQ）
 - 添加WebSocket功能，可远控另一台设备播放及播放指定歌曲
