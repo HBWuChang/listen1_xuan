@@ -318,7 +318,7 @@ class ThemeToggleButton extends StatelessWidget {
 
     return GestureDetector(
       onLongPress: () {
-        _showThemeDialog(context);
+        showThemeDialog();
       },
       child: IconButton(
         tooltip: GetPlatform.isWindows ? '长按打开主题设置' : null,
@@ -340,10 +340,10 @@ class ThemeToggleButton extends StatelessWidget {
       ),
     );
   }
+}
 
-  void _showThemeDialog(BuildContext context) {
-    Get.dialog(ThemeSettingsDialog(), barrierDismissible: true);
-  }
+void showThemeDialog() {
+  Get.dialog(ThemeSettingsDialog(), barrierDismissible: true);
 }
 
 class ThemeSettingsDialog extends StatelessWidget {

@@ -1870,8 +1870,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     iconSize: 24.0, // 可选：自定义图标大小
                     padding: EdgeInsets.all(0), // 可选：自定义内边距
                   ),
+
                   onTap: () {
-                    Get.dialog(ThemeSettingsDialog(), barrierDismissible: true);
+                    showThemeDialog();
                   },
                 ),
                 ListTile(
