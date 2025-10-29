@@ -146,10 +146,14 @@ Map<String, List<String>> _cookieUrls = {
 };
 
 void g_launchURL(Uri url) async {
-  if (await canLaunchUrl(url)) {
-    await launchUrl(url);
-  } else {
-    throw 'Could not launch $url';
+  try {
+    // if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    // } else {
+    //   throw 'Could not launch $url';
+    // }
+  } catch (e) {
+    showErrorSnackbar('无法打开链接', '$e');
   }
 }
 

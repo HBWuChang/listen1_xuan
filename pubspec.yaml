@@ -40,7 +40,7 @@ dependencies:
   vibration: ^2.0.1
   logger: ^2.5.0
   connectivity_plus: ^6.1.4
-  flutter_markdown: ^0.7.4+3
+  flutter_markdown_plus: ^1.0.5
   archive: ^4.0.2
   install_plugin:
     path: packages/install_plugin-2.1.0
