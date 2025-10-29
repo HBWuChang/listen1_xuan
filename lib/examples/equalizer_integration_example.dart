@@ -12,10 +12,10 @@ import 'package:listen1_xuan/global_settings_animations.dart';
 
 // 2. 在设置列表中添加 ListTile（例如在"播放设置"部分）
 Widget buildEqualizerTile(BuildContext context) {
-  if (is_windows) {
+  // if (is_windows) {
     // Windows 平台不显示均衡器入口
     return SizedBox.shrink();
-  }
+  // }
   // 使用 OpenContainer 实现页面转场动画
   return OpenContainer(
     // 转场类型：淡入淡出

@@ -77,15 +77,15 @@ class PlayController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    if (is_windows) {
+    // if (is_windows) {
       music_player = AudioPlayer();
-    } else {
-      equalizer = AndroidEqualizer();
-      music_player = AudioPlayer(
-        audioPipeline: AudioPipeline(androidAudioEffects: [equalizer]),
-      );
-      initAndroidEqualizer();
-    }
+    // } else {
+    //   equalizer = AndroidEqualizer();
+    //   music_player = AudioPlayer(
+    //     audioPipeline: AudioPipeline(androidAudioEffects: [equalizer]),
+    //   );
+    //   initAndroidEqualizer();
+    // }
     debounce(_player_settings, (event) {
       _saveSingleSetting('player-settings');
     });

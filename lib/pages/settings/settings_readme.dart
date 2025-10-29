@@ -40,7 +40,7 @@ class SettingsReadmePage extends StatelessWidget {
               Uri uri = Uri.parse(href);
               if (uri.host.isEmpty) {
                 uri = Uri.parse(
-                  'https://github.com/HBWuChang/listen1_xuan/$href',
+                  'https://github.com/HBWuChang/listen1_xuan/blob/main/$href',
                 );
               }
               g_launchURL(uri);
