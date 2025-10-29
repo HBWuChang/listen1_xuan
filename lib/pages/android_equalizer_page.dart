@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/play_controller.dart';
+import '../controllers/routeController.dart';
 import '../controllers/settings_controller.dart';
 import '../funcs.dart';
 import '../global_settings_animations.dart';
@@ -17,49 +18,111 @@ class AndroidEqualizerPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('音效调节'),
         centerTitle: true,
-        actions: [
-          // 保存方案按钮
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () => _showSavePresetDialog(context, playController),
-            tooltip: '保存当前方案',
-          ),
-          // 重置按钮
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _showResetDialog(context, playController),
-            tooltip: '重置所有频段',
-          ),
-        ],
+        actions: playController.androidEQEnabled
+            ? [
+                // 保存方案按钮
+                IconButton(
+                  icon: const Icon(Icons.save),
+                  onPressed: () =>
+                      _showSavePresetDialog(context, playController),
+                  tooltip: '保存当前方案',
+                ),
+                // 重置按钮
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => _showResetDialog(context, playController),
+                  tooltip: '重置所有频段',
+                ),
+              ]
+            : [],
       ),
-      body: Obx(() {
-        // 检查是否初始化完成
-        if (!playController.androidEQInited.value) {
-          return globalLoadingAnime;
-        }
+      body: playController.androidEQEnabled
+          ? Obx(() {
+              // 检查是否初始化完成
+              if (!playController.androidEQInited.value) {
+                return globalLoadingAnime;
+              }
 
-        final bands = playController.bands;
-        if (bands.isEmpty) {
-          return const Center(child: Text('无可用的均衡器频段'));
-        }
+              final bands = playController.bands;
+              if (bands.isEmpty) {
+                return const Center(child: Text('无可用的均衡器频段'));
+              }
 
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              // 频段滑条列表
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildBandsVisualizer(playController, theme),
+              return SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    // 频段滑条列表
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildBandsVisualizer(playController, theme),
+                    ),
+                    const SizedBox(height: 20),
+                    // 已保存的方案列表
+                    _buildSavedPresets(playController, theme, context),
+                    const SizedBox(height: 20),
+                    // 关闭均衡器按钮
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final confirm = await showConfirmDialog(
+                              '关闭均衡器',
+                              '确定要关闭均衡器并重启应用吗？',
+                              confirmLevel: ConfirmLevel.danger,
+                            );
+                            if (confirm != true) return;
+
+                            // 禁用均衡器
+                            Get.find<SettingsController>()
+                                    .settings[PlayController
+                                    .androidEQEnabledKey] =
+                                false;
+
+                            closeApp();
+                          },
+                          icon: const Icon(Icons.power_settings_new),
+                          label: const Text('关闭均衡器并重启应用'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.error,
+                            foregroundColor: theme.colorScheme.onError,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              );
+            })
+          : Center(
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  // 启用均衡器
+                  Get.find<SettingsController>().settings[PlayController
+                          .androidEQEnabledKey] =
+                      true;
+                  closeApp();
+                },
+                icon: const Icon(Icons.power_settings_new),
+                label: const Text(
+                  '启用均衡器并重启应用\n均衡器可能在某些设备上不起作用（如小米14A16）',
+                  maxLines: 3,
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                ),
               ),
-              const SizedBox(height: 20),
-              // 已保存的方案列表
-              _buildSavedPresets(playController, theme, context),
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
-      }),
+            ),
     );
   }
 

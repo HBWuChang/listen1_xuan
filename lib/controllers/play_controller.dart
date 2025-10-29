@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
+import 'package:logger/logger.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,7 +46,7 @@ class PlayController extends GetxController {
   late AudioPlayer music_player;
   final _player_settings = <String, dynamic>{}.obs;
   final _current_playing = <Track>[].obs;
-
+  final logger = Logger();
   final _next_track = Rx<Track?>(null);
   set nextTrack(Track? track) {
     _next_track.value = track;
@@ -77,15 +78,17 @@ class PlayController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // if (is_windows) {
+    androidEQEnabled =
+        Get.find<SettingsController>().settings[androidEQEnabledKey] ?? false;
+    if (is_windows || !androidEQEnabled) {
       music_player = AudioPlayer();
-    // } else {
-    //   equalizer = AndroidEqualizer();
-    //   music_player = AudioPlayer(
-    //     audioPipeline: AudioPipeline(androidAudioEffects: [equalizer]),
-    //   );
-    //   initAndroidEqualizer();
-    // }
+    } else {
+      equalizer = AndroidEqualizer();
+      music_player = AudioPlayer(
+        audioPipeline: AudioPipeline(androidAudioEffects: [equalizer]),
+      );
+      initAndroidEqualizer();
+    }
     debounce(_player_settings, (event) {
       _saveSingleSetting('player-settings');
     });
@@ -107,11 +110,12 @@ class PlayController extends GetxController {
   Map<int, AndroidEQBand> get bands => _bands;
   double minGain = -1.0;
   double maxGain = 1.0;
+  bool androidEQEnabled = false;
+  static const String androidEQEnabledKey = 'android_equalizer_enabled';
   Future<void> initAndroidEqualizer() async {
     // 从设置中加载保存的频段数据
     final savedBands =
         Get.find<SettingsController>().settings['android_equalizer_bands'];
-
     if (savedBands != null && savedBands is List) {
       // 将 List 转换为 Map
       _bands.value = Map<int, AndroidEQBand>.fromEntries(
@@ -171,6 +175,8 @@ class PlayController extends GetxController {
     final bandsList = _bands.values.map((band) => band.toJson()).toList();
     Get.find<SettingsController>().settings['android_equalizer_bands'] =
         bandsList;
+    logger.d('Saved equalizer bands: $bandsList');
+
     bool isPlayingBefore = music_player.playing;
     if (isPlayingBefore) await music_player.stop();
     // await music_player.load();

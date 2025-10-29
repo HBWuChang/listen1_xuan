@@ -595,21 +595,15 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                                 .mediaItem,
                                         builder: (context, snapshot) {
                                           final mediaItem = snapshot.data;
-                                          return Marquee(
-                                            text:
-                                                (mediaItem?.title ?? 'null') +
-                                                '  -  ' +
-                                                (mediaItem?.artist ?? 'null'),
+                                          return Text(
+                                            '${mediaItem?.title ?? 'null'}  -  ${mediaItem?.artist ?? 'null'}',
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                             ),
-                                            blankSpace: 20.0,
-                                            velocity: 50.0,
-                                            pauseAfterRound: Duration(
-                                              seconds: 1,
-                                            ),
-                                            startPadding: 10.0,
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           );
                                         },
                                       ),
@@ -886,21 +880,15 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
                                                   .mediaItem,
                                           builder: (context, snapshot) {
                                             final mediaItem = snapshot.data;
-                                            return Marquee(
-                                              text:
-                                                  (mediaItem?.title ?? 'null') +
-                                                  '  -  ' +
-                                                  (mediaItem?.artist ?? 'null'),
+                                            return Text(
+                                              '${mediaItem?.title ?? 'null'}  -  ${mediaItem?.artist ?? 'null'}',
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
                                               ),
-                                              blankSpace: 20.0,
-                                              velocity: 50.0,
-                                              pauseAfterRound: Duration(
-                                                seconds: 1,
-                                              ),
-                                              startPadding: 10.0,
+                                              textAlign: TextAlign.center,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             );
                                           },
                                         ),
