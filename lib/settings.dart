@@ -15,6 +15,7 @@ import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
 import 'controllers/websocket_client_controller.dart';
+import 'examples/equalizer_integration_example.dart';
 import 'examples/websocket_client_example.dart';
 import 'examples/websocket_server_example.dart';
 import 'funcs.dart';
@@ -1863,6 +1864,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ),
                 ),
+                buildEqualizerTile(context),
                 ListTile(
                   leading: Icon(Icons.color_lens),
                   title: Text('主题设置'),

@@ -12,8 +12,37 @@ import '../global_settings_animations.dart';
 import 'settings_controller.dart';
 import 'websocket_card_controller.dart';
 
+class AndroidEQBand {
+  int index;
+  double gain;
+  double? upperFrequency;
+  double? lowerFrequency;
+  double? centerFrequency;
+
+  AndroidEQBand({
+    required this.index,
+    required this.gain,
+    this.upperFrequency,
+    this.lowerFrequency,
+    this.centerFrequency,
+  });
+  AndroidEQBand.fromAndroidEqualizerBand(AndroidEqualizerBand androidEQBand)
+    : index = androidEQBand.index,
+      gain = androidEQBand.gain,
+      upperFrequency = androidEQBand.upperFrequency,
+      lowerFrequency = androidEQBand.lowerFrequency,
+      centerFrequency = androidEQBand.centerFrequency;
+  factory AndroidEQBand.fromJson(Map<String, dynamic> json) {
+    return AndroidEQBand(index: json['index'], gain: json['gain']);
+  }
+  Map<String, dynamic> toJson() {
+    return {'index': index, 'gain': gain};
+  }
+}
+
 class PlayController extends GetxController {
-  final music_player = AudioPlayer();
+  late AndroidEqualizer equalizer;
+  late AudioPlayer music_player;
   final _player_settings = <String, dynamic>{}.obs;
   final _current_playing = <Track>[].obs;
 
@@ -48,6 +77,15 @@ class PlayController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    if (is_windows) {
+      music_player = AudioPlayer();
+    } else {
+      equalizer = AndroidEqualizer();
+      music_player = AudioPlayer(
+        audioPipeline: AudioPipeline(androidAudioEffects: [equalizer]),
+      );
+      initAndroidEqualizer();
+    }
     debounce(_player_settings, (event) {
       _saveSingleSetting('player-settings');
     });
@@ -60,6 +98,83 @@ class PlayController extends GetxController {
     ever(isplaying, (callback) {
       broadcastWs();
     });
+  }
+
+  final RxMap<int, AndroidEQBand> _bands = RxMap<int, AndroidEQBand>();
+  final androidEQInited = false.obs;
+
+  // Getter 用于访问频段数据
+  Map<int, AndroidEQBand> get bands => _bands;
+  double minGain = -1.0;
+  double maxGain = 1.0;
+  Future<void> initAndroidEqualizer() async {
+    // 从设置中加载保存的频段数据
+    final savedBands =
+        Get.find<SettingsController>().settings['android_equalizer_bands'];
+
+    if (savedBands != null && savedBands is List) {
+      // 将 List 转换为 Map
+      _bands.value = Map<int, AndroidEQBand>.fromEntries(
+        savedBands.map<MapEntry<int, AndroidEQBand>>(
+          (value) => MapEntry(
+            value['index'] as int,
+            AndroidEQBand.fromJson(value as Map<String, dynamic>),
+          ),
+        ),
+      );
+    }
+
+    await equalizer.setEnabled(true);
+    final parameters = await equalizer.parameters;
+    minGain = parameters.minDecibels;
+    maxGain = parameters.maxDecibels;
+    for (var band in _bands.values) {
+      band.gain = band.gain.clamp(minGain, maxGain);
+    }
+    final bands = parameters.bands;
+    for (var band in bands) {
+      if (_bands.containsKey(band.index)) {
+        await band.setGain(_bands[band.index]!.gain);
+        _bands[band.index]!.upperFrequency = band.upperFrequency;
+        _bands[band.index]!.lowerFrequency = band.lowerFrequency;
+        _bands[band.index]!.centerFrequency = band.centerFrequency;
+      } else {
+        _bands[band.index] = AndroidEQBand.fromAndroidEqualizerBand(band);
+      }
+    }
+    androidEQInited.value = true;
+    debounce(_bands, (callback) {
+      _saveEqualizerBands();
+    }, time: Duration(milliseconds: 100));
+  }
+
+  // 设置特定频段的增益
+  void setBandGain(int bandIndex, double gain) {
+    if (!_bands.containsKey(bandIndex)) return;
+
+    // 更新本地数据
+    _bands[bandIndex]!.gain = gain;
+    _bands.refresh();
+  }
+
+  // 保存均衡器频段设置
+  Future<void> _saveEqualizerBands() async {
+    // 应用到均衡器
+    final parameters = await equalizer.parameters;
+    final bands = parameters.bands;
+    for (var band in bands) {
+      final bandData = _bands[band.index];
+      if (bandData != null) {
+        await band.setGain(bandData.gain);
+      }
+    }
+    final bandsList = _bands.values.map((band) => band.toJson()).toList();
+    Get.find<SettingsController>().settings['android_equalizer_bands'] =
+        bandsList;
+    bool isPlayingBefore = music_player.playing;
+    if (isPlayingBefore) await music_player.stop();
+    // await music_player.load();
+    if (isPlayingBefore) await music_player.play();
   }
 
   Future<void> _saveSingleSetting(String key) async {
