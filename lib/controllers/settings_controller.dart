@@ -58,8 +58,8 @@ class SettingsController extends GetxController {
     });
     ever(settingsPageExpansion, (callback) async {
       settings['settingsPageExpansion'] = callback.toList();
-      if (callback.contains(0) &&
-          _lastSettingsPageExpansion.contains(0) == false) {
+      if (callback.contains(1) &&
+          _lastSettingsPageExpansion.contains(1) == false) {
         refreshLoginData();
       }
       _lastSettingsPageExpansion = Set<int>.from(callback); // 创建新的 Set 副本

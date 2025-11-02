@@ -231,7 +231,7 @@ class LyricController extends GetxController {
   void _updateCurrentLyric(Duration position) {
     if (lyricModel == null) return;
     LyricsLineModel? line =
-        lyricModel!.lyrics[lyricModel!.getCurrentLine(position.inMilliseconds)];
+        lyricModel?.lyrics[lyricModel!.getCurrentLine(position.inMilliseconds)];
     // debugPrint('更新歌词: ${formatShowLyric(line)}');
     // updFormatShowLyric.value = formatShowLyric(line);
     updFormatShowLyric.value = line ?? LyricsLineModel();

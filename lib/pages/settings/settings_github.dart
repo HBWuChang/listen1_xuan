@@ -124,15 +124,20 @@ class Github {
         );
       } catch (e) {
         usedefault = true;
-        response = await Dio().get(
-          '$API_URL/user',
-          options: Options(
-            headers: {
-              'Authorization': 'token $accessToken',
-              'Accept': 'application/json',
-            },
-          ),
-        );
+        try {
+          response = await Dio().get(
+            '$API_URL/user',
+            options: Options(
+              headers: {
+                'Authorization': 'token $accessToken',
+                'Accept': 'application/json',
+              },
+            ),
+          );
+        } catch (e) {
+          status = 0;
+          return status;
+        }
       }
 
       final data = response.data;

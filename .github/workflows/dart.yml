@@ -25,6 +25,13 @@ jobs:
       - run: flutter --version
       - run: flutter pub get
       - run: flutter test
+      
+      # 创建 .env 文件用于构建
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
+      
       - name: 解码生成 jks
         run: echo $KEYSTORE_BASE64 | base64 -di > android/app/xuan.jks
         env:

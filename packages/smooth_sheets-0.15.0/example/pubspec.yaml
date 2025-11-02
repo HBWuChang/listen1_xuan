@@ -1,0 +1,30 @@
+name: cookbook
+description: "A new Flutter project."
+publish_to: "none"
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dependencies:
+  animations: ^2.0.10
+  auto_route: ^10.0.1
+  cupertino_icons: ^1.0.6
+  faker: ^2.1.0
+  flutter:
+    sdk: flutter
+  go_router: ^16.2.1
+
+  smooth_sheets:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  auto_route_generator: ^10.0.1
+  build_runner: ^2.4.15
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/

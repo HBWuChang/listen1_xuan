@@ -2,16 +2,22 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 
 import 'package:logger/logger.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smooth_sheets/smooth_sheets.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../global_settings_animations.dart';
 import 'settings_controller.dart';
 import 'websocket_card_controller.dart';
+import 'supabase_auth_controller.dart';
+import 'BroadcastWsController.dart';
 
 class AndroidEQBand {
   int index;
@@ -48,6 +54,24 @@ class PlayController extends GetxController {
   final _current_playing = <Track>[].obs;
   final logger = Logger();
   final _next_track = Rx<Track?>(null);
+
+  // Sheet 控制相关
+  final SheetController sheetController = SheetController();
+  double get sheetMinHeight => 256.0.w;
+  SheetOffset get sheetMinOffset =>
+      SheetOffset(sheetMinHeight / playVMaxHeight);
+  double get sheetMidHeight => 0.8.sw;
+  SheetOffset get sheetMidOffset =>
+      SheetOffset(sheetMidHeight / playVMaxHeight);
+  double get playVMaxHeight => _playVMaxHeight ?? 0.8.sh;
+  double? _playVMaxHeight;
+  SheetOffset get playVMaxOffset => SheetOffset(1);
+  set playVMaxHeight(double value) {
+    _playVMaxHeight = value;
+  }
+
+  final sheetExpandRatio = 0.0.obs; // 展开比例 0.0-1.0
+
   set nextTrack(Track? track) {
     _next_track.value = track;
   }
@@ -78,6 +102,7 @@ class PlayController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
     androidEQEnabled =
         Get.find<SettingsController>().settings[androidEQEnabledKey] ?? false;
     if (is_windows || !androidEQEnabled) {
@@ -100,6 +125,7 @@ class PlayController extends GetxController {
     });
     ever(isplaying, (callback) {
       broadcastWs();
+      updateContinuePlay();
     });
   }
 
@@ -244,5 +270,106 @@ class PlayController extends GetxController {
 
   Track? getTrackById(String id) {
     return _current_playing.firstWhereOrNull((track) => track.id == id);
+  }
+
+  /// 更新当前播放状态到 Supabase
+  /// 将当前曲目、播放状态等信息同步到云端
+  Future<void> updateContinuePlay() async {
+    try {
+      // 检查是否已登录
+      final authController = Get.find<SupabaseAuthController>();
+      if (!authController.isLoggedIn.value) {
+        logger.w('用户未登录，跳过同步播放状态');
+        return;
+      }
+
+      // 获取当前曲目
+      if (_current_playing.isEmpty) {
+        logger.w('当前播放列表为空，跳过同步');
+        return;
+      }
+
+      final track = currentTrack;
+      if (track.id.isEmpty) {
+        logger.w('当前曲目ID为空，跳过同步');
+        return;
+      }
+
+      // 获取设备ID
+      final broadcastController = Get.find<BroadcastWsController>();
+      final deviceId = broadcastController.deviceId;
+
+      // 创建 SupaContinuePlay 对象
+      final continuePlay = SupaContinuePlay(
+        track: track,
+        playing: isplaying.value,
+        deviceId: deviceId,
+        ext: {
+          'volume': _player_settings['volume'],
+          'playmode': _player_settings['playmode'],
+        },
+      );
+
+      // 使用 upsert 操作（insert on conflict update）
+      final supabase = Supabase.instance.client;
+      final userId = authController.currentUser.value?.id;
+
+      await supabase.from('continue_play').upsert(
+        {
+          'user_id': userId,
+          'track': continuePlay.track.toJson(),
+          'playing': continuePlay.playing,
+          'ext': continuePlay.ext,
+          'device_id': continuePlay.deviceId,
+        },
+        onConflict: 'user_id', // 根据 user_id 冲突时更新
+      );
+
+      logger.d('成功同步播放状态到 Supabase');
+    } catch (e) {
+      logger.e('同步播放状态失败: $e');
+    }
+  }
+
+  /// 从 Supabase 查询当前用户的播放状态
+  /// 返回 SupaContinuePlay 对象，如果没有数据返回 null
+  Future<SupaContinuePlay?> getContinuePlay() async {
+    try {
+      // 检查是否已登录
+      final authController = Get.find<SupabaseAuthController>();
+      if (!authController.isLoggedIn.value) {
+        logger.w('用户未登录，无法查询播放状态');
+        return null;
+      }
+
+      final supabase = Supabase.instance.client;
+      final userId = authController.currentUser.value?.id;
+
+      final response = await supabase
+          .from('continue_play')
+          .select()
+          .eq('user_id', userId!)
+          .maybeSingle();
+
+      if (response == null) {
+        logger.d('当前用户没有播放状态数据');
+        return null;
+      }
+
+      // 解析数据
+      final continuePlay = SupaContinuePlay(
+        track: Track.fromJson(response['track'] as Map<String, dynamic>),
+        updTime: DateTime.parse(response['upd_time'] as String),
+        playing: response['playing'] as bool,
+        ext: response['ext'] as Map<String, dynamic>?,
+        deviceId: response['device_id'] as String,
+      );
+
+      logger.d('成功获取播放状态: ${continuePlay.track.title}');
+      return continuePlay;
+    } catch (e) {
+      logger.e('查询播放状态失败: $e');
+      return null;
+    }
   }
 }

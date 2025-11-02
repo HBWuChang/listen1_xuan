@@ -113,4 +113,5 @@ class RouteName {
   static const String settingsPage = '/settings';
   static const String settingsReadmePage = '/settings_readme';
   static const String downloadPage = '/download';
+  static const String supabaseLoginPage = '/supabase_login';
 }

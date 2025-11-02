@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -14,7 +15,9 @@ import 'controllers/cache_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
+import 'controllers/supabase_auth_controller.dart';
 import 'controllers/websocket_client_controller.dart';
+import 'pages/settings/settings_supabase_login_page.dart';
 import 'examples/equalizer_integration_example.dart';
 import 'examples/websocket_client_example.dart';
 import 'examples/websocket_server_example.dart';
@@ -493,6 +496,149 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   SettingsController settingsController = Get.find<SettingsController>();
+
+  /// 构建 Supabase 登录面板
+  Widget _buildSupabaseLoginPanel() {
+    final authController = Get.find<SupabaseAuthController>();
+
+    return Obx(() {
+      if (authController.isLoggedIn.value) {
+        // 已登录状态
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          authController.displayName,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (authController.userCreatedAt != null)
+                          Text(
+                            '注册时间: ${authController.userCreatedAt}',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        if (authController.userLastLoginAt != null)
+                          Text(
+                            '上次登录: ${authController.userLastLoginAt}',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      _showEditNicknameDialog(authController);
+                    },
+                    icon: Icon(Icons.edit),
+                    label: Text('修改昵称'),
+                  ),
+                  Obx(
+                    () => ElevatedButton.icon(
+                      onPressed: authController.isLoading.value
+                          ? null
+                          : () async {
+                              await authController.signOut();
+                              showSuccessSnackbar(null, '已退出登录');
+                            },
+                      icon: Icon(Icons.logout),
+                      label: Text('退出登录'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Get.theme.colorScheme.errorContainer,
+                        foregroundColor: Get.theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      } else {
+        // 未登录状态
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Text(
+                '使用 Supabase 账号可以同步您的数据',
+                style: TextStyle(color: Colors.grey),
+              ),
+              SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Get.toNamed('/supabase_login', id: 1);
+                },
+                icon: Icon(Icons.login),
+                label: Text('登录 / 注册'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 45),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    });
+  }
+
+  /// 显示修改昵称对话框
+  void _showEditNicknameDialog(SupabaseAuthController authController) {
+    final TextEditingController nicknameController = TextEditingController(
+      text: authController.userNickname ?? '',
+    );
+
+    Get.dialog(
+      AlertDialog(
+        title: Text('修改昵称'),
+        content: TextField(
+          controller: nicknameController,
+          decoration: InputDecoration(
+            hintText: '请输入新昵称',
+            border: OutlineInputBorder(),
+          ),
+          maxLength: 20,
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: Text('取消')),
+          ElevatedButton(
+            onPressed: () async {
+              final nickname = nicknameController.text.trim();
+              if (nickname.isEmpty) {
+                showWarningSnackbar(null, '昵称不能为空');
+                return;
+              }
+
+              final success = await authController.updateNickname(nickname);
+              if (success) {
+                showSuccessSnackbar(null, '昵称修改成功');
+                Get.back();
+              } else {
+                showErrorSnackbar(null, authController.errorMessage.value);
+              }
+            },
+            child: Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -524,6 +670,26 @@ class _SettingsPageState extends State<SettingsPage> {
                       }
                     },
                     children: [
+                      // Supabase 登录面板
+                      ExpansionPanel(
+                        headerBuilder: (BuildContext context, bool isExpanded) {
+                          return ListTile(
+                            leading: Icon(Icons.person),
+                            title: const Text('Supabase 账号'),
+                            trailing: IconButton(
+                              onPressed: () async {
+                                Get.find<SupabaseAuthController>()
+                                    .refreshUserProfile();
+                              },
+                              icon: Icon(Icons.refresh),
+                            ),
+                          );
+                        },
+                        canTapOnHeader: true,
+                        isExpanded: settingsController.settingsPageExpansion
+                            .contains(0),
+                        body: _buildSupabaseLoginPanel(),
+                      ),
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {
                           return ListTile(
@@ -539,7 +705,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         },
                         canTapOnHeader: true,
                         isExpanded: settingsController.settingsPageExpansion
-                            .contains(0),
+                            .contains(1),
                         body: Column(
                           children: <Widget>[
                             IntrinsicHeight(
@@ -726,7 +892,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         },
                         canTapOnHeader: true,
                         isExpanded: settingsController.settingsPageExpansion
-                            .contains(1),
+                            .contains(2),
                         body: Padding(
                           padding: EdgeInsets.all(10),
                           child: Column(
@@ -884,7 +1050,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         },
                         canTapOnHeader: true,
                         isExpanded: settingsController.settingsPageExpansion
-                            .contains(2),
+                            .contains(3),
                         body: Wrap(
                           alignment: WrapAlignment.center,
                           children: [
@@ -944,7 +1110,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         },
                         canTapOnHeader: true,
                         isExpanded: settingsController.settingsPageExpansion
-                            .contains(3),
+                            .contains(4),
                         body: is_windows
                             ? Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -1252,7 +1418,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         },
                         canTapOnHeader: true,
                         isExpanded: settingsController.settingsPageExpansion
-                            .contains(4),
+                            .contains(5),
                         body: Wrap(
                           alignment: WrapAlignment.center,
                           children: [
@@ -1842,7 +2008,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         },
                         canTapOnHeader: true,
                         isExpanded: settingsController.settingsPageExpansion
-                            .contains(5),
+                            .contains(6),
                         body: Column(
                           children: [
                             Obx(

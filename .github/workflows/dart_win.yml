@@ -20,6 +20,14 @@ jobs:
           flutter-version: '3.32.1'
       - run: flutter --version
       - run: flutter pub get
+      
+      # 创建 .env 文件用于构建
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
+        shell: pwsh
+      
       - run: flutter build windows
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4

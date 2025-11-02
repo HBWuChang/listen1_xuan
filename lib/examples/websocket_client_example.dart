@@ -34,6 +34,54 @@ class WebSocketClientControlPanel {
       },
     );
   }
+
+  static Widget get floatingActionButton => Obx(() {
+    WebSocketClientController? controller;
+    try {
+      controller = Get.find<WebSocketClientController>();
+    } catch (e) {
+      return FloatingActionButton(
+        tooltip: "WebSocket客户端",
+
+        onPressed: () async {
+          await WebSocketClientHelper.showControlPanel();
+        },
+        child: Icon(Icons.cast_connected),
+      );
+    }
+
+    // 检查是否应该显示按钮
+    if (!controller.wsClientBtnShowFloating) {
+      return const SizedBox.shrink();
+    }
+
+    // 根据连接状态确定图标颜色和状态
+    Color iconColor;
+    String currentTooltip;
+
+    if (controller.isConnecting || controller.isDisconnecting) {
+      iconColor = Colors.amber;
+      currentTooltip = controller.isConnecting
+          ? "WebSocket客户端 (连接中...)"
+          : "WebSocket客户端 (断开中...)";
+    } else if (controller.isConnected) {
+      iconColor = Colors.blue;
+      currentTooltip = "WebSocket客户端 (已连接)";
+    } else if (controller.isReconnecting) {
+      iconColor = Colors.orange;
+      currentTooltip = "WebSocket客户端 (重连中...)";
+    } else {
+      iconColor = Colors.grey;
+      currentTooltip = "WebSocket客户端 (未连接)";
+    }
+    return FloatingActionButton(
+      tooltip: currentTooltip,
+      onPressed: () async {
+        await WebSocketClientHelper.showControlPanel();
+      },
+      child: Icon(Icons.cast_connected, color: iconColor),
+    );
+  });
 }
 
 class WebSocketClientControlContent extends StatefulWidget {

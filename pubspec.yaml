@@ -87,6 +87,10 @@ dependencies:
   punycode: ^1.0.0
   iconify_flutter_plus: ^1.0.4
   flutter_launcher_icons: ^0.14.4
+  smooth_sheets:
+    path: packages/smooth_sheets-0.15.0
+  supabase_flutter: ^2.10.3
+  flutter_dotenv: ^5.2.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -102,6 +106,7 @@ flutter:
   assets:
     # Add assets from the images directory to the application.
     - assets/images/
+    - .env
 msix_config:
   display_name: listen1_xuan
   identity_name: com.xiebian.listen1_xuan

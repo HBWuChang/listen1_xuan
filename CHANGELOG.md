@@ -2,6 +2,20 @@
 ---
 1.1.4+19
 - 安卓添加EQ音效调节功能
+- 竖屏播放底栏鼠标拖动
+  ~~~dart
+  <!-- packages\smooth_sheets-0.15.0\lib\src\draggable.dart #87 -->
+  () => VerticalDragGestureRecognizer(
+                debugOwner: kDebugMode ? runtimeType : null,
+                supportedDevices: const {
+                  PointerDeviceKind.mouse, // 添加鼠标拖动
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.stylus,
+                  PointerDeviceKind.invertedStylus,
+                  PointerDeviceKind.trackpad,
+                },
+              ),
+    ~~~
 ---
 1.1.3+18
 - 添加WebSocket功能
