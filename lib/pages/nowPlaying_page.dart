@@ -39,9 +39,7 @@ class NowPlayingPage extends StatelessWidget {
             children: [
               _buildHeader(context, controller),
               _buildSearchBar(context, controller),
-              Expanded(
-                child: _buildPlayingList(context, controller),
-              ),
+              Expanded(child: _buildPlayingList(context, controller)),
             ],
           ),
         ),
@@ -91,12 +89,12 @@ class NowPlayingPage extends StatelessWidget {
           ),
           IconButton(
             tooltip: controller.isSearching.value ? '关闭搜索' : '搜索',
-            icon: Obx(() => Icon(
-                  controller.isSearching.value
-                      ? Icons.search_off
-                      : Icons.search,
-                  color: theme.textTheme.bodyLarge?.color,
-                )),
+            icon: Obx(
+              () => Icon(
+                controller.isSearching.value ? Icons.search_off : Icons.search,
+                color: theme.textTheme.bodyLarge?.color,
+              ),
+            ),
             onPressed: () {
               controller.toggleSearch();
             },
@@ -130,7 +128,9 @@ class NowPlayingPage extends StatelessWidget {
   }
 
   Widget _buildSearchBar(
-      BuildContext context, NowPlayingController controller) {
+    BuildContext context,
+    NowPlayingController controller,
+  ) {
     final theme = Theme.of(context);
 
     return Obx(() {
@@ -179,8 +179,10 @@ class NowPlayingPage extends StatelessWidget {
                 );
               }),
               border: InputBorder.none,
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             style: theme.textTheme.bodyMedium,
             onChanged: (value) {
@@ -193,7 +195,9 @@ class NowPlayingPage extends StatelessWidget {
   }
 
   Widget _buildPlayingList(
-      BuildContext context, NowPlayingController controller) {
+    BuildContext context,
+    NowPlayingController controller,
+  ) {
     return Obx(() {
       final playingList = controller.filteredPlayingList; // 使用过滤后的列表
       final currentTrackId = controller.currentTrackId;
@@ -209,11 +213,9 @@ class NowPlayingPage extends StatelessWidget {
                     ? Icons.search_off
                     : Icons.queue_music,
                 size: 64,
-                color: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.color
-                    ?.withOpacity(0.5),
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withOpacity(0.5),
               ),
               SizedBox(height: 16),
               Text(
@@ -222,12 +224,10 @@ class NowPlayingPage extends StatelessWidget {
                     ? '没有找到匹配的歌曲'
                     : '播放列表为空',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.color
-                          ?.withOpacity(0.7),
-                    ),
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                ),
               ),
             ],
           ),
@@ -245,6 +245,13 @@ class NowPlayingPage extends StatelessWidget {
           scrollController: controller.scrollController,
           buildDefaultDragHandles: false,
           padding: EdgeInsets.symmetric(horizontal: 16),
+          prototypeItem: _buildTrackItem(
+            context,
+            playingList.first,
+            0,
+            playingList.first.id == currentTrackId,
+            controller,
+          ),
           itemCount: playingList.length,
           onReorder: (oldIndex, newIndex) {
             // 在搜索状态下禁用重排序
@@ -255,10 +262,12 @@ class NowPlayingPage extends StatelessWidget {
               final targetTrack =
                   playingList[newIndex > oldIndex ? newIndex - 1 : newIndex];
 
-              final originalOldIndex =
-                  originalList.indexWhere((t) => t.id == draggedTrack.id);
-              final originalNewIndex =
-                  originalList.indexWhere((t) => t.id == targetTrack.id);
+              final originalOldIndex = originalList.indexWhere(
+                (t) => t.id == draggedTrack.id,
+              );
+              final originalNewIndex = originalList.indexWhere(
+                (t) => t.id == targetTrack.id,
+              );
 
               if (originalOldIndex != -1 && originalNewIndex != -1) {
                 controller.reorderPlaylist(originalOldIndex, originalNewIndex);
@@ -270,15 +279,25 @@ class NowPlayingPage extends StatelessWidget {
             final isCurrentTrack = track.id == currentTrackId;
 
             return _buildTrackItem(
-                context, track, index, isCurrentTrack, controller);
+              context,
+              track,
+              index,
+              isCurrentTrack,
+              controller,
+            );
           },
         ),
       );
     });
   }
 
-  Widget _buildTrackItem(BuildContext context, Track track, int index,
-      bool isCurrentTrack, NowPlayingController controller) {
+  Widget _buildTrackItem(
+    BuildContext context,
+    Track track,
+    int index,
+    bool isCurrentTrack,
+    NowPlayingController controller,
+  ) {
     final theme = Theme.of(context);
     void playT() {
       controller.playTrack(track);
@@ -293,25 +312,30 @@ class NowPlayingPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        contentPadding:
-            EdgeInsets.symmetric(horizontal: 12, vertical: 2), // 减少垂直padding
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 2,
+        ), // 减少垂直padding
         visualDensity: VisualDensity.compact, // 使用紧凑密度保持跨平台一致性
         dense: true, // 使用紧凑模式进一步减少高度
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             // 拖拽手柄 - 在搜索状态下隐藏
-            Obx(() => controller.isSearching.value
-                ? SizedBox(width: 20) // 占位符保持布局一致
-                : ReorderableDragStartListener(
-                    index: index,
-                    child: Icon(
-                      Icons.drag_handle,
-                      color:
-                          theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
-                      size: 20,
+            Obx(
+              () => controller.isSearching.value
+                  ? SizedBox(width: 20) // 占位符保持布局一致
+                  : ReorderableDragStartListener(
+                      index: index,
+                      child: Icon(
+                        Icons.drag_handle,
+                        color: theme.textTheme.bodyMedium?.color?.withOpacity(
+                          0.5,
+                        ),
+                        size: 20,
+                      ),
                     ),
-                  )),
+            ),
             SizedBox(width: 8),
             // 当前播放指示器
             if (isCurrentTrack) ...[
@@ -341,8 +365,9 @@ class NowPlayingPage extends StatelessWidget {
                     color: isCurrentTrack
                         ? theme.colorScheme.primary
                         : theme.textTheme.bodyLarge?.color,
-                    fontWeight:
-                        isCurrentTrack ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isCurrentTrack
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                   theme.colorScheme.secondary,
                   voidCallback: playT,
@@ -353,27 +378,25 @@ class NowPlayingPage extends StatelessWidget {
         ),
         subtitle: null, // 移除副标题
         trailing: Row(
-            mainAxisSize: MainAxisSize.min, // 确保按钮在行内对齐
-            children: [
-              IconButton(
-                onPressed: () {
-                  song_dialog(Get.context!, track);
-                },
-                icon: Icon(
-                  Icons.list,
-                ),
-              ),
-              IconButton(
-                  onPressed: isCurrentTrack
-                      ? null
-                      : () {
-                          controller.removeTrackFromList(track);
-                        },
-                  icon: Icon(
-                    Icons.delete,
-                  ),
-                  color: theme.colorScheme.error.withOpacity(0.7))
-            ]),
+          mainAxisSize: MainAxisSize.min, // 确保按钮在行内对齐
+          children: [
+            IconButton(
+              onPressed: () {
+                song_dialog(Get.context!, track);
+              },
+              icon: Icon(Icons.list),
+            ),
+            IconButton(
+              onPressed: isCurrentTrack
+                  ? null
+                  : () {
+                      controller.removeTrackFromList(track);
+                    },
+              icon: Icon(Icons.delete),
+              color: theme.colorScheme.error.withOpacity(0.7),
+            ),
+          ],
+        ),
         onTap: playT,
       ),
     );
@@ -398,12 +421,15 @@ class NowPlayingPage extends StatelessWidget {
   }
 
   Widget _buildScrollToCurrentButton(
-      BuildContext context, NowPlayingController controller) {
+    BuildContext context,
+    NowPlayingController controller,
+  ) {
     return Obx(() {
       // 在搜索状态下，只有当前播放歌曲在搜索结果中时才显示浮动按钮
       final shouldShow = controller.shouldShowFloatingButton;
-      final isCurrentInFilteredList = controller.filteredPlayingList
-          .any((track) => track.id == controller.currentTrackId);
+      final isCurrentInFilteredList = controller.filteredPlayingList.any(
+        (track) => track.id == controller.currentTrackId,
+      );
 
       if (!shouldShow || !isCurrentInFilteredList) {
         return SizedBox.shrink();
@@ -427,9 +453,9 @@ class NowPlayingPage extends StatelessWidget {
     String text,
     String query,
     TextStyle? baseStyle,
-    Color highlightColor,
-    {VoidCallback? voidCallback}
-  ) {
+    Color highlightColor, {
+    VoidCallback? voidCallback,
+  }) {
     if (query.isEmpty) {
       return SelectableText(
         text,
@@ -457,20 +483,21 @@ class NowPlayingPage extends StatelessWidget {
     while (index != -1) {
       // 添加高亮前的文本
       if (index > start) {
-        spans.add(TextSpan(
-          text: text.substring(start, index),
-          style: baseStyle,
-        ));
+        spans.add(
+          TextSpan(text: text.substring(start, index), style: baseStyle),
+        );
       }
 
       // 添加高亮文本
-      spans.add(TextSpan(
-        text: text.substring(index, index + query.length),
-        style: baseStyle?.copyWith(
-          backgroundColor: highlightColor.withOpacity(0.3),
-          fontWeight: FontWeight.bold,
+      spans.add(
+        TextSpan(
+          text: text.substring(index, index + query.length),
+          style: baseStyle?.copyWith(
+            backgroundColor: highlightColor.withOpacity(0.3),
+            fontWeight: FontWeight.bold,
+          ),
         ),
-      ));
+      );
 
       start = index + query.length;
       index = lowerText.indexOf(lowerQuery, start);
@@ -478,10 +505,7 @@ class NowPlayingPage extends StatelessWidget {
 
     // 添加剩余文本
     if (start < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(start),
-        style: baseStyle,
-      ));
+      spans.add(TextSpan(text: text.substring(start), style: baseStyle));
     }
 
     return SelectableText.rich(

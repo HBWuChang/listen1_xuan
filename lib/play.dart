@@ -37,10 +37,44 @@ import 'package:windows_taskbar/windows_taskbar.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:badges/badges.dart' as badges;
 
 part 'pages/play/play_v.dart';
 part 'pages/play/play_h.dart';
 part 'pages/play/play_widgets.dart';
+
+// Windows Taskbar API 调用的安全包装器
+// 用于处理窗口未初始化的情况
+bool _windowsTaskbarInitialized = false;
+
+Future<bool> safeCallWindowsTaskbar(
+  Future<void> Function() apiCall,
+  String operationName,
+) async {
+  if (!is_windows) return true;
+
+  // 如果已经初始化过,直接调用
+  if (_windowsTaskbarInitialized) {
+    try {
+      await apiCall();
+      return true;
+    } catch (e) {
+      debugPrint('WindowsTaskbar.$operationName 调用失败: $e');
+      return false;
+    }
+  }
+
+  // 首次调用,需要验证
+  try {
+    await apiCall();
+    _windowsTaskbarInitialized = true;
+    debugPrint('WindowsTaskbar.$operationName 调用成功，已标记为初始化');
+    return true;
+  } catch (e) {
+    debugPrint('WindowsTaskbar.$operationName 调用失败(窗口可能未初始化): $e');
+    return false;
+  }
+}
 
 class FileLogOutput extends LogOutput {
   final File file;
@@ -258,7 +292,11 @@ Future<void> change_playback_state(
     //   ),
     // );
     if (is_windows) {
-      WindowsTaskbar.setWindowTitle(track.title!);
+      safeCallWindowsTaskbar(
+        () =>
+            WindowsTaskbar.setWindowTitle('${track.title!} - ${track.artist!}'),
+        'setWindowTitle',
+      );
       try {
         smtc.updateMetadata(
           MusicMetadata(
@@ -469,6 +507,15 @@ void _openLyricPage() {
   }
 }
 
+void _openNowPlayListPage() {
+  // 使用路由导航到歌词页面
+  if (Get.find<RouteController>().inNowPlayListPage.value) {
+    Get.back(id: 1);
+  } else {
+    Get.toNamed(RouteName.nowPlayingPage, id: 1);
+  }
+}
+
 class Play extends StatefulWidget {
   final Function(String, {bool is_my, String search_text}) onPlaylistTap;
   final bool horizon;
@@ -577,13 +624,13 @@ Stream<MediaState> get _mediaStateStream =>
       AudioService.position,
       (mediaItem, position) {
         if (is_windows) {
-          WindowsTaskbar.setProgress(
-            (position.inMilliseconds /
-                    (mediaItem?.duration?.inMilliseconds ?? 1) *
-                    100)
-                .toInt(),
-            100,
-          );
+          // 计算进度并更新到 PlayController 的响应式变量
+          final progress =
+              (position.inMilliseconds /
+                      (mediaItem?.duration?.inMilliseconds ?? 1) *
+                      100)
+                  .toInt();
+          Get.find<PlayController>().taskbarProgress.value = progress;
         }
         return MediaState(mediaItem, position);
       },

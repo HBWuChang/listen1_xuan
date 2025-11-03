@@ -392,28 +392,51 @@ Widget get playV => LayoutBuilder(
                                             ),
                                           ),
 
-                                          // 右侧控制按钮 - 只在收起时显示
-                                          if (controlOpacity > 0.01)
-                                            AnimatedPositioned(
-                                              duration: Duration.zero,
-                                              right: collapsedControlRight,
-                                              top: controlTop, // 使用计算的垂直位置
-                                              child: Opacity(
-                                                opacity: controlOpacity,
+                                          // 控制按钮区域 - 合并右侧和底部的控制按钮
+                                          AnimatedPositioned(
+                                            duration: Duration.zero,
+                                            right: collapsedControlRight,
+                                            top: controlTop,
+                                            child: SizedBox(
+                                              height: 48.w,
+                                              child: AnimatedSize(
+                                                duration: Duration(milliseconds: 300),
+                                                curve: Curves.easeInOutCubic,
+                                                alignment: Alignment.centerRight,
                                                 child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
+                                                  mainAxisSize: MainAxisSize.min,
                                                   children: [
-                                                    if (controlOpacity > 0.5)
-                                                      buildPlayPauseButton,
-                                                    if (controlOpacity > 0.5)
-                                                      buildPlaylistButton(
-                                                        size: 28.w,
+                                                    // 展开状态显示的按钮
+                                                    if (expandProgress > 0.3) ...[
+                                                      // 播放模式
+                                                      playModeButton,
+                                                      
+                                                      // 上一曲
+                                                      IconButton(
+                                                        icon: Icon(Icons.skip_previous, size: 60.w),
+                                                        onPressed: global_skipToPrevious,
                                                       ),
+                                                    ],
+                                                    
+                                                    // 播放/暂停 - 始终显示
+                                                    buildPlayPauseButton,
+                                                    
+                                                    // 展开状态显示的按钮
+                                                    if (expandProgress > 0.3) ...[
+                                                      // 下一曲
+                                                      IconButton(
+                                                        icon: Icon(Icons.skip_next, size: 60.w),
+                                                        onPressed: global_skipToNext,
+                                                      ),
+                                                    ],
+                                                    
+                                                    // 播放列表 - 始终显示
+                                                    buildPlaylistButton,
                                                   ],
                                                 ),
                                               ),
                                             ),
+                                          ),
                                         ],
                                       ),
                                     );
@@ -423,8 +446,8 @@ Widget get playV => LayoutBuilder(
                             );
                           },
                         ),
-
-                        // 控制按钮区域 - 高度和透明度渐进变化
+                        
+                        // 进度条区域 - 在展开时显示
                         AnimatedBuilder(
                           animation: expandAnimation,
                           builder: (context, child) {
@@ -432,11 +455,11 @@ Widget get playV => LayoutBuilder(
                               0.0,
                               1.0,
                             );
-                            // 当展开程度 > 0.3 时才开始显示额外控制按钮
-                            final controlOpacity =
+                            // 当展开程度 > 0.3 时才开始显示进度条
+                            final sliderOpacity =
                                 ((expandProgress - 0.3) / 0.7).clamp(0.0, 1.0);
-                            final baseHeight = 120.0.w;
-                            final actualHeight = baseHeight * controlOpacity;
+                            final baseHeight = 60.0.w;
+                            final actualHeight = baseHeight * sliderOpacity;
 
                             return SizedBox(
                               height: actualHeight,
@@ -444,31 +467,92 @@ Widget get playV => LayoutBuilder(
                                 child: OverflowBox(
                                   maxHeight: baseHeight,
                                   child: Opacity(
-                                    opacity: controlOpacity,
-                                    child: Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 32.w,
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        children: [
-                                          // 播放模式
-                                          playModeButton,
+                                    opacity: sliderOpacity,
+                                    child: StreamBuilder<MediaState>(
+                                      stream: _mediaStateStream,
+                                      builder: (context, snapshot) {
+                                        final mediaState = snapshot.data;
+                                        return Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 32.w,
+                                          ),
+                                          child: Slider(
+                                            value:
+                                                (mediaState?.position.inMilliseconds.toDouble() ??
+                                                        0.0) >
+                                                    (mediaState?.mediaItem?.duration?.inMilliseconds
+                                                            .toDouble() ??
+                                                        1.0)
+                                                ? (mediaState?.mediaItem?.duration?.inMilliseconds
+                                                          .toDouble() ??
+                                                      1.0)
+                                                : (mediaState?.position.inMilliseconds.toDouble() ??
+                                                      0.0),
+                                            max:
+                                                mediaState?.mediaItem?.duration?.inMilliseconds
+                                                    .toDouble() ??
+                                                1.0,
+                                            onChanged: (value) {
+                                              global_seek(Duration(milliseconds: value.toInt()));
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        
+                        // 时间显示区域 - 在展开时显示
+                        AnimatedBuilder(
+                          animation: expandAnimation,
+                          builder: (context, child) {
+                            final expandProgress = expandAnimation.value.clamp(
+                              0.0,
+                              1.0,
+                            );
+                            final timeOpacity =
+                                ((expandProgress - 0.3) / 0.7).clamp(0.0, 1.0);
+                            final baseHeight = 40.0.w;
+                            final actualHeight = baseHeight * timeOpacity;
 
-                                          // 上一曲
-                                          buildPreviousButton(),
-
-                                          // 播放/暂停 - 中心按钮
-                                          buildPlayPauseButton,
-
-                                          // 下一曲
-                                          buildNextButton(),
-
-                                          // 播放列表
-                                          buildPlaylistButton(size: 32.w),
-                                        ],
-                                      ),
+                            return SizedBox(
+                              height: actualHeight,
+                              child: ClipRect(
+                                child: OverflowBox(
+                                  maxHeight: baseHeight,
+                                  child: Opacity(
+                                    opacity: timeOpacity,
+                                    child: StreamBuilder<MediaState>(
+                                      stream: _mediaStateStream,
+                                      builder: (context, snapshot) {
+                                        final mediaState = snapshot.data;
+                                        return Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 32.w,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                formatDuration(
+                                                  mediaState?.position ?? Duration.zero,
+                                                ),
+                                                style: TextStyle(fontSize: 14),
+                                              ),
+                                              Text(
+                                                formatDuration(
+                                                  mediaState?.mediaItem?.duration ?? Duration.zero,
+                                                ),
+                                                style: TextStyle(fontSize: 14),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ),
                                 ),

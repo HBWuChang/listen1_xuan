@@ -54,15 +54,13 @@ Widget buildSongInfo({
   required bool isCollapsed,
 }) {
   return Column(
-    crossAxisAlignment: isCollapsed
-        ? CrossAxisAlignment.start
-        : CrossAxisAlignment.center,
+    crossAxisAlignment: CrossAxisAlignment.center,
     mainAxisSize: MainAxisSize.min,
     children: [
       Text(
         mediaItem?.title ?? '未播放',
         style: TextStyle(fontSize: titleSize, fontWeight: FontWeight.bold),
-        textAlign: isCollapsed ? TextAlign.left : TextAlign.center,
+        textAlign: TextAlign.center,
         maxLines: isCollapsed ? 1 : 2,
         overflow: TextOverflow.ellipsis,
       ),
@@ -73,7 +71,7 @@ Widget buildSongInfo({
           fontSize: artistSize,
           color: Get.theme.textTheme.bodySmall?.color,
         ),
-        textAlign: isCollapsed ? TextAlign.left : TextAlign.center,
+        textAlign: TextAlign.center,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -101,44 +99,29 @@ Widget get buildPlayPauseButton {
 }
 
 // 播放列表按钮
-Widget buildPlaylistButton({double size = 28.0}) {
-  return Obx(
-    () => Stack(
-      clipBehavior: Clip.none,
-      children: [
-        IconButton(
-          tooltip: '正在播放列表',
-          icon: Icon(Icons.playlist_play_rounded, size: size),
-          onPressed: () {
-            Get.toNamed(RouteName.nowPlayingPage, id: 1);
-          },
-        ),
-        if (_playController.current_playing.isNotEmpty)
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Container(
-              padding: EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Get.theme.primaryColor,
-                shape: BoxShape.circle,
-              ),
-              constraints: BoxConstraints(minWidth: 16, minHeight: 16),
-              child: Text(
-                '${_playController.current_playing.length}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-      ],
+Widget get buildPlaylistButton => Obx(
+  () => badges.Badge(
+    position: badges.BadgePosition.topEnd(top: -4.w, end: -4.w),
+    showBadge: _playController.current_playing.isNotEmpty,
+    badgeContent: Text(
+      '${_playController.current_playing.length}',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+      ),
     ),
-  );
-}
+    badgeStyle: badges.BadgeStyle(
+      badgeColor: Get.theme.primaryColor,
+      padding: EdgeInsets.all(4),
+    ),
+    child: IconButton(
+      tooltip: '正在播放列表',
+      icon: Icon(Icons.playlist_play_rounded, size: 100.w),
+      onPressed: _openNowPlayListPage,
+    ),
+  ),
+);
 
 // 上一曲按钮
 Widget buildPreviousButton() {

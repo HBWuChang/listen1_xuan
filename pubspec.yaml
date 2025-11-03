@@ -63,7 +63,8 @@ dependencies:
   charset_converter: ^2.3.0
   native_dio_adapter: ^1.4.0
   smtc_windows: ^1.0.0
-  windows_taskbar: ^1.1.2
+  windows_taskbar:
+    path: packages/windows_taskbar-1.1.2
   get:
   shelf: ^1.4.2
   shelf_web_socket: ^3.0.0
@@ -91,6 +92,7 @@ dependencies:
     path: packages/smooth_sheets-0.15.0
   supabase_flutter: ^2.10.3
   flutter_dotenv: ^5.2.1
+  badges: ^3.1.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

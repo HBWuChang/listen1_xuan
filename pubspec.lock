@@ -168,6 +168,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.0"
+  badges:
+    dependency: "direct main"
+    description:
+      name: badges
+      sha256: a7b6bbd60dce418df0db3058b53f9d083c22cdb5132a052145dc267494df0b84
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.2"
   bonsoir:
     dependency: "direct main"
     description:
@@ -1910,10 +1918,9 @@ packages:
   windows_taskbar:
     dependency: "direct main"
     description:
-      name: windows_taskbar
-      sha256: "204edfdb280a7053febdf50fc9b49b3c007255bd8a83c082d10c174ec6548f33"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/windows_taskbar-1.1.2"
+      relative: true
+    source: path
     version: "1.1.2"
   wolt_modal_sheet:
     dependency: "direct main"

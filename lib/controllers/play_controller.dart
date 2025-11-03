@@ -18,6 +18,8 @@ import 'settings_controller.dart';
 import 'websocket_card_controller.dart';
 import 'supabase_auth_controller.dart';
 import 'BroadcastWsController.dart';
+import 'package:windows_taskbar/windows_taskbar.dart';
+import '../play.dart'; // 导入 safeCallWindowsTaskbar
 
 class AndroidEQBand {
   int index;
@@ -54,6 +56,9 @@ class PlayController extends GetxController {
   final _current_playing = <Track>[].obs;
   final logger = Logger();
   final _next_track = Rx<Track?>(null);
+
+  // Windows任务栏进度 (0-100)
+  final taskbarProgress = 0.obs;
 
   // Sheet 控制相关
   final SheetController sheetController = SheetController();
@@ -127,6 +132,20 @@ class PlayController extends GetxController {
       broadcastWs();
       updateContinuePlay();
     });
+    
+    // 使用 interval 控制任务栏进度更新频率(每500ms最多更新一次)
+    if (is_windows) {
+      interval(
+        taskbarProgress,
+        (progress) {
+          safeCallWindowsTaskbar(
+            () => WindowsTaskbar.setProgress(progress, 100),
+            'setProgress',
+          );
+        },
+        time: Duration(milliseconds: 500),
+      );
+    }
   }
 
   final RxMap<int, AndroidEQBand> _bands = RxMap<int, AndroidEQBand>();

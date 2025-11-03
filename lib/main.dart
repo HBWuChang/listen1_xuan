@@ -127,7 +127,10 @@ void downloadtasks_background(SendPort mainPort) async {
 }
 
 void enableThumbnailToolbar() async {
-  while (true) {
+  int retryCount = 0;
+  const maxRetries = 10; // 最多重试10次
+  
+  while (retryCount < maxRetries) {
     try {
       await WindowsTaskbar.setThumbnailToolbar([
         ThumbnailToolbarButton(
@@ -156,10 +159,16 @@ void enableThumbnailToolbar() async {
           },
         ),
       ]);
+      debugPrint('任务栏缩略图工具栏设置成功');
       break;
     } catch (e) {
-      print("ThumbnailToolbar error: $e");
-      Future.delayed(Duration(seconds: 3));
+      retryCount++;
+      debugPrint('设置任务栏缩略图工具栏失败 (尝试 $retryCount/$maxRetries): $e');
+      if (retryCount < maxRetries) {
+        await Future.delayed(Duration(seconds: 3)); // 注意这里添加了 await
+      } else {
+        debugPrint('已达到最大重试次数，放弃设置任务栏缩略图工具栏');
+      }
     }
   }
 }

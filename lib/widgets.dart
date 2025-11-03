@@ -30,24 +30,56 @@ class _HoverFollowWidgetState extends State<HoverFollowWidget>
   late Ticker _ticker;
   final double _spring = 0.12; // 回中速度
   final double _follow = 0.5; // 跟随鼠标的速度
+  final double _stopThreshold = 0.05; // 停止阈值，当移动小于此值时停止更新
+  bool _isAnimating = false; // 是否正在动画中
 
   @override
   void initState() {
     super.initState();
-    _ticker = this.createTicker(_tick)..start();
+    _ticker = this.createTicker(_tick);
   }
 
   void _tick(Duration _) {
+    final oldOffset = _offset;
+
     _targetOffset = Offset.lerp(_targetOffset, Offset.zero, _spring)!;
-    setState(() {
-      _offset = Offset.lerp(_offset, _targetOffset, _follow)!;
-      if (_offset.distance < 0.1) _offset = Offset.zero;
-      if (_targetOffset.distance < 0.1) _targetOffset = Offset.zero;
-    });
+    final newOffset = Offset.lerp(_offset, _targetOffset, _follow)!;
+
+    // 检查是否移动足够小，如果是则直接归零并停止ticker
+    if (_offset.distance < _stopThreshold &&
+        _targetOffset.distance < _stopThreshold) {
+      if (_isAnimating) {
+        setState(() {
+          _offset = Offset.zero;
+          _targetOffset = Offset.zero;
+          _isAnimating = false;
+        });
+      }
+      _ticker.stop();
+      return;
+    }
+
+    // 只有当偏移量有实际变化时才触发setState
+    final offsetDelta = (newOffset - oldOffset).distance;
+    if (offsetDelta > 0.001) {
+      setState(() {
+        _offset = newOffset;
+      });
+    }
+  }
+
+  void _startAnimation() {
+    if (!_isAnimating) {
+      _isAnimating = true;
+      if (!_ticker.isActive) {
+        _ticker.start();
+      }
+    }
   }
 
   void _onEnter(PointerEnterEvent event) {
     _lastPointer = event.localPosition;
+    _startAnimation();
   }
 
   void _onHover(PointerHoverEvent event, BoxConstraints constraints) {
@@ -55,6 +87,7 @@ class _HoverFollowWidgetState extends State<HoverFollowWidget>
       _lastPointer = event.localPosition;
       return;
     }
+    _startAnimation();
     Offset delta = (event.localPosition - _lastPointer!) * widget.sensitivity;
     Offset newTarget = _targetOffset + delta;
     if (newTarget.distance > widget.maxOffset) {
@@ -66,6 +99,8 @@ class _HoverFollowWidgetState extends State<HoverFollowWidget>
 
   void _onExit(PointerExitEvent event) {
     _lastPointer = null;
+    // 鼠标离开时启动动画，让组件回到中心
+    _startAnimation();
   }
 
   @override
@@ -81,10 +116,7 @@ class _HoverFollowWidgetState extends State<HoverFollowWidget>
         onEnter: _onEnter,
         onHover: (e) => _onHover(e, constraints),
         onExit: _onExit,
-        child: Transform.translate(
-          offset: _offset,
-          child: widget.child,
-        ),
+        child: Transform.translate(offset: _offset, child: widget.child),
       ),
     );
   }
@@ -125,7 +157,8 @@ class AnimatedTabBarWidget extends StatelessWidget {
                     builder: (context, child) {
                       double page = 0.0;
                       try {
-                        page = pageController.hasClients &&
+                        page =
+                            pageController.hasClients &&
                                 pageController.page != null
                             ? pageController.page!
                             : pageController.initialPage.toDouble();
@@ -152,10 +185,9 @@ class AnimatedTabBarWidget extends StatelessWidget {
                                 fontWeight: FontWeight.normal,
                                 color: isSelected
                                     ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color,
+                                    : Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.color,
                               ),
                             ),
                           ),
@@ -177,7 +209,8 @@ class AnimatedTabBarWidget extends StatelessWidget {
                   builder: (context, child) {
                     double page = 0.0;
                     try {
-                      page = pageController.hasClients &&
+                      page =
+                          pageController.hasClients &&
                               pageController.page != null
                           ? pageController.page!
                           : pageController.initialPage.toDouble();
