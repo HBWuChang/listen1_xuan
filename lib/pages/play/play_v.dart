@@ -127,19 +127,7 @@ Widget get playV0 => Center(
                         ),
                       ),
                     ),
-                    Obx(() {
-                      return IconButton(
-                        icon: switch (playmode.value) {
-                          0 => Icon(Icons.repeat, size: 60.w),
-                          1 => Icon(Icons.shuffle, size: 60.w),
-                          2 => Icon(Icons.repeat_one, size: 60.w),
-                          _ => Icon(Icons.error), // 默认情况
-                        },
-                        onPressed: () {
-                          global_change_play_mode();
-                        },
-                      );
-                    }),
+                    playModeButton,
                   ],
                 ),
               ),
@@ -271,23 +259,7 @@ Widget get playV => LayoutBuilder(
                     ),
                     child: Column(
                       children: [
-                        // 拖拽指示器
-                        Container(
-                          height: 32,
-                          alignment: Alignment.center,
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Get.theme.dividerColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(height: 16.w),
-
-                        // 封面 - 尺寸随展开程度变化
+                        // 封面和信息区域 - 使用 Stack 和 AnimatedPositioned 实现位置过渡
                         AnimatedBuilder(
                           animation: expandAnimation,
                           builder: (context, child) {
@@ -295,8 +267,23 @@ Widget get playV => LayoutBuilder(
                               0.0,
                               1.0,
                             );
-                            // 从 120.w 变化到 300.w
-                            final coverSize = 120.w + (180.w * expandProgress);
+
+                            // 封面尺寸从 120.w 变化到 300.w，使用 easeOutCubic 让尺寸变化更流畅
+                            final sizeProgress = Curves.easeOutCubic.transform(
+                              expandProgress,
+                            );
+                            final coverSize = 120.w + (180.w * sizeProgress);
+
+                            // 字体大小变化，使用线性过渡
+                            final titleSize = 16.0 + (4.0 * expandProgress);
+                            final artistSize = 14.0 + (2.0 * expandProgress);
+
+                            // 控制按钮透明度：收起时显示，展开时隐藏，使用更快的淡出
+                            final opacityProgress = Curves.easeInQuad.transform(
+                              expandProgress,
+                            );
+                            final controlOpacity = (1.0 - opacityProgress * 3)
+                                .clamp(0.0, 1.0);
 
                             return StreamBuilder<MediaItem?>(
                               stream: Get.find<AudioHandlerController>()
@@ -304,108 +291,135 @@ Widget get playV => LayoutBuilder(
                                   .mediaItem,
                               builder: (context, snapshot) {
                                 final mediaItem = snapshot.data;
-                                if (mediaItem == null) {
-                                  return Container(
-                                    width: coverSize,
-                                    height: coverSize,
-                                    decoration: BoxDecoration(
-                                      color: Get.theme.cardColor,
-                                      borderRadius: BorderRadius.circular(
-                                        8 + 8 * expandProgress,
+
+                                // 使用 LayoutBuilder 获取可用宽度
+                                return LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final availableWidth = constraints.maxWidth;
+
+                                    // 计算各元素在收起状态下的位置
+                                    final collapsedCoverLeft = 16.0.w;
+                                    final collapsedInfoLeft =
+                                        collapsedCoverLeft + coverSize + 12.w;
+                                    final collapsedControlRight = 16.0.w;
+
+                                    // 计算各元素在展开状态下的位置
+                                    final expandedCoverLeft =
+                                        (availableWidth - coverSize) / 2;
+                                    final expandedInfoTop =
+                                        coverSize + 16.w + 24.w;
+
+                                    // 使用 lerp 计算当前位置，应用缓动曲线
+                                    // 使用 easeInCubic 曲线：开始慢，后期快
+                                    final coverProgress = Curves.easeInCubic
+                                        .transform(expandProgress);
+                                    final coverLeft =
+                                        collapsedCoverLeft +
+                                        (expandedCoverLeft -
+                                                collapsedCoverLeft) *
+                                            coverProgress;
+
+                                    // 信息区域使用不同的缓动曲线，实现更平滑的过渡
+                                    final infoProgress = Curves.easeInOutCubic
+                                        .transform(expandProgress);
+                                    final infoLeft =
+                                        collapsedInfoLeft *
+                                            (1.0 - infoProgress) +
+                                        16.w * infoProgress;
+                                    final infoRight =
+                                        (16.w + 120.w * controlOpacity) *
+                                            (1.0 - infoProgress) +
+                                        16.w * infoProgress;
+
+                                    // 信息区域从水平居左变为垂直居中，使用 easeOut 让最终位置更快到达
+                                    final infoTopProgress = Curves.easeOutCubic
+                                        .transform(expandProgress);
+                                    final infoTop =
+                                        0.0 * (1.0 - infoTopProgress) +
+                                        expandedInfoTop * infoTopProgress;
+
+                                    // 控制按钮的垂直位置，保持在封面中心
+                                    final controlTopProgress = Curves
+                                        .easeInCubic
+                                        .transform(expandProgress);
+                                    final controlTop =
+                                        ((coverSize - 48.w) / 2) *
+                                            (1.0 - controlTopProgress) +
+                                        (coverSize / 2) * controlTopProgress;
+
+                                    // 计算总高度
+                                    final totalHeight = expandProgress < 0.5
+                                        ? coverSize
+                                        : coverSize +
+                                              expandedInfoTop +
+                                              80.w * expandProgress;
+
+                                    return SizedBox(
+                                      height: totalHeight,
+                                      child: Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          // 封面 - 使用 AnimatedPositioned
+                                          AnimatedPositioned(
+                                            duration: Duration
+                                                .zero, // 由 expandAnimation 驱动，所以这里设为 zero
+                                            left: coverLeft,
+                                            top: 0,
+                                            child: buildCoverImage(
+                                              mediaItem,
+                                              coverSize,
+                                              borderRadius:
+                                                  8 +
+                                                  8 *
+                                                      Curves.easeInOutCubic
+                                                          .transform(
+                                                            expandProgress,
+                                                          ),
+                                            ),
+                                          ),
+
+                                          // 歌曲信息 - 使用 AnimatedPositioned
+                                          AnimatedPositioned(
+                                            duration: Duration.zero,
+                                            left: infoLeft,
+                                            right: infoRight,
+                                            top: infoTop,
+                                            child: buildSongInfo(
+                                              mediaItem: mediaItem,
+                                              titleSize: titleSize,
+                                              artistSize: artistSize,
+                                              isCollapsed: expandProgress < 0.5,
+                                            ),
+                                          ),
+
+                                          // 右侧控制按钮 - 只在收起时显示
+                                          if (controlOpacity > 0.01)
+                                            AnimatedPositioned(
+                                              duration: Duration.zero,
+                                              right: collapsedControlRight,
+                                              top: controlTop, // 使用计算的垂直位置
+                                              child: Opacity(
+                                                opacity: controlOpacity,
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    if (controlOpacity > 0.5)
+                                                      buildPlayPauseButton,
+                                                    if (controlOpacity > 0.5)
+                                                      buildPlaylistButton(
+                                                        size: 28.w,
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                        ],
                                       ),
-                                    ),
-                                  );
-                                }
-                                return GestureDetector(
-                                  onTap: () => _openLyricPage(),
-                                  child: Container(
-                                    width: coverSize,
-                                    height: coverSize,
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(
-                                        8 + 8 * expandProgress,
-                                      ),
-                                      child: ExtendedImage.network(
-                                        mediaItem.artUri.toString(),
-                                        fit: BoxFit.cover,
-                                        cache: true,
-                                        loadStateChanged: (state) {
-                                          if (state.extendedImageLoadState ==
-                                              LoadState.failed) {
-                                            return Icon(
-                                              Icons.music_note,
-                                              size: coverSize,
-                                            );
-                                          }
-                                          return null;
-                                        },
-                                      ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 );
                               },
-                            );
-                          },
-                        ),
-
-                        // 歌曲信息 - 布局随展开程度变化
-                        AnimatedBuilder(
-                          animation: expandAnimation,
-                          builder: (context, child) {
-                            final expandProgress = expandAnimation.value.clamp(
-                              0.0,
-                              1.0,
-                            );
-                            // 间距从 16 变化到 40
-                            final spacing = 16.w + (24.w * expandProgress);
-                            // 字体大小变化
-                            final titleSize = 16.0 + (4.0 * expandProgress);
-                            final artistSize = 14.0 + (2.0 * expandProgress);
-
-                            return Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.w + (16.w * expandProgress),
-                                vertical: spacing,
-                              ),
-                              child: StreamBuilder<MediaItem?>(
-                                stream: Get.find<AudioHandlerController>()
-                                    .audioHandler
-                                    .mediaItem,
-                                builder: (context, snapshot) {
-                                  final mediaItem = snapshot.data;
-                                  return Column(
-                                    children: [
-                                      Text(
-                                        mediaItem?.title ?? '未播放',
-                                        style: TextStyle(
-                                          fontSize: titleSize,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: expandProgress > 0.5 ? 2 : 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      SizedBox(
-                                        height: 4 + (4 * expandProgress),
-                                      ),
-                                      Text(
-                                        mediaItem?.artist ?? '',
-                                        style: TextStyle(
-                                          fontSize: artistSize,
-                                          color: Get
-                                              .theme
-                                              .textTheme
-                                              .bodySmall
-                                              ?.color,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
                             );
                           },
                         ),
@@ -440,180 +454,23 @@ Widget get playV => LayoutBuilder(
                                             MainAxisAlignment.spaceEvenly,
                                         children: [
                                           // 播放模式
-                                          Obx(() {
-                                            return IconButton(
-                                              icon: switch (playmode.value) {
-                                                0 => Icon(
-                                                  Icons.repeat,
-                                                  size: 32.w,
-                                                ),
-                                                1 => Icon(
-                                                  Icons.shuffle,
-                                                  size: 32.w,
-                                                ),
-                                                2 => Icon(
-                                                  Icons.repeat_one,
-                                                  size: 32.w,
-                                                ),
-                                                _ => Icon(
-                                                  Icons.error,
-                                                  size: 32.w,
-                                                ),
-                                              },
-                                              onPressed: () =>
-                                                  global_change_play_mode(),
-                                            );
-                                          }),
+                                          playModeButton,
 
                                           // 上一曲
-                                          IconButton(
-                                            icon: Icon(
-                                              Icons.skip_previous,
-                                              size: 40.w,
-                                            ),
-                                            onPressed: () {
-                                              // TODO: 实现上一曲功能
-                                            },
-                                          ),
+                                          buildPreviousButton(),
 
                                           // 播放/暂停 - 中心按钮
-                                          Container(
-                                            width: 64.w,
-                                            height: 64.w,
-                                            decoration: BoxDecoration(
-                                              color: Get.theme.primaryColor,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Obx(
-                                              () => IconButton(
-                                                icon: Icon(
-                                                  _playController
-                                                          .isplaying
-                                                          .value
-                                                      ? Icons.pause
-                                                      : Icons.play_arrow,
-                                                  color: Colors.white,
-                                                  size: 36.w,
-                                                ),
-                                                onPressed: () {
-                                                  if (_playController
-                                                      .isplaying
-                                                      .value) {
-                                                    global_pause();
-                                                  } else {
-                                                    global_play();
-                                                  }
-                                                },
-                                              ),
-                                            ),
-                                          ),
+                                          buildPlayPauseButton,
 
                                           // 下一曲
-                                          IconButton(
-                                            icon: Icon(
-                                              Icons.skip_next,
-                                              size: 40.w,
-                                            ),
-                                            onPressed: () {
-                                              // TODO: 实现下一曲功能
-                                            },
-                                          ),
+                                          buildNextButton(),
 
                                           // 播放列表
-                                          Obx(
-                                            () => Stack(
-                                              children: [
-                                                IconButton(
-                                                  icon: Icon(
-                                                    Icons.playlist_play_rounded,
-                                                    size: 32.w,
-                                                  ),
-                                                  onPressed: () {
-                                                    Get.toNamed(
-                                                      RouteName.nowPlayingPage,
-                                                      id: 1,
-                                                    );
-                                                  },
-                                                ),
-                                                if (_playController
-                                                    .current_playing
-                                                    .isNotEmpty)
-                                                  Positioned(
-                                                    top: 0,
-                                                    right: 0,
-                                                    child: Container(
-                                                      padding: EdgeInsets.all(
-                                                        4,
-                                                      ),
-                                                      decoration: BoxDecoration(
-                                                        color: Get
-                                                            .theme
-                                                            .primaryColor,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: Text(
-                                                        '${_playController.current_playing.length}',
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 10,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
+                                          buildPlaylistButton(size: 32.w),
                                         ],
                                       ),
                                     ),
                                   ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-
-                        // 简化控制区 - 收起时显示
-                        AnimatedBuilder(
-                          animation: expandAnimation,
-                          builder: (context, child) {
-                            final expandProgress = expandAnimation.value.clamp(
-                              0.0,
-                              1.0,
-                            );
-                            // 当展开程度 < 0.3 时显示简化控制
-                            final simpleOpacity = (1.0 - (expandProgress / 0.3))
-                                .clamp(0.0, 1.0);
-
-                            if (simpleOpacity <= 0.0) return SizedBox.shrink();
-
-                            return Opacity(
-                              opacity: simpleOpacity,
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Obx(
-                                      () => IconButton(
-                                        icon: Icon(
-                                          _playController.isplaying.value
-                                              ? Icons.pause
-                                              : Icons.play_arrow,
-                                          size: 36.w,
-                                        ),
-                                        onPressed: () {
-                                          if (_playController.isplaying.value) {
-                                            global_pause();
-                                          } else {
-                                            global_play();
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  ],
                                 ),
                               ),
                             );

@@ -40,6 +40,7 @@ import 'package:listen1_xuan/models/Track.dart';
 
 part 'pages/play/play_v.dart';
 part 'pages/play/play_h.dart';
+part 'pages/play/play_widgets.dart';
 
 class FileLogOutput extends LogOutput {
   final File file;
