@@ -91,7 +91,6 @@ dependencies:
   smooth_sheets:
     path: packages/smooth_sheets-0.15.0
   supabase_flutter: ^2.10.3
-  flutter_dotenv: ^5.2.1
   badges: ^3.1.2
 dev_dependencies:
   flutter_test:
@@ -108,7 +107,6 @@ flutter:
   assets:
     # Add assets from the images directory to the application.
     - assets/images/
-    - .env
 msix_config:
   display_name: listen1_xuan
   identity_name: com.xiebian.listen1_xuan

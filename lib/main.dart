@@ -52,7 +52,6 @@ import 'controllers/theme.dart';
 import 'package:app_links/app_links.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 String supabaseUrl = 'https://jtvxrwybwvgpqobyhaoy.supabase.co';
 
@@ -173,13 +172,6 @@ void enableThumbnailToolbar() async {
 }
 
 void main() async {
-  // 加载环境变量（如果 .env 文件存在）
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    print('未找到 .env 文件，将使用编译时定义的环境变量或默认值');
-  }
-
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
   await WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter框架已初始化
   SystemChrome.setSystemUIOverlayStyle(
