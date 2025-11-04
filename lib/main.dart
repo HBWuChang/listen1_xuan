@@ -54,11 +54,10 @@ import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// 从环境变量读取 Supabase 配置
-// 如果环境变量不存在，使用默认值（用于开发环境）
-String get supabaseUrl => dotenv.env['SUPABASE_URL']!;
+String supabaseUrl = 'https://jtvxrwybwvgpqobyhaoy.supabase.co';
 
-String get supabaseKey => dotenv.env['SUPABASE_ANON_KEY']!;
+String supabaseKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0dnhyd3lid3ZncHFvYnloYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NjE5ODUsImV4cCI6MjA3NzUzNzk4NX0.lb4YhPlsyTinmoK85jv_15KCEv1QDr0JsUa1oI5P0Ko';
 
 final dio_with_cookie_manager = Dio();
 final dio_with_ProxyAdapter = Dio();
@@ -1380,7 +1379,7 @@ class _MyHomePageState extends State<MyHomePage>
 
                   Positioned.fill(
                     child: global_horizon
-                        ? Align(alignment: Alignment.bottomCenter,child: _play)
+                        ? Align(alignment: Alignment.bottomCenter, child: _play)
                         : SafeArea(top: false, child: _play),
 
                     // 竖屏状态下添加额外的占位空间
