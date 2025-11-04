@@ -14,6 +14,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:extended_image/extended_image.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:media_kit/generated/libmpv/bindings.dart';
 import 'package:rxdart/rxdart.dart' as rxdart;
 import 'package:flutter/foundation.dart';
@@ -42,6 +43,7 @@ import 'package:listen1_xuan/models/Track.dart';
 import 'package:badges/badges.dart' as badges;
 
 part 'pages/play/play_v.dart';
+part 'pages/play/play_v0.dart';
 part 'pages/play/play_h.dart';
 part 'pages/play/play_widgets.dart';
 
@@ -501,6 +503,13 @@ bool change_p = false;
 
 /// 打开歌词页面
 void _openLyricPage() {
+  if (!globalHorizon) {
+    Get.find<PlayController>().sheetController.animateTo(
+      Get.find<PlayController>().playVMaxOffset,
+      duration: const Duration(milliseconds: 600),
+    );
+    return;
+  }
   // 使用路由导航到歌词页面
   if (Get.find<RouteController>().inLyricPage.value) {
     Get.back(id: 1);
@@ -528,6 +537,7 @@ class Play extends StatefulWidget {
 
 late SMTCWindows smtc;
 PlayController get _playController => Get.find<PlayController>();
+late Offset position;
 
 class _PlayState extends State<Play> with TickerProviderStateMixin {
   @override
@@ -539,8 +549,6 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
   void dispose() {
     super.dispose();
   }
-
-  late Offset position;
 
   @override
   Widget build(BuildContext context) {

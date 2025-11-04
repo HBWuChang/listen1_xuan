@@ -1,11 +1,7 @@
 part of '../../play.dart';
 
 // 封面组件
-Widget buildCoverImage(
-  MediaItem? mediaItem,
-  double size, {
-  double? borderRadius,
-}) {
+Widget buildCoverImage(double size, {double? borderRadius}) {
   final radius = borderRadius ?? 8.0;
   return GestureDetector(
     onTap: () => _openLyricPage(),
@@ -14,19 +10,25 @@ Widget buildCoverImage(
       height: size,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
-        child: mediaItem == null
-            ? Container(color: Get.theme.cardColor)
-            : ExtendedImage.network(
-                mediaItem.artUri.toString(),
-                fit: BoxFit.cover,
-                cache: true,
-                loadStateChanged: (state) {
-                  if (state.extendedImageLoadState == LoadState.failed) {
-                    return Icon(Icons.music_note, size: size);
-                  }
-                  return null;
-                },
-              ),
+        child: StreamBuilder<MediaItem?>(
+          stream: Get.find<AudioHandlerController>().audioHandler.mediaItem,
+          builder: (context, snapshot) {
+            final mediaItem = snapshot.data;
+            return mediaItem == null
+                ? Container(color: Get.theme.cardColor)
+                : ExtendedImage.network(
+                    mediaItem.artUri.toString(),
+                    fit: BoxFit.cover,
+                    cache: true,
+                    loadStateChanged: (state) {
+                      if (state.extendedImageLoadState == LoadState.failed) {
+                        return Icon(Icons.music_note, size: size);
+                      }
+                      return null;
+                    },
+                  );
+          },
+        ),
       ),
     ),
   );
@@ -34,34 +36,96 @@ Widget buildCoverImage(
 
 // 歌曲信息组件
 Widget buildSongInfo({
-  required MediaItem? mediaItem,
   required double titleSize,
   required double artistSize,
   required bool isCollapsed,
 }) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.center,
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Text(
-        mediaItem?.title ?? '未播放',
-        style: TextStyle(fontSize: titleSize, fontWeight: FontWeight.bold),
-        textAlign: TextAlign.center,
-        maxLines: isCollapsed ? 1 : 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      SizedBox(height: 4),
-      Text(
-        mediaItem?.artist ?? '',
-        style: TextStyle(
-          fontSize: artistSize,
-          color: Get.theme.textTheme.bodySmall?.color,
+  Future<void> onTap(BuildContext context) async {
+    if (!globalHorizon) {
+      main_showVolumeSlider();
+    }
+    final track = await getnowplayingsong();
+    var ret = await song_dialog(
+      context,
+      track['track'],
+      change_main_status: onPlaylistTap,
+      position: position,
+    );
+    if (ret != null) {
+      if (ret["push"] != null) {
+        Get.toNamed(
+          ret["push"],
+          arguments: {'listId': ret["push"], 'is_my': false},
+          id: 1,
+        );
+      }
+    }
+  }
+
+  ;
+  return StreamBuilder<MediaItem?>(
+    stream: Get.find<AudioHandlerController>().audioHandler.mediaItem,
+    builder: (context, snapshot) {
+      final mediaItem = snapshot.data;
+
+      return GestureDetector(
+        onTapDown: (TapDownDetails details) {
+          position = details.globalPosition;
+        },
+        onTap: () => onTap(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isCollapsed)
+              Text(
+                mediaItem?.title ?? '未播放',
+                style: TextStyle(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            else
+              SelectableText(
+                mediaItem?.title ?? '未播放',
+                style: TextStyle(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.bold,
+                ),
+                onTap: () => onTap(context),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+              ),
+            SizedBox(height: 4),
+            if (isCollapsed)
+              Text(
+                mediaItem?.artist ?? '',
+                style: TextStyle(
+                  fontSize: artistSize,
+                  color: Get.theme.textTheme.bodySmall?.color,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            else
+              SelectableText(
+                mediaItem?.artist ?? '',
+                style: TextStyle(
+                  fontSize: artistSize,
+                  color: Get.theme.textTheme.bodySmall?.color,
+                ),
+                onTap: () => onTap(context),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+              ),
+          ],
         ),
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    ],
+      );
+    },
   );
 }
 
@@ -186,13 +250,18 @@ Widget get buildPlaylistButton => Obx(
 );
 
 // 高44居中
-Widget get sheetHandle => Container(
-  margin: EdgeInsets.symmetric(vertical: 10.w),
-  width: 120.w,
-  height: 20.w,
-  decoration: BoxDecoration(
-    color: Get.theme.dividerColor.withAlpha(100),
-    borderRadius: BorderRadius.circular(10.w),
+Widget get sheetHandle => Positioned.fill(
+  child: Align(
+    alignment: Alignment.topCenter,
+    child: Container(
+      margin: EdgeInsets.symmetric(vertical: 10.w),
+      width: 120.w,
+      height: 20.w,
+      decoration: BoxDecoration(
+        color: Get.theme.dividerColor.withAlpha(100),
+        borderRadius: BorderRadius.circular(10.w),
+      ),
+    ),
   ),
 );
 
@@ -295,4 +364,9 @@ class SizedBoxWithOverflow extends StatelessWidget {
       ),
     );
   }
+}
+
+// 内联歌词组件 - 在播放器展开时显示
+Widget _buildInlineLyric() {
+  return LyricVPage();
 }

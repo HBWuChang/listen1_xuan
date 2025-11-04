@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:flutter_lyric/lyrics_reader_widget.dart';
 import 'dart:ui';
@@ -6,13 +7,13 @@ import 'dart:ui';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:flutter_lyric/lyric_ui/ui_netease.dart';
 import 'package:audio_service/audio_service.dart';
-import '../controllers/lyric_controller.dart';
-import '../controllers/play_controller.dart';
-import '../controllers/settings_controller.dart';
+import '../../controllers/lyric_controller.dart';
+import '../../controllers/play_controller.dart';
+import '../../controllers/settings_controller.dart';
 import 'package:extended_image/extended_image.dart';
 
-import '../global_settings_animations.dart';
-
+import '../../global_settings_animations.dart';
+part 'lyric_v.dart';
 class LyricPage extends StatefulWidget {
   @override
   _LyricPageState createState() => _LyricPageState();

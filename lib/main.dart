@@ -7,7 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/funcs.dart';
-import 'package:listen1_xuan/pages/lyric_page.dart';
+import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'controllers/audioHandler_controller.dart';
 import 'controllers/lyric_controller.dart';
@@ -419,6 +419,8 @@ List<bool> show_filters = [false, false, true, true, false];
 
 var main_showVolumeSlider;
 
+late bool globalHorizon;
+var onPlaylistTap;
 class _MyHomePageState extends State<MyHomePage>
     with TrayListener, WindowListener {
   final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
@@ -436,6 +438,7 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     trayManager.addListener(this);
     updatePageControllers();
+    onPlaylistTap = change_main_status;
     main_showVolumeSlider = showVolumeSlider;
     if (is_windows) {
       _initTrayManager();
@@ -595,8 +598,6 @@ class _MyHomePageState extends State<MyHomePage>
     super.dispose();
   }
 
-  late bool global_horizon;
-
   late BuildContext _main_context;
   bool left_to_right_reverse = true;
 
@@ -629,8 +630,8 @@ class _MyHomePageState extends State<MyHomePage>
       },
       child: OrientationBuilder(
         builder: (context, orientation) {
-          global_horizon = orientation == Orientation.landscape;
-          if (global_horizon) {
+          globalHorizon = orientation == Orientation.landscape;
+          if (globalHorizon) {
             _selectedIndex.value = 2;
             debugPrint('当前为横屏模式');
             SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
@@ -736,7 +737,7 @@ class _MyHomePageState extends State<MyHomePage>
           );
           Widget _play = Play(
             onPlaylistTap: change_main_status,
-            horizon: global_horizon,
+            horizon: globalHorizon,
           );
           return PopScope(
             canPop: false,
@@ -753,7 +754,7 @@ class _MyHomePageState extends State<MyHomePage>
                         Expanded(
                           child: Row(
                             children: [
-                              if (global_horizon) ...[
+                              if (globalHorizon) ...[
                                 is_windows
                                     ? DragToMoveArea(child: sized_box)
                                     : sized_box,
@@ -872,7 +873,7 @@ class _MyHomePageState extends State<MyHomePage>
                                             switch (settings.name) {
                                               case RouteName.defaultPage:
                                                 // 在函数内部定义默认页面
-                                                if (global_horizon) {
+                                                if (globalHorizon) {
                                                   builder = (context_in_1) {
                                                     return Scaffold(
                                                       body: Column(
@@ -1361,7 +1362,7 @@ class _MyHomePageState extends State<MyHomePage>
                             ],
                           ),
                         ),
-                        if (!global_horizon)
+                        if (!globalHorizon)
                           SafeArea(top: false, child: SizedBox(height: 256.w))
                         else
                           SizedBox(height: 60),
@@ -1370,7 +1371,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
 
                   Positioned.fill(
-                    child: global_horizon
+                    child: globalHorizon
                         ? Align(alignment: Alignment.bottomCenter, child: _play)
                         : SafeArea(top: false, child: _play),
 

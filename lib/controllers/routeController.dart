@@ -4,8 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
+import 'package:listen1_xuan/play.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'settings_controller.dart';
@@ -45,8 +47,14 @@ void addAndCleanReapeatRoute(Route route, String name) {
 
 class ListenPopMiddleware extends GetMiddleware {
   @override
+  Widget onPageBuilt(Widget page) {
+    Get.find<PlayController>().collapseSheet();
+    return page;
+  }
+
+  @override
   void onPageDispose() {
-    print("onPageDispose: ${Get.currentRoute}");
+    debugPrint("onPageDispose: ${Get.currentRoute}");
     if (disposedByClean > 0) {
       disposedByClean--;
     } else {

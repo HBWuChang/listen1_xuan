@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 
@@ -75,7 +76,32 @@ class PlayController extends GetxController {
     _playVMaxHeight = value;
   }
 
+  RxBool showPlayVInlineLyricOp = false.obs;
+  RxBool showPlayVInlineLyricVisible = false.obs;
   final sheetExpandRatio = 0.0.obs; // 展开比例 0.0-1.0
+  Future<void> expandSheet() async {
+    if (globalHorizon) return;
+    await sheetController.animateTo(
+      playVMaxOffset,
+      duration: Duration(milliseconds: 300),
+    );
+  }
+
+  Future<void> expandSheetToMid() async {
+    if (globalHorizon) return;
+    await sheetController.animateTo(
+      sheetMidOffset,
+      duration: Duration(milliseconds: 300),
+    );
+  }
+
+  Future<void> collapseSheet() async {
+    if (globalHorizon) return;
+    await sheetController.animateTo(
+      sheetMinOffset,
+      duration: Duration(milliseconds: 300),
+    );
+  }
 
   set nextTrack(Track? track) {
     _next_track.value = track;
@@ -132,19 +158,24 @@ class PlayController extends GetxController {
       broadcastWs();
       updateContinuePlay();
     });
-    
+    debounce(showPlayVInlineLyricVisible, (value) {
+      if (value) {
+        showPlayVInlineLyricOp.value = true;
+      }
+    }, time: Duration(milliseconds: 100));
+    debounce(showPlayVInlineLyricOp, (value) {
+      if (!value) {
+        showPlayVInlineLyricVisible.value = false;
+      }
+    }, time: Duration(milliseconds: 300));
     // 使用 interval 控制任务栏进度更新频率(每500ms最多更新一次)
     if (is_windows) {
-      interval(
-        taskbarProgress,
-        (progress) {
-          safeCallWindowsTaskbar(
-            () => WindowsTaskbar.setProgress(progress, 100),
-            'setProgress',
-          );
-        },
-        time: Duration(milliseconds: 500),
-      );
+      interval(taskbarProgress, (progress) {
+        safeCallWindowsTaskbar(
+          () => WindowsTaskbar.setProgress(progress, 100),
+          'setProgress',
+        );
+      }, time: Duration(milliseconds: 500));
     }
   }
 
