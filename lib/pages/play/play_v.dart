@@ -191,6 +191,9 @@ Widget get playV0 => Center(
 Widget get playV => LayoutBuilder(
   builder: (context, boxConstraints) {
     _playController.playVMaxHeight = boxConstraints.maxHeight;
+
+    final expandAnimationStage2Rate =
+        _playController.playVMaxHeight - _playController.sheetMidHeight;
     return SizedBox(
       height: _playController.playVMaxHeight,
       child: SheetViewport(
@@ -246,322 +249,278 @@ Widget get playV => LayoutBuilder(
                 builder: (context) {
                   // 获取 Sheet 位置驱动的动画
                   final sheetController = _playController.sheetController;
-                  final expandAnimation = SheetOffsetDrivenAnimation(
+                  final expandAnimationStage1 = SheetOffsetDrivenAnimation(
                     controller: sheetController,
                     initialValue: 0,
                     startOffset: _playController.sheetMinOffset,
                     endOffset: _playController.sheetMidOffset,
                   );
+                  final expandAnimationStage2 = SheetOffsetDrivenAnimation(
+                    controller: sheetController,
+                    initialValue: 0,
+                    startOffset: _playController.sheetMidOffset,
+                    endOffset: _playController.playVMaxOffset,
+                  );
+                  return Column(
+                    children: [
+                      // 封面和信息区域 - 使用 Stack 和 AnimatedPositioned 实现位置过渡
+                      AnimatedBuilder(
+                        animation: expandAnimationStage1,
+                        builder: (context, child) {
+                          final expandProgress = expandAnimationStage1.value
+                              .clamp(0.0, 1.0);
 
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).padding.bottom + 100.w,
-                    ),
-                    child: Column(
-                      children: [
-                        // 封面和信息区域 - 使用 Stack 和 AnimatedPositioned 实现位置过渡
-                        AnimatedBuilder(
-                          animation: expandAnimation,
-                          builder: (context, child) {
-                            final expandProgress = expandAnimation.value.clamp(
-                              0.0,
-                              1.0,
-                            );
+                          final sizeProgress = Curves.easeOutCubic.transform(
+                            expandProgress,
+                          );
+                          final coverSize = 168.w + (180.w * sizeProgress);
 
-                            // 封面尺寸从 120.w 变化到 300.w，使用 easeOutCubic 让尺寸变化更流畅
-                            final sizeProgress = Curves.easeOutCubic.transform(
-                              expandProgress,
-                            );
-                            final coverSize = 120.w + (180.w * sizeProgress);
+                          // 字体大小变化，使用线性过渡
+                          final titleSize =
+                              (16.0 + (4.0 * expandProgress)) * 3.sp;
+                          final artistSize =
+                              (14.0 + (2.0 * expandProgress)) * 3.sp;
 
-                            // 字体大小变化，使用线性过渡
-                            final titleSize = 16.0 + (4.0 * expandProgress);
-                            final artistSize = 14.0 + (2.0 * expandProgress);
+                          // 控制按钮透明度：收起时显示，展开时隐藏，使用更快的淡出
+                          final opacityProgress = Curves.easeInQuad.transform(
+                            expandProgress,
+                          );
+                          final controlOpacity = (1.0 - opacityProgress * 3)
+                              .clamp(0.0, 1.0);
 
-                            // 控制按钮透明度：收起时显示，展开时隐藏，使用更快的淡出
-                            final opacityProgress = Curves.easeInQuad.transform(
-                              expandProgress,
-                            );
-                            final controlOpacity = (1.0 - opacityProgress * 3)
-                                .clamp(0.0, 1.0);
+                          return StreamBuilder<MediaItem?>(
+                            stream: Get.find<AudioHandlerController>()
+                                .audioHandler
+                                .mediaItem,
+                            builder: (context, snapshot) {
+                              final mediaItem = snapshot.data;
 
-                            return StreamBuilder<MediaItem?>(
-                              stream: Get.find<AudioHandlerController>()
-                                  .audioHandler
-                                  .mediaItem,
-                              builder: (context, snapshot) {
-                                final mediaItem = snapshot.data;
+                              // 使用 LayoutBuilder 获取可用宽度
+                              return LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final availableWidth = constraints.maxWidth;
 
-                                // 使用 LayoutBuilder 获取可用宽度
-                                return LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final availableWidth = constraints.maxWidth;
+                                  // 计算各元素在收起状态下的位置
+                                  final collapsedCoverLeft = 44.w;
+                                  final collapsedInfoLeft =
+                                      collapsedCoverLeft + coverSize + 12.w;
+                                  final collapsedControlRight = 16.0.w;
 
-                                    // 计算各元素在收起状态下的位置
-                                    final collapsedCoverLeft = 16.0.w;
-                                    final collapsedInfoLeft =
-                                        collapsedCoverLeft + coverSize + 12.w;
-                                    final collapsedControlRight = 16.0.w;
+                                  // 计算各元素在展开状态下的位置
+                                  final expandedCoverLeft =
+                                      (availableWidth - coverSize) / 2;
+                                  final expandedInfoTop =
+                                      coverSize + 16.w + 24.w;
 
-                                    // 计算各元素在展开状态下的位置
-                                    final expandedCoverLeft =
-                                        (availableWidth - coverSize) / 2;
-                                    final expandedInfoTop =
-                                        coverSize + 16.w + 24.w;
+                                  // 使用 lerp 计算当前位置，应用缓动曲线
+                                  // 使用 easeInCubic 曲线：开始慢，后期快
+                                  final coverProgress = Curves.easeInCubic
+                                      .transform(expandProgress);
+                                  final coverLeft =
+                                      collapsedCoverLeft +
+                                      (expandedCoverLeft - collapsedCoverLeft) *
+                                          coverProgress;
 
-                                    // 使用 lerp 计算当前位置，应用缓动曲线
-                                    // 使用 easeInCubic 曲线：开始慢，后期快
-                                    final coverProgress = Curves.easeInCubic
-                                        .transform(expandProgress);
-                                    final coverLeft =
-                                        collapsedCoverLeft +
-                                        (expandedCoverLeft -
-                                                collapsedCoverLeft) *
-                                            coverProgress;
+                                  // 信息区域使用不同的缓动曲线，实现更平滑的过渡
+                                  final infoProgress = Curves.easeInOutCubic
+                                      .transform(expandProgress);
+                                  final infoLeft =
+                                      collapsedInfoLeft * (1.0 - infoProgress) +
+                                      16.w * infoProgress;
+                                  final infoRight =
+                                      (16.w + 120.w * controlOpacity) *
+                                          (1.0 - infoProgress) +
+                                      16.w * infoProgress;
 
-                                    // 信息区域使用不同的缓动曲线，实现更平滑的过渡
-                                    final infoProgress = Curves.easeInOutCubic
-                                        .transform(expandProgress);
-                                    final infoLeft =
-                                        collapsedInfoLeft *
-                                            (1.0 - infoProgress) +
-                                        16.w * infoProgress;
-                                    final infoRight =
-                                        (16.w + 120.w * controlOpacity) *
-                                            (1.0 - infoProgress) +
-                                        16.w * infoProgress;
+                                  // 信息区域从水平居左变为垂直居中，使用 easeOut 让最终位置更快到达
+                                  final infoTopProgress = Curves.easeOutCubic
+                                      .transform(expandProgress);
+                                  final infoTop =
+                                      0.0 * (1.0 - infoTopProgress) +
+                                      expandedInfoTop * infoTopProgress;
+                                  final shrinkControlTop =
+                                      (coverSize - controlButtonSize) / 2;
+                                  final expandedControlTop =
+                                      expandedInfoTop + 200.w;
+                                  // 控制按钮的垂直位置，保持在封面中心
+                                  final controlTopProgress = Curves.ease
+                                      .transform(expandProgress);
+                                  final controlTop =
+                                      shrinkControlTop *
+                                          (1.0 - controlTopProgress) +
+                                      expandedControlTop * controlTopProgress;
 
-                                    // 信息区域从水平居左变为垂直居中，使用 easeOut 让最终位置更快到达
-                                    final infoTopProgress = Curves.easeOutCubic
-                                        .transform(expandProgress);
-                                    final infoTop =
-                                        0.0 * (1.0 - infoTopProgress) +
-                                        expandedInfoTop * infoTopProgress;
+                                  // 计算总高度
+                                  final totalHeight = expandProgress < 0.5
+                                      ? coverSize
+                                      : coverSize +
+                                            expandedInfoTop +
+                                            80.w * expandProgress;
 
-                                    // 控制按钮的垂直位置，保持在封面中心
-                                    final controlTopProgress = Curves
-                                        .easeInCubic
-                                        .transform(expandProgress);
-                                    final controlTop =
-                                        ((coverSize - 48.w) / 2) *
-                                            (1.0 - controlTopProgress) +
-                                        (coverSize / 2) * controlTopProgress;
-
-                                    // 计算总高度
-                                    final totalHeight = expandProgress < 0.5
-                                        ? coverSize
-                                        : coverSize +
-                                              expandedInfoTop +
-                                              80.w * expandProgress;
-
-                                    return SizedBox(
-                                      height: totalHeight,
-                                      child: Stack(
-                                        clipBehavior: Clip.none,
-                                        children: [
-                                          // 封面 - 使用 AnimatedPositioned
-                                          AnimatedPositioned(
-                                            duration: Duration
-                                                .zero, // 由 expandAnimation 驱动，所以这里设为 zero
-                                            left: coverLeft,
-                                            top: 0,
-                                            child: buildCoverImage(
-                                              mediaItem,
-                                              coverSize,
-                                              borderRadius:
-                                                  8 +
-                                                  8 *
-                                                      Curves.easeInOutCubic
-                                                          .transform(
-                                                            expandProgress,
-                                                          ),
-                                            ),
-                                          ),
-
-                                          // 歌曲信息 - 使用 AnimatedPositioned
-                                          AnimatedPositioned(
-                                            duration: Duration.zero,
-                                            left: infoLeft,
-                                            right: infoRight,
-                                            top: infoTop,
-                                            child: buildSongInfo(
-                                              mediaItem: mediaItem,
-                                              titleSize: titleSize,
-                                              artistSize: artistSize,
-                                              isCollapsed: expandProgress < 0.5,
-                                            ),
-                                          ),
-
-                                          // 控制按钮区域 - 合并右侧和底部的控制按钮
-                                          AnimatedPositioned(
-                                            duration: Duration.zero,
-                                            right: collapsedControlRight,
-                                            top: controlTop,
-                                            child: SizedBox(
-                                              height: 48.w,
-                                              child: AnimatedSize(
-                                                duration: Duration(milliseconds: 300),
-                                                curve: Curves.easeInOutCubic,
-                                                alignment: Alignment.centerRight,
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    // 展开状态显示的按钮
-                                                    if (expandProgress > 0.3) ...[
-                                                      // 播放模式
-                                                      playModeButton,
-                                                      
-                                                      // 上一曲
-                                                      IconButton(
-                                                        icon: Icon(Icons.skip_previous, size: 60.w),
-                                                        onPressed: global_skipToPrevious,
-                                                      ),
-                                                    ],
-                                                    
-                                                    // 播放/暂停 - 始终显示
-                                                    buildPlayPauseButton,
-                                                    
-                                                    // 展开状态显示的按钮
-                                                    if (expandProgress > 0.3) ...[
-                                                      // 下一曲
-                                                      IconButton(
-                                                        icon: Icon(Icons.skip_next, size: 60.w),
-                                                        onPressed: global_skipToNext,
-                                                      ),
-                                                    ],
-                                                    
-                                                    // 播放列表 - 始终显示
-                                                    buildPlaylistButton,
-                                                  ],
+                                  return Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      AnimatedBuilder(
+                                        animation: expandAnimationStage2,
+                                        builder: (context, child) {
+                                          return SizedBox(
+                                            height:
+                                                44.w +
+                                                (expandAnimationStage2Rate -
+                                                        44.w) *
+                                                    expandAnimationStage2.value,
+                                            child: Stack(
+                                              children: [
+                                                Positioned.fill(
+                                                  child: Align(
+                                                    alignment:
+                                                        Alignment.topCenter,
+                                                    child: sheetHandle,
+                                                  ),
                                                 ),
-                                              ),
+                                              ],
                                             ),
-                                          ),
-                                        ],
+                                          );
+                                        },
                                       ),
-                                    );
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        
-                        // 进度条区域 - 在展开时显示
-                        AnimatedBuilder(
-                          animation: expandAnimation,
-                          builder: (context, child) {
-                            final expandProgress = expandAnimation.value.clamp(
-                              0.0,
-                              1.0,
-                            );
-                            // 当展开程度 > 0.3 时才开始显示进度条
-                            final sliderOpacity =
-                                ((expandProgress - 0.3) / 0.7).clamp(0.0, 1.0);
-                            final baseHeight = 60.0.w;
-                            final actualHeight = baseHeight * sliderOpacity;
-
-                            return SizedBox(
-                              height: actualHeight,
-                              child: ClipRect(
-                                child: OverflowBox(
-                                  maxHeight: baseHeight,
-                                  child: Opacity(
-                                    opacity: sliderOpacity,
-                                    child: StreamBuilder<MediaState>(
-                                      stream: _mediaStateStream,
-                                      builder: (context, snapshot) {
-                                        final mediaState = snapshot.data;
-                                        return Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 32.w,
-                                          ),
-                                          child: Slider(
-                                            value:
-                                                (mediaState?.position.inMilliseconds.toDouble() ??
-                                                        0.0) >
-                                                    (mediaState?.mediaItem?.duration?.inMilliseconds
-                                                            .toDouble() ??
-                                                        1.0)
-                                                ? (mediaState?.mediaItem?.duration?.inMilliseconds
-                                                          .toDouble() ??
-                                                      1.0)
-                                                : (mediaState?.position.inMilliseconds.toDouble() ??
-                                                      0.0),
-                                            max:
-                                                mediaState?.mediaItem?.duration?.inMilliseconds
-                                                    .toDouble() ??
-                                                1.0,
-                                            onChanged: (value) {
-                                              global_seek(Duration(milliseconds: value.toInt()));
-                                            },
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        
-                        // 时间显示区域 - 在展开时显示
-                        AnimatedBuilder(
-                          animation: expandAnimation,
-                          builder: (context, child) {
-                            final expandProgress = expandAnimation.value.clamp(
-                              0.0,
-                              1.0,
-                            );
-                            final timeOpacity =
-                                ((expandProgress - 0.3) / 0.7).clamp(0.0, 1.0);
-                            final baseHeight = 40.0.w;
-                            final actualHeight = baseHeight * timeOpacity;
-
-                            return SizedBox(
-                              height: actualHeight,
-                              child: ClipRect(
-                                child: OverflowBox(
-                                  maxHeight: baseHeight,
-                                  child: Opacity(
-                                    opacity: timeOpacity,
-                                    child: StreamBuilder<MediaState>(
-                                      stream: _mediaStateStream,
-                                      builder: (context, snapshot) {
-                                        final mediaState = snapshot.data;
-                                        return Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 32.w,
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                formatDuration(
-                                                  mediaState?.position ?? Duration.zero,
-                                                ),
-                                                style: TextStyle(fontSize: 14),
+                                      SizedBox(
+                                        width: availableWidth,
+                                        height: totalHeight,
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            // 封面 - 使用 AnimatedPositioned
+                                            Positioned(
+                                              left: coverLeft,
+                                              top: 0,
+                                              child: buildCoverImage(
+                                                mediaItem,
+                                                coverSize,
+                                                borderRadius:
+                                                    8 +
+                                                    8 *
+                                                        Curves.easeInOutCubic
+                                                            .transform(
+                                                              expandProgress,
+                                                            ),
                                               ),
-                                              Text(
-                                                formatDuration(
-                                                  mediaState?.mediaItem?.duration ?? Duration.zero,
-                                                ),
-                                                style: TextStyle(fontSize: 14),
+                                            ),
+
+                                            // 歌曲信息 - 使用 AnimatedPositioned
+                                            Positioned(
+                                              left: infoLeft,
+                                              right: infoRight,
+                                              top: infoTop,
+                                              child: buildSongInfo(
+                                                mediaItem: mediaItem,
+                                                titleSize: titleSize,
+                                                artistSize: artistSize,
+                                                isCollapsed:
+                                                    expandProgress < 0.5,
                                               ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                                            ),
+
+                                            // 统一控制按钮：合并“右侧控制按钮”和“控制按钮区域”。
+                                            // 使用 Positioned + AnimatedBuilder 在收起/展开状态之间切换布局。
+                                            AnimatedBuilder(
+                                              animation: expandAnimationStage1,
+                                              builder: (context, _) {
+                                                final expandProgress =
+                                                    expandAnimationStage1.value
+                                                        .clamp(0.0, 1.0);
+                                                final eased = Curves.ease
+                                                    .transform(expandProgress);
+
+                                                // widths for collapsed and expanded states
+                                                final double collapsedWidth =
+                                                    controlButtonSize * 2 +
+                                                    16.w;
+                                                final double expandedWidth =
+                                                    1000.w;
+                                                final double childWidth =
+                                                    collapsedWidth +
+                                                    (expandedWidth -
+                                                            collapsedWidth) *
+                                                        eased;
+
+                                                // compute target left positions
+                                                final double collapsedLeft =
+                                                    availableWidth -
+                                                    collapsedControlRight -
+                                                    collapsedWidth;
+                                                // infoRight is the 'right' constraint of info; info's right edge = availableWidth - infoRight
+                                                final double expandedLeft =
+                                                    (availableWidth -
+                                                        childWidth) /
+                                                    2; // small gap
+
+                                                // interpolate left position from collapsed to expanded
+                                                final double left =
+                                                    collapsedLeft *
+                                                        (1 - eased) +
+                                                    expandedLeft * eased;
+                                                final perSize =
+                                                    controlButtonSize;
+
+                                                return Positioned(
+                                                  left: left,
+                                                  top: controlTop,
+                                                  width: childWidth,
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceEvenly,
+                                                    children: [
+                                                      // show compact items when nearly collapsed
+                                                      SizedBoxWithOverflow.processMaxSizeDir(
+                                                        maxSize: perSize,
+                                                        process: expandProgress,
+                                                        child: playModeButton,
+                                                      ),
+                                                      SizedBoxWithOverflow.processMaxSizeDir(
+                                                        maxSize: perSize,
+                                                        process: expandProgress,
+                                                        child:
+                                                            buildPreviousButton(),
+                                                      ),
+
+                                                      buildPlayPauseButton(
+                                                        expandProgress,
+                                                      ),
+                                                      SizedBoxWithOverflow.processMaxSizeDir(
+                                                        maxSize: perSize,
+                                                        process: expandProgress,
+                                                        child:
+                                                            buildNextButton(),
+                                                      ),
+                                                      buildPlaylistButton,
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                            Positioned(
+                                              top:
+                                                  infoTop +
+                                                  200.w +
+                                                  controlButtonSize,
+                                              left: 0,
+                                              right: 0,
+                                              child: positionSlider,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      // 控制按钮已合并到上方的 Positioned + AnimatedBuilder 中
+                    ],
                   );
                 },
               ),

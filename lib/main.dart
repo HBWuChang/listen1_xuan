@@ -129,7 +129,7 @@ void downloadtasks_background(SendPort mainPort) async {
 void enableThumbnailToolbar() async {
   int retryCount = 0;
   const maxRetries = 10; // 最多重试10次
-  
+
   while (retryCount < maxRetries) {
     try {
       await WindowsTaskbar.setThumbnailToolbar([
@@ -1378,13 +1378,9 @@ class _MyHomePageState extends State<MyHomePage>
                     ),
                   ),
 
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    top: 0,
+                  Positioned.fill(
                     child: global_horizon
-                        ? _play
+                        ? Align(alignment: Alignment.bottomCenter,child: _play)
                         : SafeArea(top: false, child: _play),
 
                     // 竖屏状态下添加额外的占位空间
