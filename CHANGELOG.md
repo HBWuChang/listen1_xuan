@@ -16,6 +16,27 @@
                 },
               ),
     ~~~
+- 竖屏播放底栏继承控制、歌词，可上滑展开
+- 竖屏底栏播放按钮添加环形进度条，可在外观设置修改旋转曲线及旋转速度
+- 修复/优化
+  - 优化~~没什么卵用的~~`HoverFollowWidget`性能
+  - 优化正在播放列表性能
+    ~~~dart
+      child: ReorderableListView.builder(
+          scrollController: controller.scrollController,
+          buildDefaultDragHandles: false,
+          padding: EdgeInsets.symmetric(horizontal: 16),
+    +      prototypeItem: _buildTrackItem(
+    +        context,
+    +        playingList.first,
+    +        0,
+    +        playingList.first.id == currentTrackId,
+    +        controller,
+    +      ),
+          itemCount: playingList.length,
+    ~~~
+
+
 ---
 1.1.3+18
 - 添加WebSocket功能
