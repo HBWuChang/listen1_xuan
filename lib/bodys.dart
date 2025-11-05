@@ -273,6 +273,9 @@ Future<dynamic> song_dialog(
               ListTile(
                 title: Text('删除本地缓存'),
                 onTap: () async {
+                  if(!await showConfirmDialog('删除本地缓存？', '此操作不可恢复',confirmLevel: ConfirmLevel.danger)) {
+                    return;
+                  }
                   await clean_local_cache(false, track.id);
                 },
               ),
