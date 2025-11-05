@@ -537,20 +537,16 @@ class Play extends StatefulWidget {
 
 late SMTCWindows smtc;
 PlayController get _playController => Get.find<PlayController>();
-late Offset position;
+Offset? position;
 
-class _PlayState extends State<Play> with TickerProviderStateMixin {
+class _PlayState extends State<Play> {
   @override
   void initState() {
     super.initState();
-    // 初始化播放按钮旋转动画控制器
-    _playController.playVPlayBtnProcessControllerInit(this);
   }
 
   @override
   void dispose() {
-    // 释放动画控制器
-    _playController.playVPlayBtnProcessController.dispose();
     super.dispose();
   }
 
@@ -565,65 +561,6 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
               ? SizedBox(height: 60, child: playH(widget.onPlaylistTap))
               : playV;
           return tW;
-          return is_windows
-              ? tW
-              : GestureDetector(
-                  onTapDown: (TapDownDetails details) {
-                    position = details.globalPosition;
-                  },
-                  onTap: () async {
-                    if (!widget.horizon) {
-                      main_showVolumeSlider();
-                    }
-                    final track = await getnowplayingsong();
-                    var ret = await song_dialog(
-                      context,
-                      track['track'],
-                      change_main_status: widget.onPlaylistTap,
-                      position: position,
-                    );
-                    if (ret != null) {
-                      if (ret["push"] != null) {
-                        Get.toNamed(
-                          ret["push"],
-                          arguments: {'listId': ret["push"], 'is_my': false},
-                          id: 1,
-                        );
-                      }
-                    }
-                  },
-                  onDoubleTap: () {
-                    // if (_player.playing) MediaControl.pause else MediaControl.play,
-                    Vibration.vibrate(duration: 100);
-                    if (Get.find<PlayController>().music_player.playing) {
-                      // (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler).pause();
-                      global_pause();
-                    } else {
-                      // (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler).play();
-                      global_play();
-                    }
-                  },
-                  onLongPress: () {
-                    Vibration.vibrate(duration: 100);
-                    global_change_play_mode();
-                  },
-                  onHorizontalDragEnd: (details) {
-                    if (details.primaryVelocity != null) {
-                      Vibration.vibrate(duration: 100);
-
-                      if (details.primaryVelocity! > 0) {
-                        // _playPrevious(); // 向右滑动，播放上一首
-                        // (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler).skipToPrevious();
-                        global_skipToPrevious();
-                      } else if (details.primaryVelocity! < 0) {
-                        // _playNext(); // 向左滑动，播放下一首
-                        // (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler).skipToNext();
-                        global_skipToNext();
-                      }
-                    }
-                  },
-                  child: tW,
-                );
         }
       },
     );

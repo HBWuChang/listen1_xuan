@@ -34,6 +34,7 @@ Widget buildCoverImage(double size, {double? borderRadius}) {
   );
 }
 
+DragStartDetails? _dragStartDetails;
 // 歌曲信息组件
 Widget buildSongInfo({
   required double titleSize,
@@ -62,70 +63,105 @@ Widget buildSongInfo({
     }
   }
 
-  ;
-  return StreamBuilder<MediaItem?>(
-    stream: Get.find<AudioHandlerController>().audioHandler.mediaItem,
-    builder: (context, snapshot) {
-      final mediaItem = snapshot.data;
+  Future<void> onDoubleTap() async {
+    if (!is_windows) Vibration.vibrate(duration: 100);
+    if (Get.find<PlayController>().music_player.playing) {
+      global_pause();
+    } else {
+      global_play();
+    }
+  }
 
-      return GestureDetector(
-        onTapDown: (TapDownDetails details) {
-          position = details.globalPosition;
+  void onLongPress() {
+    if (!is_windows) Vibration.vibrate(duration: 100);
+    global_change_play_mode();
+  }
+
+  void onHorizontalDragEnd(DragEndDetails details) {
+    Offset movePos = details.globalPosition - _dragStartDetails!.globalPosition;
+    if (movePos.dx.abs() < movePos.dy.abs()) return;
+    if (!is_windows) Vibration.vibrate(duration: 100);
+    if (movePos.dx > 0) {
+      global_skipToNext();
+    } else {
+      global_skipToPrevious();
+    }
+  }
+
+  return Builder(
+    builder: (context) => GestureDetector(
+      onTapDown: (TapDownDetails details) {
+        position = details.globalPosition;
+      },
+      onTap: () => onTap(context),
+      onDoubleTap: onDoubleTap,
+      onLongPress: isCollapsed ? onLongPress : null,
+      onHorizontalDragStart: (details) {
+        _dragStartDetails = details;
+      },
+      onHorizontalDragEnd: onHorizontalDragEnd,
+      child: StreamBuilder<MediaItem?>(
+        stream: Get.find<AudioHandlerController>().audioHandler.mediaItem,
+        builder: (context, snapshot) {
+          final mediaItem = snapshot.data;
+          return Container(
+            color: Colors.transparent,
+            padding: EdgeInsets.only(bottom: 20.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isCollapsed)
+                  Text(
+                    mediaItem?.title ?? '未播放',
+                    style: TextStyle(
+                      fontSize: titleSize,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                else
+                  SelectableText(
+                    mediaItem?.title ?? '未播放',
+                    style: TextStyle(
+                      fontSize: titleSize,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    onTap: () => onTap(context),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                  ),
+                SizedBox(height: 4),
+                if (isCollapsed)
+                  Text(
+                    mediaItem?.artist ?? '',
+                    style: TextStyle(
+                      fontSize: artistSize,
+                      color: Get.theme.textTheme.bodySmall?.color,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                else
+                  SelectableText(
+                    mediaItem?.artist ?? '',
+                    style: TextStyle(
+                      fontSize: artistSize,
+                      color: Get.theme.textTheme.bodySmall?.color,
+                    ),
+                    onTap: () => onTap(context),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                  ),
+              ],
+            ),
+          );
         },
-        onTap: () => onTap(context),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isCollapsed)
-              Text(
-                mediaItem?.title ?? '未播放',
-                style: TextStyle(
-                  fontSize: titleSize,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              )
-            else
-              SelectableText(
-                mediaItem?.title ?? '未播放',
-                style: TextStyle(
-                  fontSize: titleSize,
-                  fontWeight: FontWeight.bold,
-                ),
-                onTap: () => onTap(context),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-              ),
-            SizedBox(height: 4),
-            if (isCollapsed)
-              Text(
-                mediaItem?.artist ?? '',
-                style: TextStyle(
-                  fontSize: artistSize,
-                  color: Get.theme.textTheme.bodySmall?.color,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              )
-            else
-              SelectableText(
-                mediaItem?.artist ?? '',
-                style: TextStyle(
-                  fontSize: artistSize,
-                  color: Get.theme.textTheme.bodySmall?.color,
-                ),
-                onTap: () => onTap(context),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-              ),
-          ],
-        ),
-      );
-    },
+      ),
+    ),
   );
 }
 
@@ -144,6 +180,14 @@ ButtonStyle get controlBtnsStyle => ButtonStyle(
   ),
   alignment: Alignment.center,
 );
+Widget get showVolumeSliderBtn {
+  return IconButton(
+    style: controlBtnsStyle,
+    icon: Icon(Icons.volume_up, size: 64.w),
+    onPressed: main_showVolumeSlider,
+  );
+}
+
 Widget get playModeButton => Obx(() {
   return IconButton(
     style: controlBtnsStyle.copyWith(iconSize: MaterialStateProperty.all(64.w)),
@@ -196,9 +240,11 @@ Widget buildPlayPauseButton(double expandProgress) {
                   animation: _playController.playVPlayBtnProcessController,
                   builder: (context, child) {
                     // 应用选中的曲线
-                    final curvedValue = _playController.playButtonRotationCurveValue.transform(
-                      _playController.playVPlayBtnProcessController.value,
-                    );
+                    final curvedValue = _playController
+                        .playButtonRotationCurveValue
+                        .transform(
+                          _playController.playVPlayBtnProcessController.value,
+                        );
 
                     return Transform.rotate(
                       angle: curvedValue * 2 * pi,
@@ -266,6 +312,30 @@ Widget get buildPlaylistButton => Obx(
     ),
   ),
 );
+Widget get songDialogBtn {
+  return IconButton(
+    style: controlBtnsStyle,
+    icon: Icon(Icons.more_vert_rounded, size: 64.w),
+    onPressed: () async {
+      final track = await getnowplayingsong();
+      var ret = await song_dialog(
+        Get.context!,
+        track['track'],
+        change_main_status: onPlaylistTap,
+        position: position,
+      );
+      if (ret != null) {
+        if (ret["push"] != null) {
+          Get.toNamed(
+            ret["push"],
+            arguments: {'listId': ret["push"], 'is_my': false},
+            id: 1,
+          );
+        }
+      }
+    },
+  );
+}
 
 // 高44居中
 Widget get sheetHandle => Positioned.fill(
@@ -289,7 +359,7 @@ Widget get positionSlider => StreamBuilder<MediaState>(
     final mediaState = snapshot.data;
 
     return Container(
-      height: 100.w,
+      height: 80.w,
       padding: EdgeInsets.symmetric(horizontal: 60.w),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -302,22 +372,32 @@ Widget get positionSlider => StreamBuilder<MediaState>(
             ),
           ),
           Expanded(
-            child: Slider(
-              value:
-                  (mediaState?.position.inMilliseconds.toDouble() ?? 0.0) >
-                      (mediaState?.mediaItem?.duration?.inMilliseconds
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                sliderTheme: SliderTheme.of(context).copyWith(
+                  trackHeight: 20.w,
+                  thumbShape: RoundSliderThumbShape(enabledThumbRadius: 10.w),
+                  overlayShape: RoundSliderOverlayShape(overlayRadius: 32.w),
+                ),
+              ),
+              child: Slider(
+                value:
+                    (mediaState?.position.inMilliseconds.toDouble() ?? 0.0) >
+                        (mediaState?.mediaItem?.duration?.inMilliseconds
+                                .toDouble() ??
+                            1.0)
+                    ? (mediaState?.mediaItem?.duration?.inMilliseconds
                               .toDouble() ??
                           1.0)
-                  ? (mediaState?.mediaItem?.duration?.inMilliseconds
-                            .toDouble() ??
-                        1.0)
-                  : (mediaState?.position.inMilliseconds.toDouble() ?? 0.0),
-              max:
-                  mediaState?.mediaItem?.duration?.inMilliseconds.toDouble() ??
-                  1.0,
-              onChanged: (value) {
-                global_seek(Duration(milliseconds: value.toInt()));
-              },
+                    : (mediaState?.position.inMilliseconds.toDouble() ?? 0.0),
+                max:
+                    mediaState?.mediaItem?.duration?.inMilliseconds
+                        .toDouble() ??
+                    1.0,
+                onChanged: (value) {
+                  global_seek(Duration(milliseconds: value.toInt()));
+                },
+              ),
             ),
           ),
           FittedBox(

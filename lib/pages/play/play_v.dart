@@ -192,7 +192,7 @@ Widget get playV => LayoutBuilder(
                           final collapsedControlRight = 16.0.w;
                           final collapsedControlWidth =
                               controlButtonSize * 2 + 16.w;
-                          final expandedControlWidth = 1000.w;
+                          final expandedControlWidth = 1200.w;
                           final controlEased = Curves.ease.transform(
                             expandProgress,
                           );
@@ -337,6 +337,11 @@ Widget get playV => LayoutBuilder(
                                       SizedBoxWithOverflow.processMaxSizeDir(
                                         maxSize: controlButtonSize,
                                         process: expandProgress,
+                                        child: showVolumeSliderBtn,
+                                      ),
+                                      SizedBoxWithOverflow.processMaxSizeDir(
+                                        maxSize: controlButtonSize,
+                                        process: expandProgress,
                                         child: playModeButton,
                                       ),
                                       SizedBoxWithOverflow.processMaxSizeDir(
@@ -351,6 +356,11 @@ Widget get playV => LayoutBuilder(
                                         child: buildNextButton(),
                                       ),
                                       buildPlaylistButton,
+                                      SizedBoxWithOverflow.processMaxSizeDir(
+                                        maxSize: controlButtonSize,
+                                        process: expandProgress,
+                                        child: songDialogBtn,
+                                      ),
                                     ],
                                   ),
                                 ),

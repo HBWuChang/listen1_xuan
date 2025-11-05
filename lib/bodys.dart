@@ -40,8 +40,8 @@ Future<dynamic> song_dialog(
   final dialogWidth = screenSize.width * 0.5;
   final dialogHeight = screenSize.height * 1;
   bool horizon = screenSize.height > screenSize.width ? false : true;
-  print("horizon:$horizon");
-  print("position:$position");
+  debugPrint("horizon:$horizon");
+  debugPrint("position:$position");
   return await showDialog(
     context: context,
     builder: (BuildContext context) {

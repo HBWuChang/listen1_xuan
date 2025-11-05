@@ -25,7 +25,8 @@ import 'BroadcastWsController.dart';
 import 'package:windows_taskbar/windows_taskbar.dart';
 import '../play.dart'; // 导入 safeCallWindowsTaskbar
 
-class PlayController extends GetxController {
+class PlayController extends GetxController
+    with GetSingleTickerProviderStateMixin {
   late AndroidEqualizer equalizer;
   late AudioPlayer music_player;
   final _player_settings = <String, dynamic>{}.obs;
@@ -58,9 +59,9 @@ class PlayController extends GetxController {
   final playButtonRotationCurve = 'easeInSine'.obs;
   Curve playButtonRotationCurveValue = CurveUtils.getCurveByName('easeInSine');
 
-  void playVPlayBtnProcessControllerInit(TickerProvider vsync) {
+  void playVPlayBtnProcessControllerInit() {
     playVPlayBtnProcessController = AnimationController(
-      vsync: vsync,
+      vsync: this, // 使用 GetSingleTickerProviderStateMixin 提供的 vsync
       duration: Duration(
         milliseconds: settingsController.playVPlayBtnProcessControllerDuration,
       ),
@@ -94,6 +95,20 @@ class PlayController extends GetxController {
     );
   }
 
+  bool tryCollapseSheet() {
+    if (globalHorizon) return false;
+    if ((sheetController.metrics?.offset ?? sheetMinHeight) >
+        (sheetMidHeight + playVMaxHeight) / 2) {
+      expandSheetToMid();
+      return true;
+    } else if ((sheetController.metrics?.offset ?? sheetMinHeight) >
+        (sheetMinHeight + sheetMidHeight) / 2) {
+      collapseSheet();
+      return true;
+    }
+    return false;
+  }
+
   set nextTrack(Track? track) {
     _next_track.value = track;
   }
@@ -125,6 +140,9 @@ class PlayController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
+    // 初始化播放按钮旋转动画控制器
+    playVPlayBtnProcessControllerInit();
 
     androidEQEnabled =
         Get.find<SettingsController>().settings[androidEQEnabledKey] ?? false;
@@ -199,6 +217,14 @@ class PlayController extends GetxController {
         settingsController.settings[SettingsController
             .playButtonRotationCurveKey] ??
         'easeInSine';
+  }
+
+  @override
+  void onClose() {
+    // GetX 会自动处理 AnimationController 的 dispose
+    // 但为了明确，我们也可以手动 dispose
+    playVPlayBtnProcessController.dispose();
+    super.onClose();
   }
 
   final RxMap<int, AndroidEQBand> _bands = RxMap<int, AndroidEQBand>();
