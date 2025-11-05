@@ -228,6 +228,179 @@ Future<bool> showConfirmDialog(
   return result ?? false;
 }
 
+/// 显示文本输入对话框
+/// 
+/// [title] 对话框标题
+/// [message] 提示消息（可选）
+/// [initialValue] 初始文本值
+/// [placeholder] 占位符文本
+/// [keyboardType] 键盘类型（text, number, email, url等）
+/// [maxLines] 最大行数，1为单行，大于1为多行
+/// [maxLength] 最大字符长度限制（可选）
+/// [validator] 验证函数，返回错误消息或null表示验证通过
+/// [onConfirm] 确认回调函数，返回true表示可以关闭对话框，false表示保持打开
+/// [confirmText] 确认按钮文本
+/// [cancelText] 取消按钮文本
+/// 
+/// 返回用户输入的文本，如果取消则返回null
+Future<String?> showInputDialog({
+  required String title,
+  String? message,
+  String? initialValue,
+  String? placeholder,
+  TextInputType keyboardType = TextInputType.text,
+  int maxLines = 1,
+  int? maxLength,
+  String? Function(String?)? validator,
+  Future<bool> Function(String value)? onConfirm,
+  String confirmText = '确定',
+  String cancelText = '取消',
+}) async {
+  final controller = TextEditingController(text: initialValue);
+  final errorMessage = RxnString();
+  final isProcessing = false.obs;
+
+  try {
+    String? result = await Get.dialog<String>(
+      WillPopScope(
+        onWillPop: () async => !isProcessing.value,
+        child: AlertDialog(
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message != null) ...[
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Get.theme.textTheme.bodySmall?.color,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              Obx(() => TextField(
+                controller: controller,
+                keyboardType: keyboardType,
+                maxLines: maxLines,
+                maxLength: maxLength,
+                autofocus: true,
+                enabled: !isProcessing.value,
+                decoration: InputDecoration(
+                  hintText: placeholder,
+                  errorText: errorMessage.value,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  counterText: maxLength != null ? null : '',
+                ),
+                onChanged: (value) {
+                  // 输入时清除错误消息
+                  if (errorMessage.value != null) {
+                    errorMessage.value = null;
+                  }
+                },
+                onSubmitted: (value) async {
+                  // 按回车键提交（仅限单行输入）
+                  if (maxLines == 1 && !isProcessing.value) {
+                    await _handleConfirm(
+                      controller,
+                      validator,
+                      onConfirm,
+                      errorMessage,
+                      isProcessing,
+                    );
+                  }
+                },
+              )),
+            ],
+          ),
+          actions: [
+            Obx(() => TextButton(
+              onPressed: isProcessing.value
+                  ? null
+                  : () => Get.back(result: null),
+              child: Text(cancelText),
+            )),
+            Obx(() => ElevatedButton(
+              onPressed: isProcessing.value
+                  ? null
+                  : () async {
+                      await _handleConfirm(
+                        controller,
+                        validator,
+                        onConfirm,
+                        errorMessage,
+                        isProcessing,
+                      );
+                    },
+              child: isProcessing.value
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Get.theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                    )
+                  : Text(confirmText),
+            )),
+          ],
+        ),
+      ),
+    );
+
+    return result;
+  } finally {
+    // 延迟 dispose，确保对话框动画完成
+    await Future.delayed(Duration(milliseconds: 100));
+    controller.dispose();
+  }
+}
+
+/// 处理输入确认逻辑
+Future<void> _handleConfirm(
+  TextEditingController controller,
+  String? Function(String?)? validator,
+  Future<bool> Function(String value)? onConfirm,
+  RxnString errorMessage,
+  RxBool isProcessing,
+) async {
+  final value = controller.text;
+
+  // 执行验证
+  if (validator != null) {
+    final error = validator(value);
+    if (error != null) {
+      errorMessage.value = error;
+      return;
+    }
+  }
+
+  // 执行确认回调
+  if (onConfirm != null) {
+    try {
+      isProcessing.value = true;
+      final canClose = await onConfirm(value);
+      isProcessing.value = false;
+      
+      if (canClose) {
+        Get.back(result: value);
+      }
+      // 如果返回false，对话框保持打开状态
+    } catch (e) {
+      isProcessing.value = false;
+      errorMessage.value = '处理失败: ${e.toString()}';
+    }
+  } else {
+    // 没有回调函数，直接关闭
+    Get.back(result: value);
+  }
+}
+
 bool isEmpty(dynamic str) {
   if (str == null) return true;
   if (str is String) {

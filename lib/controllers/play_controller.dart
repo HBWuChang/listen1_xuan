@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/main.dart';
@@ -15,40 +16,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../global_settings_animations.dart';
+import '../models/AndroidEQBand.dart';
+import '../utils/curve_utils.dart';
 import 'settings_controller.dart';
 import 'websocket_card_controller.dart';
 import 'supabase_auth_controller.dart';
 import 'BroadcastWsController.dart';
 import 'package:windows_taskbar/windows_taskbar.dart';
 import '../play.dart'; // 导入 safeCallWindowsTaskbar
-
-class AndroidEQBand {
-  int index;
-  double gain;
-  double? upperFrequency;
-  double? lowerFrequency;
-  double? centerFrequency;
-
-  AndroidEQBand({
-    required this.index,
-    required this.gain,
-    this.upperFrequency,
-    this.lowerFrequency,
-    this.centerFrequency,
-  });
-  AndroidEQBand.fromAndroidEqualizerBand(AndroidEqualizerBand androidEQBand)
-    : index = androidEQBand.index,
-      gain = androidEQBand.gain,
-      upperFrequency = androidEQBand.upperFrequency,
-      lowerFrequency = androidEQBand.lowerFrequency,
-      centerFrequency = androidEQBand.centerFrequency;
-  factory AndroidEQBand.fromJson(Map<String, dynamic> json) {
-    return AndroidEQBand(index: json['index'], gain: json['gain']);
-  }
-  Map<String, dynamic> toJson() {
-    return {'index': index, 'gain': gain};
-  }
-}
 
 class PlayController extends GetxController {
   late AndroidEqualizer equalizer;
@@ -74,6 +49,22 @@ class PlayController extends GetxController {
   SheetOffset get playVMaxOffset => SheetOffset(1);
   set playVMaxHeight(double value) {
     _playVMaxHeight = value;
+  }
+
+  SettingsController settingsController = Get.find<SettingsController>();
+  late AnimationController playVPlayBtnProcessController;
+
+  // 播放按钮旋转曲线（默认为正弦缓入）
+  final playButtonRotationCurve = 'easeInSine'.obs;
+  Curve playButtonRotationCurveValue = CurveUtils.getCurveByName('easeInSine');
+
+  void playVPlayBtnProcessControllerInit(TickerProvider vsync) {
+    playVPlayBtnProcessController = AnimationController(
+      vsync: vsync,
+      duration: Duration(
+        milliseconds: settingsController.playVPlayBtnProcessControllerDuration,
+      ),
+    )..repeat(); // 无限循环旋转
   }
 
   RxBool showPlayVInlineLyricOp = false.obs;
@@ -130,6 +121,7 @@ class PlayController extends GetxController {
               ),
         )
       : Track(id: '');
+
   @override
   void onInit() {
     super.onInit();
@@ -177,6 +169,36 @@ class PlayController extends GetxController {
         );
       }, time: Duration(milliseconds: 500));
     }
+    // 监听 isplaying 状态
+    ever(isplaying, (playing) {
+      try {
+        if (playing) {
+          // 开始旋转
+          if (!playVPlayBtnProcessController.isAnimating) {
+            playVPlayBtnProcessController.repeat();
+          }
+        } else {
+          // 停止旋转
+          playVPlayBtnProcessController.stop();
+        }
+      } catch (e) {
+        logger.e("播放按钮旋转动画错误：$e");
+      }
+    });
+    ever(playButtonRotationCurve, (curveName) {
+      try {
+        playButtonRotationCurveValue = CurveUtils.getCurveByName(curveName);
+        settingsController.settings[SettingsController
+                .playButtonRotationCurveKey] =
+            curveName;
+      } catch (e) {
+        logger.e("播放按钮旋转曲线设置错误：$e");
+      }
+    });
+    playButtonRotationCurve.value =
+        settingsController.settings[SettingsController
+            .playButtonRotationCurveKey] ??
+        'easeInSine';
   }
 
   final RxMap<int, AndroidEQBand> _bands = RxMap<int, AndroidEQBand>();

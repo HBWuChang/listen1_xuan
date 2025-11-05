@@ -204,7 +204,7 @@ void main() async {
   Get.put(DownloadController(), permanent: true);
   Get.put(Applinkscontroller(), permanent: true);
   Get.put(SupabaseAuthController(), permanent: true);
-
+  init_apkfilepath();
   if (is_windows) {
     SMTCWindows.initialize();
     JustAudioMediaKit.ensureInitialized(
@@ -421,6 +421,7 @@ var main_showVolumeSlider;
 
 late bool globalHorizon;
 var onPlaylistTap;
+
 class _MyHomePageState extends State<MyHomePage>
     with TrayListener, WindowListener {
   final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];

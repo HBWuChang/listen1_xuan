@@ -5,6 +5,7 @@ import '../controllers/routeController.dart';
 import '../controllers/settings_controller.dart';
 import '../funcs.dart';
 import '../global_settings_animations.dart';
+import '../models/AndroidEQBand.dart';
 
 class AndroidEqualizerPage extends StatelessWidget {
   const AndroidEqualizerPage({Key? key}) : super(key: key);

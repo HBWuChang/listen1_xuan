@@ -543,10 +543,14 @@ class _PlayState extends State<Play> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    // 初始化播放按钮旋转动画控制器
+    _playController.playVPlayBtnProcessControllerInit(this);
   }
 
   @override
   void dispose() {
+    // 释放动画控制器
+    _playController.playVPlayBtnProcessController.dispose();
     super.dispose();
   }
 

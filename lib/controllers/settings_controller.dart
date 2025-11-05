@@ -260,4 +260,15 @@ class SettingsController extends GetxController {
       settings[windowsWindowIsMaximized] = false;
     }
   }
+
+  static const String playButtonRotationCurveKey = 'play_button_rotation_curve';
+  static const String playVPlayBtnProcessControllerDurationKey =
+      'play_v_play_btn_process_controller_duration';
+  int get playVPlayBtnProcessControllerDuration {
+    return settings[playVPlayBtnProcessControllerDurationKey] ?? 8280;
+  }
+
+  set playVPlayBtnProcessControllerDuration(int value) {
+    settings[playVPlayBtnProcessControllerDurationKey] = value;
+  }
 }

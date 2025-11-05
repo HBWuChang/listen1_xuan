@@ -190,7 +190,25 @@ Widget buildPlayPauseButton(double expandProgress) {
                 final position =
                     mediaState?.position.inMilliseconds.toDouble() ?? 0.0;
                 final progress = (position / duration).clamp(0.0, 1.0);
-                return CircularProgressIndicator(value: progress);
+
+                // 使用 AnimatedBuilder 监听旋转动画控制器
+                return AnimatedBuilder(
+                  animation: _playController.playVPlayBtnProcessController,
+                  builder: (context, child) {
+                    // 应用选中的曲线
+                    final curvedValue = _playController.playButtonRotationCurveValue.transform(
+                      _playController.playVPlayBtnProcessController.value,
+                    );
+
+                    return Transform.rotate(
+                      angle: curvedValue * 2 * pi,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 8.w,
+                      ),
+                    );
+                  },
+                );
               },
             ),
           ),
