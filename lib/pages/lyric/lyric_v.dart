@@ -102,9 +102,9 @@ class _LyricVPageState extends State<LyricVPage> with TickerProviderStateMixin {
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 20),
         child: StreamBuilder<Duration>(
-          stream: AudioService.position,
+          stream: Get.find<PlayController>().music_player.positionStream,
           builder: (context, snapshot) {
-            final position = snapshot.data ?? Duration.zero;
+            final position = snapshot.data ?? Get.find<PlayController>().music_player.position;
 
             return LyricsReader(
               padding: EdgeInsets.symmetric(horizontal: 20),

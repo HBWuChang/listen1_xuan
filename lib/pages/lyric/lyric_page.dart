@@ -15,6 +15,7 @@ import 'package:extended_image/extended_image.dart';
 
 import '../../global_settings_animations.dart';
 part 'lyric_v.dart';
+
 class LyricPage extends StatefulWidget {
   @override
   _LyricPageState createState() => _LyricPageState();
@@ -40,7 +41,9 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
     lyricController = Get.find<LyricController>();
     playController = Get.find<PlayController>();
     settingsController = Get.find<SettingsController>();
-    WidgetsBinding.instance.addPostFrameCallback((_) => lyricController.loadLyric());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => lyricController.loadLyric(),
+    );
 
     _backgroundController = AnimationController(
       duration: Duration(milliseconds: 500),
@@ -96,8 +99,9 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
                   // 前景内容
                   Container(
                     decoration: BoxDecoration(
-                      color: theme.scaffoldBackgroundColor
-                          .withOpacity(isDark ? 0.15 : 0.25),
+                      color: theme.scaffoldBackgroundColor.withOpacity(
+                        isDark ? 0.15 : 0.25,
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -155,33 +159,35 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              ExtendedImage.network(currentSong.img_url ?? '',
-                  fit: BoxFit.cover,
-                  cache: true,
-                  cacheMaxAge: const Duration(days: 365 * 4),
-                  loadStateChanged: (state) {
-                if (state.extendedImageLoadState == LoadState.failed) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Theme.of(context).primaryColor.withOpacity(0.3),
-                          Theme.of(context).scaffoldBackgroundColor,
-                        ],
+              ExtendedImage.network(
+                currentSong.img_url ?? '',
+                fit: BoxFit.cover,
+                cache: true,
+                cacheMaxAge: const Duration(days: 365 * 4),
+                loadStateChanged: (state) {
+                  if (state.extendedImageLoadState == LoadState.failed) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Theme.of(context).primaryColor.withOpacity(0.3),
+                            Theme.of(context).scaffoldBackgroundColor,
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }
-              }),
+                    );
+                  }
+                },
+              ),
               // 高斯模糊效果
               BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                 child: Container(
-                  color: Theme.of(context)
-                      .scaffoldBackgroundColor
-                      .withOpacity(0.2),
+                  color: Theme.of(
+                    context,
+                  ).scaffoldBackgroundColor.withOpacity(0.2),
                 ),
               ),
             ],
@@ -194,7 +200,9 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 16, bottom: 16),
+        top: MediaQuery.of(context).padding.top + 16,
+        bottom: 16,
+      ),
       child: Row(
         children: [
           IconButton(
@@ -218,8 +226,8 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
                   Text(
                     currentSong?.title ?? '未知歌曲',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -228,12 +236,10 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
                   Text(
                     currentSong?.artist ?? '未知艺术家',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.color
-                              ?.withOpacity(0.7),
-                        ),
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                    ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -287,10 +293,11 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 20),
         child: StreamBuilder<Duration>(
-          stream: AudioService.position,
+          stream: Get.find<PlayController>().music_player.positionStream,
           builder: (context, snapshot) {
-            final position = snapshot.data ?? Duration.zero;
-
+            final position =
+                snapshot.data ??
+                Get.find<PlayController>().music_player.position;
             return LyricsReader(
               padding: EdgeInsets.symmetric(horizontal: 20),
               model: lyricController.lyricModel,
@@ -299,16 +306,14 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
               playing: playController.isplaying.value,
               size: Size(double.infinity, MediaQuery.of(context).size.height),
               emptyBuilder: () => Center(
-                child: Text(
-                  '暂无歌词',
-                  style: lyricUI.getOtherMainTextStyle(),
-                ),
+                child: Text('暂无歌词', style: lyricUI.getOtherMainTextStyle()),
               ),
               selectLineBuilder: (progress, confirm) {
                 return Container(
                   decoration: BoxDecoration(
-                    color:
-                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -391,11 +396,9 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
                         fontWeight: FontWeight.w600,
                         color: settingsController.showLyricTranslation.value
                             ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.color
-                                ?.withOpacity(0.6),
+                            : Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.color?.withOpacity(0.6),
                       ),
                     ),
                     SizedBox(width: 6),
@@ -450,14 +453,14 @@ class _ThemedUINetease extends UINetease {
     LyricAlign lyricAlign = LyricAlign.CENTER,
     HighlightDirection highlightDirection = HighlightDirection.LTR,
   }) : super(
-          defaultSize: defaultSize,
-          defaultExtSize: defaultExtSize,
-          otherMainSize: otherMainSize,
-          lineGap: lineGap,
-          inlineGap: inlineGap,
-          lyricAlign: lyricAlign,
-          highlightDirection: highlightDirection,
-        );
+         defaultSize: defaultSize,
+         defaultExtSize: defaultExtSize,
+         otherMainSize: otherMainSize,
+         lineGap: lineGap,
+         inlineGap: inlineGap,
+         lyricAlign: lyricAlign,
+         highlightDirection: highlightDirection,
+       );
 
   @override
   TextStyle getPlayingMainTextStyle() {
@@ -476,7 +479,7 @@ class _ThemedUINetease extends UINetease {
     return TextStyle(
       color:
           theme.textTheme.bodyLarge?.color?.withOpacity(isDark ? 0.8 : 0.7) ??
-              (isDark ? Colors.white70 : Colors.black54),
+          (isDark ? Colors.white70 : Colors.black54),
       fontSize: otherMainSize,
     );
   }
@@ -497,7 +500,7 @@ class _ThemedUINetease extends UINetease {
     return TextStyle(
       color:
           theme.textTheme.bodyMedium?.color?.withOpacity(isDark ? 0.6 : 0.5) ??
-              (isDark ? Colors.white60 : Colors.black45),
+          (isDark ? Colors.white60 : Colors.black45),
       fontSize: defaultExtSize,
     );
   }
