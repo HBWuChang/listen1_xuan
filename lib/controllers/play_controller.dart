@@ -143,7 +143,6 @@ class PlayController extends GetxController
 
     // 初始化播放按钮旋转动画控制器
     playVPlayBtnProcessControllerInit();
-
     androidEQEnabled =
         Get.find<SettingsController>().settings[androidEQEnabledKey] ?? false;
     if (is_windows || !androidEQEnabled) {
