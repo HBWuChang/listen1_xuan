@@ -7,6 +7,7 @@ import 'dart:ui';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:flutter_lyric/lyric_ui/ui_netease.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:smooth_sheets/smooth_sheets.dart';
 import '../../controllers/lyric_controller.dart';
 import '../../controllers/play_controller.dart';
 import '../../controllers/settings_controller.dart';

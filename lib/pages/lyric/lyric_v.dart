@@ -13,10 +13,6 @@ class _LyricVPageState extends State<LyricVPage> with TickerProviderStateMixin {
   // 歌词UI样式
   var lyricUI = UINetease();
 
-  // 背景颜色动画
-  late AnimationController _backgroundController;
-  late Animation<Color?> _backgroundAnimation;
-
   @override
   void initState() {
     super.initState();
@@ -28,24 +24,10 @@ class _LyricVPageState extends State<LyricVPage> with TickerProviderStateMixin {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => lyricController.loadLyric(),
     );
-
-    _backgroundController = AnimationController(
-      duration: Duration(milliseconds: 500),
-      vsync: this,
-    );
-  }
-
-  @override
-  void dispose() {
-    _backgroundController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     // 根据主题设置歌词UI样式
     lyricUI = _ThemedUINetease(
       defaultSize: 18,
@@ -58,12 +40,6 @@ class _LyricVPageState extends State<LyricVPage> with TickerProviderStateMixin {
       context: context,
     );
 
-    // 根据主题设置背景动画
-    _backgroundAnimation = ColorTween(
-      begin: theme.scaffoldBackgroundColor.withOpacity(0.3),
-      end: theme.scaffoldBackgroundColor.withOpacity(isDark ? 0.8 : 0.9),
-    ).animate(_backgroundController);
-
     return WillPopScope(
       onWillPop: () async {
         playController.sheetController.animateTo(
@@ -73,116 +49,18 @@ class _LyricVPageState extends State<LyricVPage> with TickerProviderStateMixin {
         );
         return false;
       },
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: AnimatedBuilder(
-          animation: _backgroundAnimation,
-          builder: (context, child) {
-            return Container(
-              color: _backgroundAnimation.value,
-              child: Stack(
-                children: [
-                  // 背景封面和高斯模糊
-                  _buildBackgroundCover(context),
-                  // 前景内容
-                  Container(
-                    decoration: BoxDecoration(
-                      color: theme.scaffoldBackgroundColor.withOpacity(
-                        isDark ? 0.15 : 0.25,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Expanded(child: _buildLyricContent()),
-                        _buildTranslationToggle(context),
-                        SizedBox(height: 500.w),
-                      ],
-                    ),
-                  ),
-                  // 翻译开关按钮
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBackgroundCover(BuildContext context) {
-    return Obx(() {
-      final currentSong = playController.currentTrack.id.isNotEmpty
-          ? playController.currentTrack
-          : null;
-
-      if (currentSong == null) {
-        return ClipRRect(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Theme.of(context).primaryColor.withOpacity(0.3),
-                  Theme.of(context).scaffoldBackgroundColor,
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-
-      return ClipRRect(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          child: Stack(
-            fit: StackFit.expand,
+      child: Stack(
+        children: [
+          Column(
             children: [
-              ExtendedImage.network(
-                currentSong.img_url ?? '',
-                fit: BoxFit.cover,
-                cache: true,
-                cacheMaxAge: const Duration(days: 365 * 4),
-                loadStateChanged: (state) {
-                  if (state.extendedImageLoadState == LoadState.failed) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Theme.of(context).primaryColor.withOpacity(0.3),
-                            Theme.of(context).scaffoldBackgroundColor,
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-              // 高斯模糊效果
-              BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: Container(
-                  color: Theme.of(
-                    context,
-                  ).scaffoldBackgroundColor.withOpacity(0.2),
-                ),
-              ),
+              Expanded(child: _buildLyricContent()),
+              _buildTranslationToggle(context),
+              IgnorePointer(child: SizedBox(height: 500.w)),
             ],
           ),
-        ),
-      );
-    });
+        ],
+      ),
+    );
   }
 
   Widget _buildLyricContent() {
@@ -369,5 +247,277 @@ class _LyricVPageState extends State<LyricVPage> with TickerProviderStateMixin {
         }),
       ),
     );
+  }
+}
+
+class LyricVBackPage extends StatefulWidget {
+  @override
+  _LyricVBackPageState createState() => _LyricVBackPageState();
+}
+
+class _LyricVBackPageState extends State<LyricVBackPage>
+    with TickerProviderStateMixin {
+  // 背景颜色动画
+  late AnimationController _backgroundController;
+  late Animation<Color?> _backgroundAnimation;
+  @override
+  void initState() {
+    super.initState();
+
+    _backgroundController = AnimationController(
+      duration: Duration(milliseconds: 500),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _backgroundController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // 根据主题设置背景动画
+    _backgroundAnimation = ColorTween(
+      begin: theme.scaffoldBackgroundColor.withOpacity(0.3),
+      end: theme.scaffoldBackgroundColor.withOpacity(isDark ? 0.8 : 0.9),
+    ).animate(_backgroundController);
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          AnimatedBuilder(
+            animation: _backgroundAnimation,
+            builder: (context, child) {
+              return Positioned.fill(
+                child: Container(color: _backgroundAnimation.value),
+              );
+            },
+          ), // 背景封面和高斯模糊
+          _buildBackgroundCover(context),
+          // 前景内容
+          Container(
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor.withOpacity(
+                isDark ? 0.15 : 0.25,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackgroundCover(BuildContext context) {
+    return Obx(() {
+      PlayController playController = Get.find<PlayController>();
+      final currentSong = playController.currentTrack.id.isNotEmpty
+          ? playController.currentTrack
+          : null;
+
+      if (currentSong == null) {
+        return ClipRRect(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Theme.of(context).primaryColor.withOpacity(0.3),
+                  Theme.of(context).scaffoldBackgroundColor,
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      return ClipRRect(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ExtendedImage.network(
+                currentSong.img_url ?? '',
+                fit: BoxFit.cover,
+                cache: true,
+                cacheMaxAge: const Duration(days: 365 * 4),
+                loadStateChanged: (state) {
+                  if (state.extendedImageLoadState == LoadState.failed) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Theme.of(context).primaryColor.withOpacity(0.3),
+                            Theme.of(context).scaffoldBackgroundColor,
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              // 高斯模糊效果
+              BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                child: Container(
+                  color: Theme.of(
+                    context,
+                  ).scaffoldBackgroundColor.withOpacity(0.2),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+}
+
+class SheetOffsetClip extends StatelessWidget {
+  final Widget child;
+  final bool type2;
+  PlayController _playController = Get.find<PlayController>();
+  SheetController get sheetController => _playController.sheetController;
+  late SheetOffsetDrivenAnimation ani = SheetOffsetDrivenAnimation(
+    controller: sheetController,
+    initialValue: 0,
+    startOffset: _playController.sheetMidOffset,
+    endOffset: _playController.playVMaxOffset,
+  );
+  SheetOffsetClip({required this.child, this.type2 = false});
+
+  double get maxOffset => _playController.playVMaxHeight;
+  double get minOffset => _playController.sheetMidHeight;
+  double get radius => 20.w;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: ani,
+      builder: (context, _) {
+        return ClipPath(
+          clipper: type2
+              ? MyClipper2(
+                  height: (maxOffset - minOffset) * (1 - ani.value),
+                  midHeight: minOffset * (1 - ani.value),
+                  radius: radius,
+                )
+              : MyClipper(
+                  height: (maxOffset - minOffset) * (1 - ani.value),
+                  radius: radius,
+                ),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+// 7. 自定义 Clipper 类
+// CustomClipper<Path> 告诉 Flutter 我们要裁剪的形状是一个 "Path"
+class MyClipper extends CustomClipper<Path> {
+  final double height;
+  final double radius;
+
+  MyClipper({required this.height, required this.radius});
+
+  @override
+  Path getClip(Size size) {
+    // getClip 方法返回一个 Path 对象
+    // 只有在这个 Path 内部的区域才会被显示
+
+    // 创建一个新路径
+    final path = Path();
+
+    // // 如果 "A" 被移除了 (例如，位置设为 null 或移出屏幕)
+    // // 我们可以返回一个空路径，这样 B 就完全不可见了
+    // // if (position == null) {
+    // //   return path; // 返回空路径，Stack变透明
+    // // }
+
+    // // 添加一个圆形路径，圆心在 "A" 的位置，半径为 _clipRadius
+    // path.addOval(Rect.fromCircle(center: height, radius: radius));
+    path.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, height, 1.sw, 1.sh - height),
+        Radius.circular(radius),
+      ),
+    );
+    return path;
+  }
+
+  // 8. 决定是否需要重新裁剪
+  // 当 "A" 的位置 (position) 改变时，我们需要重新计算裁剪区域
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) {
+    if (oldClipper is MyClipper) {
+      return oldClipper.height != height || oldClipper.radius != radius;
+    }
+    return true; // 如果类型不同，总是重新裁剪
+  }
+}
+
+// 7. 自定义 Clipper 类
+// CustomClipper<Path> 告诉 Flutter 我们要裁剪的形状是一个 "Path"
+class MyClipper2 extends CustomClipper<Path> {
+  final double height;
+  final double midHeight;
+  final double radius;
+
+  MyClipper2({
+    required this.height,
+    required this.midHeight,
+    required this.radius,
+  });
+
+  @override
+  Path getClip(Size size) {
+    // getClip 方法返回一个 Path 对象
+    // 只有在这个 Path 内部的区域才会被显示
+
+    // 创建一个新路径
+    final path = Path();
+
+    // // 如果 "A" 被移除了 (例如，位置设为 null 或移出屏幕)
+    // // 我们可以返回一个空路径，这样 B 就完全不可见了
+    // // if (position == null) {
+    // //   return path; // 返回空路径，Stack变透明
+    // // }
+
+    // // 添加一个圆形路径，圆心在 "A" 的位置，半径为 _clipRadius
+    // path.addOval(Rect.fromCircle(center: height, radius: radius));
+    path.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, height, 1.sw, 1.sh - height - midHeight),
+        Radius.circular(radius),
+      ),
+    );
+    return path;
+  }
+
+  // 8. 决定是否需要重新裁剪
+  // 当 "A" 的位置 (position) 改变时，我们需要重新计算裁剪区域
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) {
+    if (oldClipper is MyClipper) {
+      return oldClipper.height != height || oldClipper.radius != radius;
+    }
+    return true; // 如果类型不同，总是重新裁剪
   }
 }

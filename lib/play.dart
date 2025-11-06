@@ -42,8 +42,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:badges/badges.dart' as badges;
 
+import 'widgets/container_with_outer_shadow.dart';
+
 part 'pages/play/play_v.dart';
 part 'pages/play/play_v0.dart';
+part 'pages/play/play_v2.dart';
 part 'pages/play/play_h.dart';
 part 'pages/play/play_widgets.dart';
 
@@ -559,7 +562,7 @@ class _PlayState extends State<Play> {
         } else {
           Widget tW = widget.horizon
               ? SizedBox(height: 60, child: playH(widget.onPlaylistTap))
-              : playV;
+              : playV2;
           return tW;
         }
       },
