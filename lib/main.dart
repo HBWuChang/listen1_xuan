@@ -381,6 +381,16 @@ class MyApp extends StatelessWidget {
             },
             navigatorKey: navigatorKey,
             theme: theme,
+            //TODO 预测性返回功能待完善
+
+            // .copyWith(
+            //   pageTransitionsTheme: const PageTransitionsTheme(
+            //     builders: <TargetPlatform, PageTransitionsBuilder>{
+            //       TargetPlatform.android:
+            //           PredictiveBackPageTransitionsBuilder(),
+            //     },
+            //   ),
+            // )
             darkTheme: darkTheme,
             localizationsDelegates: [
               GlobalMaterialLocalizations.delegate,
@@ -1370,7 +1380,22 @@ class _MyHomePageState extends State<MyHomePage>
                       ],
                     ),
                   ),
-
+                  Positioned.fill(
+                    child: SafeArea(
+                      top: false,
+                      child: Align(
+                        alignment: Alignment.bottomRight,
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            bottom: globalHorizon ? 76 : 300.w,
+                            right: globalHorizon ? 16 : 40.w,
+                          ),
+                          child:
+                              WebSocketClientControlPanel.floatingActionButton,
+                        ),
+                      ),
+                    ),
+                  ),
                   Positioned.fill(
                     child: globalHorizon
                         ? Align(alignment: Alignment.bottomCenter, child: _play)

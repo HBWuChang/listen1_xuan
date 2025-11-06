@@ -122,8 +122,8 @@ Future<dynamic> song_dialog(
                         children: [
                           Flexible(
                             child: ListTile(
-                                title: Text('发送到被控端'),
-                                onTap: () {
+                              title: Text('发送到被控端'),
+                              onTap: () {
                                 WebSocketClientHelper.sendTrack(track);
                                 Navigator.of(context).pop();
                                 WebSocketClientHelper.showControlPanel();
@@ -273,7 +273,11 @@ Future<dynamic> song_dialog(
               ListTile(
                 title: Text('删除本地缓存'),
                 onTap: () async {
-                  if(!await showConfirmDialog('删除本地缓存？', '此操作不可恢复',confirmLevel: ConfirmLevel.danger)) {
+                  if (!await showConfirmDialog(
+                    '删除本地缓存？',
+                    '此操作不可恢复',
+                    confirmLevel: ConfirmLevel.danger,
+                  )) {
                     return;
                   }
                   await clean_local_cache(false, track.id);
@@ -900,14 +904,16 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
           'info': {'id': widget.listId},
         });
       }
-      setState(() {
-        tracks = result.tracks ?? [];
-        _unfilteredTracks = tracks;
-        _loading = false;
-        if (result.info.title == null) {
-          _loadfailed = true;
-        }
-      });
+      if (mounted) {
+        setState(() {
+          tracks = result.tracks ?? [];
+          _unfilteredTracks = tracks;
+          _loading = false;
+          if (result.info.title == null) {
+            _loadfailed = true;
+          }
+        });
+      }
     });
   }
 
