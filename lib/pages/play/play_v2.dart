@@ -53,7 +53,9 @@ Widget get playV2 => LayoutBuilder(
                     clipBehavior: Clip.none,
                     decoration: BoxDecoration(
                       color: _playController.showPlayVInlineLyricOp.value
-                          ? Colors.transparent
+                          ? AdaptiveTheme.of(
+                              Get.context!,
+                            ).theme.cardColor.withAlpha(0)
                           : AdaptiveTheme.of(Get.context!).theme.cardColor,
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(16),

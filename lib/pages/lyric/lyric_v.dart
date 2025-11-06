@@ -257,46 +257,15 @@ class LyricVBackPage extends StatefulWidget {
 
 class _LyricVBackPageState extends State<LyricVBackPage>
     with TickerProviderStateMixin {
-  // 背景颜色动画
-  late AnimationController _backgroundController;
-  late Animation<Color?> _backgroundAnimation;
-  @override
-  void initState() {
-    super.initState();
-
-    _backgroundController = AnimationController(
-      duration: Duration(milliseconds: 500),
-      vsync: this,
-    );
-  }
-
-  @override
-  void dispose() {
-    _backgroundController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // 根据主题设置背景动画
-    _backgroundAnimation = ColorTween(
-      begin: theme.scaffoldBackgroundColor.withOpacity(0.3),
-      end: theme.scaffoldBackgroundColor.withOpacity(isDark ? 0.8 : 0.9),
-    ).animate(_backgroundController);
     return IgnorePointer(
       child: Stack(
         children: [
-          AnimatedBuilder(
-            animation: _backgroundAnimation,
-            builder: (context, child) {
-              return Positioned.fill(
-                child: Container(color: _backgroundAnimation.value),
-              );
-            },
-          ), // 背景封面和高斯模糊
+          // 背景封面和高斯模糊
           _buildBackgroundCover(context),
           // 前景内容
           Container(
