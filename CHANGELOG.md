@@ -36,6 +36,7 @@
           itemCount: playingList.length,
     ~~~
   - 添加优化wintaskbar异常捕获
+  - 优化竖屏歌词性能--stack三明治+ClipPath代替直接放到sheet中
 
 
 ---
