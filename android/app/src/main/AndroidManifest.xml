@@ -25,6 +25,14 @@
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme"
             />
+            <meta-data
+                android:name="app_description_title"
+                android:resource="@string/uninstall_title"
+            />
+            <meta-data
+                android:name="app_description_content"
+                android:resource="@string/uninstall_content"
+            />
             <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

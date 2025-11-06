@@ -25,6 +25,7 @@ class AudioHandlerController extends GetxController {
         androidNotificationChannelName: '音频播放',
         androidNotificationOngoing: false,
         androidStopForegroundOnPause: false,
+        androidNotificationIcon: 'mipmap/launcher_icon',
       ),
       cacheManager: null,
     );
