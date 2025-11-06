@@ -81,7 +81,7 @@ Widget buildSongInfo({
     Offset movePos = details.globalPosition - _dragStartDetails!.globalPosition;
     if (movePos.dx.abs() < movePos.dy.abs()) return;
     if (!is_windows) Vibration.vibrate(duration: 100);
-    if (movePos.dx > 0) {
+    if (movePos.dx < 0) {
       global_skipToNext();
     } else {
       global_skipToPrevious();
