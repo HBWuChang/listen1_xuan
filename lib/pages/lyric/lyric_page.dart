@@ -182,12 +182,17 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
                 },
               ),
               // 高斯模糊效果
-              BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: Container(
-                  color: Theme.of(
-                    context,
-                  ).scaffoldBackgroundColor.withOpacity(0.2),
+              Obx(
+                () => BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: settingsController.lyricBackgroundBlurRadius,
+                    sigmaY: settingsController.lyricBackgroundBlurRadius,
+                  ),
+                  child: Container(
+                    color: Theme.of(
+                      context,
+                    ).scaffoldBackgroundColor.withOpacity(0.2),
+                  ),
                 ),
               ),
             ],

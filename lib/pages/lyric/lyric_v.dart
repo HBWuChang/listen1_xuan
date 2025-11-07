@@ -104,7 +104,9 @@ class _LyricVPageState extends State<LyricVPage> with TickerProviderStateMixin {
         child: StreamBuilder<Duration>(
           stream: Get.find<PlayController>().music_player.positionStream,
           builder: (context, snapshot) {
-            final position = snapshot.data ?? Get.find<PlayController>().music_player.position;
+            final position =
+                snapshot.data ??
+                Get.find<PlayController>().music_player.position;
 
             return LyricsReader(
               padding: EdgeInsets.symmetric(horizontal: 20),
@@ -258,6 +260,7 @@ class LyricVBackPage extends StatefulWidget {
 class _LyricVBackPageState extends State<LyricVBackPage>
     with TickerProviderStateMixin {
   @override
+  SettingsController settingsController = Get.find<SettingsController>();
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -342,12 +345,17 @@ class _LyricVBackPageState extends State<LyricVBackPage>
                 },
               ),
               // 高斯模糊效果
-              BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: Container(
-                  color: Theme.of(
-                    context,
-                  ).scaffoldBackgroundColor.withOpacity(0.2),
+              Obx(
+                () => BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: settingsController.lyricBackgroundBlurRadius,
+                    sigmaY: settingsController.lyricBackgroundBlurRadius,
+                  ),
+                  child: Container(
+                    color: Theme.of(
+                      context,
+                    ).scaffoldBackgroundColor.withOpacity(0.2),
+                  ),
                 ),
               ),
             ],

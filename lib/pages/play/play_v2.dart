@@ -355,10 +355,13 @@ Widget get playV2 => LayoutBuilder(
                                           left: infoLeft,
                                           right: infoRight,
                                           top: infoTop,
-                                          child: buildSongInfo(
-                                            titleSize: titleSize,
-                                            artistSize: artistSize,
+                                          child: withDragDetector(
                                             isCollapsed: expandProgress < 0.5,
+                                            child: buildSongInfo(
+                                              titleSize: titleSize,
+                                              artistSize: artistSize,
+                                              isCollapsed: expandProgress < 0.5,
+                                            ),
                                           ),
                                         ),
 
@@ -367,40 +370,43 @@ Widget get playV2 => LayoutBuilder(
                                           left: controlLeft,
                                           top: controlTop,
                                           width: controlWidth,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              SizedBoxWithOverflow.processMaxSizeDir(
-                                                maxSize: controlButtonSize,
-                                                process: expandProgress,
-                                                child: showVolumeSliderBtn,
-                                              ),
-                                              SizedBoxWithOverflow.processMaxSizeDir(
-                                                maxSize: controlButtonSize,
-                                                process: expandProgress,
-                                                child: playModeButton,
-                                              ),
-                                              SizedBoxWithOverflow.processMaxSizeDir(
-                                                maxSize: controlButtonSize,
-                                                process: expandProgress,
-                                                child: buildPreviousButton(),
-                                              ),
-                                              buildPlayPauseButton(
-                                                expandProgress,
-                                              ),
-                                              SizedBoxWithOverflow.processMaxSizeDir(
-                                                maxSize: controlButtonSize,
-                                                process: expandProgress,
-                                                child: buildNextButton(),
-                                              ),
-                                              buildPlaylistButton,
-                                              SizedBoxWithOverflow.processMaxSizeDir(
-                                                maxSize: controlButtonSize,
-                                                process: expandProgress,
-                                                child: songDialogBtn,
-                                              ),
-                                            ],
+                                          child: withDragDetector(
+                                            isCollapsed: expandProgress < 0.5,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                SizedBoxWithOverflow.processMaxSizeDir(
+                                                  maxSize: controlButtonSize,
+                                                  process: expandProgress,
+                                                  child: showVolumeSliderBtn,
+                                                ),
+                                                SizedBoxWithOverflow.processMaxSizeDir(
+                                                  maxSize: controlButtonSize,
+                                                  process: expandProgress,
+                                                  child: playModeButton,
+                                                ),
+                                                SizedBoxWithOverflow.processMaxSizeDir(
+                                                  maxSize: controlButtonSize,
+                                                  process: expandProgress,
+                                                  child: buildPreviousButton(),
+                                                ),
+                                                buildPlayPauseButton(
+                                                  expandProgress,
+                                                ),
+                                                SizedBoxWithOverflow.processMaxSizeDir(
+                                                  maxSize: controlButtonSize,
+                                                  process: expandProgress,
+                                                  child: buildNextButton(),
+                                                ),
+                                                buildPlaylistButton,
+                                                SizedBoxWithOverflow.processMaxSizeDir(
+                                                  maxSize: controlButtonSize,
+                                                  process: expandProgress,
+                                                  child: songDialogBtn,
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
 

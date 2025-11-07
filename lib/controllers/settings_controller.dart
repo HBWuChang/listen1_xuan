@@ -29,6 +29,12 @@ class SettingsController extends GetxController {
     settings['tryShowLyricInNotification'] = value;
   }
 
+  double get lyricBackgroundBlurRadius =>
+      settings['lyricBackgroundBlurRadius'] ?? 10.0;
+  set lyricBackgroundBlurRadius(double value) {
+    settings['lyricBackgroundBlurRadius'] = value;
+  }
+
   var showLyricTranslation = true.obs; // 歌词翻译显示设置
   // var hideOrMinimize = false.obs;
   bool get hideOrMinimize => settings['hideOrMinimize'] ?? false;

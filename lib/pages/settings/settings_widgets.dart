@@ -581,5 +581,34 @@ Widget get themeSettingsTiles => Column(
         Get.find<PlayController>().playButtonRotationCurve.value = res!;
       },
     ),
+    ListTile(
+      leading: Icon(Icons.blur_on),
+      title: Text('歌词背景高斯模糊距离'),
+      subtitle: Obx(() {
+        return Text(
+          Get.find<SettingsController>().lyricBackgroundBlurRadius.toString(),
+        );
+      }),
+      onTap: () async {
+        await showInputDialog(
+          title: '歌词背景高斯模糊距离',
+          message: '数值越大,模糊效果越明显,但性能消耗也越大\n建议不超过15',
+          initialValue: Get.find<SettingsController>().lyricBackgroundBlurRadius
+              .toString(),
+          onConfirm: (value) async {
+            if (isEmpty(value)) return false;
+            double? intValue = double.tryParse(value);
+            if (intValue == null || intValue < 0) {
+              throw '请输入有效的数值';
+            }
+            Get.find<SettingsController>().lyricBackgroundBlurRadius = intValue
+                .toDouble();
+            showSuccessSnackbar('设置成功', null);
+            return true;
+          },
+          keyboardType: TextInputType.number,
+        );
+      },
+    ),
   ],
 );

@@ -35,133 +35,137 @@ Widget buildCoverImage(double size, {double? borderRadius}) {
 }
 
 DragStartDetails? _dragStartDetails;
+Widget withDragDetector({required Widget child, required bool isCollapsed}) {
+  return Builder(
+    builder: (context) => GestureDetector(
+      onTapDown: (TapDownDetails details) {
+        position = details.globalPosition;
+      },
+      onTap: () => _onTap(context),
+      onDoubleTap: _onDoubleTap,
+      onLongPress: isCollapsed ? _onLongPress : null,
+      onHorizontalDragStart: (details) {
+        _dragStartDetails = details;
+      },
+      onHorizontalDragEnd: _onHorizontalDragEnd,
+      child: child,
+    ),
+  );
+}
+
+Future<void> _onTap(BuildContext context) async {
+  if (!globalHorizon) {
+    main_showVolumeSlider();
+  }
+  final track = await getnowplayingsong();
+  var ret = await song_dialog(
+    context,
+    track['track'],
+    change_main_status: onPlaylistTap,
+    position: position,
+  );
+  if (ret != null) {
+    if (ret["push"] != null) {
+      Get.toNamed(
+        ret["push"],
+        arguments: {'listId': ret["push"], 'is_my': false},
+        id: 1,
+      );
+    }
+  }
+}
+
+Future<void> _onDoubleTap() async {
+  if (!is_windows) Vibration.vibrate(duration: 100);
+  if (Get.find<PlayController>().music_player.playing) {
+    global_pause();
+  } else {
+    global_play();
+  }
+}
+
+void _onLongPress() {
+  if (!is_windows) Vibration.vibrate(duration: 100);
+  global_change_play_mode();
+}
+
+void _onHorizontalDragEnd(DragEndDetails details) {
+  Offset movePos = details.globalPosition - _dragStartDetails!.globalPosition;
+  if (movePos.dx.abs() < movePos.dy.abs()) return;
+  if (!is_windows) Vibration.vibrate(duration: 100);
+  if (movePos.dx < 0) {
+    global_skipToNext();
+  } else {
+    global_skipToPrevious();
+  }
+}
+
 // 歌曲信息组件
 Widget buildSongInfo({
   required double titleSize,
   required double artistSize,
   required bool isCollapsed,
 }) {
-  Future<void> onTap(BuildContext context) async {
-    if (!globalHorizon) {
-      main_showVolumeSlider();
-    }
-    final track = await getnowplayingsong();
-    var ret = await song_dialog(
-      context,
-      track['track'],
-      change_main_status: onPlaylistTap,
-      position: position,
-    );
-    if (ret != null) {
-      if (ret["push"] != null) {
-        Get.toNamed(
-          ret["push"],
-          arguments: {'listId': ret["push"], 'is_my': false},
-          id: 1,
-        );
-      }
-    }
-  }
-
-  Future<void> onDoubleTap() async {
-    if (!is_windows) Vibration.vibrate(duration: 100);
-    if (Get.find<PlayController>().music_player.playing) {
-      global_pause();
-    } else {
-      global_play();
-    }
-  }
-
-  void onLongPress() {
-    if (!is_windows) Vibration.vibrate(duration: 100);
-    global_change_play_mode();
-  }
-
-  void onHorizontalDragEnd(DragEndDetails details) {
-    Offset movePos = details.globalPosition - _dragStartDetails!.globalPosition;
-    if (movePos.dx.abs() < movePos.dy.abs()) return;
-    if (!is_windows) Vibration.vibrate(duration: 100);
-    if (movePos.dx < 0) {
-      global_skipToNext();
-    } else {
-      global_skipToPrevious();
-    }
-  }
-
-  return Builder(
-    builder: (context) => GestureDetector(
-      onTapDown: (TapDownDetails details) {
-        position = details.globalPosition;
-      },
-      onTap: () => onTap(context),
-      onDoubleTap: onDoubleTap,
-      onLongPress: isCollapsed ? onLongPress : null,
-      onHorizontalDragStart: (details) {
-        _dragStartDetails = details;
-      },
-      onHorizontalDragEnd: onHorizontalDragEnd,
-      child: StreamBuilder<MediaItem?>(
-        stream: Get.find<AudioHandlerController>().audioHandler.mediaItem,
-        builder: (context, snapshot) {
-          final mediaItem = snapshot.data;
-          return Container(
-            color: Colors.transparent,
-            padding: EdgeInsets.only(bottom: 20.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isCollapsed)
-                  Text(
-                    mediaItem?.title ?? '未播放',
-                    style: TextStyle(
-                      fontSize: titleSize,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                else
-                  SelectableText(
-                    mediaItem?.title ?? '未播放',
-                    style: TextStyle(
-                      fontSize: titleSize,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    onTap: () => onTap(context),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                  ),
-                SizedBox(height: 4),
-                if (isCollapsed)
-                  Text(
-                    mediaItem?.artist ?? '',
-                    style: TextStyle(
-                      fontSize: artistSize,
-                      color: Get.theme.textTheme.bodySmall?.color,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                else
-                  SelectableText(
-                    mediaItem?.artist ?? '',
-                    style: TextStyle(
-                      fontSize: artistSize,
-                      color: Get.theme.textTheme.bodySmall?.color,
-                    ),
-                    onTap: () => onTap(context),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                  ),
-              ],
-            ),
-          );
-        },
-      ),
-    ),
+  return StreamBuilder<MediaItem?>(
+    stream: Get.find<AudioHandlerController>().audioHandler.mediaItem,
+    builder: (context, snapshot) {
+      final mediaItem = snapshot.data;
+      return Container(
+        color: Colors.transparent,
+        padding: EdgeInsets.only(bottom: 20.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isCollapsed)
+              Text(
+                mediaItem?.title ?? '未播放',
+                style: TextStyle(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            else
+              SelectableText(
+                mediaItem?.title ?? '未播放',
+                style: TextStyle(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.bold,
+                ),
+                onTap: () => _onTap(context),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+              ),
+            SizedBox(height: 4),
+            if (isCollapsed)
+              Text(
+                mediaItem?.artist ?? '',
+                style: TextStyle(
+                  fontSize: artistSize,
+                  color: Get.theme.textTheme.bodySmall?.color,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            else
+              SelectableText(
+                mediaItem?.artist ?? '',
+                style: TextStyle(
+                  fontSize: artistSize,
+                  color: Get.theme.textTheme.bodySmall?.color,
+                ),
+                onTap: () => _onTap(context),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+              ),
+          ],
+        ),
+      );
+    },
   );
 }
 
