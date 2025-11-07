@@ -32,7 +32,8 @@ flutter version 3.32.1
 # TODO
 - [x] 从WebSocket服务器下载缓存文件（连接服务器后在设置页面可进入
 - [x] [小米手势条适配](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=1629)
-- [ ] 安卓添加EQ音效调节功能
+- [x] 安卓添加EQ音效调节功能
+- [ ] 主题颜色根据歌曲变化
 - [ ] @piano弱音
   - [x] 适配一下安卓Material You的自动配色
     - [x] (应用运行过程中壁纸变化自动更新颜色)

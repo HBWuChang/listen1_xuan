@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:flutter_lyric/lyrics_reader_widget.dart';
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:flutter_lyric/lyric_ui/ui_netease.dart';
-import 'package:audio_service/audio_service.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import '../../controllers/lyric_controller.dart';
 import '../../controllers/play_controller.dart';
@@ -15,13 +14,15 @@ import 'package:extended_image/extended_image.dart';
 
 import '../../global_settings_animations.dart';
 part 'lyric_v.dart';
+part 'lyric_shared.dart';
 
 class LyricPage extends StatefulWidget {
   @override
   _LyricPageState createState() => _LyricPageState();
 }
 
-class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
+class _LyricPageState extends State<LyricPage>
+    with TickerProviderStateMixin, LyricBlurredBackgroundMixin, LyricFormattingMixin {
   late LyricController lyricController;
   late PlayController playController;
   late SettingsController settingsController;
@@ -156,46 +157,11 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
         child: Container(
           width: double.infinity,
           height: double.infinity,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ExtendedImage.network(
-                currentSong.img_url ?? '',
-                fit: BoxFit.cover,
-                cache: true,
-                cacheMaxAge: const Duration(days: 365 * 4),
-                loadStateChanged: (state) {
-                  if (state.extendedImageLoadState == LoadState.failed) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Theme.of(context).primaryColor.withOpacity(0.3),
-                            Theme.of(context).scaffoldBackgroundColor,
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-              // 高斯模糊效果
-              Obx(
-                () => BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: settingsController.lyricBackgroundBlurRadius,
-                    sigmaY: settingsController.lyricBackgroundBlurRadius,
-                  ),
-                  child: Container(
-                    color: Theme.of(
-                      context,
-                    ).scaffoldBackgroundColor.withOpacity(0.2),
-                  ),
-                ),
-              ),
-            ],
+          child: Obx(
+            () => buildBlurredImage(
+              currentSong.img_url ?? '',
+              settingsController.lyricBackgroundBlurRadius,
+            ),
           ),
         ),
       );
@@ -326,7 +292,7 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '跳转到: ${_formatDuration(Duration(milliseconds: progress))}',
+                        '跳转到: ${formatDuration(Duration(milliseconds: progress))}',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
@@ -354,13 +320,6 @@ class _LyricPageState extends State<LyricPage> with TickerProviderStateMixin {
         ),
       );
     });
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$twoDigitMinutes:$twoDigitSeconds';
   }
 
   Widget _buildTranslationToggle(BuildContext context) {

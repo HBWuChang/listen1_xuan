@@ -5,7 +5,8 @@ class LyricVPage extends StatefulWidget {
   _LyricVPageState createState() => _LyricVPageState();
 }
 
-class _LyricVPageState extends State<LyricVPage> with TickerProviderStateMixin {
+class _LyricVPageState extends State<LyricVPage>
+    with TickerProviderStateMixin, LyricFormattingMixin {
   late LyricController lyricController;
   late PlayController playController;
   late SettingsController settingsController;
@@ -131,7 +132,7 @@ class _LyricVPageState extends State<LyricVPage> with TickerProviderStateMixin {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '跳转到: ${_formatDuration(Duration(milliseconds: progress))}',
+                        '跳转到: ${formatDuration(Duration(milliseconds: progress))}',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
@@ -159,13 +160,6 @@ class _LyricVPageState extends State<LyricVPage> with TickerProviderStateMixin {
         ),
       );
     });
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$twoDigitMinutes:$twoDigitSeconds';
   }
 
   Widget _buildTranslationToggle(BuildContext context) {
@@ -258,9 +252,9 @@ class LyricVBackPage extends StatefulWidget {
 }
 
 class _LyricVBackPageState extends State<LyricVBackPage>
-    with TickerProviderStateMixin {
-  @override
+    with TickerProviderStateMixin, LyricBlurredBackgroundMixin {
   SettingsController settingsController = Get.find<SettingsController>();
+
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -319,46 +313,12 @@ class _LyricVBackPageState extends State<LyricVBackPage>
         child: Container(
           width: double.infinity,
           height: double.infinity,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ExtendedImage.network(
-                currentSong.img_url ?? '',
-                fit: BoxFit.cover,
-                cache: true,
-                cacheMaxAge: const Duration(days: 365 * 4),
-                loadStateChanged: (state) {
-                  if (state.extendedImageLoadState == LoadState.failed) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Theme.of(context).primaryColor.withOpacity(0.3),
-                            Theme.of(context).scaffoldBackgroundColor,
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-              // 高斯模糊效果
-              Obx(
-                () => BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: settingsController.lyricBackgroundBlurRadius,
-                    sigmaY: settingsController.lyricBackgroundBlurRadius,
-                  ),
-                  child: Container(
-                    color: Theme.of(
-                      context,
-                    ).scaffoldBackgroundColor.withOpacity(0.2),
-                  ),
-                ),
-              ),
-            ],
+          color: Get.theme.scaffoldBackgroundColor,
+          child: Obx(
+            () => buildBlurredImage(
+              currentSong.img_url ?? '',
+              settingsController.lyricBackgroundBlurRadius,
+            ),
           ),
         ),
       );
@@ -369,22 +329,23 @@ class _LyricVBackPageState extends State<LyricVBackPage>
 class SheetOffsetClip extends StatelessWidget {
   final Widget child;
   final bool type2;
-  PlayController _playController = Get.find<PlayController>();
-  SheetController get sheetController => _playController.sheetController;
-  late SheetOffsetDrivenAnimation ani = SheetOffsetDrivenAnimation(
-    controller: sheetController,
-    initialValue: 0,
-    startOffset: _playController.sheetMidOffset,
-    endOffset: _playController.playVMaxOffset,
-  );
-  SheetOffsetClip({required this.child, this.type2 = false});
 
-  double get maxOffset => _playController.playVMaxHeight;
-  double get minOffset => _playController.sheetMidHeight;
-  double get radius => 20.w;
+  SheetOffsetClip({required this.child, this.type2 = false});
 
   @override
   Widget build(BuildContext context) {
+    final PlayController playController = Get.find<PlayController>();
+    final SheetController sheetController = playController.sheetController;
+    final SheetOffsetDrivenAnimation ani = SheetOffsetDrivenAnimation(
+      controller: sheetController,
+      initialValue: 0,
+      startOffset: playController.sheetMidOffset,
+      endOffset: playController.playVMaxOffset,
+    );
+
+    final double maxOffset = playController.playVMaxHeight;
+    final double minOffset = playController.sheetMidHeight;
+    final double radius = 20.w;
     return AnimatedBuilder(
       animation: ani,
       builder: (context, _) {
