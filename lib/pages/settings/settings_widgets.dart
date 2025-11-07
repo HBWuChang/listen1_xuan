@@ -592,7 +592,7 @@ Widget get themeSettingsTiles => Column(
       onTap: () async {
         await showInputDialog(
           title: '歌词背景高斯模糊距离',
-          message: '数值越大,模糊效果越明显,但性能消耗也越大\n建议不超过15',
+          message: '数值越大,模糊效果越明显',
           initialValue: Get.find<SettingsController>().lyricBackgroundBlurRadius
               .toString(),
           onConfirm: (value) async {

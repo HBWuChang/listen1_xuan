@@ -30,7 +30,7 @@ class SettingsController extends GetxController {
   }
 
   double get lyricBackgroundBlurRadius =>
-      settings['lyricBackgroundBlurRadius'] ?? 10.0;
+      settings['lyricBackgroundBlurRadius'] ?? (globalHorizon ? 20.0 : 10.0);
   set lyricBackgroundBlurRadius(double value) {
     settings['lyricBackgroundBlurRadius'] = value;
   }

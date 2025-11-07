@@ -43,6 +43,11 @@ mixin LyricBlurredBackgroundMixin<T extends StatefulWidget> on State<T> {
               // 第一次绘制：异步生成模糊图像
               _generateBlurredImage(image, blurRadius, cacheKey);
 
+              // 计算适配图像分辨率的模糊半径
+              // 基准：假设 1000px 宽度时使用原始模糊半径
+              final double scaleFactor = image.width / 1000.0;
+              final double adaptiveBlurRadius = blurRadius * scaleFactor;
+
               // 在等待预模糊图像时，使用临时 canvas 模糊方法
               // 保存 canvas 状态
               canvas.save();
@@ -52,8 +57,8 @@ mixin LyricBlurredBackgroundMixin<T extends StatefulWidget> on State<T> {
                 rect,
                 Paint()
                   ..imageFilter = ui.ImageFilter.blur(
-                    sigmaX: blurRadius,
-                    sigmaY: blurRadius,
+                    sigmaX: adaptiveBlurRadius,
+                    sigmaY: adaptiveBlurRadius,
                     tileMode: TileMode.clamp,
                   ),
               );
@@ -97,6 +102,11 @@ mixin LyricBlurredBackgroundMixin<T extends StatefulWidget> on State<T> {
       // 将处理分批进行，给 UI 线程喘息的机会
       await Future.delayed(Duration.zero);
 
+      // 计算适配图像分辨率的模糊半径
+      // 基准：假设 1000px 宽度时使用原始模糊半径
+      final double scaleFactor = originalImage.width / 1.sw;
+      final double adaptiveBlurRadius = blurRadius * scaleFactor;
+
       // 创建一个 PictureRecorder 来录制绘制操作
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
@@ -104,8 +114,8 @@ mixin LyricBlurredBackgroundMixin<T extends StatefulWidget> on State<T> {
       // 应用模糊滤镜并绘制图像
       final paint = Paint()
         ..imageFilter = ui.ImageFilter.blur(
-          sigmaX: blurRadius,
-          sigmaY: blurRadius,
+          sigmaX: adaptiveBlurRadius,
+          sigmaY: adaptiveBlurRadius,
           tileMode: TileMode.clamp,
         );
 
