@@ -229,7 +229,7 @@ class LyricController extends GetxController {
 
   /// 更新当前显示的歌词
   void _updateCurrentLyric(Duration position) {
-    if (lyricModel == null) return;
+    if (lyricModel == null || lyricModel?.lyrics.isEmpty == true) return;
     LyricsLineModel? line =
         lyricModel?.lyrics[lyricModel!.getCurrentLine(position.inMilliseconds)];
     // debugPrint('更新歌词: ${formatShowLyric(line)}');

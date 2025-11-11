@@ -287,8 +287,8 @@ class _LyricVBackPageState extends State<LyricVBackPage>
       if (currentSong == null) {
         return ClipRRect(
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+            topLeft: Radius.circular(lyricBorderRadius),
+            topRight: Radius.circular(lyricBorderRadius),
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -307,8 +307,8 @@ class _LyricVBackPageState extends State<LyricVBackPage>
 
       return ClipRRect(
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+          topLeft: Radius.circular(lyricBorderRadius),
+          topRight: Radius.circular(lyricBorderRadius),
         ),
         child: Container(
           width: double.infinity,
@@ -345,10 +345,13 @@ class SheetOffsetClip extends StatelessWidget {
 
     final double maxOffset = playController.playVMaxHeight;
     final double minOffset = playController.sheetMidHeight;
-    final double radius = 20.w;
+    final double radius = lyricBorderRadius;
     return AnimatedBuilder(
       animation: ani,
       builder: (context, _) {
+        if (ani.value < 0.1) {
+          return SizedBox.shrink();
+        }
         return ClipPath(
           clipper: type2
               ? MyClipper2(

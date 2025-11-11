@@ -23,6 +23,7 @@ import 'package:marquee/marquee.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:window_manager/window_manager.dart';
+import 'const.dart';
 import 'controllers/audioHandler_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/lyric_controller.dart';

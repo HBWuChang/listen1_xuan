@@ -58,8 +58,8 @@ Widget get playV2 => LayoutBuilder(
                             ).theme.cardColor.withAlpha(0)
                           : AdaptiveTheme.of(Get.context!).theme.cardColor,
                       borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
+                        topLeft: Radius.circular(lyricBorderRadius),
+                        topRight: Radius.circular(lyricBorderRadius),
                       ),
                     ),
                     child: NotificationListener<SheetNotification>(
@@ -105,12 +105,6 @@ Widget get playV2 => LayoutBuilder(
                                   true;
                             } else {
                               _playController.showPlayVInlineLyricOp.value =
-                                  false;
-                            }
-                            if (expandAnimationStage2.value <= 0.1) {
-                              _playController
-                                      .showPlayVInlineLyricVisible
-                                      .value =
                                   false;
                             }
                           });
@@ -298,7 +292,7 @@ Widget get playV2 => LayoutBuilder(
                                           child: ClipPath(
                                             clipper: InvertedRectClipper(
                                               borderRadius: BorderRadius.all(
-                                                Radius.circular(16),
+                                                Radius.circular(lyricBorderRadius),
                                               ),
                                             ),
                                             child: Container(
@@ -313,7 +307,7 @@ Widget get playV2 => LayoutBuilder(
                                                   ),
                                                 ],
                                                 borderRadius: BorderRadius.all(
-                                                  Radius.circular(16),
+                                                  Radius.circular(lyricBorderRadius),
                                                 ),
                                               ),
                                             ),

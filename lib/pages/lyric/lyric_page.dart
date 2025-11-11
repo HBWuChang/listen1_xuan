@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:flutter_lyric/lyric_ui/ui_netease.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
+import '../../const.dart';
 import '../../controllers/lyric_controller.dart';
 import '../../controllers/play_controller.dart';
 import '../../controllers/settings_controller.dart';
@@ -22,7 +23,10 @@ class LyricPage extends StatefulWidget {
 }
 
 class _LyricPageState extends State<LyricPage>
-    with TickerProviderStateMixin, LyricBlurredBackgroundMixin, LyricFormattingMixin {
+    with
+        TickerProviderStateMixin,
+        LyricBlurredBackgroundMixin,
+        LyricFormattingMixin {
   late LyricController lyricController;
   late PlayController playController;
   late SettingsController settingsController;
@@ -131,8 +135,8 @@ class _LyricPageState extends State<LyricPage>
       if (currentSong == null) {
         return ClipRRect(
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+            topLeft: Radius.circular(lyricBorderRadius),
+            topRight: Radius.circular(lyricBorderRadius),
           ),
           child: Container(
             decoration: BoxDecoration(
