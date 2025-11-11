@@ -107,6 +107,12 @@ Widget get playV2 => LayoutBuilder(
                               _playController.showPlayVInlineLyricOp.value =
                                   false;
                             }
+                            if (expandAnimationStage2.value <= 0.1) {
+                              _playController
+                                      .showPlayVInlineLyricVisible
+                                      .value =
+                                  false;
+                            }
                           });
                           return
                           // 封面和信息区域 - 使用 Stack 和 AnimatedPositioned 实现位置过渡
