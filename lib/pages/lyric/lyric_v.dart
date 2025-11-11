@@ -349,9 +349,6 @@ class SheetOffsetClip extends StatelessWidget {
     return AnimatedBuilder(
       animation: ani,
       builder: (context, _) {
-        if (ani.value < 0.1) {
-          return SizedBox.shrink();
-        }
         return ClipPath(
           clipper: type2
               ? MyClipper2(
@@ -363,7 +360,13 @@ class SheetOffsetClip extends StatelessWidget {
                   height: (maxOffset - minOffset) * (1 - ani.value),
                   radius: radius,
                 ),
-          child: child,
+          child: ani.value < 0.01
+              ? Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: AdaptiveTheme.of(Get.context!).theme.cardColor,
+                )
+              : child,
         );
       },
     );
