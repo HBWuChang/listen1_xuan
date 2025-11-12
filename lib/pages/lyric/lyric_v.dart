@@ -339,12 +339,12 @@ class SheetOffsetClip extends StatelessWidget {
     final SheetOffsetDrivenAnimation ani = SheetOffsetDrivenAnimation(
       controller: sheetController,
       initialValue: 0,
-      startOffset: playController.sheetMidOffset,
+      startOffset: playController.sheetMinOffset,
       endOffset: playController.playVMaxOffset,
     );
 
     final double maxOffset = playController.playVMaxHeight;
-    final double minOffset = playController.sheetMidHeight;
+    final double minOffset = playController.sheetMinHeight;
     final double radius = lyricBorderRadius;
     return AnimatedBuilder(
       animation: ani,
