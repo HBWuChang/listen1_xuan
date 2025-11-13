@@ -134,7 +134,6 @@ mixin LyricBlurredBackgroundMixin<T extends StatefulWidget> on State<T> {
 
       // 结束录制并生成图片
       final picture = recorder.endRecording();
-
       // 让出控制权，避免长时间占用
       await Future.delayed(Duration.zero);
 
