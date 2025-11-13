@@ -192,23 +192,30 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
           },
         ),
         Obx(
-          () => SizedBox(
-            width: 30,
-            height: 30,
-            child: Stack(
-              children: [
-                IconButton(
-                  tooltip: '正在播放列表',
-                  icon: Icon(Icons.playlist_play_rounded),
-                  onPressed: () async {
-                    Get.toNamed(RouteName.nowPlayingPage, id: 1);
-                  },
-                ),
-                Text(
-                  '${_playController.current_playing.length}',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ],
+          () => badges.Badge(
+            position: badges.BadgePosition.topEnd(top: -4, end: -4),
+            ignorePointer: true,
+            showBadge: _playController.current_playing.isNotEmpty,
+            badgeContent: Text(
+              '${_playController.current_playing.length}',
+              style: TextStyle(
+                color: Get.theme.colorScheme.onPrimaryContainer,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            badgeStyle: badges.BadgeStyle(
+              shape: badges.BadgeShape.square,
+              borderRadius : BorderRadius.circular(8),
+              badgeColor: Get.theme.colorScheme.primaryContainer,
+              padding: EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+            ),
+            child: IconButton(
+              tooltip: '正在播放列表',
+              icon: Icon(Icons.playlist_play_rounded),
+              onPressed: () async {
+                Get.toNamed(RouteName.nowPlayingPage, id: 1);
+              },
             ),
           ),
         ),

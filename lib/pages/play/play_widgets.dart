@@ -304,6 +304,7 @@ Widget get buildPlaylistButton => Obx(
         fontWeight: FontWeight.bold,
       ),
     ),
+    ignorePointer: true,
     badgeStyle: badges.BadgeStyle(
       badgeColor: Get.theme.colorScheme.primaryContainer,
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.w),
