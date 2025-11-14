@@ -245,6 +245,7 @@ class NowPlayingPage extends StatelessWidget {
           scrollController: controller.scrollController,
           buildDefaultDragHandles: false,
           padding: EdgeInsets.symmetric(horizontal: 16),
+          cacheExtent: controller.itemHeight,
           prototypeItem: _buildTrackItem(
             context,
             playingList.first,
@@ -259,8 +260,7 @@ class NowPlayingPage extends StatelessWidget {
               // 需要找到在原始列表中的索引
               final originalList = controller.currentPlayingList;
               final draggedTrack = playingList[oldIndex];
-              final targetTrack =
-                  playingList[newIndex > oldIndex ? newIndex - 1 : newIndex];
+              final targetTrack = playingList[newIndex];
 
               final originalOldIndex = originalList.indexWhere(
                 (t) => t.id == draggedTrack.id,
@@ -439,7 +439,7 @@ class NowPlayingPage extends StatelessWidget {
         scale: controller.showScrollButton.value ? 1.0 : 0.0,
         duration: Duration(milliseconds: 200),
         child: FloatingActionButton.small(
-          onPressed: () => controller.scrollToCurrentTrack(),
+          onPressed: controller.scrollToCurrentTrack,
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
           child: Icon(Icons.my_location, size: 20),

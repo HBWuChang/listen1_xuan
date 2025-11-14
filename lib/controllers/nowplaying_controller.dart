@@ -36,6 +36,24 @@ class NowPlayingController extends GetxController {
     searchController.addListener(() {
       searchQuery.value = searchController.text;
     });
+    everAll([searchQuery, playController.currentPlayingRx], (_) {
+      // 每当搜索查询变化时，更新过滤后的播放列表
+      final query = searchQuery.value.toLowerCase().trim();
+      if (query.isEmpty) {
+        filteredPlayingList.value = currentPlayingList;
+      } else {
+        filteredPlayingList.value = currentPlayingList.where((track) {
+          final title = track.title?.toLowerCase() ?? '';
+          final artist = track.artist?.toLowerCase() ?? '';
+          final album = track.album?.toLowerCase() ?? '';
+
+          return title.contains(query) ||
+              artist.contains(query) ||
+              album.contains(query);
+        }).toList();
+      }
+    });
+    searchQuery.refresh();
   }
 
   @override
@@ -50,26 +68,6 @@ class NowPlayingController extends GetxController {
   // 获取单个项目的实际高度（根据平台调整）
   double get itemHeight {
     return 44.0; // 默认值
-  }
-
-  // 调试方法：打印当前平台和使用的高度值
-  void debugPrintItemHeight() {
-    String platform = 'Unknown';
-    if (GetPlatform.isWindows)
-      platform = 'Windows';
-    else if (GetPlatform.isAndroid)
-      platform = 'Android';
-    else if (GetPlatform.isIOS)
-      platform = 'iOS';
-    else if (GetPlatform.isMacOS)
-      platform = 'macOS';
-    else if (GetPlatform.isLinux)
-      platform = 'Linux';
-    else if (GetPlatform.isWeb)
-      platform = 'Web';
-
-    print('当前平台: $platform');
-    print('使用的项目高度: $itemHeight');
   }
 
   void _onScroll() {
@@ -98,7 +96,7 @@ class NowPlayingController extends GetxController {
     }
   }
 
-  void scrollToCurrentTrack({bool animated = true}) {
+  void scrollToCurrentTrack({bool animated = true}) async {
     final playingList = filteredPlayingList; // 使用过滤后的列表
     final currentTrackId =
         playController.getPlayerSettings("nowplaying_track_id") ?? '';
@@ -169,22 +167,7 @@ class NowPlayingController extends GetxController {
   List<Track> get currentPlayingList => playController.current_playing;
 
   // 获取搜索过滤后的播放列表
-  List<Track> get filteredPlayingList {
-    final query = searchQuery.value.toLowerCase().trim();
-    if (query.isEmpty) {
-      return currentPlayingList;
-    }
-
-    return currentPlayingList.where((track) {
-      final title = track.title?.toLowerCase() ?? '';
-      final artist = track.artist?.toLowerCase() ?? '';
-      final album = track.album?.toLowerCase() ?? '';
-
-      return title.contains(query) ||
-          artist.contains(query) ||
-          album.contains(query);
-    }).toList();
-  }
+  RxList<Track> filteredPlayingList = <Track>[].obs;
 
   // 获取当前播放歌曲ID
   String get currentTrackId =>

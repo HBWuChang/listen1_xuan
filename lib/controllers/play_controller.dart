@@ -30,7 +30,7 @@ class PlayController extends GetxController
   late AndroidEqualizer equalizer;
   late AudioPlayer music_player;
   final _player_settings = <String, dynamic>{}.obs;
-  final _current_playing = <Track>[].obs;
+  final currentPlayingRx = <Track>[].obs;
   final logger = Logger();
   final _next_track = Rx<Track?>(null);
 
@@ -124,11 +124,11 @@ class PlayController extends GetxController
   }
 
   Set<String> get playingIds {
-    return _current_playing.map((track) => track.id).toSet();
+    return currentPlayingRx.map((track) => track.id).toSet();
   }
 
-  Track get currentTrack => _current_playing.isNotEmpty
-      ? _current_playing.firstWhere(
+  Track get currentTrack => currentPlayingRx.isNotEmpty
+      ? currentPlayingRx.firstWhere(
           (track) =>
               track.id ==
               Get.find<PlayController>().getPlayerSettings(
@@ -157,7 +157,7 @@ class PlayController extends GetxController
     debounce(_player_settings, (event) {
       _saveSingleSetting('player-settings');
     });
-    debounce(_current_playing, (event) {
+    debounce(currentPlayingRx, (event) {
       _saveSingleSetting('current-playing');
     });
     music_player.playingStream.listen((event) {
@@ -314,7 +314,7 @@ class PlayController extends GetxController
         await prefs.setString(key, jsonString);
         break;
       case 'current-playing':
-        String jsonString = jsonEncode(_current_playing);
+        String jsonString = jsonEncode(currentPlayingRx);
         await prefs.setString(key, jsonString);
         break;
       default:
@@ -348,25 +348,25 @@ class PlayController extends GetxController
   void loadDatas() {
     _player_settings.value =
         Get.find<SettingsController>().PlayController_player_settings;
-    _current_playing.value =
+    currentPlayingRx.value =
         Get.find<SettingsController>().PlayController_current_playing;
   }
 
-  List<Track> get current_playing => _current_playing.toList();
+  List<Track> get current_playing => currentPlayingRx.toList();
   void add_current_playing(List<Track> tracks) {
     for (var track in tracks) {
-      if (!_current_playing.any((element) => element.id == track.id)) {
-        _current_playing.add(track);
+      if (!currentPlayingRx.any((element) => element.id == track.id)) {
+        currentPlayingRx.add(track);
       }
     }
   }
 
   void set_current_playing(List<Track> tracks) {
-    _current_playing.value = tracks;
+    currentPlayingRx.value = tracks;
   }
 
   Track? getTrackById(String id) {
-    return _current_playing.firstWhereOrNull((track) => track.id == id);
+    return currentPlayingRx.firstWhereOrNull((track) => track.id == id);
   }
 
   /// 更新当前播放状态到 Supabase
@@ -381,7 +381,7 @@ class PlayController extends GetxController
       }
 
       // 获取当前曲目
-      if (_current_playing.isEmpty) {
+      if (currentPlayingRx.isEmpty) {
         logger.w('当前播放列表为空，跳过同步');
         return;
       }

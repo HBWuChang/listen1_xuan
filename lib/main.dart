@@ -1258,6 +1258,7 @@ class _MyHomePageState extends State<MyHomePage>
                                                   settings: settings,
                                                   transition:
                                                       Transition.downToUp,
+                                                      // Transition.noTransition,
                                                   page: () => NowPlayingPage(),
                                                   middlewares: [
                                                     ListenPopMiddleware(),
