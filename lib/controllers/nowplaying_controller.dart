@@ -36,11 +36,6 @@ class NowPlayingController extends GetxController {
     searchController.addListener(() {
       searchQuery.value = searchController.text;
     });
-
-    // 页面初始化后滚动到当前播放位置
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      scrollToCurrentTrack();
-    });
   }
 
   @override
@@ -103,7 +98,7 @@ class NowPlayingController extends GetxController {
     }
   }
 
-  void scrollToCurrentTrack() {
+  void scrollToCurrentTrack({bool animated = true}) {
     final playingList = filteredPlayingList; // 使用过滤后的列表
     final currentTrackId =
         playController.getPlayerSettings("nowplaying_track_id") ?? '';
@@ -127,12 +122,15 @@ class NowPlayingController extends GetxController {
       // 确保滚动位置在有效范围内
       final maxOffset = scrollController.position.maxScrollExtent;
       final finalOffset = centeredOffset.clamp(0.0, maxOffset);
-
-      scrollController.animateTo(
-        finalOffset,
-        duration: Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
+      if (animated) {
+        scrollController.animateTo(
+          finalOffset,
+          duration: Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        scrollController.jumpTo(finalOffset);
+      }
 
       // 添加震动反馈
       HapticFeedback.lightImpact();

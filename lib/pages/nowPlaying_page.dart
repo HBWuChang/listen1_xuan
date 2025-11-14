@@ -12,7 +12,7 @@ class NowPlayingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 确保页面加载后，滚动到当前播放位置
-      Get.find<NowPlayingController>().scrollToCurrentTrack();
+      Get.find<NowPlayingController>().scrollToCurrentTrack(animated: false);
     });
     // 创建控制器实例
     final controller = Get.find<NowPlayingController>();
