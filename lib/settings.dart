@@ -97,6 +97,11 @@ class _LoginWebviewState extends State<LoginWebview> {
           return;
         }
         print(url);
+        if (!url.contains('code=')) {
+          // _msg('获取code失败', 3.0);
+          showErrorSnackbar('获取code失败', '请确认已跳转到Github授权成功页面再点击按钮');
+          return;
+        }
         final code = url?.split('code=')[1];
         await Github.handleCallback(code ?? '', context);
         break;
@@ -295,26 +300,28 @@ class _LoginWebviewState extends State<LoginWebview> {
     );
   }
 }
-  late String apkfile_name;
+
+late String apkfile_name;
 Future<void> init_apkfilepath() async {
-    // 确保路径存在
-    switch (SysInfo.kernelArchitecture.name) {
-      case "ARM64":
-        apkfile_name = await xuan_getdownloadDirectory(
-          path: 'app-arm64-v8a-release.apk',
-        );
-      case "ARM":
-        apkfile_name = await xuan_getdownloadDirectory(
-          path: 'app-armeabi-v7a-release.apk',
-        );
-      case "X86_64":
-        apkfile_name = await xuan_getdownloadDirectory(
-          path: 'app-x86_64-release.apk',
-        );
-      default:
-        apkfile_name = await xuan_getdownloadDirectory(path: 'app-release.apk');
-    }
+  // 确保路径存在
+  switch (SysInfo.kernelArchitecture.name) {
+    case "ARM64":
+      apkfile_name = await xuan_getdownloadDirectory(
+        path: 'app-arm64-v8a-release.apk',
+      );
+    case "ARM":
+      apkfile_name = await xuan_getdownloadDirectory(
+        path: 'app-armeabi-v7a-release.apk',
+      );
+    case "X86_64":
+      apkfile_name = await xuan_getdownloadDirectory(
+        path: 'app-x86_64-release.apk',
+      );
+    default:
+      apkfile_name = await xuan_getdownloadDirectory(path: 'app-release.apk');
   }
+}
+
 class _SettingsPageState extends State<SettingsPage> {
   var useHttpOverrides = false.obs;
   final FocusNode _focusNode = FocusNode();
@@ -499,8 +506,6 @@ class _SettingsPageState extends State<SettingsPage> {
     });
   }
 
-  
-
   SettingsController settingsController = Get.find<SettingsController>();
 
   @override
@@ -539,7 +544,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         headerBuilder: (BuildContext context, bool isExpanded) {
                           return ListTile(
                             leading: Icon(Icons.person),
-                            title: const Text('Supabase 账号'),
+                            title: const Text('Supabase 账号（现在没有任何用'),
                             trailing: IconButton(
                               onPressed: () async {
                                 Get.find<SupabaseAuthController>()

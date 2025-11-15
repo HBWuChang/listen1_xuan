@@ -5,7 +5,6 @@ import 'package:flutter_audio_tagger/flutter_audio_tagger.dart';
 import 'package:flutter_audio_tagger/tag.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/funcs.dart';
-import 'package:listen1_xuan/main.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
