@@ -364,7 +364,7 @@ Future<void> playsong(
       track.id,
     );
     add_current_playing([track]);
-    Get.find<NowPlayingController>().scrollToCurrentTrack();
+    Get.find<NowPlayingController>().scrollToCurrentTrack?.call();
     final tdir = await get_local_cache(track.id);
     debugPrint('playsong');
     debugPrint(track.toString());

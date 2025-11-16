@@ -1,21 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:scrollview_observer/scrollview_observer.dart';
 import '../bodys.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/nowplaying_controller.dart';
 import '../myplaylist.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
-class NowPlayingPage extends StatelessWidget {
+class NowPlayingPage extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
+  _NowPlayingPageState createState() => _NowPlayingPageState();
+}
+
+class _NowPlayingPageState extends State<NowPlayingPage> {
+  late NowPlayingController controller;
+  late ScrollController scrollController;
+  late ListObserverController listObserverController;
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.find<NowPlayingController>();
+    scrollController = ScrollController();
+    listObserverController = ListObserverController(
+      controller: scrollController,
+    );
+    scrollController.addListener(_onScroll);
+    controller.scrollToCurrentTrack = scrollToCurrentTrack;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 确保页面加载后，滚动到当前播放位置
-      Get.find<NowPlayingController>().scrollToCurrentTrack(animated: false);
+      listObserverController.reattach();
+      scrollToCurrentTrack(animated: false);
     });
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(_onScroll);
+    scrollController.dispose();
+    controller.scrollToCurrentTrack = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // 创建控制器实例
-    final controller = Get.find<NowPlayingController>();
     // 获取主题
     final theme = Theme.of(context);
 
@@ -45,6 +74,76 @@ class NowPlayingPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _onScroll() {
+    // 检查当前播放的歌曲是否在可视区域内
+    if (scrollController.hasClients) {
+      final playingList = controller.filteredPlayingList; // 使用过滤后的列表
+      final currentTrackId = controller.currentTrackId;
+      final currentIndex = playingList.indexWhere(
+        (track) => track.id == currentTrackId,
+      );
+
+      if (currentIndex != -1) {
+        final currentItemOffset = currentIndex * controller.itemHeight;
+        final viewportTop = scrollController.offset;
+        final viewportBottom =
+            viewportTop + scrollController.position.viewportDimension;
+
+        // 判断当前播放项目是否在可视区域内
+        final isCurrentVisible =
+            currentItemOffset >= viewportTop &&
+            currentItemOffset <= viewportBottom;
+
+        controller.showScrollButton.value = !isCurrentVisible;
+      }
+    }
+  }
+
+  void scrollToCurrentTrack({bool animated = true}) async {
+    final playingList = controller.filteredPlayingList; // 使用过滤后的列表
+    final currentTrackId = controller.currentTrackId;
+
+    // 找到当前播放歌曲的索引
+    final currentIndex = playingList.indexWhere(
+      (track) => track.id == currentTrackId,
+    );
+
+    if (currentIndex != -1 && scrollController.hasClients) {
+      // // 计算滚动位置 - 使用动态高度
+      // final targetOffset = currentIndex * itemHeight;
+
+      // // 获取可视区域高度
+      // final viewportHeight = scrollController.position.viewportDimension;
+
+      // // 调整滚动位置，让当前播放的项目在屏幕中央
+      // final centeredOffset =
+      //     targetOffset - (viewportHeight / 2) + (itemHeight / 2);
+
+      // // 确保滚动位置在有效范围内
+      // final maxOffset = scrollController.position.maxScrollExtent;
+      // final finalOffset = centeredOffset.clamp(0.0, maxOffset);
+      if (animated) {
+        listObserverController.animateTo(
+          index: currentIndex,
+          duration: Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          alignment: 0.5, // 使其居中
+        );
+        // scrollController.animateTo(
+        //   finalOffset,
+        //   duration: Duration(milliseconds: 500),
+        //   curve: Curves.easeInOut,
+        // );
+      } else {
+        listObserverController.jumpTo(index: currentIndex);
+        // scrollController.jumpTo(finalOffset);
+      }
+
+      // 添加震动反馈
+      HapticFeedback.lightImpact();
+    }
   }
 
   Widget _buildHeader(BuildContext context, NowPlayingController controller) {
@@ -234,25 +333,28 @@ class NowPlayingPage extends StatelessWidget {
         );
       }
 
-      return Scrollbar(
-        controller: controller.scrollController,
-        thumbVisibility: true, // 始终显示滚动条缩略图
-        trackVisibility: true, // 始终显示滚动条轨道
-        thickness: 12.0, // 增加滚动条厚度，便于触摸操作
-        radius: Radius.circular(6), // 增加滚动条圆角
-        interactive: true, // 启用交互式滚动条
+      return ListViewObserver(
+        controller: listObserverController,
+        onObserve: (resultModel) {
+          print('firstChild.index -- ${resultModel.firstChild?.index}');
+          print('displaying -- ${resultModel.displayingChildIndexList}');
+        },
         child: ReorderableListView.builder(
-          scrollController: controller.scrollController,
+          scrollController: scrollController,
           buildDefaultDragHandles: false,
           padding: EdgeInsets.symmetric(horizontal: 16),
           cacheExtent: controller.itemHeight,
-          prototypeItem: _buildTrackItem(
-            context,
-            playingList.first,
-            0,
-            playingList.first.id == currentTrackId,
-            controller,
+          prototypeItem: SizedBox(
+            height: controller.itemHeight,
+            child: Container(),
           ),
+          // _buildTrackItem(
+          //   context,
+          //   playingList.first,
+          //   0,
+          //   playingList.first.id == currentTrackId,
+          //   controller,
+          // ),
           itemCount: playingList.length,
           onReorder: (oldIndex, newIndex) {
             // 在搜索状态下禁用重排序
@@ -439,7 +541,8 @@ class NowPlayingPage extends StatelessWidget {
         scale: controller.showScrollButton.value ? 1.0 : 0.0,
         duration: Duration(milliseconds: 200),
         child: FloatingActionButton.small(
-          onPressed: controller.scrollToCurrentTrack,
+          onPressed: listObserverController.reattach,
+          // onPressed: controller.scrollToCurrentTrack,
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
           child: Icon(Icons.my_location, size: 20),
