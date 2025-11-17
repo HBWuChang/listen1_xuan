@@ -8,7 +8,7 @@
 PRODUCT_NAME = listen1_xuan
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.listen1Xuan
+PRODUCT_BUNDLE_IDENTIFIER = com.xiebian.listen1Xuan
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2024 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 com.xiebian. All rights reserved.
