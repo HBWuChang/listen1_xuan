@@ -29,8 +29,10 @@
 		<key>NSPrincipalClass</key>
 		<string>NSApplication</string>
 		<key>NSAppTransportSecurity</key>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
+		<dict>
+			<key>NSAllowsArbitraryLoads</key>
+			<true/>
+		</dict>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>

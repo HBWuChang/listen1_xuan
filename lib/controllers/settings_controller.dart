@@ -213,28 +213,28 @@ class SettingsController extends GetxController {
   static const String windowsRememberWindowSizeAndPosition =
       'rememberWindowSizeAndPosition';
   bool get rememberWindowsSizeAndPosition {
-    if (isWindows) {
+    if (isWindows||isMacOS) {
       return settings[windowsRememberWindowSizeAndPosition] ?? true;
     }
     throw 'Not Windows platform';
   }
 
   set rememberWindowsSizeAndPosition(bool value) {
-    if (isWindows) {
+    if (isWindows||isMacOS) {
       settings[windowsRememberWindowSizeAndPosition] = value;
     } else
       throw 'Not Windows platform';
   }
 
   bool get isWindowMaximized {
-    if (isWindows) {
+    if (isWindows||isMacOS) {
       return settings[windowsWindowIsMaximized] ?? false;
     }
     throw 'Not Windows platform';
   }
 
   Rect get windowsWindowBounds {
-    if (isWindows) {
+    if (isWindows||isMacOS) {
       double width = (settings[windowsWindowWidth] ?? 1000).toDouble();
       double height = (settings[windowsWindowHeight] ?? 700).toDouble();
       double x = (settings[windowsWindowX] ?? 100).toDouble();
@@ -245,7 +245,7 @@ class SettingsController extends GetxController {
   }
 
   void saveWindowsSizeAndPosition() {
-    if (isWindows) {
+    if (isWindows||isMacOS) {
       windowManager.getBounds().then((bounds) {
         settings[windowsWindowWidth] = bounds.width;
         settings[windowsWindowHeight] = bounds.height;
@@ -256,13 +256,13 @@ class SettingsController extends GetxController {
   }
 
   void onWindowMaximize() {
-    if (isWindows) {
+    if (isWindows||isMacOS) {
       settings[windowsWindowIsMaximized] = true;
     }
   }
 
   void onWindowUnmaximize() {
-    if (isWindows) {
+    if (isWindows||isMacOS) {
       settings[windowsWindowIsMaximized] = false;
     }
   }
