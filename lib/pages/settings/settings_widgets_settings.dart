@@ -64,19 +64,27 @@ Widget settingsWidget(BuildContext context) {
                                   subtitle: Text(playlist['description']),
                                   onTap: () async {
                                     try {
-                                      showInfoSnackbar('正在导入', null);
-
+                                      // showInfoSnackbar('正在导入', null);
+                                      final msg =
+                                          '正在导入歌单 ${playlist['id']}\n正在从Github Gist获取配置文件'
+                                              .obs;
+                                      showLoadingDialog(msg);
                                       final jsfile =
                                           await Github.importMySettingsFromGist(
                                             playlist['id'],
                                           );
+                                      msg.value =
+                                          '正在导入歌单 ${playlist['id']}\n解析配置文件';
                                       final settings = await Github.gist2json(
                                         jsfile,
                                       );
+                                      msg.value =
+                                          '正在导入歌单 ${playlist['id']}\n应用配置文件';
                                       await importSettingsFromFile(
                                         true,
                                         settings,
                                       );
+                                      Get.back();
                                       Navigator.of(context).pop();
                                       showSuccessSnackbar('导入成功', null);
                                     } catch (e) {

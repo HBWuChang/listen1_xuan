@@ -196,7 +196,7 @@ class Github {
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('githubOauthAccessKey');
       final response = await (usedefault ? Dio() : dio_with_ProxyAdapter).get(
-        url,
+        url.replaceAll('https://', 'https://h3.040905.xyz/default/https/'),
         options: Options(
           headers: {
             'Authorization': 'token $accessToken',

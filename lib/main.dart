@@ -592,7 +592,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void dispose() {
-    if (isWindows||isMacOS) {
+    if (isWindows || isMacOS) {
       trayManager.removeListener(this);
       windowManager.removeListener(this);
     }
@@ -675,7 +675,7 @@ class _MyHomePageState extends State<MyHomePage>
             child: Column(
               children: [
                 SizedBox(height: 10),
-                isWindows||isMacOS
+                isWindows || isMacOS
                     ? Listener(
                         onPointerDown: (event) {
                           if (event.kind == PointerDeviceKind.mouse &&
@@ -764,7 +764,7 @@ class _MyHomePageState extends State<MyHomePage>
                           child: Row(
                             children: [
                               if (globalHorizon) ...[
-                                isWindows||isMacOS
+                                isWindows || isMacOS
                                     ? DragToMoveArea(child: sized_box)
                                     : sized_box,
                                 RotatedBox(
@@ -803,7 +803,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   },
                                   child: Column(
                                     children: [
-                                      if (isWindows||isMacOS)
+                                      if (isWindows || isMacOS)
                                         Container(
                                           height: 25,
                                           child: DragToMoveArea(
@@ -938,7 +938,8 @@ class _MyHomePageState extends State<MyHomePage>
 
                                                                         Positioned(
                                                                           top:
-                                                                              isWindows||isMacOS
+                                                                              isWindows ||
+                                                                                  isMacOS
                                                                               ? 5
                                                                               : -5,
                                                                           right:
@@ -1424,7 +1425,9 @@ class _MyHomePageState extends State<MyHomePage>
     // 确保只调用一次
     if (!_windowManagerOnce) {
       _windowManagerOnce = true;
-      enableThumbnailToolbar();
+      if (isWindows) {
+        enableThumbnailToolbar();
+      }
       setState(() {});
       // 做些什么
     }
