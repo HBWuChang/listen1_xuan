@@ -180,7 +180,7 @@ void main() async {
       systemNavigationBarDividerColor: Colors.transparent, // 设置导航栏分割线为透明
     ),
   );
-  if (isWindows) {
+  if (isWindows || isMacOS) {
     MetadataGod.initialize();
   }
   SettingsController settingsController = Get.put(
@@ -680,6 +680,10 @@ class _MyHomePageState extends State<MyHomePage>
                         onPointerDown: (event) {
                           if (event.kind == PointerDeviceKind.mouse &&
                               event.buttons == kSecondaryMouseButton) {
+                            if (isMacOS) {
+                              closeApp();
+                              return;
+                            }
                             windowManager.hide();
                             windowManager.setSkipTaskbar(true);
                           }
@@ -689,7 +693,7 @@ class _MyHomePageState extends State<MyHomePage>
                           }
                         },
                         child: Tooltip(
-                          message: '右键以最小化,中键以关闭',
+                          message: isWindows ? '右键以最小化,中键以关闭' : '右键以关闭',
                           child: Text(
                             'Listen1',
                             style: TextStyle(fontSize: 24),
@@ -803,7 +807,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   },
                                   child: Column(
                                     children: [
-                                      if (isWindows || isMacOS)
+                                      if (isWindows)
                                         Container(
                                           height: 25,
                                           child: DragToMoveArea(

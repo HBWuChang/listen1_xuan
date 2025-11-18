@@ -95,6 +95,11 @@ Future<void> closeApp() async {
     barrierDismissible: false,
   );
   await Get.find<SettingsController>().saveSettings();
+  if (kDebugMode) {
+    print("exit(0)");
+    Get.back();
+    return;
+  }
   exit(0);
 }
 

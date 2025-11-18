@@ -200,7 +200,7 @@ class CacheController extends GetxController {
         .replaceAll('<', '-')
         .replaceAll('>', '-')
         .replaceAll('|', '-');
-    var res = (await xuanGetdownloadDirectory()).path + '/$fileName';
+    var res = p.join((await xuanGetdownloadDirectory()).path, fileName);
     return res;
   }
 
