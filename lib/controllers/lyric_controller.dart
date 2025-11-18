@@ -10,6 +10,7 @@ import '../controllers/cache_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../global_settings_animations.dart';
 import '../play.dart';
+import 'package:path/path.dart' as p;
 
 class LyricController extends GetxController {
   // 歌词显示相关
@@ -52,14 +53,12 @@ class LyricController extends GetxController {
       if (musicCachePath.isEmpty) return result;
 
       // 构建歌词文件路径
-      final tempDir = await xuan_getdataDirectory();
+      final tempDir = await xuanGetdataDirectory();
       final tempPath = tempDir.path;
 
       // 主歌词文件
       final lyricFileName = _getLyricCacheFileName(trackId);
-      final lyricFilePath = is_windows
-          ? '$tempPath\\$lyricFileName'
-          : '$tempPath/$lyricFileName';
+      final lyricFilePath = p.join(tempPath, lyricFileName);
 
       if (await File(lyricFilePath).exists()) {
         result['lyric'] = await File(lyricFilePath).readAsString();
@@ -70,9 +69,7 @@ class LyricController extends GetxController {
         trackId,
         isTranslation: true,
       );
-      final tlyricFilePath = is_windows
-          ? '$tempPath\\$tlyricFileName'
-          : '$tempPath/$tlyricFileName';
+      final tlyricFilePath = p.join(tempPath, tlyricFileName);
 
       if (await File(tlyricFilePath).exists()) {
         result['tlyric'] = await File(tlyricFilePath).readAsString();
@@ -91,16 +88,14 @@ class LyricController extends GetxController {
     bool isTranslation = false,
   }) async {
     try {
-      final tempDir = await xuan_getdataDirectory();
+      final tempDir = await xuanGetdataDirectory();
       final tempPath = tempDir.path;
 
       final fileName = _getLyricCacheFileName(
         trackId,
         isTranslation: isTranslation,
       );
-      final filePath = is_windows
-          ? '$tempPath\\$fileName'
-          : '$tempPath/$fileName';
+      final filePath = p.join(tempPath, fileName);
 
       await File(filePath).writeAsString(lyric);
 
@@ -124,7 +119,7 @@ class LyricController extends GetxController {
       }
     });
     ever(updFormatShowLyric, (value) {
-      if (is_windows) return;
+      if (!isAndroid) return;
       if (!value.hasMain) return;
       if (!_settingsController.tryShowLyricInNotification) return;
       change_playback_state(null, lyric: value);

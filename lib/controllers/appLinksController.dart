@@ -19,7 +19,7 @@ class Applinkscontroller extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    if (is_windows) register('listen1-xuan');
+    if (isWindows) registerWindows('listen1-xuan');
     ever(appLink, (Uri uri) {
       if (uri.toString() != '') {
         debugPrint('Received app link: $uri');
@@ -66,7 +66,7 @@ class Applinkscontroller extends GetxController {
     }
   }
 
-  Future<void> register(String scheme) async {
+  Future<void> registerWindows(String scheme) async {
     String appPath = Platform.resolvedExecutable;
 
     String protocolRegKey = 'Software\\Classes\\$scheme';

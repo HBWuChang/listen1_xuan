@@ -54,7 +54,7 @@ import 'package:iconify_flutter_plus/icons/octicon.dart';
 import 'package:iconify_flutter_plus/icons/ri.dart';
 import 'package:iconify_flutter_plus/icons/mdi.dart';
 import 'package:iconify_flutter_plus/icons/fa_solid.dart';
-
+import 'package:path/path.dart' as p;
 import 'utils/curve_utils.dart';
 import 'widgets/curve_selector_dialog.dart';
 part 'pages/settings/settings_utils.dart';
@@ -90,7 +90,7 @@ class _LoginWebviewState extends State<LoginWebview> {
   Future<void> get__cookie() async {
     switch (widget.config_key) {
       case 'github':
-        final url = is_windows ? nowurl : await widget.controller.currentUrl();
+        final url = isWindows ? nowurl : await widget.controller.currentUrl();
         if (url == null) {
           // _msg('获取cookie失败', 3.0);
           showErrorSnackbar('获取cookie失败', null);
@@ -106,7 +106,7 @@ class _LoginWebviewState extends State<LoginWebview> {
         await Github.handleCallback(code ?? '', context);
         break;
       default:
-        if (is_windows) {
+        if (isWindows) {
           var t = jsonDecode(await widget.controller.getCookies())["cookies"];
 
           print(t);
@@ -119,6 +119,11 @@ class _LoginWebviewState extends State<LoginWebview> {
           // _msg('设置成功$cookies', 3.0);
           showSuccessSnackbar('设置成功', null);
         } else {
+          if (isMacOS) {
+            // TODO: MacOS 支持
+            showErrorSnackbar('MacOS暂不支持此功能', null);
+            return;
+          }
           final cookieManager = WebviewCookieManager();
 
           final gotCookies = await cookieManager.getCookies(widget.open_url);
@@ -140,7 +145,7 @@ class _LoginWebviewState extends State<LoginWebview> {
   @override
   void initState() {
     super.initState();
-    if (is_windows) initPlatformState();
+    if (isWindows) initPlatformState();
   }
 
   Future<void> initPlatformState() async {
@@ -294,7 +299,7 @@ class _LoginWebviewState extends State<LoginWebview> {
           ),
         ],
       ),
-      body: is_windows
+      body: isWindows
           ? compositeView()
           : WebViewWidget(controller: widget.controller),
     );
@@ -306,19 +311,19 @@ Future<void> init_apkfilepath() async {
   // 确保路径存在
   switch (SysInfo.kernelArchitecture.name) {
     case "ARM64":
-      apkfile_name = await xuan_getdownloadDirectory(
+      apkfile_name = await xuanGetdownloadDirectory(
         path: 'app-arm64-v8a-release.apk',
       );
     case "ARM":
-      apkfile_name = await xuan_getdownloadDirectory(
+      apkfile_name = await xuanGetdownloadDirectory(
         path: 'app-armeabi-v7a-release.apk',
       );
     case "X86_64":
-      apkfile_name = await xuan_getdownloadDirectory(
+      apkfile_name = await xuanGetdownloadDirectory(
         path: 'app-x86_64-release.apk',
       );
     default:
-      apkfile_name = await xuan_getdownloadDirectory(path: 'app-release.apk');
+      apkfile_name = await xuanGetdownloadDirectory(path: 'app-release.apk');
   }
 }
 
@@ -398,7 +403,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void open_netease_login() async {
     var controller;
-    if (is_windows) {
+    if (isWindows) {
       controller = WebviewController();
     } else {
       controller = WebViewController()
@@ -433,7 +438,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void open_qq_login() async {
     var controller;
-    if (is_windows) {
+    if (isWindows) {
       controller = WebviewController();
     } else {
       controller = WebViewController()
@@ -618,25 +623,33 @@ class _SettingsPageState extends State<SettingsPage> {
                         headerBuilder: (BuildContext context, bool isExpanded) {
                           return ListTile(
                             leading: Icon(
-                              is_windows
+                              isWindows
                                   ? Icons.keyboard_alt
-                                  : Icons.notifications,
+                                  : isAndroid
+                                  ? Icons.notifications
+                                  : Icons.device_unknown,
                             ),
                             title: Text(
-                              is_windows ? '热键、代理、ffmpeg及其它win设置' : "通知设置",
+                              isWindows
+                                  ? '热键、代理、ffmpeg及其它win设置'
+                                  : isAndroid
+                                  ? "通知设置"
+                                  : "未知平台设置",
                             ),
                           );
                         },
                         canTapOnHeader: true,
                         isExpanded: settingsController.settingsPageExpansion
                             .contains(4),
-                        body: is_windows
+                        body: isWindows
                             ? winSettingsTiles(
                                 context,
                                 _focusNode2,
                                 _focusNode3,
                               )
-                            : androidSettingsTiles,
+                            : isAndroid
+                            ? androidSettingsTiles
+                            : SizedBox.shrink(),
                       ),
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {

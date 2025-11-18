@@ -180,7 +180,7 @@ void main() async {
       systemNavigationBarDividerColor: Colors.transparent, // 设置导航栏分割线为透明
     ),
   );
-  if (is_windows) {
+  if (isWindows) {
     MetadataGod.initialize();
   }
   SettingsController settingsController = Get.put(
@@ -205,13 +205,11 @@ void main() async {
   Get.put(Applinkscontroller(), permanent: true);
   Get.put(SupabaseAuthController(), permanent: true);
   init_apkfilepath();
-  if (is_windows) {
-    SMTCWindows.initialize();
-    JustAudioMediaKit.ensureInitialized(
-      linux: false, // default: true  - dependency: media_kit_libs_linux
-      windows:
-          true, // default: true  - dependency: media_kit_libs_windows_audio
-    );
+  if (isWindows || isMacOS) {
+    if (isWindows) {
+      SMTCWindows.initialize();
+      JustAudioMediaKit.ensureInitialized(linux: false, windows: true);
+    }
     // Must add this line.
     await windowManager.ensureInitialized();
     await hotKeyManager.unregisterAll();
@@ -281,7 +279,7 @@ void main() async {
   if (!await cookieDir.exists()) {
     await cookieDir.create(recursive: true);
   }
-  if (!is_windows) {
+  if (isAndroid || isIos) {
     dio_with_ProxyAdapter.httpClientAdapter = NativeAdapter(
       createCupertinoConfiguration: () =>
           URLSessionConfiguration.ephemeralSessionConfiguration()
@@ -290,7 +288,7 @@ void main() async {
             ..allowsExpensiveNetworkAccess = true,
     );
   } else {
-    var proxyaddr = await get_windows_proxy_addr();
+    var proxyaddr = await getWindowsProxyAddr();
     if (proxyaddr != "") {
       dio_with_ProxyAdapter.httpClientAdapter = IOHttpClientAdapter(
         createHttpClient: () {
@@ -451,7 +449,7 @@ class _MyHomePageState extends State<MyHomePage>
     updatePageControllers();
     onPlaylistTap = change_main_status;
     main_showVolumeSlider = showVolumeSlider;
-    if (is_windows) {
+    if (isWindows || isMacOS) {
       _initTrayManager();
       init_hotkeys();
       windowManager.addListener(this);
@@ -594,7 +592,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void dispose() {
-    if (is_windows) {
+    if (isWindows||isMacOS) {
       trayManager.removeListener(this);
       windowManager.removeListener(this);
     }
@@ -677,7 +675,7 @@ class _MyHomePageState extends State<MyHomePage>
             child: Column(
               children: [
                 SizedBox(height: 10),
-                is_windows
+                isWindows||isMacOS
                     ? Listener(
                         onPointerDown: (event) {
                           if (event.kind == PointerDeviceKind.mouse &&
@@ -766,7 +764,7 @@ class _MyHomePageState extends State<MyHomePage>
                           child: Row(
                             children: [
                               if (globalHorizon) ...[
-                                is_windows
+                                isWindows||isMacOS
                                     ? DragToMoveArea(child: sized_box)
                                     : sized_box,
                                 RotatedBox(
@@ -805,7 +803,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   },
                                   child: Column(
                                     children: [
-                                      if (is_windows)
+                                      if (isWindows||isMacOS)
                                         Container(
                                           height: 25,
                                           child: DragToMoveArea(
@@ -940,7 +938,7 @@ class _MyHomePageState extends State<MyHomePage>
 
                                                                         Positioned(
                                                                           top:
-                                                                              is_windows
+                                                                              isWindows||isMacOS
                                                                               ? 5
                                                                               : -5,
                                                                           right:
@@ -1258,7 +1256,7 @@ class _MyHomePageState extends State<MyHomePage>
                                                   settings: settings,
                                                   transition:
                                                       Transition.downToUp,
-                                                      // Transition.noTransition,
+                                                  // Transition.noTransition,
                                                   page: () => NowPlayingPage(),
                                                   middlewares: [
                                                     ListenPopMiddleware(),

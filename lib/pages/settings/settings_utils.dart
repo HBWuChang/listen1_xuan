@@ -41,7 +41,7 @@ Future<Map<String, dynamic>> outputAllSettingsToFile([
       await Permission.storage.request().isGranted) {
     try {
       // 确保路径存在
-      final outputPath = await xuan_getdownloadDirectory(path: 'settings.json');
+      final outputPath = await xuanGetdownloadDirectory(path: 'settings.json');
       final file = File(outputPath);
       // 将设置写入 JSON 文件
       await file.writeAsString(jsonEncode(settings));
@@ -119,7 +119,7 @@ Future<void> importSettingsFromFile(
 }
 
 String cookiePath(Directory dir) {
-  return is_windows ? '${dir.path}\\.cookies\\' : '${dir.path}/.cookies/';
+  return p.join(dir.path, '.cookies');
 }
 
 Future<void> setSaveCookie({
@@ -148,7 +148,7 @@ Map<String, List<String>> _cookieUrls = {
 void g_launchURL(Uri url) async {
   try {
     // if (await canLaunchUrl(url)) {
-      await launchUrl(url);
+    await launchUrl(url);
     // } else {
     //   throw 'Could not launch $url';
     // }

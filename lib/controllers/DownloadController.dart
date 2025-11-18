@@ -97,7 +97,7 @@ class DownloadController extends GetxController {
   }
 
   void loadSettings() async {
-    appDocDir = await xuan_getdataDirectory();
+    appDocDir = await xuanGetdataDirectory();
     final settings = Get.find<SettingsController>().settings;
     toDownloadList.value = Map<String, String>.from(
       settings[toDownloadListKey] ?? {},

@@ -232,7 +232,7 @@ class _WebSocketClientControlContentState
                       return Container(
                         padding: EdgeInsets.only(
                           left: 12,
-                          bottom: is_windows ? 12 : 4,
+                          bottom: isWindows||isMacOS ? 12 : 4,
                           right: rightPadding,
                         ),
                         alignment: Alignment.bottomCenter,

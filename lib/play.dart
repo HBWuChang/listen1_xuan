@@ -5,17 +5,14 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_lyric/lyrics_reader_model.dart';
-import 'package:iconify_flutter_plus/icons/wi.dart';
 import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/nowplaying_controller.dart';
 import 'package:listen1_xuan/main.dart';
 import 'dart:io';
-import 'dart:convert';
 import 'package:extended_image/extended_image.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
-import 'package:media_kit/generated/libmpv/bindings.dart';
 import 'package:rxdart/rxdart.dart' as rxdart;
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -42,6 +39,7 @@ import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:path/path.dart' as p;
 
 import 'widgets/container_with_outer_shadow.dart';
 
@@ -59,7 +57,7 @@ Future<bool> safeCallWindowsTaskbar(
   Future<void> Function() apiCall,
   String operationName,
 ) async {
-  if (!is_windows) return true;
+  if (!isWindows) return true;
 
   // 如果已经初始化过,直接调用
   if (_windowsTaskbarInitialized) {
@@ -198,7 +196,7 @@ Future<Map<String, dynamic>> getnowplayingsong() async {
 
 Future<void> bind_smtc() async {
   try {
-    if (is_windows)
+    if (isWindows)
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
           smtc.buttonPressStream.listen((event) {
@@ -299,7 +297,7 @@ Future<void> change_playback_state(
     //         'https://media.glamour.com/photos/5f4c44e20c71c58fc210d35f/master/w_2560%2Cc_limit/mgid_ao_image_mtv.jpg',
     //   ),
     // );
-    if (is_windows) {
+    if (isWindows) {
       safeCallWindowsTaskbar(
         () =>
             WindowsTaskbar.setWindowTitle('${track.title!} - ${track.artist!}'),
@@ -414,7 +412,7 @@ Future<void> playsong(
 
 Future<void> playerSuccessCallback(dynamic res, Track track) async {
   try {
-    var tempDir = await xuan_getdataDirectory();
+    var tempDir = await xuanGetdataDirectory();
     final tempPath = tempDir.path;
     final _local_cache = await get_local_cache(track.id);
     if (_local_cache == '') {
@@ -428,11 +426,7 @@ Future<void> playerSuccessCallback(dynamic res, Track track) async {
               .last +
           '.' +
           res['url'].split('.').last.split('?').first;
-      // switch (res["platform"]) {
-      //   case "bilibili":
-      //     fileName = fileName + '.mp3';
-      // }
-      final filePath = '$tempPath/$fileName';
+      final filePath = p.join(tempPath, fileName);
       // 若本地已经存在该文件，则直接播放
       switch (res["platform"]) {
         case "bilibili":
@@ -466,7 +460,6 @@ Future<void> playerSuccessCallback(dynamic res, Track track) async {
     playsong(track, true, true);
     return;
   } catch (e) {
-    print('Error downloading or playing audio: $e');
     debugPrint('Error downloading or playing audio: $e');
     playerFailCallback(track);
   }
@@ -578,7 +571,7 @@ Stream<MediaState> get _mediaStateStream =>
       Get.find<AudioHandlerController>().audioHandler.mediaItem,
       AudioService.position,
       (mediaItem, position) {
-        if (is_windows) {
+        if (isWindows) {
           // 计算进度并更新到 PlayController 的响应式变量
           final progress =
               (position.inMilliseconds /

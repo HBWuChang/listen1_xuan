@@ -33,7 +33,7 @@ class AudioHandlerController extends GetxController {
     update_playmode_to_audio_service();
     final track = await getnowplayingsong();
     if (track['index'] != -1) {
-      if (is_windows) {
+      if (isWindows) {
         smtc = SMTCWindows(
           metadata: MusicMetadata(
             title: track['track'].title,
@@ -53,7 +53,7 @@ class AudioHandlerController extends GetxController {
       }
       await playsong(track['track'], false);
     } else {
-      if (is_windows) {
+      if (isWindows) {
         smtc = SMTCWindows(
           metadata: MusicMetadata(
             title: "test",
@@ -75,6 +75,6 @@ class AudioHandlerController extends GetxController {
     }
     loading.value = false;
     update();
-    print('AudioHandlerController setNotification completed');
+    debugPrint('AudioHandlerController setNotification completed');
   }
 }

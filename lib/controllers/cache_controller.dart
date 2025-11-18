@@ -5,6 +5,8 @@ import 'package:flutter_audio_tagger/flutter_audio_tagger.dart';
 import 'package:flutter_audio_tagger/tag.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:logger/logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -21,6 +23,7 @@ import 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
 import 'package:path/path.dart';
 
 class CacheController extends GetxController {
+  final Logger _logger = Logger();
   final String _localCacheListKey = 'local-cache-list';
   final _localCacheList = <String, String>{}.obs;
   String checkFfmpegVersion = '';
@@ -35,7 +38,7 @@ class CacheController extends GetxController {
           .where((entry) => !entry.key.contains('lyric'))
           .map((entry) => MapEntry(entry.key, entry.value)),
     );
-    var downDir = await xuan_getdataDirectory();
+    var downDir = await xuanGetdataDirectory();
     Set<String> files = {};
     for (var element in (await downDir.list().toList())) {
       if (element is File) {
@@ -76,7 +79,7 @@ class CacheController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    if (!is_windows) {
+    if (isAndroid) {
       tagger = FlutterAudioTagger();
     }
     debounce(_localCacheList, (value) {
@@ -90,7 +93,7 @@ class CacheController extends GetxController {
 
   Future<void> moveOldData() async {
     final oldDir = await getApplicationDocumentsDirectory();
-    final newDir = await xuan_getdataDirectory();
+    final newDir = await xuanGetdataDirectory();
     if (oldDir.path != newDir.path) {
       final oldFiles = Directory(oldDir.path).listSync();
       for (var file in oldFiles) {
@@ -164,11 +167,10 @@ class CacheController extends GetxController {
   Future<String> getLocalCache(String id) async {
     if (!_isDeleting) tryDelFiles(); // 尝试删除待删除的文件
     if (_localCacheList.containsKey(id)) {
-      var downDir = await xuan_getdataDirectory();
+      var downDir = await xuanGetdataDirectory();
 
       final downPath = downDir.path;
-      var filePath = '$downPath/${_localCacheList[id]}';
-      if (is_windows) filePath = '$downPath\\${_localCacheList[id]}';
+      var filePath = p.join(downPath, _localCacheList[id]!);
       if (await File(filePath).exists()) {
         // return await saveMetadataToCache(id, filePath);
         // if (!(await isSoCalledDownloaded(id))) {
@@ -198,32 +200,38 @@ class CacheController extends GetxController {
         .replaceAll('<', '-')
         .replaceAll('>', '-')
         .replaceAll('|', '-');
-    var res = (await xuan_getdownloadDirectory()).path + '/$fileName';
+    var res = (await xuanGetdownloadDirectory()).path + '/$fileName';
     return res;
   }
 
   Future<bool> isSoCalledDownloaded(String id) async {
     if (_localCacheList.containsKey(id)) {
-      var downLoad = await xuan_getdownloadDirectory();
+      var downLoad = await xuanGetdownloadDirectory();
 
       final downLoadPath = downLoad.path;
-      var filePath = '$downLoadPath/${_localCacheList[id]}';
-      if (is_windows) filePath = '$downLoadPath\\${_localCacheList[id]}';
+      final filePath = p.join(downLoadPath, _localCacheList[id]!);
       if (!await File(filePath).exists()) {
         return false;
       }
-      if (is_windows) {
+      if (isWindows) {
         try {
           Metadata metadata = await MetadataGod.readMetadata(file: filePath);
           if (metadata.albumArtist == id) return true; // 如果专辑艺术家与ID相同，返回true
           throw Exception('Metadata albumArtist does not match ID');
-        } catch (e) {}
-      } else {
+        } catch (e) {
+          _logger.e('读取元数据失败: $e');
+        }
+      } else if (isAndroid) {
         try {
           Tag? t = await tagger.getAllTags(filePath);
           if (t?.composer == id) return true; // 如果作曲家与ID相同，返回true
           throw Exception('Metadata composer does not match ID');
-        } catch (e) {}
+        } catch (e) {
+          _logger.e('读取元数据失败: $e');
+        }
+      } else {
+        // TODO: For other platforms, assume true for now
+        return true;
       }
     }
     return false;
@@ -232,7 +240,7 @@ class CacheController extends GetxController {
   Future<void> saveMetadataToCache(String id, String filePath) async {
     if (saveMetadataToCacheWorkingIds.contains(id)) return;
     saveMetadataToCacheWorkingIds.add(id);
-    if (is_windows) {
+    if (isWindows) {
       if (_firstCheck) {
         _firstCheck = false;
         await isFFmpegOk();
@@ -281,7 +289,7 @@ class CacheController extends GetxController {
                 debugPrint('下载封面失败: $e');
               }
             }
-            if (is_windows) {
+            if (isWindows) {
               Metadata toSaveMetadata = mimeType != null
                   ? Metadata(
                       title: track.title,
@@ -310,7 +318,7 @@ class CacheController extends GetxController {
                 metadata: toSaveMetadata,
                 file: outPath,
               );
-            } else {
+            } else if (isAndroid) {
               Tag toSaveTag = mimeType != null
                   ? Tag(
                       title: track.title,
@@ -338,13 +346,15 @@ class CacheController extends GetxController {
               String tdir =
                   '${outPath.substring(0, outPath.lastIndexOf('.'))}_edited.${outPath.split('.').last}';
               await File(tdir).rename(outPath);
+            } else {
+              // TODO: Other platforms
             }
           }
         } catch (e) {
           debugPrint('FFmpeg提取元数据失败: $e');
         }
       }
-    } else {
+    } else if (isAndroid) {
       // Android
       Track? track = Get.find<PlayController>().getTrackById(id);
       if (track == null) return;
@@ -434,6 +444,9 @@ class CacheController extends GetxController {
           }
         }
       }
+    } else {
+      // TODO: Other platforms
+      return;
     }
     saveMetadataToCacheWorkingIds.remove(id);
   }
@@ -475,7 +488,7 @@ class CacheController extends GetxController {
 
   /// 清理所有缓存
   Future<void> _cleanAllCache() async {
-    final tempDir = await xuan_getdataDirectory();
+    final tempDir = await xuanGetdataDirectory();
     final files = await _getCacheFiles(tempDir.path);
 
     int count = 0;
@@ -496,7 +509,7 @@ class CacheController extends GetxController {
 
   /// 清理未使用的缓存
   Future<void> _cleanUnusedCache() async {
-    final tempDir = await xuan_getdataDirectory();
+    final tempDir = await xuanGetdataDirectory();
     final files = await _getCacheFiles(tempDir.path);
     Set<String> notToDelIds = {};
     notToDelIds.addAll(Get.find<MyPlayListController>().savedIds);
@@ -517,7 +530,7 @@ class CacheController extends GetxController {
     }
 
     for (final file in files) {
-      final fileName = file.split(is_windows ? "\\" : '/').last;
+      final fileName = p.basename(file);
 
       // 如果文件不在缓存列表中，则删除
       if (!cacheFileNames.contains(fileName) && !checkLyric(fileName)) {
@@ -547,9 +560,7 @@ class CacheController extends GetxController {
 
       for (final fileSystemEntity in filesAndDirs) {
         if (fileSystemEntity is File) {
-          final fileName = fileSystemEntity.path
-              .split(is_windows ? "\\" : '/')
-              .last;
+          final fileName = p.basename(fileSystemEntity.path);
 
           // 跳过系统文件和特定类型文件
           if (without.contains(fileName)) continue;
@@ -576,14 +587,12 @@ class CacheController extends GetxController {
 
   /// 清理无效的缓存记录
   Future<void> _cleanInvalidCacheRecords() async {
-    final tempDir = await xuan_getdataDirectory();
+    final tempDir = await xuanGetdataDirectory();
     final tempPath = tempDir.path;
     final List<String> keysToRemove = [];
 
     for (final entry in _localCacheList.entries) {
-      final filePath = is_windows
-          ? '$tempPath\\${entry.value}'
-          : '$tempPath/${entry.value}';
+      final filePath = p.join(tempPath, entry.value);
 
       if (!await File(filePath).exists()) {
         keysToRemove.add(entry.key);
@@ -606,7 +615,7 @@ class CacheController extends GetxController {
 
   /// 获取缓存大小（可选功能）
   Future<int> getCacheSize() async {
-    final tempDir = await xuan_getdataDirectory();
+    final tempDir = await xuanGetdataDirectory();
     final tempPath = tempDir.path;
 
     final filesanddirs = Directory(tempPath).listSync();
@@ -615,11 +624,10 @@ class CacheController extends GetxController {
     List<String> without = ['app.log'];
 
     for (var file in filesanddirs) {
-      if (file is File &&
-          !without.contains(file.path.split(is_windows ? "\\" : '/').last)) {
+      if (file is File && !without.contains(p.basename(file.path))) {
         bool jumpFlag = false;
         for (var jump in jumpList) {
-          if (file.path.split(is_windows ? "\\" : '/').last.endsWith(jump)) {
+          if (p.basename(file.path).endsWith(jump)) {
             jumpFlag = true;
             break;
           }

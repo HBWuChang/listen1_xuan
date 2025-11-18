@@ -58,7 +58,7 @@ class Github {
         '$OAUTH_URL/authorize?client_id=$clientId&scope=gist,public_repo';
 
     var controller;
-    if (is_windows) {
+    if (isWindows) {
       controller = WebviewController();
     } else {
       controller = WebViewController()

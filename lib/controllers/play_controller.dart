@@ -145,7 +145,7 @@ class PlayController extends GetxController
     playVPlayBtnProcessControllerInit();
     androidEQEnabled =
         Get.find<SettingsController>().settings[androidEQEnabledKey] ?? false;
-    if (is_windows || !androidEQEnabled) {
+    if (!isAndroid || !androidEQEnabled) {
       music_player = AudioPlayer();
     } else {
       equalizer = AndroidEqualizer();
@@ -178,7 +178,7 @@ class PlayController extends GetxController
       }
     }, time: Duration(milliseconds: 300));
     // 使用 interval 控制任务栏进度更新频率(每500ms最多更新一次)
-    if (is_windows) {
+    if (isWindows) {
       interval(taskbarProgress, (progress) {
         safeCallWindowsTaskbar(
           () => WindowsTaskbar.setProgress(progress, 100),

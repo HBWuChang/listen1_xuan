@@ -1,6 +1,6 @@
 part of '../../settings.dart';
 
-Widget updSettingsTile(BuildContext context,  ) {
+Widget updSettingsTile(BuildContext context) {
   return Wrap(
     alignment: WrapAlignment.center,
     children: [
@@ -9,11 +9,11 @@ Widget updSettingsTile(BuildContext context,  ) {
           onPressed: () async {
             var dia_context;
 
-            if (is_windows) {
+            if (isWindows) {
               try {
-                final tempPath = (await xuan_getdownloadDirectory()).path;
+                final tempPath = (await xuanGetdownloadDirectory()).path;
 
-                final filePath = '$tempPath\\canary.zip';
+                final filePath = p.join(tempPath, 'canary.zip');
                 final url_list =
                     'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
                 final prefs = await SharedPreferences.getInstance();
@@ -157,13 +157,13 @@ Widget updSettingsTile(BuildContext context,  ) {
                 }
                 showErrorSnackbar('下载失败', e.toString());
               }
-            } else {
+            } else if (isAndroid) {
               try {
                 if (await Permission.manageExternalStorage
                         .request()
                         .isGranted ||
                     await Permission.storage.request().isGranted) {
-                  final tempPath = (await xuan_getdownloadDirectory()).path;
+                  final tempPath = (await xuanGetdownloadDirectory()).path;
 
                   final apkFile = File(apkfile_name);
                   print('apkFile: $apkFile');
@@ -351,6 +351,8 @@ Widget updSettingsTile(BuildContext context,  ) {
                 }
                 showErrorSnackbar('下载失败', e.toString());
               }
+            } else {
+              showWarningSnackbar('暂未实现', null);
             }
           },
           child: const Text('下载最新测试版'),
@@ -363,7 +365,7 @@ Widget updSettingsTile(BuildContext context,  ) {
           },
           child: Text('打开GitHub Release页面'),
         ),
-        if (!is_windows)
+        if (isAndroid)
           ElevatedButton(
             onPressed: () async {
               if (await Permission.manageExternalStorage.request().isGranted ||

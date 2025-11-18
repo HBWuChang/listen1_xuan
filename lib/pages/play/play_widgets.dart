@@ -76,7 +76,7 @@ Future<void> _onTap(BuildContext context) async {
 }
 
 Future<void> _onDoubleTap() async {
-  if (!is_windows) Vibration.vibrate(duration: 100);
+  if (isAndroid || isIos) Vibration.vibrate(duration: 100);
   if (Get.find<PlayController>().music_player.playing) {
     global_pause();
   } else {
@@ -85,14 +85,14 @@ Future<void> _onDoubleTap() async {
 }
 
 void _onLongPress() {
-  if (!is_windows) Vibration.vibrate(duration: 100);
+  if (isAndroid || isIos) Vibration.vibrate(duration: 100);
   global_change_play_mode();
 }
 
 void _onHorizontalDragEnd(DragEndDetails details) {
   Offset movePos = details.globalPosition - _dragStartDetails!.globalPosition;
   if (movePos.dx.abs() < movePos.dy.abs()) return;
-  if (!is_windows) Vibration.vibrate(duration: 100);
+  if (isAndroid || isIos) Vibration.vibrate(duration: 100);
   if (movePos.dx < 0) {
     global_skipToNext();
   } else {

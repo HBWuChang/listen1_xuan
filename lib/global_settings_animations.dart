@@ -10,13 +10,15 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'const.dart';
 import 'controllers/settings_controller.dart';
 import 'funcs.dart';
 import 'settings.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path/path.dart' as p;
 
-Future<String> get_windows_proxy_addr() async {
+Future<String> getWindowsProxyAddr() async {
   var settings = settings_getsettings();
   var proxy = settings["proxy"];
   if (proxy == null) {
@@ -27,8 +29,8 @@ Future<String> get_windows_proxy_addr() async {
   return proxy;
 }
 
-Future<Directory> xuan_getdataDirectory() async {
-  if (!is_windows) {
+Future<Directory> xuanGetdataDirectory() async {
+  if (isAndroid || isIos) {
     if (!(await Permission.manageExternalStorage.request().isGranted ||
         await Permission.storage.request().isGranted)) {
       showInfoSnackbar('请务必授予存储权限以下载歌曲及读取配置文件等操作', '本应用不会访问您的个人数据');
@@ -38,21 +40,25 @@ Future<Directory> xuan_getdataDirectory() async {
     }
   }
 
-  return await xuan_getdownloadDirectory();
+  return await xuanGetdownloadDirectory();
 }
 
-Future<dynamic> xuan_getdownloadDirectory({String? path}) async {
-  var tempDir = is_windows
-      ? await getDownloadsDirectory()
-      : Directory('/storage/emulated/0/Download');
-  if (tempDir == null)
+Future<dynamic> xuanGetdownloadDirectory({String? path}) async {
+  Directory? tempDir;
+  if (isWindows) {
+    tempDir = await getDownloadsDirectory();
+  } else if (isMacOS) {
+    tempDir = await getDownloadsDirectory();
+  } else if (isAndroid) {
+    tempDir = Directory('/storage/emulated/0/Download');
+  } else if (isIos) {
+    tempDir = await getDownloadsDirectory();
+  }
+  if (tempDir == null) {
     tempDir = await getApplicationDocumentsDirectory();
-  else {
+  } else {
     // 检查是否存在 Listen1 文件夹
-    var listen1Dir = Directory('${tempDir.path}/Listen1');
-    if (is_windows) {
-      listen1Dir = Directory('${tempDir.path}\\Listen1');
-    }
+    var listen1Dir = Directory(p.join(tempDir.path, downDirName));
     if (!await listen1Dir.exists()) {
       // 如果不存在，则创建
       await listen1Dir.create(recursive: true);
@@ -62,16 +68,16 @@ Future<dynamic> xuan_getdownloadDirectory({String? path}) async {
   }
   if (path != null) {
     // 检查是否存在指定的文件夹
-    var customDir = '${tempDir.path}/$path';
-    if (is_windows) {
-      customDir = '${tempDir.path}\\$path';
-    }
+    var customDir = p.join(tempDir.path, path);
     return customDir;
   }
   return tempDir;
 }
 
-final bool is_windows = universal_io.Platform.isWindows;
+final bool isWindows = universal_io.Platform.isWindows;
+final bool isIos = universal_io.Platform.isIOS;
+final bool isMacOS = universal_io.Platform.isMacOS;
+final bool isAndroid = universal_io.Platform.isAndroid;
 
 void init_hotkeys() async {
   var settings = settings_getsettings();
@@ -187,7 +193,7 @@ Future<void> set_hotkey(s_hotkey, hotkey, name) async {
 var enable_hotkey_setstate;
 var enable_hotkey;
 List<Widget> create_hotkey_btns(context) {
-  if (!is_windows) return [];
+  if (!(isWindows || isMacOS)) return [];
   var s_hotkeys = [
     {"name": "播放/暂停", "hotkey": "play_pause"},
     {"name": "下一首", "hotkey": "next"},
@@ -265,9 +271,7 @@ List<Widget> create_hotkey_btns(context) {
 }
 
 Widget get globalLoadingAnime => LoadingBouncingGrid.square(
-  backgroundColor: AdaptiveTheme.of(
-    Get.context!,
-  ).theme.colorScheme.primary,
+  backgroundColor: AdaptiveTheme.of(Get.context!).theme.colorScheme.primary,
 );
 Widget search_Animation({
   required Animation<double> animation,

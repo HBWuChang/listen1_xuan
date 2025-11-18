@@ -343,8 +343,7 @@ Widget winSettingsTiles(
         children: create_hotkey_btns(context),
       ),
       FutureBuilder(
-        // future: check_bl_cookie(),
-        future: get_windows_proxy_addr(),
+        future: getWindowsProxyAddr(),
         builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return globalLoadingAnime;
@@ -429,8 +428,8 @@ Widget winSettingsTiles(
                   'https://h3.040905.xyz/default/https/',
                 );
                 debugPrint('FFmpeg下载链接: $downloadUrl');
-                final tempPath = (await xuan_getdownloadDirectory()).path;
-                String filePath = '$tempPath/ffmpeg.zip ';
+                final tempPath = (await xuanGetdownloadDirectory()).path;
+                String filePath = p.join(tempPath, 'ffmpeg.zip');
                 await Dio().download(
                   downloadUrl,
                   filePath,
@@ -449,14 +448,14 @@ Widget winSettingsTiles(
                   if (filename.contains('ffmpeg.exe')) {
                     filename = 'ffmpeg.exe';
                     final data = file.content as List<int>;
-                    File('$tempPath/$filename')
+                    File(p.join(tempPath, filename))
                       ..createSync(recursive: true)
                       ..writeAsBytesSync(data);
                     break;
                   }
                 }
                 Get.find<CacheController>().ffmpegPathWindows =
-                    '$tempPath/ffmpeg.exe';
+                    p.join(tempPath, 'ffmpeg.exe');
                 msg.value = '正在删除压缩包';
                 await File(filePath).delete();
                 Get.back();

@@ -38,7 +38,7 @@ class ThemeController extends GetxController {
   void onInit() {
     super.onInit();
     loadThemeSettings();
-    if (is_windows) _setupWindowsThemeListener();
+    if (isWindows) _setupWindowsThemeListener();
   }
 
   @override
