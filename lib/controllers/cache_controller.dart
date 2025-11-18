@@ -213,7 +213,7 @@ class CacheController extends GetxController {
       if (!await File(filePath).exists()) {
         return false;
       }
-      if (isWindows) {
+      if (isWindows||isMacOS) {
         try {
           Metadata metadata = await MetadataGod.readMetadata(file: filePath);
           if (metadata.albumArtist == id) return true; // 如果专辑艺术家与ID相同，返回true
