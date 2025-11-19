@@ -309,6 +309,7 @@ class _LoginWebviewState extends State<LoginWebview> {
 
 late String apkfile_name;
 Future<void> init_apkfilepath() async {
+  if (!isAndroid) return;
   // 确保路径存在
   switch (SysInfo.kernelArchitecture.name) {
     case "ARM64":
@@ -710,8 +711,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ),
                 ),
-                // buildEqualizerTile(context),
 
+                // buildEqualizerTile(context),
                 ListTile(
                   leading: Icon(Icons.book),
                   title: Text('查看README'),
