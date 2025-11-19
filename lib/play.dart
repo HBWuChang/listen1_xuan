@@ -497,7 +497,11 @@ Future<void> global_seek(Duration? position, {double? process}) async {
   }
   if (position == null) return;
   _playController.music_player.seek(position);
-  _playController.updatePosToAudioServiceNow.value++;
+  if (_playController.updatePosToAudioServiceNow.value > 10000) {
+    _playController.updatePosToAudioServiceNow.value = 0;
+  } else {
+    _playController.updatePosToAudioServiceNow.value++;
+  }
 }
 
 Future<void> global_seek_to_next({
