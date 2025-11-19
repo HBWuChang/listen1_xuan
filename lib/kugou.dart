@@ -152,7 +152,7 @@ class Kugou {
     // Add singer img
     final url =
         'https://www.kugou.com/yy/index.php?r=play/getdata&hash=${track.lyric_url}';
-    final response = await dio_with_cookie_manager.get(url,
+    final response = await dioWithCookieManager.get(url,
         options: Options(
           headers: {
             "User-Agent":
@@ -259,7 +259,7 @@ class Kugou {
         'success': (fn) async {
           final target_url =
               'http://mobilecdnbj.kugou.com/api/v3/search/special?keyword=$keyword&pagesize=20&filter=0&page=$curpage';
-          final response = await dio_with_cookie_manager.get(target_url);
+          final response = await dioWithCookieManager.get(target_url);
           final result = jsonDecode(response.data)['data']['info']
               .map((item) => ({
                     'id': 'kgplaylist_${item['specialid']}',
@@ -288,7 +288,7 @@ class Kugou {
       'success': (fn) async {
         final target_url =
             'https://songsearch.kugou.com/song_search_v2?keyword=$keyword&page=$curpage';
-        final response = await dio_with_cookie_manager.get(target_url);
+        final response = await dioWithCookieManager.get(target_url);
         final data = jsonDecode(response.data);
         this.async_process_list(
           data['data']['lists'],
@@ -366,7 +366,7 @@ class Kugou {
       'lyric_url': hash,
     });
     // Fix song info
-    final response = await dio_with_cookie_manager.get(target_url);
+    final response = await dioWithCookieManager.get(target_url);
     final data = jsonDecode(response.data);
     track.title = data['songName'];
     track.artist = data['singerId'] == 0 ? '未知' : data['singerName'];
@@ -379,7 +379,7 @@ class Kugou {
     // Fix album
     target_url =
         'http://mobilecdnbj.kugou.com/api/v3/album/info?albumid=${item['album_id']}';
-    final res = await dio_with_cookie_manager.get(target_url);
+    final res = await dioWithCookieManager.get(target_url);
     final res_data = jsonDecode(res.data);
     if (res_data['status'] != 0 && res_data['data'] != null) {
       track.album = res_data['data']['albumname'];
@@ -430,7 +430,7 @@ class Kugou {
         final list_id = getParameterByName('list_id', url).split('_').last;
         final target_url = 'https://m.kugou.com/plist/list/$list_id?json=true';
         // Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30
-        final dio = dio_with_cookie_manager;
+        final dio = dioWithCookieManager;
         final response = await dio.get(
           target_url,
           options: Options(
@@ -561,7 +561,7 @@ class Kugou {
     // Fix album name and img
     var target_url =
         'https://www.kugou.com/yy/index.php?r=play/getdata&hash=${item['hash']}';
-    final response = await dio_with_cookie_manager.get(
+    final response = await dioWithCookieManager.get(
         'http://mobilecdnbj.kugou.com/api/v3/album/info?albumid=${item['album_id']}');
     final data = jsonDecode(response.data);
     if (data['status'] != 0 && data['data'] != null) {
@@ -584,7 +584,7 @@ class Kugou {
 //   "sec-fetch-mode": "cors",
 //   "sec-fetch-site": "cross-site"
 // }
-    final response1 = await dio_with_cookie_manager.get(target_url,
+    final response1 = await dioWithCookieManager.get(target_url,
         options: Options(
           headers: {
             'User-Agent':
@@ -638,7 +638,7 @@ class Kugou {
         final artist_id = getParameterByName('list_id', url).split('_').last;
         var target_url =
             'http://mobilecdnbj.kugou.com/api/v3/singer/info?singerid=$artist_id';
-        final response = await dio_with_cookie_manager.get(target_url);
+        final response = await dioWithCookieManager.get(target_url);
         final data = jsonDecode(response.data);
         final info = {
           'cover_img_url': data['data']['imgurl'].replaceAll('{size}', '400'),
@@ -648,7 +648,7 @@ class Kugou {
         };
         target_url =
             'http://mobilecdnbj.kugou.com/api/v3/singer/song?singerid=$artist_id&page=1&pagesize=30';
-        final res = await dio_with_cookie_manager.get(target_url);
+        final res = await dioWithCookieManager.get(target_url);
         this.async_process_list(
           jsonDecode(res.data)['data']['info'],
           kg_render_artist_result_item,
@@ -716,7 +716,7 @@ class Kugou {
     final track_id = track.id.substring('kgtrack_'.length);
     final target_url =
         'https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=$track_id';
-    final response = await dio_with_cookie_manager.get(target_url);
+    final response = await dioWithCookieManager.get(target_url);
     final info = jsonDecode(response.data);
     final url = info['url'];
     if (url == '') {
@@ -758,7 +758,7 @@ class Kugou {
     return {
       'success': (fn) async {
         try {
-          final response = await dio_with_cookie_manager.get(lyric_url);
+          final response = await dioWithCookieManager.get(lyric_url);
           final data = response.data;
           final jsonString =
               data.substring('jQuery('.length, data.length - 1 - 1);
@@ -825,7 +825,7 @@ class Kugou {
     // Fix other data
     final target_url =
         'https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=${item['hash']}';
-    final response = await dio_with_cookie_manager.get(target_url);
+    final response = await dioWithCookieManager.get(target_url);
     final data = jsonDecode(response.data);
     track.title = data['songName'];
     track.artist = data['singerId'] == 0 ? '未知' : data['singerName'];
@@ -879,7 +879,7 @@ class Kugou {
             'http://mobilecdnbj.kugou.com/api/v3/album/info?albumid=$album_id';
         var info;
         // info
-        final response = await dio_with_cookie_manager.get(target_url);
+        final response = await dioWithCookieManager.get(target_url);
         final data = jsonDecode(response.data);
         info = {
           'cover_img_url': data['data']['imgurl'].replaceAll('{size}', '400'),
@@ -890,7 +890,7 @@ class Kugou {
         };
         target_url =
             'http://mobilecdnbj.kugou.com/api/v3/album/song?albumid=$album_id&page=1&pagesize=-1';
-        final res = await dio_with_cookie_manager.get(target_url);
+        final res = await dioWithCookieManager.get(target_url);
         this.async_process_list(
           jsonDecode(res.data)['data']['info'],
           kg_render_album_result_item,
@@ -945,7 +945,7 @@ class Kugou {
     return {
       'success': (fn) async {
         try {
-          final response = await dio_with_cookie_manager.get(target_url);
+          final response = await dioWithCookieManager.get(target_url);
           final data = jsonDecode(response.data);
           // const total = data.plist.total;
           final result = data['plist']['list']['info']

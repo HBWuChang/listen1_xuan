@@ -22,7 +22,7 @@ Widget updSettingsTile(BuildContext context) {
                   showWarningSnackbar('请先登录Github', null);
                   return;
                 }
-                final response = await dio_with_ProxyAdapter.get(
+                final response = await dioWithProxyAdapter.get(
                   url_list,
                   options: Options(
                     headers: {
@@ -101,7 +101,7 @@ Widget updSettingsTile(BuildContext context) {
                       );
                     },
                   );
-                  await dio_with_ProxyAdapter.download(
+                  await dioWithProxyAdapter.download(
                     download_url,
                     filePath,
                     options: Options(
@@ -192,7 +192,7 @@ Widget updSettingsTile(BuildContext context) {
                     showWarningSnackbar('请先登录Github', null);
                     return;
                   }
-                  final response = await dio_with_ProxyAdapter.get(
+                  final response = await dioWithProxyAdapter.get(
                     url_list,
                     options: Options(
                       headers: {
@@ -273,7 +273,7 @@ Widget updSettingsTile(BuildContext context) {
                     },
                   );
                   // 首先获取302重定向的实际下载链接
-                  final redirectResponse = await dio_with_ProxyAdapter.get(
+                  final redirectResponse = await dioWithProxyAdapter.get(
                     download_url,
                     options: Options(
                       followRedirects: false,
@@ -293,7 +293,7 @@ Widget updSettingsTile(BuildContext context) {
                   }
 
                   // 使用实际下载链接进行下载，不添加GitHub API请求头
-                  await dio_with_ProxyAdapter.download(
+                  await dioWithProxyAdapter.download(
                     // await Dio().download(
                     actualDownloadUrl,
                     filePath,

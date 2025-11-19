@@ -113,7 +113,7 @@ class LyricController extends GetxController {
   void onInit() {
     super.onInit();
     // 监听播放位置变化，更新歌词显示
-    Get.find<PlayController>().music_player.positionStream.listen((position) {
+    Get.find<PlayController>().music_player.stream.position.listen((position) {
       if (lyricModel != null) {
         _updateCurrentLyric(position);
       }
@@ -242,13 +242,13 @@ class LyricController extends GetxController {
   /// 获取当前播放位置
   Duration getCurrentPosition() {
     final playController = Get.find<PlayController>();
-    return playController.music_player.position;
+    return playController.music_player.state.position;
   }
 
   /// 获取歌曲总时长
   Duration? getTotalDuration() {
     final playController = Get.find<PlayController>();
-    return playController.music_player.duration;
+    return playController.music_player.state.duration;
   }
 
   /// 切换翻译显示状态

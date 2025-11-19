@@ -77,7 +77,7 @@ Future<void> _onTap(BuildContext context) async {
 
 Future<void> _onDoubleTap() async {
   if (isAndroid || isIos) Vibration.vibrate(duration: 100);
-  if (Get.find<PlayController>().music_player.playing) {
+  if (Get.find<PlayController>().music_player.state.playing) {
     global_pause();
   } else {
     global_play();

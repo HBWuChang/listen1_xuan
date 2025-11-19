@@ -25,7 +25,7 @@ class Github {
       var response;
       try {
         // throw Exception('使用代理适配器请求失败，尝试使用默认Dio请求');
-        response = await dio_with_ProxyAdapter.post(
+        response = await dioWithProxyAdapter.post(
           url,
           queryParameters: params,
           options: Options(headers: {'Accept': 'application/json'}),
@@ -113,7 +113,7 @@ class Github {
     } else {
       var response;
       try {
-        response = await dio_with_ProxyAdapter.get(
+        response = await dioWithProxyAdapter.get(
           '$API_URL/user',
           options: Options(
             headers: {
@@ -195,7 +195,7 @@ class Github {
       final url = gistFiles['listen1_backup.json']['raw_url'];
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('githubOauthAccessKey');
-      final response = await (usedefault ? Dio() : dio_with_ProxyAdapter).get(
+      final response = await (usedefault ? Dio() : dioWithProxyAdapter).get(
         url.replaceAll('https://', 'https://h3.040905.xyz/default/https/'),
         options: Options(
           headers: {
@@ -211,7 +211,7 @@ class Github {
   static Future<List<dynamic>> listExistBackup() async {
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    final response = await (usedefault ? Dio() : dio_with_ProxyAdapter).get(
+    final response = await (usedefault ? Dio() : dioWithProxyAdapter).get(
       '$API_URL/gists',
       options: Options(
         headers: {
@@ -243,7 +243,7 @@ class Github {
     }
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    await (usedefault ? Dio() : dio_with_ProxyAdapter).request(
+    await (usedefault ? Dio() : dioWithProxyAdapter).request(
       url,
       options: Options(
         method: method,
@@ -266,7 +266,7 @@ class Github {
   ) async {
     final prefs = await SharedPreferences.getInstance();
     final accessToken = prefs.getString('githubOauthAccessKey');
-    final response = await (usedefault ? Dio() : dio_with_ProxyAdapter).get(
+    final response = await (usedefault ? Dio() : dioWithProxyAdapter).get(
       '$API_URL/gists/$gistId',
       options: Options(
         headers: {

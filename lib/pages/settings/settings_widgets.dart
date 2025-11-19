@@ -335,164 +335,63 @@ Widget winSettingsTiles(
 ) {
   return Column(
     mainAxisSize: MainAxisSize.min,
-    children: [
-      Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        alignment: WrapAlignment.spaceAround,
+    children:
+        [
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                alignment: WrapAlignment.spaceAround,
 
-        children: create_hotkey_btns(context),
-      ),
-      FutureBuilder(
-        future: getWindowsProxyAddr(),
-        builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return globalLoadingAnime;
-          } else {
-            return TextField(
-              focusNode: _focusNode2,
-              controller: TextEditingController(text: snapshot.data),
-              decoration: InputDecoration(
-                labelText:
-                    'Windows代理地址,仅适用于Github,例如：localhost:7890,留空表示不使用,回车以保存',
+                children: create_hotkey_btns(context),
               ),
-              onSubmitted: (value) async {
-                Get.find<SettingsController>().setSettings({'proxy': value});
-                showInfoSnackbar('设置成功$value，重启应用生效', null);
-              },
-            );
-          }
-        },
-      ),
-      Row(
-        children: [
-          Expanded(
-            child: TextField(
-              focusNode: _focusNode3,
-              controller: TextEditingController(
-                text: Get.find<PlayController>().getPlayerSettings(
-                  'ffmpegPath',
+              TextField(
+                focusNode: _focusNode2,
+                controller: TextEditingController(
+                  text: Get.find<SettingsController>().windowsProxyAddr,
+                ),
+                decoration: InputDecoration(
+                  labelText:
+                      'Windows代理地址,仅适用于Github,例如：localhost:7890,留空表示不使用,回车以保存',
+                ),
+                onSubmitted: (value) async {
+                  Get.find<SettingsController>().windowsProxyAddr = value;
+                  Get.find<DioController>().loadProxy();
+                  showInfoSnackbar('设置成功$value', '立即生效');
+                },
+              ),
+
+              Obx(
+                () => SwitchListTile(
+                  title: const Text('在右侧页面中键时隐藏/最小化主页面'),
+                  value: Get.find<SettingsController>().hideOrMinimize,
+                  onChanged: (bool value) {
+                    Get.find<SettingsController>().hideOrMinimize = value;
+                    // _msg('设置成功', 1.0);
+                    showSuccessSnackbar('设置成功', null);
+                  },
                 ),
               ),
-              decoration: InputDecoration(
-                labelText:
-                    'FFmpeg路径,例如：C:\\ffmpeg\\bin\\ffmpeg.exe,留空表示使用默认,回车以保存',
-              ),
-              onSubmitted: (value) async {
-                var msg = '正在检查ffmpeg'.obs;
-                Get.find<CacheController>().ffmpegPathWindows = value;
-                try {
-                  showLoadingDialog(msg);
-                  var isOk = await Get.find<CacheController>().isFFmpegOk();
-                  if (!isOk) throw Exception('FFmpeg不可用');
-                  Get.back();
-                  showSuccessSnackbar(
-                    '设置成功',
-                    Get.find<CacheController>().checkFfmpegVersion,
-                  );
-                } catch (e) {
-                  Get.back();
-                  showErrorSnackbar('错误', e.toString());
-                }
-              },
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              var msg = '正在下载FFmpeg'.obs;
-              showLoadingDialog(msg);
-              try {
-                final res1 = (await Dio().get(
-                  'https://h3.040905.xyz/default/https/api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest',
-                )).data;
-                debugPrint('FFmpeg最新版本信息: $res1');
-                List assets = res1["assets"];
-                if (assets.isEmpty) {
-                  throw Exception('没有可用的FFmpeg版本');
-                }
-                String downloadUrl = '';
-                for (var asset in assets) {
-                  // ffmpeg-master-latest-win64-lgpl-shared.zip
-                  if (asset['name'].contains('ffmpeg') &&
-                      asset['name'].contains('win64') &&
-                      asset['name'].contains('lgpl') &&
-                      !asset['name'].contains('shared')) {
-                    downloadUrl = asset['browser_download_url'];
-                    break;
-                  }
-                }
-                if (downloadUrl.isEmpty) {
-                  throw Exception('没有可用的FFmpeg版本');
-                }
-                downloadUrl = downloadUrl.replaceAll(
-                  'https://',
-                  'https://h3.040905.xyz/default/https/',
-                );
-                debugPrint('FFmpeg下载链接: $downloadUrl');
-                final tempPath = (await xuanGetdownloadDirectory()).path;
-                String filePath = p.join(tempPath, 'ffmpeg.zip');
-                await Dio().download(
-                  downloadUrl,
-                  filePath,
-                  onReceiveProgress: (received, total) {
-                    if (total > 0) {
-                      msg.value =
-                          '下载进度: ${(received / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB';
-                    }
+              Obx(
+                () => SwitchListTile(
+                  title: const Text('记住窗口大小'),
+                  value: Get.find<SettingsController>()
+                      .rememberWindowsSizeAndPosition,
+                  onChanged: (bool value) {
+                    Get.find<SettingsController>()
+                            .rememberWindowsSizeAndPosition =
+                        value;
+                    // _msg('设置成功', 1.0);
+                    showSuccessSnackbar('设置成功', null);
                   },
-                );
-                msg.value = '下载完成，正在解压FFmpeg';
-                final bytes = File(filePath).readAsBytesSync();
-                final archive = ZipDecoder().decodeBytes(bytes);
-                for (final file in archive) {
-                  var filename = file.name;
-                  if (filename.contains('ffmpeg.exe')) {
-                    filename = 'ffmpeg.exe';
-                    final data = file.content as List<int>;
-                    File(p.join(tempPath, filename))
-                      ..createSync(recursive: true)
-                      ..writeAsBytesSync(data);
-                    break;
-                  }
-                }
-                Get.find<CacheController>().ffmpegPathWindows =
-                    p.join(tempPath, 'ffmpeg.exe');
-                msg.value = '正在删除压缩包';
-                await File(filePath).delete();
-                Get.back();
-                showSuccessSnackbar('下载成功', 'FFmpeg已设置');
-              } catch (e) {
-                Get.back();
-                showErrorSnackbar('下载失败', e.toString());
-              }
-            },
-            child: Text('从GitHub下载FFmpeg'),
-          ),
-        ],
-      ),
-      Obx(
-        () => SwitchListTile(
-          title: const Text('在右侧页面中键时隐藏/最小化主页面'),
-          value: Get.find<SettingsController>().hideOrMinimize,
-          onChanged: (bool value) {
-            Get.find<SettingsController>().hideOrMinimize = value;
-            // _msg('设置成功', 1.0);
-            showSuccessSnackbar('设置成功', null);
-          },
-        ),
-      ),
-      Obx(
-        () => SwitchListTile(
-          title: const Text('记住窗口大小'),
-          value: Get.find<SettingsController>().rememberWindowsSizeAndPosition,
-          onChanged: (bool value) {
-            Get.find<SettingsController>().rememberWindowsSizeAndPosition =
-                value;
-            // _msg('设置成功', 1.0);
-            showSuccessSnackbar('设置成功', null);
-          },
-        ),
-      ),
-    ].map((e) => Padding(padding: EdgeInsets.symmetric(vertical: 4.0), child: e)).toList(),
+                ),
+              ),
+            ]
+            .map(
+              (e) => Padding(
+                padding: EdgeInsets.symmetric(vertical: 4.0),
+                child: e,
+              ),
+            )
+            .toList(),
   );
 }
 

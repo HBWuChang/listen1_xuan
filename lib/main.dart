@@ -8,7 +8,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
+import 'package:media_kit/media_kit.dart' show MediaKit;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'controllers/DioController.dart';
 import 'controllers/audioHandler_controller.dart';
 import 'controllers/lyric_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
@@ -28,29 +30,23 @@ import 'play.dart';
 import 'global_settings_animations.dart';
 import 'widgets.dart';
 import 'dart:async';
-import 'dart:isolate';
-import 'package:flutter_isolate/flutter_isolate.dart';
 import 'dart:io';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:flutter/foundation.dart';
-import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:flutter/gestures.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:native_dio_adapter/native_dio_adapter.dart';
 import 'package:windows_taskbar/windows_taskbar.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
-import 'package:metadata_god/metadata_god.dart';
 import 'controllers/theme.dart';
 import 'package:app_links/app_links.dart';
-import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 String supabaseUrl = 'https://jtvxrwybwvgpqobyhaoy.supabase.co';
@@ -58,8 +54,8 @@ String supabaseUrl = 'https://jtvxrwybwvgpqobyhaoy.supabase.co';
 String supabaseKey =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0dnhyd3lid3ZncHFvYnloYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NjE5ODUsImV4cCI6MjA3NzUzNzk4NX0.lb4YhPlsyTinmoK85jv_15KCEv1QDr0JsUa1oI5P0Ko';
 
-final dio_with_cookie_manager = Dio();
-final dio_with_ProxyAdapter = Dio();
+Dio get dioWithCookieManager => Get.find<DioController>().dioWithCookieManager;
+Dio get dioWithProxyAdapter => Get.find<DioController>().dioWithProxyAdapter;
 
 int last_dir = 0;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -71,57 +67,6 @@ class MyHttpOverrides extends HttpOverrides {
       ..badCertificateCallback =
           (X509Certificate cert, String host, int port) => true;
   }
-}
-
-@pragma('vm:entry-point')
-void downloadtasks_background(SendPort mainPort) async {
-  Future get_download_tasks() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    Map<String, dynamic> download_tasks = jsonDecode(
-      prefs.getString("download_tasks") ?? "{}",
-    );
-    if (download_tasks.isEmpty) {
-      return {"waiting": [], "downloading": [], "downloaded": [], "failed": []};
-    }
-    return download_tasks;
-  }
-
-  Future set_download_tasks(Map<String, dynamic> download_tasks) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString("download_tasks", jsonEncode(download_tasks));
-  }
-
-  final receivePort = ReceivePort();
-  mainPort.send(receivePort.sendPort);
-  for (var i = 0; i < 20; i++) {
-    print("background");
-  }
-  receivePort.listen((message) async {
-    print("background receive: $message");
-    if (message == "get_download_tasks") {
-      await get_download_tasks();
-    }
-    // 若为List<String>
-    if (message is List<String>) {
-      Map<String, dynamic> download_tasks = await get_download_tasks();
-      for (var item in message) {
-        if (download_tasks["waiting"].contains(item) ||
-            download_tasks["downloading"].contains(item) ||
-            download_tasks["downloaded"].contains(item)) {
-          continue;
-        }
-        if (download_tasks["failed"].contains(item)) {
-          download_tasks["failed"].remove(item);
-        }
-        if (await get_local_cache(item) != '') {
-          download_tasks["downloaded"].add(item);
-          continue;
-        }
-        download_tasks["waiting"].add(item);
-      }
-      await set_download_tasks(download_tasks);
-    }
-  });
 }
 
 void enableThumbnailToolbar() async {
@@ -174,26 +119,24 @@ void enableThumbnailToolbar() async {
 void main() async {
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
   await WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter框架已初始化
+  MediaKit.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       systemNavigationBarColor: Colors.transparent, // 设置导航栏背景色为透明
       systemNavigationBarDividerColor: Colors.transparent, // 设置导航栏分割线为透明
     ),
   );
-  if (isWindows || isMacOS) {
-    MetadataGod.initialize();
-  }
   SettingsController settingsController = Get.put(
     SettingsController(),
     permanent: true,
   );
   await settingsController.loadSettings();
   Get.put(RouteController(), permanent: true);
-  Get.put(PlayController(), permanent: true);
-  Get.find<PlayController>().loadDatas();
+  Get.put(DioController(), permanent: true);
   CacheController cacheController = Get.put(CacheController(), permanent: true);
+  Get.put(PlayController(), permanent: true);
   cacheController.loadLocalCacheList();
-  await cacheController.moveOldData();
+  Get.find<PlayController>().loadDatas();
   Get.put(MyPlayListController(), permanent: true);
   Get.find<MyPlayListController>().loadDatas();
   Get.put(AudioHandlerController(), permanent: true);
@@ -201,14 +144,13 @@ void main() async {
   Get.put(NowPlayingPageController(), permanent: true);
   Get.put(BroadcastWsController(), permanent: true);
   Get.put(ScanBroadcastController(), permanent: true);
-  Get.put(DownloadController(), permanent: true);
+  Get.put(WsDownloadController(), permanent: true);
   Get.put(Applinkscontroller(), permanent: true);
   Get.put(SupabaseAuthController(), permanent: true);
   init_apkfilepath();
   if (isWindows || isMacOS) {
     if (isWindows) {
       SMTCWindows.initialize();
-      JustAudioMediaKit.ensureInitialized(linux: false, windows: true);
     }
     // Must add this line.
     await windowManager.ensureInitialized();
@@ -279,28 +221,7 @@ void main() async {
   if (!await cookieDir.exists()) {
     await cookieDir.create(recursive: true);
   }
-  if (isAndroid || isIos) {
-    dio_with_ProxyAdapter.httpClientAdapter = NativeAdapter(
-      createCupertinoConfiguration: () =>
-          URLSessionConfiguration.ephemeralSessionConfiguration()
-            ..allowsCellularAccess = true
-            ..allowsConstrainedNetworkAccess = true
-            ..allowsExpensiveNetworkAccess = true,
-    );
-  } else {
-    var proxyaddr = await getWindowsProxyAddr();
-    if (proxyaddr != "") {
-      dio_with_ProxyAdapter.httpClientAdapter = IOHttpClientAdapter(
-        createHttpClient: () {
-          final client = HttpClient();
-          client.findProxy = (uri) {
-            return 'PROXY $proxyaddr';
-          };
-          return client;
-        },
-      );
-    }
-  }
+
   // 创建 PersistCookieJar 实例
   final cookieJar = PersistCookieJar(
     storage: FileStorage(_cookiePath),
@@ -308,7 +229,7 @@ void main() async {
   );
 
   // 将 PersistCookieJar 添加到 Dio 的拦截器中
-  dio_with_cookie_manager.interceptors.add(CookieManager(cookieJar));
+  dioWithCookieManager.interceptors.add(CookieManager(cookieJar));
   if (settingsController.settingsPageExpansion.contains(0)) {
     settingsController.refreshLoginData();
   }
@@ -1502,6 +1423,8 @@ class _MyHomePageState extends State<MyHomePage>
                 quarterTurns: -1,
                 child: Obx(
                   () => Slider(
+                    min: 0.0,
+                    max: 100.0,
                     value: _playController.currentVolume,
                     onChanged: (value) {
                       _playController.currentVolume = value;

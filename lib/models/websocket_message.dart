@@ -156,10 +156,10 @@ class PlayStatusData {
       volume: controller.currentVolume,
       playMode: controller.getPlayerSettings("playmode") ?? 0,
       processTime: Duration(
-        milliseconds: controller.music_player.position.inMilliseconds,
+        milliseconds: controller.music_player.state.position.inMilliseconds,
       ),
       totalTime: Duration(
-        milliseconds: controller.music_player.duration?.inMilliseconds ?? 0,
+        milliseconds: controller.music_player.state.duration.inMilliseconds,
       ),
     );
   }

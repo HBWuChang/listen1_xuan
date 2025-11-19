@@ -12,7 +12,7 @@ export 'websocket_server_controller.dart';
 export 'websocket_card_controller.dart';
 export 'websocket_client_controller.dart';
 export 'appLinksController.dart';
-export 'DownloadController.dart';
+export 'WsDownloadController.dart';
 export 'BroadcastWsController.dart';
 export 'ScanBroadcastController.dart';
 export 'routeController.dart';

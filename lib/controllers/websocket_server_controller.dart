@@ -249,7 +249,7 @@ class WebSocketServerController extends GetxController {
             ),
           );
           break;
-       
+
         case WebSocketMessageType.message:
           // 处理普通消息（可以根据需要添加逻辑）
           _logger.d('$_tag 收到普通消息: ${message.content}');
@@ -360,16 +360,18 @@ class WebSocketServerController extends GetxController {
           }
           // 尝试解析为音量控制命令
           final volumeValue = double.tryParse(command);
-          if (volumeValue != null && volumeValue >= 0.0 && volumeValue <= 1.0) {
+          if (volumeValue != null &&
+              volumeValue >= 0.0 &&
+              volumeValue <= 100.0) {
             // 这是音量控制命令
             try {
               final playController = Get.find<PlayController>();
               playController.currentVolume = volumeValue;
-              _logger.i('$_tag 设置音量: ${(volumeValue * 100).toInt()}%');
+              _logger.i('$_tag 设置音量: ${volumeValue.toInt()}%');
 
               // 发送成功响应
               final successMessage = WebSocketMessageBuilder.createMessage(
-                '音量已设置为: ${(volumeValue * 100).toInt()}%',
+                '音量已设置为: ${volumeValue.toInt()}%',
               );
               _sendMessage(connection, successMessage);
               return;
@@ -422,12 +424,7 @@ class WebSocketServerController extends GetxController {
       _logger.i('$_tag 准备播放歌曲: ${track.title} - ${track.artist}');
 
       // 调用playsong方法播放歌曲
-      playsong(
-        track,
-        true,
-        false,
-        true,
-      ); // start=true, on_playersuccesscallback=false, isByClick=true
+      playsong(track, isByClick: true);
 
       // 发送成功响应
       final successMessage = WebSocketMessageBuilder.createMessage(

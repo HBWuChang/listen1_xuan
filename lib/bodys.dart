@@ -5,7 +5,6 @@ import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/websocket_client_controller.dart';
 import 'examples/websocket_client_example.dart';
-import 'main.dart';
 import 'package:flutter/material.dart';
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/qq.dart';
@@ -14,7 +13,6 @@ import 'package:marquee/marquee.dart';
 import 'loweb.dart';
 import 'play.dart';
 import 'myplaylist.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
@@ -80,7 +78,7 @@ Future<dynamic> song_dialog(
             IconButton(
               icon: Icon(Icons.play_circle_fill_rounded),
               onPressed: () {
-                playsong(track, true, false, true);
+                playsong(track, isByClick: true);
               },
             ),
           ],
@@ -1092,7 +1090,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                     );
                                     set_current_playing(trackList);
 
-                                    playsong(tracks[0], true, false, true);
+                                    playsong(tracks[0], isByClick: true);
                                   },
                                   child: Text('播放全部（共${tracks.length}首）'),
                                 ),
@@ -1326,7 +1324,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                           ),
                           onTap: () {
                             showInfoSnackbar('尝试播放：${track.title}', null);
-                            playsong(track, true, false, true);
+                            playsong(track, isByClick: true);
                           },
                         );
                       }).toList(),
@@ -1624,7 +1622,7 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                           ),
                           onTap: () {
                             showInfoSnackbar('尝试播放：${track.title}', null);
-                            playsong(track, true, false, true);
+                            playsong(track, isByClick: true);
                           },
                         );
                       },

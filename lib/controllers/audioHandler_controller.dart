@@ -51,7 +51,7 @@ class AudioHandlerController extends GetxController {
           ),
         );
       }
-      await playsong(track['track'], false);
+      await playsong(track['track'], start: false);
     } else {
       if (isWindows) {
         smtc = SMTCWindows(

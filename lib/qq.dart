@@ -54,7 +54,7 @@ class QQ {
   Future<dynamic> dio_post_with_cookie_and_csrf(
       String url, dynamic data) async {
     print("dio_post_with_cookie_and_csrf");
-    return await dio_with_cookie_manager.post(
+    return await dioWithCookieManager.post(
       url,
       data: data,
     );

@@ -13,9 +13,9 @@ import 'dart:io';
 import 'package:extended_image/extended_image.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
+import 'package:media_kit/media_kit.dart' show Player;
 import 'package:rxdart/rxdart.dart' as rxdart;
 import 'package:flutter/foundation.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:marquee/marquee.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
@@ -110,9 +110,9 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
   if (current_playing.length == 1 && force_next) {
     return;
   }
-  if (Get.find<PlayController>().nextTrack != null) {
-    await playsong(Get.find<PlayController>().nextTrack!);
-    Get.find<PlayController>().nextTrack = null;
+  if (_playController.nextTrack != null) {
+    await playsong(_playController.nextTrack!);
+    _playController.nextTrack = null;
     return;
   }
   if (nowplaying_track['index'] != -1) {
@@ -148,7 +148,7 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
               : await playsong(current_playing[0]);
           break;
         }
-        await Get.find<PlayController>().music_player.seek(Duration.zero);
+        await _playController.music_player.seek(Duration.zero);
         break;
       default:
         break;
@@ -170,19 +170,19 @@ Future<void> clean_local_cache([bool all = false, String id = '']) async {
 }
 
 void add_current_playing(List<Track> tracks) {
-  Get.find<PlayController>().add_current_playing(tracks);
+  _playController.add_current_playing(tracks);
 }
 
 void set_current_playing(List<Track> tracks) async {
-  Get.find<PlayController>().set_current_playing(tracks);
+  _playController.set_current_playing(tracks);
 }
 
 List<Track> get_current_playing() {
-  return Get.find<PlayController>().current_playing;
+  return _playController.current_playing;
 }
 
 Future<Map<String, dynamic>> getnowplayingsong() async {
-  final nowplaying_track_id = Get.find<PlayController>().nowPlayingTrackId;
+  final nowplaying_track_id = _playController.nowPlayingTrackId;
   final current_playing = await get_current_playing();
   for (var track in current_playing) {
     if (track.id == nowplaying_track_id) {
@@ -258,9 +258,8 @@ Future<void> change_playback_state(
     broadcastWs();
     // 使用 Completer 来等待 _duration 被赋值
     final Completer<void> completer = Completer<void>();
-    Get.find<PlayController>().music_player.durationStream.listen((duration) {
-      if (duration != null && !completer.isCompleted) {
-        // print('音频文件时长: ${duration.inSeconds}秒');
+    _playController.music_player.stream.duration.listen((duration) {
+      if (!completer.isCompleted) {
         completer.complete();
       }
     });
@@ -269,7 +268,7 @@ Future<void> change_playback_state(
     await completer.future;
     // 获取音频文件的时长
 
-    final _duration = await Get.find<PlayController>().music_player.duration;
+    final _duration = await _playController.music_player.state.duration;
     MediaItem _item;
     _item = MediaItem(
       id: track.id,
@@ -342,151 +341,26 @@ Future<void> change_playback_state(
   }
 }
 
-// Future<void> playsong(Map<String, dynamic> track) async {
 Future<void> playsong(
-  Track track, [
-  start = true,
-  on_playersuccesscallback = false,
+  Track track, {
+  bool start = true,
+  bool onBootstrapTrackSuccessCallback = false,
   bool isByClick = false,
-]) async {
-  try {
-    if (on_playersuccesscallback &&
-        _playController.nowPlayingTrackId !=
-            track.id) {
-      return;
-    }
-    _playController.nowPlayingTrackId = track.id;
-    
-    add_current_playing([track]);
-    Get.find<NowPlayingPageController>().scrollToCurrentTrack?.call();
-    final tdir = await get_local_cache(track.id);
-    debugPrint('playsong');
-    debugPrint(track.toString());
-    debugPrint(tdir);
-    if (tdir == "") {
-      MediaService.bootstrapTrack(
-        track,
-        playerSuccessCallback,
-        playerFailCallback,
-      );
-      return;
-    }
-    await Get.find<PlayController>().music_player.setFilePath(tdir);
-
-    if (!randommodetemplist.any((element) => element.id == track.id)) {
-      if (randomTrackInsertAtHead) {
-        randommodetemplist.insert(0, track);
-        randomTrackInsertAtHead = false;
-      } else {
-        randommodetemplist.add(track);
-      }
-    } else if (isByClick) {
-      // 如果是点击播放，且当前歌曲已经在随机列表中，则将其移动到列表头部
-      randommodetemplist.removeWhere((element) => element.id == track.id);
-      randommodetemplist.add(track);
-    }
-
-    Get.find<LyricController>().loadLyric();
-    double t_volume = 100;
-    try {
-      t_volume = Get.find<PlayController>().getPlayerSettings("volume");
-    } catch (e) {
-      t_volume = 100;
-      Get.find<PlayController>().setPlayerSetting("volume", t_volume);
-    }
-    Get.find<PlayController>().music_player.setVolume(t_volume / 100);
-    if (start) {
-      Get.find<PlayController>().music_player.play();
-    }
-    await change_playback_state(track);
-  } catch (e, stackTrace) {
-    debugPrint('播放失败!!!!');
-    debugPrint(e.toString());
-    debugPrint(stackTrace.toString());
-  }
-}
-
-Future<void> playerSuccessCallback(dynamic res, Track track) async {
-  try {
-    var tempDir = await xuanGetdataDirectory();
-    final tempPath = tempDir.path;
-    final _local_cache = await get_local_cache(track.id);
-    if (_local_cache == '') {
-      // 获取应用程序的临时目录
-      // final fileName = res['url'].split('/').last.split('?').first;
-      // 根据.定位文件后缀名
-      String fileName =
-          res['url']
-              .split('.')[res['url'].split('.').length - 2]
-              .split('/')
-              .last +
-          '.' +
-          res['url'].split('.').last.split('?').first;
-      final filePath = p.join(tempPath, fileName);
-      // 若本地已经存在该文件，则直接播放
-      switch (res["platform"]) {
-        case "bilibili":
-          final dio = dio_with_cookie_manager;
-          await dio.download(
-            res['url'],
-            filePath,
-            options: Options(
-              headers: {
-                "user-agent":
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
-                "accept": "*/*",
-                "accept-encoding": "identity;q=1, *;q=0",
-                "accept-language": "zh-CN",
-                "referer": "https://www.bilibili.com/",
-                "sec-fetch-dest": "audio",
-                "sec-fetch-mode": "no-cors",
-                "sec-fetch-site": "cross-site",
-                "range": "bytes=0-",
-              },
-            ),
-          );
-        case "netease":
-          final dio = dio_with_cookie_manager;
-          await dio.download(res['url'], filePath);
-        default:
-          await dio_with_cookie_manager.download(res['url'], filePath);
-      }
-      await set_local_cache(track.id, fileName);
-    }
-    playsong(track, true, true);
-    return;
-  } catch (e) {
-    debugPrint('Error downloading or playing audio: $e');
-    playerFailCallback(track);
-  }
-}
-
-Future<void> playerFailCallback(Track track) async {
-  debugPrint('playerFailCallback');
-  debugPrint(track.toJson().toString());
-  // {id: netrack_2084034562, title: Anytime Anywhere, artist: milet, artist_id: neartist_31464106, album: Anytime Anywhere, album_id: nealbum_175250775, source: netease, source_url: https://music.163.com/#/song?id=2084034562, img_url: https://p1.music.126.net/11p2mKi5CMKJvAS43ulraQ==/109951168930518368.jpg, sourceName: 网易, $$hashKey: object:2884, disabled: false, index: 365, playNow: true, bitrate: 320kbps, platform: netease, platformText: 网易}
-  showErrorSnackbar('播放失败', track.title);
-  if (_playController.nowPlayingTrackId != track.id) {
-    return;
-  }
-  var connectivityResult = await (Connectivity().checkConnectivity());
-  debugPrint(connectivityResult.toString());
-  while (connectivityResult == ConnectivityResult.none) {
-    connectivityResult = await (Connectivity().checkConnectivity());
-    debugPrint(connectivityResult.toString());
-    // 等待三秒
-    await Future.delayed(Duration(seconds: 3));
-  }
-
-  onPlaybackCompleted(true);
+}) async {
+  await _playController.playsong(
+    track,
+    start: start,
+    onBootstrapTrackSuccessCallback: onBootstrapTrackSuccessCallback,
+    isByClick: isByClick,
+  );
 }
 
 Future<void> fresh_playmode() async {
   try {
-    playmode.value = Get.find<PlayController>().getPlayerSettings("playmode");
+    playmode.value = _playController.getPlayerSettings("playmode");
   } catch (e) {
     playmode.value = 0;
-    Get.find<PlayController>().setPlayerSetting("playmode", playmode.value);
+    _playController.setPlayerSetting("playmode", playmode.value);
   }
 }
 
@@ -495,8 +369,8 @@ bool change_p = false;
 /// 打开歌词页面
 void _openLyricPage() {
   if (!globalHorizon) {
-    Get.find<PlayController>().sheetController.animateTo(
-      Get.find<PlayController>().playVMaxOffset,
+    _playController.sheetController.animateTo(
+      _playController.playVMaxOffset,
       duration: const Duration(milliseconds: 600),
     );
     return;
@@ -562,7 +436,7 @@ class _PlayState extends State<Play> {
 Stream<MediaState> get _mediaStateStream =>
     rxdart.Rx.combineLatest2<MediaItem?, Duration, MediaState>(
       Get.find<AudioHandlerController>().audioHandler.mediaItem,
-      AudioService.position,
+      _music_player.stream.position,
       (mediaItem, position) {
         if (isWindows) {
           // 计算进度并更新到 PlayController 的响应式变量
@@ -571,7 +445,7 @@ Stream<MediaState> get _mediaStateStream =>
                       (mediaItem?.duration?.inMilliseconds ?? 1) *
                       100)
                   .toInt();
-          Get.find<PlayController>().taskbarProgress.value = progress;
+          _playController.taskbarProgress.value = progress;
         }
         return MediaState(mediaItem, position);
       },
@@ -596,19 +470,15 @@ class MediaState {
 }
 
 Future<void> global_play_or_pause() async {
-  if (Get.find<PlayController>().music_player.playing) {
-    await Get.find<PlayController>().music_player.pause();
-  } else {
-    await Get.find<PlayController>().music_player.play();
-  }
+  await _playController.music_player.playOrPause();
 }
 
 Future<void> global_play() async {
-  Get.find<PlayController>().music_player.play();
+  _playController.music_player.play();
 }
 
 Future<void> global_pause() async {
-  Get.find<PlayController>().music_player.pause();
+  _playController.music_player.pause();
 }
 
 Future<void> global_seek(Duration? position, {double? process}) async {
@@ -616,53 +486,56 @@ Future<void> global_seek(Duration? position, {double? process}) async {
     position = Duration(
       milliseconds:
           (process *
-                  (Get.find<PlayController>()
+                  (_playController
                           .music_player
+                          .state
                           .duration
                           ?.inMilliseconds ??
                       0))
               .round(),
     );
   }
-  Get.find<PlayController>().music_player.seek(position);
+  if (position == null) return;
+  _playController.music_player.seek(position);
+  _playController.updatePosToAudioServiceNow.value++;
 }
 
 Future<void> global_seek_to_next({
   Duration time = const Duration(seconds: 3),
 }) async {
-  var now_pos = Get.find<PlayController>().music_player.position;
+  var now_pos = _playController.music_player.state.position;
   var next_pos = now_pos + time;
-  var max_pos = Get.find<PlayController>().music_player.duration ?? now_pos;
+  var max_pos = _playController.music_player.state.duration ?? now_pos;
   if (next_pos > max_pos) {
     next_pos = max_pos;
   }
-  Get.find<PlayController>().music_player.seek(next_pos);
+  _playController.music_player.seek(next_pos);
 }
 
 Future<void> global_seek_to_previous({
   Duration time = const Duration(seconds: 3),
 }) async {
-  var now_pos = Get.find<PlayController>().music_player.position;
+  var now_pos = _playController.music_player.state.position;
   var next_pos = now_pos < time ? Duration.zero : now_pos - time;
-  Get.find<PlayController>().music_player.seek(next_pos);
+  _playController.music_player.seek(next_pos);
 }
 
-Future<void> global_volume_up({double step = 0.02}) async {
-  var now_pos = Get.find<PlayController>().music_player.volume;
+Future<void> global_volume_up({double step = 2}) async {
+  var now_pos = _playController.music_player.state.volume;
   var next_pos = now_pos + step;
   if (next_pos > 1) {
     next_pos = 1;
   }
-  Get.find<PlayController>().currentVolume = next_pos;
+  _playController.currentVolume = next_pos;
 }
 
-Future<void> global_volume_down({double step = 0.02}) async {
-  var now_pos = Get.find<PlayController>().music_player.volume;
+Future<void> global_volume_down({double step = 2}) async {
+  var now_pos = _playController.music_player.state.volume;
   var next_pos = now_pos - step;
   if (next_pos < 0) {
     next_pos = 0;
   }
-  Get.find<PlayController>().currentVolume = next_pos;
+  _playController.currentVolume = next_pos;
 }
 
 Future<void> global_skipToPrevious() async {
@@ -743,10 +616,12 @@ Future<int> global_change_play_mode() async {
   change_p = true;
   await fresh_playmode();
   playmode.value = (playmode.value + 1) % 3;
-  Get.find<PlayController>().setPlayerSetting("playmode", playmode.value);
+  _playController.setPlayerSetting("playmode", playmode.value);
   broadcastWs();
   return playmode.value;
 }
+
+Player get _music_player => _playController.music_player;
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   /// Initialise our audio handler.
@@ -764,23 +639,28 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // So that our clients (the Flutter UI and the system notification) know
     // what state to display, here we set up our audio handler to broadcast all
     // playback state changes as they happen via playbackState...
-    Get.find<PlayController>().music_player.playbackEventStream
-        .map(_transformEvent)
-        .pipe(playbackState);
+
+    rxdart.Rx.combineLatest2<bool, int, bool>(
+      _playController.music_player.stream.playing,
+      _playController.updatePosToAudioServiceNow.stream,
+      (a, b) => a,
+    ).map(_transformEvent).pipe(playbackState);
+    // _playController.music_player.stream.duration
+    //     .map(_transformEvent)
+    //     .pipe(playbackState);
     // ... and also the current media item via mediaItem.
     mediaItem.add(_item);
 
     // Load the player.
-    if (Get.find<PlayController>().music_player.audioSource == null) {
-      Get.find<PlayController>().music_player.setAudioSource(
-        AudioSource.uri(Uri.parse(_item.id)),
-        preload: false,
-      );
-    }
-    Get.find<PlayController>().music_player.playerStateStream.listen((
-      playerState,
-    ) {
-      if (playerState.processingState == ProcessingState.completed) {
+    // TODO 初始化问题
+    // if (_playController.music_player.state.track == null) {
+    //   _playController.music_player.setAudioSource(
+    //     AudioSource.uri(Uri.parse(_item.id)),
+    //     preload: false,
+    //   );
+    // }
+    _playController.music_player.stream.completed.listen((finish) {
+      if (finish) {
         onPlaybackCompleted();
       }
     });
@@ -802,7 +682,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   Future<void> play() => global_play();
 
   // @override
-  // Future<void> pause() => Get.find<PlayController>().music_player.pause();
+  // Future<void> pause() => _playController.music_player.pause();
   @override
   Future<void> pause() => global_pause();
 
@@ -814,36 +694,10 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> skipToNext() => global_skipToNext();
 
-  // @override
-  // Future<void> stop() async {
-  //   await global_change_play_mode();
-  // }
-
-  // @override
-  // Future<void> stop() => global_change_play_mode();
-  // @override
-  // Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
-  //   if (change_p) {
-  //     change_p = false;
-  //     return;
-  //   }
-  //   // await Get.find<PlayController>().music_player.setRepeatMode(repeatMode);
-  //   await global_change_play_mode();
-  // }
-
-  /// Transform a just_audio event into an audio_service state.
-  ///
-  /// This method is used from the constructor. Every event received from the
-  /// just_audio player will be transformed into an audio_service state so that
-  /// it can be broadcast to audio_service clients.
-
-  PlaybackState _transformEvent(PlaybackEvent event) {
+  PlaybackState _transformEvent(bool playing) {
     return PlaybackState(
       controls: [
-        if (Get.find<PlayController>().music_player.playing)
-          MediaControl.pause
-        else
-          MediaControl.play,
+        if (playing) MediaControl.pause else MediaControl.play,
         // MediaControl.pause,
         MediaControl.skipToNext,
         MediaControl.skipToPrevious,
@@ -855,19 +709,12 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         MediaAction.seekBackward,
       },
       androidCompactActionIndices: const [0, 1, 2],
-      processingState: const {
-        ProcessingState.idle: AudioProcessingState.idle,
-        ProcessingState.loading: AudioProcessingState.loading,
-        ProcessingState.buffering: AudioProcessingState.buffering,
-        ProcessingState.ready: AudioProcessingState.ready,
-        ProcessingState.completed: AudioProcessingState.completed,
-      }[Get.find<PlayController>().music_player.processingState]!,
-      playing: Get.find<PlayController>().music_player.playing,
-      updatePosition: Get.find<PlayController>().music_player.position,
-      bufferedPosition:
-          Get.find<PlayController>().music_player.bufferedPosition,
-      speed: Get.find<PlayController>().music_player.speed,
-      queueIndex: event.currentIndex,
+      processingState: _music_player.state.completed
+          ? AudioProcessingState.completed
+          : AudioProcessingState.ready,
+      updatePosition: _music_player.state.position,
+      playing: _music_player.state.playing,
+      bufferedPosition: _music_player.state.duration,
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
-import '../controllers/DownloadController.dart';
+import '../controllers/WsDownloadController.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/cache_controller.dart';
 import '../controllers/websocket_client_controller.dart';
@@ -11,8 +11,8 @@ class DownloadPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final DownloadController downloadController =
-        Get.find<DownloadController>();
+    final WsDownloadController downloadController =
+        Get.find<WsDownloadController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -86,7 +86,7 @@ class DownloadPage extends StatelessWidget {
 
   /// 获取服务器已缓存的当前播放列表
   Future<void> _fetchServerCacheList(
-    DownloadController downloadController,
+    WsDownloadController downloadController,
   ) async {
     downloadController.isLoading.value = true;
 
@@ -168,7 +168,7 @@ class DownloadPage extends StatelessWidget {
   /// 构建 ExpansionPanel
   ExpansionPanel _buildExpansionPanel(
     BuildContext context,
-    DownloadController downloadController, {
+    WsDownloadController downloadController, {
     required String title,
     required RxMap<String, String> items,
     required bool isExpanded,
@@ -211,7 +211,7 @@ class DownloadPage extends StatelessWidget {
   /// 构建单个列表项
   Widget _buildListItem(
     BuildContext context,
-    DownloadController downloadController, {
+    WsDownloadController downloadController, {
     required String key,
     required String title,
     bool showProgress = false,

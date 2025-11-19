@@ -2,8 +2,11 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:listen1_xuan/controllers/cache_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/models/Track.dart';
@@ -11,13 +14,18 @@ import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 
 import 'package:logger/logger.dart';
 import 'package:get/get.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:media_kit/media_kit.dart' hide Track;
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../global_settings_animations.dart';
+import '../loweb.dart';
 import '../models/AndroidEQBand.dart';
 import '../utils/curve_utils.dart';
+import 'package:media_kit_libs_audio/media_kit_libs_audio.dart';
+import 'lyric_controller.dart';
+import 'nowplaying_controller.dart';
 import 'settings_controller.dart';
 import 'websocket_card_controller.dart';
 import 'supabase_auth_controller.dart';
@@ -27,11 +35,13 @@ import '../play.dart'; // 导入 safeCallWindowsTaskbar
 
 class PlayController extends GetxController
     with GetSingleTickerProviderStateMixin {
-  late AndroidEqualizer equalizer;
-  late AudioPlayer music_player;
+  // late AndroidEqualizer equalizer;
+  late Player music_player;
+  CacheController cacheController = Get.find<CacheController>();
   final _player_settings = <String, dynamic>{}.obs;
   final currentPlayingRx = <Track>[].obs;
   final logger = Logger();
+  final updatePosToAudioServiceNow = 0.obs;
   final _next_track = Rx<Track?>(null);
   RxString nowPlayingTrackIdRx = ''.obs;
   String get nowPlayingTrackId => nowPlayingTrackIdRx.value;
@@ -39,7 +49,8 @@ class PlayController extends GetxController
     nowPlayingTrackIdRx.value = value;
   }
 
-  final bootStarting = RxSet<String>();
+  ///用于记录正在引导播放的曲目id及下载文件名
+  final bootStraping = RxMap<String, String>();
 
   // Windows任务栏进度 (0-100)
   final taskbarProgress = 0.obs;
@@ -52,9 +63,9 @@ class PlayController extends GetxController
 
   var isplaying = false.obs;
 
-  double get currentVolume => (_player_settings['volume'] ?? 50.0) / 100.0;
+  double get currentVolume => _player_settings['volume'] ?? 50.0;
   set currentVolume(double value) {
-    _player_settings['volume'] = value * 100.0;
+    _player_settings['volume'] = value;
     music_player.setVolume(value);
   }
 
@@ -69,20 +80,20 @@ class PlayController extends GetxController
   @override
   void onInit() {
     super.onInit();
-
+    music_player = Player();
     // 初始化播放按钮旋转动画控制器
     playVPlayBtnProcessControllerInit();
-    androidEQEnabled =
-        Get.find<SettingsController>().settings[androidEQEnabledKey] ?? false;
-    if (!isAndroid || !androidEQEnabled) {
-      music_player = AudioPlayer();
-    } else {
-      equalizer = AndroidEqualizer();
-      music_player = AudioPlayer(
-        audioPipeline: AudioPipeline(androidAudioEffects: [equalizer]),
-      );
-      initAndroidEqualizer();
-    }
+    // androidEQEnabled =
+    //     Get.find<SettingsController>().settings[androidEQEnabledKey] ?? false;
+    // if (!isAndroid || !androidEQEnabled) {
+    //   music_player = AudioPlayer();
+    // } else {
+    //   equalizer = AndroidEqualizer();
+    //   music_player = AudioPlayer(
+    //     audioPipeline: AudioPipeline(androidAudioEffects: [equalizer]),
+    //   );
+    //   initAndroidEqualizer();
+    // }
     ever(_player_settings, (event) {
       final t = event['nowplaying_track_id'];
       if ((!isEmpty(t)) && t is String && t != nowPlayingTrackIdRx.value) {
@@ -98,7 +109,7 @@ class PlayController extends GetxController
     debounce(currentPlayingRx, (event) {
       _saveSingleSetting('current-playing');
     });
-    music_player.playingStream.listen((event) {
+    music_player.stream.playing.listen((event) {
       isplaying.value = event;
     });
     ever(isplaying, (callback) {
@@ -158,91 +169,197 @@ class PlayController extends GetxController
 
   @override
   void onClose() {
-    // GetX 会自动处理 AnimationController 的 dispose
-    // 但为了明确，我们也可以手动 dispose
     playVPlayBtnProcessController.dispose();
+    music_player.dispose();
     super.onClose();
   }
 
-  final RxMap<int, AndroidEQBand> _bands = RxMap<int, AndroidEQBand>();
-  final androidEQInited = false.obs;
-
-  // Getter 用于访问频段数据
-  Map<int, AndroidEQBand> get bands => _bands;
-  double minGain = -1.0;
-  double maxGain = 1.0;
-  bool androidEQEnabled = false;
-  static const String androidEQEnabledKey = 'android_equalizer_enabled';
-  Future<void> initAndroidEqualizer() async {
-    // 从设置中加载保存的频段数据
-    final savedBands =
-        Get.find<SettingsController>().settings['android_equalizer_bands'];
-    if (savedBands != null && savedBands is List) {
-      // 将 List 转换为 Map
-      _bands.value = Map<int, AndroidEQBand>.fromEntries(
-        savedBands.map<MapEntry<int, AndroidEQBand>>(
-          (value) => MapEntry(
-            value['index'] as int,
-            AndroidEQBand.fromJson(value as Map<String, dynamic>),
-          ),
-        ),
-      );
-    }
-
-    await equalizer.setEnabled(true);
-    final parameters = await equalizer.parameters;
-    minGain = parameters.minDecibels;
-    maxGain = parameters.maxDecibels;
-    for (var band in _bands.values) {
-      band.gain = band.gain.clamp(minGain, maxGain);
-    }
-    final bands = parameters.bands;
-    for (var band in bands) {
-      if (_bands.containsKey(band.index)) {
-        await band.setGain(_bands[band.index]!.gain);
-        _bands[band.index]!.upperFrequency = band.upperFrequency;
-        _bands[band.index]!.lowerFrequency = band.lowerFrequency;
-        _bands[band.index]!.centerFrequency = band.centerFrequency;
-      } else {
-        _bands[band.index] = AndroidEQBand.fromAndroidEqualizerBand(band);
+  Future<void> playsong(
+    Track track, {
+    bool start = true,
+    bool onBootstrapTrackSuccessCallback = false,
+    bool isByClick = false,
+  }) async {
+    try {
+      //若引导成功，但用户最终意图播放的不是该曲目，则返回
+      //若意图播放的曲目已经在引导中，则返回
+      if ((onBootstrapTrackSuccessCallback && nowPlayingTrackId != track.id) ||
+          bootStraping.containsKey(track.id)) {
+        // 若已在引导，但为点击播放，则更新当前播放id
+        if (isByClick) {
+          nowPlayingTrackId = track.id;
+        }
+        return;
       }
-    }
-    androidEQInited.value = true;
-    debounce(_bands, (callback) {
-      _saveEqualizerBands();
-    }, time: Duration(milliseconds: 100));
-  }
+      nowPlayingTrackId = track.id;
 
-  // 设置特定频段的增益
-  void setBandGain(int bandIndex, double gain) {
-    if (!_bands.containsKey(bandIndex)) return;
-
-    // 更新本地数据
-    _bands[bandIndex]!.gain = gain;
-    _bands.refresh();
-  }
-
-  // 保存均衡器频段设置
-  Future<void> _saveEqualizerBands() async {
-    // 应用到均衡器
-    final parameters = await equalizer.parameters;
-    final bands = parameters.bands;
-    for (var band in bands) {
-      final bandData = _bands[band.index];
-      if (bandData != null) {
-        await band.setGain(bandData.gain);
+      add_current_playing([track]);
+      Get.find<NowPlayingPageController>().scrollToCurrentTrack?.call();
+      final tdir = await get_local_cache(track.id);
+      debugPrint('playsong');
+      debugPrint(track.toString());
+      debugPrint(tdir);
+      if (tdir == "") {
+        // 无本地文件，引导播放
+        bootStraping[track.id] = "";
+        MediaService.bootstrapTrack(track, start: start);
+        return;
       }
-    }
-    final bandsList = _bands.values.map((band) => band.toJson()).toList();
-    Get.find<SettingsController>().settings['android_equalizer_bands'] =
-        bandsList;
-    logger.d('Saved equalizer bands: $bandsList');
+      // 有缓存，直接播放
+      Media media = Media(tdir);
+      await music_player.open(media, play: false);
+      if (!randommodetemplist.any((element) => element.id == track.id)) {
+        if (randomTrackInsertAtHead) {
+          randommodetemplist.insert(0, track);
+          randomTrackInsertAtHead = false;
+        } else {
+          randommodetemplist.add(track);
+        }
+      } else if (isByClick) {
+        // 如果是点击播放，且当前歌曲已经在随机列表中，则将其移动到列表头部
+        randommodetemplist.removeWhere((element) => element.id == track.id);
+        randommodetemplist.add(track);
+      }
 
-    bool isPlayingBefore = music_player.playing;
-    if (isPlayingBefore) await music_player.stop();
-    // await music_player.load();
-    if (isPlayingBefore) await music_player.play();
+      Get.find<LyricController>().loadLyric();
+      double t_volume = 100;
+      try {
+        t_volume = Get.find<PlayController>().getPlayerSettings("volume");
+      } catch (e) {
+        t_volume = 100;
+        Get.find<PlayController>().setPlayerSetting("volume", t_volume);
+      }
+      Get.find<PlayController>().music_player.setVolume(t_volume / 100);
+      if (start) {
+        Get.find<PlayController>().music_player.play();
+      }
+      await change_playback_state(track);
+    } catch (e, stackTrace) {
+      debugPrint('播放失败!!!!');
+      debugPrint(e.toString());
+      debugPrint(stackTrace.toString());
+    }
   }
+
+  Future<void> bootstrapTrackSuccess(
+    dynamic res,
+    Track track, {
+    bool start = true,
+  }) async {
+    try {
+      if (isEmpty(await cacheController.getLocalCache(track.id))) {
+        await cacheController.downloadAndCacheFile(res, track);
+      }
+      // 理论上此时应歌曲文件准备完毕
+      bootStraping.remove(track.id);
+      playsong(track, start: start, onBootstrapTrackSuccessCallback: true);
+    } catch (e) {
+      debugPrint('Error downloading or playing audio: $e');
+      bootstrapTrackFail(track);
+    }
+  }
+
+  Future<void> bootstrapTrackFail(Track track) async {
+    debugPrint('bootstrapTrackFail');
+    debugPrint(track.toJson().toString());
+    // {id: netrack_2084034562, title: Anytime Anywhere, artist: milet, artist_id: neartist_31464106, album: Anytime Anywhere, album_id: nealbum_175250775, source: netease, source_url: https://music.163.com/#/song?id=2084034562, img_url: https://p1.music.126.net/11p2mKi5CMKJvAS43ulraQ==/109951168930518368.jpg, sourceName: 网易, $$hashKey: object:2884, disabled: false, index: 365, playNow: true, bitrate: 320kbps, platform: netease, platformText: 网易}\
+    //去除引导状态
+    bootStraping.remove(track.id);
+    showErrorSnackbar('播放失败', track.title);
+    // 若用户欲播放的曲目就是当前曲目，则触发播放完成逻辑
+    if (nowPlayingTrackId != track.id) {
+      return;
+    }
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    debugPrint(connectivityResult.toString());
+    while (connectivityResult == ConnectivityResult.none) {
+      connectivityResult = await (Connectivity().checkConnectivity());
+      debugPrint(connectivityResult.toString());
+      // 等待三秒
+      await Future.delayed(Duration(seconds: 3));
+    }
+    onPlaybackCompleted(true);
+  }
+
+  // final RxMap<int, AndroidEQBand> _bands = RxMap<int, AndroidEQBand>();
+  // final androidEQInited = false.obs;
+
+  // // Getter 用于访问频段数据
+  // Map<int, AndroidEQBand> get bands => _bands;
+  // double minGain = -1.0;
+  // double maxGain = 1.0;
+  // bool androidEQEnabled = false;
+  // static const String androidEQEnabledKey = 'android_equalizer_enabled';
+  // Future<void> initAndroidEqualizer() async {
+  //   // 从设置中加载保存的频段数据
+  //   final savedBands =
+  //       Get.find<SettingsController>().settings['android_equalizer_bands'];
+  //   if (savedBands != null && savedBands is List) {
+  //     // 将 List 转换为 Map
+  //     _bands.value = Map<int, AndroidEQBand>.fromEntries(
+  //       savedBands.map<MapEntry<int, AndroidEQBand>>(
+  //         (value) => MapEntry(
+  //           value['index'] as int,
+  //           AndroidEQBand.fromJson(value as Map<String, dynamic>),
+  //         ),
+  //       ),
+  //     );
+  //   }
+
+  //   await equalizer.setEnabled(true);
+  //   final parameters = await equalizer.parameters;
+  //   minGain = parameters.minDecibels;
+  //   maxGain = parameters.maxDecibels;
+  //   for (var band in _bands.values) {
+  //     band.gain = band.gain.clamp(minGain, maxGain);
+  //   }
+  //   final bands = parameters.bands;
+  //   for (var band in bands) {
+  //     if (_bands.containsKey(band.index)) {
+  //       await band.setGain(_bands[band.index]!.gain);
+  //       _bands[band.index]!.upperFrequency = band.upperFrequency;
+  //       _bands[band.index]!.lowerFrequency = band.lowerFrequency;
+  //       _bands[band.index]!.centerFrequency = band.centerFrequency;
+  //     } else {
+  //       _bands[band.index] = AndroidEQBand.fromAndroidEqualizerBand(band);
+  //     }
+  //   }
+  //   androidEQInited.value = true;
+  //   debounce(_bands, (callback) {
+  //     _saveEqualizerBands();
+  //   }, time: Duration(milliseconds: 100));
+  // }
+
+  // // 设置特定频段的增益
+  // void setBandGain(int bandIndex, double gain) {
+  //   if (!_bands.containsKey(bandIndex)) return;
+
+  //   // 更新本地数据
+  //   _bands[bandIndex]!.gain = gain;
+  //   _bands.refresh();
+  // }
+
+  // // 保存均衡器频段设置
+  // Future<void> _saveEqualizerBands() async {
+  //   // 应用到均衡器
+  //   final parameters = await equalizer.parameters;
+  //   final bands = parameters.bands;
+  //   for (var band in bands) {
+  //     final bandData = _bands[band.index];
+  //     if (bandData != null) {
+  //       await band.setGain(bandData.gain);
+  //     }
+  //   }
+  //   final bandsList = _bands.values.map((band) => band.toJson()).toList();
+  //   Get.find<SettingsController>().settings['android_equalizer_bands'] =
+  //       bandsList;
+  //   logger.d('Saved equalizer bands: $bandsList');
+
+  //   bool isPlayingBefore = music_player.playing;
+  //   if (isPlayingBefore) await music_player.stop();
+  //   // await music_player.load();
+  //   if (isPlayingBefore) await music_player.play();
+  // }
 
   Future<void> _saveSingleSetting(String key) async {
     final prefs = await SharedPreferences.getInstance();

@@ -269,11 +269,11 @@ class _LyricPageState extends State<LyricPage>
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 20),
         child: StreamBuilder<Duration>(
-          stream: Get.find<PlayController>().music_player.positionStream,
+          stream: Get.find<PlayController>().music_player.stream.position,
           builder: (context, snapshot) {
             final position =
                 snapshot.data ??
-                Get.find<PlayController>().music_player.position;
+                Get.find<PlayController>().music_player.state.position;
             return LyricsReader(
               padding: EdgeInsets.symmetric(horizontal: 20),
               model: lyricController.lyricModel,

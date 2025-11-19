@@ -103,12 +103,11 @@ class _LyricVPageState extends State<LyricVPage>
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 20),
         child: StreamBuilder<Duration>(
-          stream: Get.find<PlayController>().music_player.positionStream,
+          stream: Get.find<PlayController>().music_player.stream.position,
           builder: (context, snapshot) {
             final position =
                 snapshot.data ??
-                Get.find<PlayController>().music_player.position;
-
+                Get.find<PlayController>().music_player.state.position;
             return LyricsReader(
               padding: EdgeInsets.symmetric(horizontal: 20),
               model: lyricController.lyricModel,
@@ -351,9 +350,9 @@ class SheetOffsetClip extends StatelessWidget {
           );
 
     final double maxOffset = playController.playVMaxHeight;
-    final double minOffset =type2
-        ?  playController.sheetMidHeight
-        :  playController.sheetMinHeight;
+    final double minOffset = type2
+        ? playController.sheetMidHeight
+        : playController.sheetMinHeight;
     final double radius = lyricBorderRadius;
     return AnimatedBuilder(
       animation: ani,

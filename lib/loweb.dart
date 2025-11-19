@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:async/async.dart';
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
 import 'controllers/play_controller.dart';
@@ -159,7 +160,9 @@ class MediaService {
   }
 
   static Future<dynamic> search(
-      String source, Map<String, dynamic> options) async {
+    String source,
+    Map<String, dynamic> options,
+  ) async {
     final url = '/search?${queryStringify(options)}';
     // if (source == 'allmusic') {
     //   final callbackArray = getAllSearchProviders().map((p) {
@@ -201,12 +204,13 @@ class MediaService {
   }
 
   static Future<dynamic> showPlaylistArray(
-      String source, int offset, dynamic filterId) {
+    String source,
+    int offset,
+    dynamic filterId,
+  ) {
     final provider = getProviderByName(source);
-    final url = '/show_playlist?${queryStringify({
-          'offset': offset,
-          'filter_id': filterId
-        })}';
+    final url =
+        '/show_playlist?${queryStringify({'offset': offset, 'filter_id': filterId})}';
     return provider.show_playlist(url);
   }
 
@@ -215,15 +219,15 @@ class MediaService {
     return provider.get_playlist_filters();
   }
 
-  static Future<dynamic> getLyric(String trackId,
-      {String? albumId, String? lyricUrl, String? tlyricUrl}) {
+  static Future<dynamic> getLyric(
+    String trackId, {
+    String? albumId,
+    String? lyricUrl,
+    String? tlyricUrl,
+  }) {
     final provider = getProviderByItemId(trackId);
-    final url = '/lyric?${queryStringify({
-          'track_id': trackId,
-          'album_id': albumId,
-          'lyric_url': lyricUrl,
-          'tlyric_url': tlyricUrl,
-        })}';
+    final url =
+        '/lyric?${queryStringify({'track_id': trackId, 'album_id': albumId, 'lyric_url': lyricUrl, 'tlyric_url': tlyricUrl})}';
     return provider.lyric(url);
   }
 
@@ -272,7 +276,11 @@ class MediaService {
   }
 
   static dynamic insertTrackToMyPlaylist(
-      String id, dynamic track, dynamic toTrack, String direction) {
+    String id,
+    dynamic track,
+    dynamic toTrack,
+    String direction,
+  ) {
     return myplaylist.insertTrackToMyPlaylist(id, track, toTrack, direction);
   }
 
@@ -344,60 +352,22 @@ class MediaService {
     }
   }
 
-  static Future<dynamic> bootstrapTrack(Track track,
-      Function playerSuccessCallback, Function playerFailCallback) async {
-    final successCallback = playerSuccessCallback;
-    final sound = {};
-    void failureCallback(Track track) async {
-      final prefs = await SharedPreferences.getInstance();
-      // if (await localStorage.getObject('enable_auto_choose_source') == false) {
-      // if (prefs.getBool('enable_auto_choose_source') == false) {
-      //   playerFailCallback();
-      //   return;
-      // }
-      final trackPlatform = getProviderNameByItemId(track.id);
-      // final failoverSourceList = (await getLocalStorageValue('auto_choose_source_list', ['kuwo', 'qq', 'migu'])).where((i) => i != trackPlatform).toList();
-      // final failoverSourceList = prefs.getStringList('auto_choose_source_list')!.where((i) => i != trackPlatform).toList();
-      // final getUrlPromises = failoverSourceList.map((source) {
-      //   return Future(() async {
-      //     if (track['source'] == source) {
-      //       return;
-      //     }
-      //     final keyword = '${track['title']} ${track['artist']}';
-      //     final curpage = 1;
-      //     final url = '/search?keywords=$keyword&curpage=$curpage&type=0';
-      //     final provider = getProviderByName(source);
-      //     final data = await provider.search(url);
-      //     for (var searchTrack in data['result']) {
-      //       if (!searchTrack['disable'] && searchTrack['title'] == track['title'] && searchTrack['artist'] == track['artist']) {
-      //         final response = await provider.bootstrapTrack(searchTrack);
-      //         sound['url'] = response['url'];
-      //         sound['bitrate'] = response['bitrate'];
-      //         sound['platform'] = response['platform'];
-      //         throw sound;
-      //       }
-      //     }
-      //   });
-      // }).toList();
-
-      try {
-        // await Future.wait(getUrlPromises);
-        playerFailCallback(track);
-      } catch (response) {
-        playerSuccessCallback(response, track);
-      }
+  static PlayController get _playController => Get.find<PlayController>();
+  static void bootstrapTrack(Track track, {bool start = true}) {
+    successCallback(dynamic res, Track track) {
+      _playController.bootstrapTrackSuccess(res, track, start: start);
     }
 
-    if (await get_local_cache(track.id) != '') {
-      playerSuccessCallback(get_local_cache(track.id), track);
-    } else {
-      final provider = getProviderByName(track.source!);
-      if (provider == null) {
-        playerFailCallback(track);
-        return;
-      }
-      provider.bootstrap_track(track, successCallback, failureCallback);
+    final provider = getProviderByName(track.source!);
+    if (provider == null) {
+      _playController.bootstrapTrackFail(track);
+      return;
     }
+    provider.bootstrap_track(
+      track,
+      successCallback,
+      _playController.bootstrapTrackFail,
+    );
   }
 
   static Future<dynamic> login(String source, Map<String, dynamic> options) {
@@ -417,14 +387,18 @@ class MediaService {
   }
 
   static Future<dynamic> getUserCreatedPlaylist(
-      String source, Map<String, dynamic> options) {
+    String source,
+    Map<String, dynamic> options,
+  ) {
     final provider = getProviderByName(source);
     final url = '/get_user_create_playlist?${queryStringify(options)}';
     return provider.getUserCreatedPlaylist(url);
   }
 
   static Future<dynamic> getUserFavoritePlaylist(
-      String source, Map<String, dynamic> options) {
+    String source,
+    Map<String, dynamic> options,
+  ) {
     final provider = getProviderByName(source);
     final url = '/get_user_favorite_playlist?${queryStringify(options)}';
     return provider.getUserFavoritePlaylist(url);

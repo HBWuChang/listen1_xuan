@@ -18,17 +18,6 @@ import 'package:window_manager/window_manager.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart' as p;
 
-Future<String> getWindowsProxyAddr() async {
-  var settings = settings_getsettings();
-  var proxy = settings["proxy"];
-  if (proxy == null) {
-    settings["proxy"] = "";
-    Get.find<SettingsController>().setSettings(settings);
-    return "";
-  }
-  return proxy;
-}
-
 Future<Directory> xuanGetdataDirectory() async {
   if (isAndroid || isIos) {
     if (!(await Permission.manageExternalStorage.request().isGranted ||
@@ -43,6 +32,7 @@ Future<Directory> xuanGetdataDirectory() async {
   return await xuanGetdownloadDirectory();
 }
 
+///若传入 path，则返回 dataDirectory/path 的字符串路径，否则返回 Directory 对象
 Future<dynamic> xuanGetdownloadDirectory({String? path}) async {
   Directory? tempDir;
   if (isWindows) {

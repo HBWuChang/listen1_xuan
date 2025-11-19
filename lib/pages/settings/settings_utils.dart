@@ -197,17 +197,7 @@ Future<void> savePlatformToken(
         await setSaveCookie(url: url, cookies: cookies);
       }
     }
-    dio_with_cookie_manager.interceptors.clear();
-    dio_with_cookie_manager.interceptors.add(
-      CookieManager(
-        PersistCookieJar(
-          ignoreExpires: true,
-          storage: FileStorage(
-            cookiePath(await getApplicationDocumentsDirectory()),
-          ),
-        ),
-      ),
-    );
+    await Get.find<DioController>().reloadCookie();
   } catch (e) {
     showErrorSnackbar('保存Cookie时出错', '$e');
   }

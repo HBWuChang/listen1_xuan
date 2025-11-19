@@ -206,7 +206,7 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
             ),
             badgeStyle: badges.BadgeStyle(
               shape: badges.BadgeShape.square,
-              borderRadius : BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8),
               badgeColor: Get.theme.colorScheme.primaryContainer,
               padding: EdgeInsets.symmetric(horizontal: 3, vertical: 1),
             ),
@@ -254,7 +254,7 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
                 if (pointerSignal is PointerScrollEvent) {
                   // 获取滚轮的滚动方向
                   final scrollDelta = pointerSignal.scrollDelta.dy;
-                  final stepSize = 0.01; // 每次滚动的音量步长
+                  final stepSize = 1; // 每次滚动的音量步长
 
                   double newVolume = _playController.currentVolume;
                   if (scrollDelta > 0) {
@@ -264,12 +264,17 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
                     // 向上滚动，增大音量
                     newVolume = (newVolume + stepSize);
                   }
-                  newVolume = newVolume.clamp(0.0, 1.0); // 确保音量在 0.0 到 1.0 之间
+                  newVolume = newVolume.clamp(
+                    0.0,
+                    100.0,
+                  ); // 确保音量在 0.0 到 100.0 之间
                   _playController.currentVolume = newVolume; // 更新音量
                 }
               },
               child: Obx(
                 () => Slider(
+                  min: 0,
+                  max: 100,
                   value: _playController.currentVolume,
                   onChanged: (value) {
                     _playController.currentVolume = value;

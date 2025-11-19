@@ -11,8 +11,8 @@ import '../global_settings_animations.dart';
 import '../play.dart';
 import 'settings_controller.dart';
 
-class DownloadController extends GetxController {
-  static const String _tag = 'DownloadController';
+class WsDownloadController extends GetxController {
+  static const String _tag = 'WsDownloadController';
   final Logger _logger = Logger();
 
   static const String _settingsKeyPrefix = 'DownloadController_';

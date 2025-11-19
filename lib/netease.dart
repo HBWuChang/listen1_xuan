@@ -75,9 +75,9 @@ class Netease {
       } else {
         url = url + '?csrf_token=$_csrf';
       }
-      return await dio_with_cookie_manager.get(url);
+      return await dioWithCookieManager.get(url);
     } catch (e) {
-      return await dio_with_cookie_manager.get(url);
+      return await dioWithCookieManager.get(url);
     }
   }
 
@@ -100,7 +100,7 @@ class Netease {
       } else {
         url = url + '?csrf_token=$_csrf';
       }
-      return await dio_with_cookie_manager.post(
+      return await dioWithCookieManager.post(
         url,
         data: data,
         options: Options(
@@ -123,7 +123,7 @@ class Netease {
         ),
       );
     } catch (e) {
-      return await dio_with_cookie_manager.post(
+      return await dioWithCookieManager.post(
         url,
         data: FormData.fromMap(data),
       );
@@ -449,7 +449,7 @@ class Netease {
     t['ids'] = '[' + t['ids'].substring(0, t['ids'].length - 1) + ']';
     final data = weapi(t);
     final datastr = FormData.fromMap(data);
-    final response = await dio_with_cookie_manager.post(
+    final response = await dioWithCookieManager.post(
       targetUrl,
       data: data,
       options: Options(contentType: 'application/x-www-form-urlencoded'),

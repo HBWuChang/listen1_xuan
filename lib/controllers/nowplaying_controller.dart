@@ -66,7 +66,7 @@ class NowPlayingPageController extends GetxController {
   }
 
   void playTrack(Track track) {
-    playsong(track, true, false, true);
+    playsong(track, isByClick: true);
     HapticFeedback.lightImpact();
   }
 
@@ -100,8 +100,7 @@ class NowPlayingPageController extends GetxController {
   RxList<Track> filteredPlayingList = <Track>[].obs;
 
   // 获取当前播放歌曲ID
-  String get currentTrackId =>
-      playController.nowPlayingTrackId;
+  String get currentTrackId => playController.nowPlayingTrackId;
 
   // 获取歌单列表
   List<PlayList> get playlists =>

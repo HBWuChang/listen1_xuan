@@ -28,8 +28,6 @@ dependencies:
   audio_service:
     path: packages/audio_service-0.18.18
   audio_session: ^0.2.2
-  just_audio:
-    path: packages/just_audio-0.10.5
   encrypt: ^5.0.0
   webview_flutter: ^4.10.0
   webview_cookie_manager:
@@ -51,10 +49,8 @@ dependencies:
   system_info3: ^4.0.1
   animations: ^2.1.0
   loading_animations: ^2.2.0
-  just_audio_media_kit: ^2.1.0
-  media_kit_libs_windows_audio: ^1.0.9
-  media_kit: ^1.1.11 # Primary package.
-  media_kit_libs_audio: ^1.0.5 # Native audio dependencies.
+  media_kit: ^1.2.2 # Primary package.
+  media_kit_libs_audio: ^1.0.7 # Native audio dependencies.
   window_manager: ^0.4.2
   webview_windows:
     path: packages/webview_windows
@@ -71,11 +67,11 @@ dependencies:
   shelf_router: ^1.1.4
   flutter_lyric:
     path: packages/flutter_lyric-2.0.4+6
-  metadata_god: ^1.0.0
+  # metadata_god: ^1.0.0
   extended_image: ^10.0.1
   mime: ^2.0.0
-  flutter_audio_tagger: ^3.0.3
-  ffmpeg_kit_flutter_new_min: ^2.1.0
+  # flutter_audio_tagger: ^3.0.3
+  # ffmpeg_kit_flutter_new_min: ^2.1.0
   wolt_modal_sheet: ^0.11.0
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.0.1

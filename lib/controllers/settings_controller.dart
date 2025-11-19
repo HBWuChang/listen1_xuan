@@ -23,6 +23,46 @@ import 'myPlaylist_controller.dart';
 class SettingsController extends GetxController {
   final settings = <String, dynamic>{}.obs;
 
+  static const String cacheNamedMethodKey = 'cache_named_method';
+  static const String cacheNamedDedupMethodKey = 'cache_dedup_method';
+  static const String cacheNamedIfEmptyRepKey = 'cache_if_empty';
+  static const String cacheNamedConKey = 'cache_named_connection';
+  static const String cacheNamedUnUseableRepKey = 'cache_unuseable_rep';
+
+  List<int> get cacheNamedMethod => settings[cacheNamedMethodKey] ?? [1, 2];
+  set cacheNamedMethod(List<int> value) {
+    if (value.isEmpty) {
+      value = [1, 2];
+    }
+    settings[cacheNamedMethodKey] = value;
+  }
+
+  int get cacheDedupMethod => settings[cacheNamedDedupMethodKey] ?? 0;
+  set cacheDedupMethod(int value) {
+    settings[cacheNamedDedupMethodKey] = value;
+  }
+
+  String get cacheIfEmptyRep => settings[cacheNamedIfEmptyRepKey] ?? '';
+  set cacheIfEmptyRep(String value) {
+    settings[cacheNamedIfEmptyRepKey] = value;
+  }
+
+  String get cacheNamedConnection => settings[cacheNamedConKey] ?? '-';
+  set cacheNamedConnection(String value) {
+    settings[cacheNamedConKey] = value;
+  }
+
+  String get cacheUnUseableRep => settings[cacheNamedUnUseableRepKey] ?? '·';
+  set cacheUnUseableRep(String value) {
+    settings[cacheNamedUnUseableRepKey] = value;
+  }
+
+  static const String windowsProxyKey = 'proxy';
+  String get windowsProxyAddr => settings[windowsProxyKey] ?? '';
+  set windowsProxyAddr(String value) {
+    settings[windowsProxyKey] = value;
+  }
+
   bool get tryShowLyricInNotification =>
       settings['tryShowLyricInNotification'] ?? true;
   set tryShowLyricInNotification(bool value) {
@@ -154,7 +194,7 @@ class SettingsController extends GetxController {
   Future<void> loadReadme() async {
     try {
       readmeContent.value = '';
-      final treadmeContent = await dio_with_ProxyAdapter.get(
+      final treadmeContent = await dioWithProxyAdapter.get(
         'https://api.github.com/repos/HBWuChang/listen1_xuan/readme',
       );
       String decodeBase64(String data) {
@@ -213,28 +253,28 @@ class SettingsController extends GetxController {
   static const String windowsRememberWindowSizeAndPosition =
       'rememberWindowSizeAndPosition';
   bool get rememberWindowsSizeAndPosition {
-    if (isWindows||isMacOS) {
+    if (isWindows || isMacOS) {
       return settings[windowsRememberWindowSizeAndPosition] ?? true;
     }
     throw 'Not Windows platform';
   }
 
   set rememberWindowsSizeAndPosition(bool value) {
-    if (isWindows||isMacOS) {
+    if (isWindows || isMacOS) {
       settings[windowsRememberWindowSizeAndPosition] = value;
     } else
       throw 'Not Windows platform';
   }
 
   bool get isWindowMaximized {
-    if (isWindows||isMacOS) {
+    if (isWindows || isMacOS) {
       return settings[windowsWindowIsMaximized] ?? false;
     }
     throw 'Not Windows platform';
   }
 
   Rect get windowsWindowBounds {
-    if (isWindows||isMacOS) {
+    if (isWindows || isMacOS) {
       double width = (settings[windowsWindowWidth] ?? 1000).toDouble();
       double height = (settings[windowsWindowHeight] ?? 700).toDouble();
       double x = (settings[windowsWindowX] ?? 100).toDouble();
@@ -245,7 +285,7 @@ class SettingsController extends GetxController {
   }
 
   void saveWindowsSizeAndPosition() {
-    if (isWindows||isMacOS) {
+    if (isWindows || isMacOS) {
       windowManager.getBounds().then((bounds) {
         settings[windowsWindowWidth] = bounds.width;
         settings[windowsWindowHeight] = bounds.height;
@@ -256,13 +296,13 @@ class SettingsController extends GetxController {
   }
 
   void onWindowMaximize() {
-    if (isWindows||isMacOS) {
+    if (isWindows || isMacOS) {
       settings[windowsWindowIsMaximized] = true;
     }
   }
 
   void onWindowUnmaximize() {
-    if (isWindows||isMacOS) {
+    if (isWindows || isMacOS) {
       settings[windowsWindowIsMaximized] = false;
     }
   }
