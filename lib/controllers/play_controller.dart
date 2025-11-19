@@ -229,7 +229,7 @@ class PlayController extends GetxController
         t_volume = 100;
         Get.find<PlayController>().setPlayerSetting("volume", t_volume);
       }
-      Get.find<PlayController>().music_player.setVolume(t_volume / 100);
+      Get.find<PlayController>().music_player.setVolume(t_volume);
       if (start) {
         Get.find<PlayController>().music_player.play();
       }
