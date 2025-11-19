@@ -75,7 +75,7 @@ class LyricController extends GetxController {
         result['tlyric'] = await File(tlyricFilePath).readAsString();
       }
     } catch (e) {
-      print('从缓存读取歌词失败: $e');
+      debugPrint('从缓存读取歌词失败: $e');
     }
 
     return result;
@@ -128,9 +128,7 @@ class LyricController extends GetxController {
 
   /// 加载歌词
   Future<void> loadLyric() async {
-    String trackId = Get.find<PlayController>().getPlayerSettings(
-      "nowplaying_track_id",
-    );
+    String trackId = Get.find<PlayController>().nowPlayingTrackId;
     if (trackId.isEmpty) return;
     isLyricLoading.value = true;
     hasLyric.value = false;
@@ -145,17 +143,17 @@ class LyricController extends GetxController {
       if (cachedLyrics.containsKey('lyric') &&
           cachedLyrics['lyric']!.isNotEmpty) {
         // 从缓存加载成功
-        print('从缓存加载歌词: $trackId');
+        debugPrint('从缓存加载歌词: $trackId');
         _processLyricData(cachedLyrics['lyric']!, cachedLyrics['tlyric'] ?? '');
         isLyricLoading.value = false;
         return;
       }
 
       // 缓存中没有歌词，从网络获取
-      print('从网络获取歌词: $trackId');
+      debugPrint('从网络获取歌词: $trackId');
       await _loadLyricFromNetwork(trackId);
     } catch (e) {
-      print('加载歌词失败: $e');
+      debugPrint('加载歌词失败: $e');
       isLyricLoading.value = false;
       hasLyric.value = false;
     }

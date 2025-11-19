@@ -198,7 +198,7 @@ void main() async {
   Get.find<MyPlayListController>().loadDatas();
   Get.put(AudioHandlerController(), permanent: true);
   Get.put(LyricController(), permanent: true);
-  Get.put(NowPlayingController(), permanent: true);
+  Get.put(NowPlayingPageController(), permanent: true);
   Get.put(BroadcastWsController(), permanent: true);
   Get.put(ScanBroadcastController(), permanent: true);
   Get.put(DownloadController(), permanent: true);

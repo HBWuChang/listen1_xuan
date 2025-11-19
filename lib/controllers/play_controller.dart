@@ -33,81 +33,16 @@ class PlayController extends GetxController
   final currentPlayingRx = <Track>[].obs;
   final logger = Logger();
   final _next_track = Rx<Track?>(null);
+  RxString nowPlayingTrackIdRx = ''.obs;
+  String get nowPlayingTrackId => nowPlayingTrackIdRx.value;
+  set nowPlayingTrackId(String value) {
+    nowPlayingTrackIdRx.value = value;
+  }
+
+  final bootStarting = RxSet<String>();
 
   // Windows任务栏进度 (0-100)
   final taskbarProgress = 0.obs;
-
-  // Sheet 控制相关
-  final SheetController sheetController = SheetController();
-  double get sheetMinHeight => 256.0.w;
-  SheetOffset get sheetMinOffset =>
-      SheetOffset(sheetMinHeight / playVMaxHeight);
-  double get sheetMidHeight => 0.8.sw;
-  SheetOffset get sheetMidOffset =>
-      SheetOffset(sheetMidHeight / playVMaxHeight);
-  double get playVMaxHeight => _playVMaxHeight ?? 0.8.sh;
-  double? _playVMaxHeight;
-  SheetOffset get playVMaxOffset => SheetOffset(1);
-  set playVMaxHeight(double value) {
-    _playVMaxHeight = value;
-  }
-
-  SettingsController settingsController = Get.find<SettingsController>();
-  late AnimationController playVPlayBtnProcessController;
-
-  // 播放按钮旋转曲线（默认为正弦缓入）
-  final playButtonRotationCurve = 'easeInSine'.obs;
-  Curve playButtonRotationCurveValue = CurveUtils.getCurveByName('easeInSine');
-
-  void playVPlayBtnProcessControllerInit() {
-    playVPlayBtnProcessController = AnimationController(
-      vsync: this, // 使用 GetSingleTickerProviderStateMixin 提供的 vsync
-      duration: Duration(
-        milliseconds: settingsController.playVPlayBtnProcessControllerDuration,
-      ),
-    )..repeat(); // 无限循环旋转
-  }
-
-  RxBool showPlayVInlineLyricOp = false.obs;
-  RxBool showPlayVInlineLyricVisible = false.obs;
-  final sheetExpandRatio = 0.0.obs; // 展开比例 0.0-1.0
-  Future<void> expandSheet() async {
-    if (globalHorizon) return;
-    await sheetController.animateTo(
-      playVMaxOffset,
-      duration: Duration(milliseconds: 300),
-    );
-  }
-
-  Future<void> expandSheetToMid() async {
-    if (globalHorizon) return;
-    await sheetController.animateTo(
-      sheetMidOffset,
-      duration: Duration(milliseconds: 300),
-    );
-  }
-
-  Future<void> collapseSheet() async {
-    if (globalHorizon) return;
-    await sheetController.animateTo(
-      sheetMinOffset,
-      duration: Duration(milliseconds: 300),
-    );
-  }
-
-  bool tryCollapseSheet() {
-    if (globalHorizon) return false;
-    if ((sheetController.metrics?.offset ?? sheetMinHeight) >
-        (sheetMidHeight + playVMaxHeight) / 2) {
-      expandSheetToMid();
-      return true;
-    } else if ((sheetController.metrics?.offset ?? sheetMinHeight) >
-        (sheetMinHeight + sheetMidHeight) / 2) {
-      collapseSheet();
-      return true;
-    }
-    return false;
-  }
 
   set nextTrack(Track? track) {
     _next_track.value = track;
@@ -128,13 +63,7 @@ class PlayController extends GetxController
   }
 
   Track get currentTrack => currentPlayingRx.isNotEmpty
-      ? currentPlayingRx.firstWhere(
-          (track) =>
-              track.id ==
-              Get.find<PlayController>().getPlayerSettings(
-                "nowplaying_track_id",
-              ),
-        )
+      ? currentPlayingRx.firstWhere((track) => track.id == nowPlayingTrackId)
       : Track(id: '');
 
   @override
@@ -154,6 +83,15 @@ class PlayController extends GetxController
       );
       initAndroidEqualizer();
     }
+    ever(_player_settings, (event) {
+      final t = event['nowplaying_track_id'];
+      if ((!isEmpty(t)) && t is String && t != nowPlayingTrackIdRx.value) {
+        nowPlayingTrackIdRx.value = event['nowplaying_track_id'];
+      }
+    });
+    ever(nowPlayingTrackIdRx, (callback) {
+      _player_settings['nowplaying_track_id'] = callback;
+    });
     debounce(_player_settings, (event) {
       _saveSingleSetting('player-settings');
     });
@@ -468,5 +406,77 @@ class PlayController extends GetxController
       logger.e('查询播放状态失败: $e');
       return null;
     }
+  }
+
+  // Sheet 控制相关
+  final SheetController sheetController = SheetController();
+  double get sheetMinHeight => 256.0.w;
+  SheetOffset get sheetMinOffset =>
+      SheetOffset(sheetMinHeight / playVMaxHeight);
+  double get sheetMidHeight => 0.8.sw;
+  SheetOffset get sheetMidOffset =>
+      SheetOffset(sheetMidHeight / playVMaxHeight);
+  double get playVMaxHeight => _playVMaxHeight ?? 0.8.sh;
+  double? _playVMaxHeight;
+  SheetOffset get playVMaxOffset => SheetOffset(1);
+  set playVMaxHeight(double value) {
+    _playVMaxHeight = value;
+  }
+
+  SettingsController settingsController = Get.find<SettingsController>();
+  late AnimationController playVPlayBtnProcessController;
+
+  // 播放按钮旋转曲线（默认为正弦缓入）
+  final playButtonRotationCurve = 'easeInSine'.obs;
+  Curve playButtonRotationCurveValue = CurveUtils.getCurveByName('easeInSine');
+
+  void playVPlayBtnProcessControllerInit() {
+    playVPlayBtnProcessController = AnimationController(
+      vsync: this, // 使用 GetSingleTickerProviderStateMixin 提供的 vsync
+      duration: Duration(
+        milliseconds: settingsController.playVPlayBtnProcessControllerDuration,
+      ),
+    )..repeat(); // 无限循环旋转
+  }
+
+  RxBool showPlayVInlineLyricOp = false.obs;
+  RxBool showPlayVInlineLyricVisible = false.obs;
+  final sheetExpandRatio = 0.0.obs; // 展开比例 0.0-1.0
+  Future<void> expandSheet() async {
+    if (globalHorizon) return;
+    await sheetController.animateTo(
+      playVMaxOffset,
+      duration: Duration(milliseconds: 300),
+    );
+  }
+
+  Future<void> expandSheetToMid() async {
+    if (globalHorizon) return;
+    await sheetController.animateTo(
+      sheetMidOffset,
+      duration: Duration(milliseconds: 300),
+    );
+  }
+
+  Future<void> collapseSheet() async {
+    if (globalHorizon) return;
+    await sheetController.animateTo(
+      sheetMinOffset,
+      duration: Duration(milliseconds: 300),
+    );
+  }
+
+  bool tryCollapseSheet() {
+    if (globalHorizon) return false;
+    if ((sheetController.metrics?.offset ?? sheetMinHeight) >
+        (sheetMidHeight + playVMaxHeight) / 2) {
+      expandSheetToMid();
+      return true;
+    } else if ((sheetController.metrics?.offset ?? sheetMinHeight) >
+        (sheetMinHeight + sheetMidHeight) / 2) {
+      collapseSheet();
+      return true;
+    }
+    return false;
   }
 }

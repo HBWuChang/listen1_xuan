@@ -1091,10 +1091,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                       tracks,
                                     );
                                     set_current_playing(trackList);
-                                    Get.find<PlayController>().setPlayerSetting(
-                                      "nowplaying_track_id",
-                                      tracks[0].id,
-                                    );
+
                                     playsong(tracks[0], true, false, true);
                                   },
                                   child: Text('播放全部（共${tracks.length}首）'),

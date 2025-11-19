@@ -7,7 +7,7 @@ import 'play_controller.dart';
 import 'myPlaylist_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
-class NowPlayingController extends GetxController {
+class NowPlayingPageController extends GetxController {
   var showScrollButton = false.obs;
   var searchQuery = ''.obs;
   var isSearching = false.obs;
@@ -101,7 +101,7 @@ class NowPlayingController extends GetxController {
 
   // 获取当前播放歌曲ID
   String get currentTrackId =>
-      playController.getPlayerSettings("nowplaying_track_id") ?? '';
+      playController.nowPlayingTrackId;
 
   // 获取歌单列表
   List<PlayList> get playlists =>

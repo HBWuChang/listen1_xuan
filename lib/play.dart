@@ -52,7 +52,7 @@ part 'pages/play/play_widgets.dart';
 // Windows Taskbar API 调用的安全包装器
 // 用于处理窗口未初始化的情况
 bool _windowsTaskbarInitialized = false;
-
+PlayController _playController = Get.find<PlayController>();
 Future<bool> safeCallWindowsTaskbar(
   Future<void> Function() apiCall,
   String operationName,
@@ -182,9 +182,7 @@ List<Track> get_current_playing() {
 }
 
 Future<Map<String, dynamic>> getnowplayingsong() async {
-  final nowplaying_track_id = Get.find<PlayController>().getPlayerSettings(
-    "nowplaying_track_id",
-  );
+  final nowplaying_track_id = Get.find<PlayController>().nowPlayingTrackId;
   final current_playing = await get_current_playing();
   for (var track in current_playing) {
     if (track.id == nowplaying_track_id) {
@@ -353,16 +351,14 @@ Future<void> playsong(
 ]) async {
   try {
     if (on_playersuccesscallback &&
-        (Get.find<PlayController>().getPlayerSettings("nowplaying_track_id") !=
-            track.id)) {
+        _playController.nowPlayingTrackId !=
+            track.id) {
       return;
     }
-    Get.find<PlayController>().setPlayerSetting(
-      "nowplaying_track_id",
-      track.id,
-    );
+    _playController.nowPlayingTrackId = track.id;
+    
     add_current_playing([track]);
-    Get.find<NowPlayingController>().scrollToCurrentTrack?.call();
+    Get.find<NowPlayingPageController>().scrollToCurrentTrack?.call();
     final tdir = await get_local_cache(track.id);
     debugPrint('playsong');
     debugPrint(track.toString());
@@ -466,13 +462,11 @@ Future<void> playerSuccessCallback(dynamic res, Track track) async {
 }
 
 Future<void> playerFailCallback(Track track) async {
-  print('playerFailCallback');
-  print(track);
-  // {id: netrack_2084034562, title: Anytime Anywhere, artist: milet, artist_id: neartist_31464106, album: Anytime Anywhere, album_id: nealbum_175250775, source: netease, source_url: https://music.163.com/#/song?id=2084034562, img_url: https://p1.music.126.net/11p2mKi5CMKJvAS43ulraQ==/109951168930518368.jpg, sourceName: 网易, $$hashKey: object:2884, disabled: false, index: 365, playNow: true, bitrate: 320kbps, platform: netease, platformText: 网易}
   debugPrint('playerFailCallback');
+  debugPrint(track.toJson().toString());
+  // {id: netrack_2084034562, title: Anytime Anywhere, artist: milet, artist_id: neartist_31464106, album: Anytime Anywhere, album_id: nealbum_175250775, source: netease, source_url: https://music.163.com/#/song?id=2084034562, img_url: https://p1.music.126.net/11p2mKi5CMKJvAS43ulraQ==/109951168930518368.jpg, sourceName: 网易, $$hashKey: object:2884, disabled: false, index: 365, playNow: true, bitrate: 320kbps, platform: netease, platformText: 网易}
   showErrorSnackbar('播放失败', track.title);
-  if (Get.find<PlayController>().getPlayerSettings("nowplaying_track_id") !=
-      track.id) {
+  if (_playController.nowPlayingTrackId != track.id) {
     return;
   }
   var connectivityResult = await (Connectivity().checkConnectivity());
@@ -533,7 +527,6 @@ class Play extends StatefulWidget {
 }
 
 late SMTCWindows smtc;
-PlayController get _playController => Get.find<PlayController>();
 Offset? position;
 
 class _PlayState extends State<Play> {

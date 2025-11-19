@@ -14,13 +14,13 @@ class NowPlayingPage extends StatefulWidget {
 }
 
 class _NowPlayingPageState extends State<NowPlayingPage> {
-  late NowPlayingController controller;
+  late NowPlayingPageController controller;
   late ScrollController scrollController;
   late ListObserverController listObserverController;
   @override
   void initState() {
     super.initState();
-    controller = Get.find<NowPlayingController>();
+    controller = Get.find<NowPlayingPageController>();
     scrollController = ScrollController();
     listObserverController = ListObserverController(
       controller: scrollController,
@@ -146,7 +146,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     }
   }
 
-  Widget _buildHeader(BuildContext context, NowPlayingController controller) {
+  Widget _buildHeader(BuildContext context, NowPlayingPageController controller) {
     final theme = Theme.of(context);
 
     return Container(
@@ -228,7 +228,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
   Widget _buildSearchBar(
     BuildContext context,
-    NowPlayingController controller,
+    NowPlayingPageController controller,
   ) {
     final theme = Theme.of(context);
 
@@ -295,7 +295,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
   Widget _buildPlayingList(
     BuildContext context,
-    NowPlayingController controller,
+    NowPlayingPageController controller,
   ) {
     return Obx(() {
       final playingList = controller.filteredPlayingList; // 使用过滤后的列表
@@ -398,7 +398,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     Track track,
     int index,
     bool isCurrentTrack,
-    NowPlayingController controller,
+    NowPlayingPageController controller,
   ) {
     final theme = Theme.of(context);
     void playT() {
@@ -504,7 +504,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     );
   }
 
-  void _showClearDialog(BuildContext context, NowPlayingController controller) {
+  void _showClearDialog(BuildContext context, NowPlayingPageController controller) {
     Get.defaultDialog(
       title: '清空播放列表',
       middleText: '确定要清空整个播放列表吗？',
@@ -524,7 +524,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
   Widget _buildScrollToCurrentButton(
     BuildContext context,
-    NowPlayingController controller,
+    NowPlayingPageController controller,
   ) {
     return Obx(() {
       // 在搜索状态下，只有当前播放歌曲在搜索结果中时才显示浮动按钮
