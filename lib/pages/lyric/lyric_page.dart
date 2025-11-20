@@ -127,6 +127,7 @@ class _LyricPageState extends State<LyricPage>
     );
   }
 
+  double lyricBorderRadius = Get.find<SettingsController>().lyricBorderRadius;
   Widget _buildBackgroundCover(BuildContext context) {
     return Obx(() {
       final currentSong = playController.currentTrack.id.isNotEmpty
@@ -156,8 +157,8 @@ class _LyricPageState extends State<LyricPage>
 
       return ClipRRect(
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+          topLeft: Radius.circular(lyricBorderRadius),
+          topRight: Radius.circular(lyricBorderRadius),
         ),
         child: Container(
           width: double.infinity,

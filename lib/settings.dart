@@ -59,6 +59,7 @@ import 'package:iconify_flutter_plus/icons/fa_solid.dart';
 import 'package:path/path.dart' as p;
 import 'utils/curve_utils.dart';
 import 'widgets/curve_selector_dialog.dart';
+import 'pages/settings/cache_naming_page.dart';
 part 'pages/settings/settings_utils.dart';
 part 'pages/settings/settings_github.dart';
 part 'pages/settings/settings_widgets.dart';

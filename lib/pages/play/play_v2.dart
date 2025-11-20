@@ -1,5 +1,7 @@
 part of '../../play.dart';
 
+double lyricBorderRadius = Get.find<SettingsController>().lyricBorderRadius;
+
 Widget get playV2 => LayoutBuilder(
   builder: (context, boxConstraints) {
     _playController.playVMaxHeight = boxConstraints.maxHeight;
@@ -292,7 +294,9 @@ Widget get playV2 => LayoutBuilder(
                                           child: ClipPath(
                                             clipper: InvertedRectClipper(
                                               borderRadius: BorderRadius.all(
-                                                Radius.circular(lyricBorderRadius),
+                                                Radius.circular(
+                                                  lyricBorderRadius,
+                                                ),
                                               ),
                                             ),
                                             child: Container(
@@ -307,7 +311,9 @@ Widget get playV2 => LayoutBuilder(
                                                   ),
                                                 ],
                                                 borderRadius: BorderRadius.all(
-                                                  Radius.circular(lyricBorderRadius),
+                                                  Radius.circular(
+                                                    lyricBorderRadius,
+                                                  ),
                                                 ),
                                               ),
                                             ),

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/models/websocket_message.dart';
@@ -13,6 +14,7 @@ import 'package:listen1_xuan/models/Track.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../bl.dart';
+import '../const.dart';
 import '../global_settings_animations.dart';
 import '../main.dart';
 import '../netease.dart';
@@ -22,6 +24,20 @@ import 'myPlaylist_controller.dart';
 
 class SettingsController extends GetxController {
   final settings = <String, dynamic>{}.obs;
+  static const String lyricBorderRadiusHKey = 'lyric_border_radius_h';
+  static const String lyricBorderRadiusVKey = 'lyric_border_radius_v';
+  double get lyricBorderRadiusH => settings[lyricBorderRadiusHKey] ?? 20.0;
+  set lyricBorderRadiusH(double value) {
+    settings[lyricBorderRadiusHKey] = value;
+  }
+
+  double get lyricBorderRadiusV => settings[lyricBorderRadiusVKey] ?? 48.0;
+  set lyricBorderRadiusV(double value) {
+    settings[lyricBorderRadiusVKey] = value;
+  }
+
+  double get lyricBorderRadius =>
+      globalHorizon ? lyricBorderRadiusH : lyricBorderRadiusV.w;
 
   static const String cacheNamedMethodKey = 'cache_named_method';
   static const String cacheNamedDedupMethodKey = 'cache_dedup_method';
@@ -29,7 +45,9 @@ class SettingsController extends GetxController {
   static const String cacheNamedConKey = 'cache_named_connection';
   static const String cacheNamedUnUseableRepKey = 'cache_unuseable_rep';
 
-  List<int> get cacheNamedMethod => settings[cacheNamedMethodKey] ?? [1, 2];
+  List<int> get cacheNamedMethod =>
+      List<int>.from(settings[cacheNamedMethodKey] ?? [1, 2]);
+
   set cacheNamedMethod(List<int> value) {
     if (value.isEmpty) {
       value = [1, 2];
@@ -54,6 +72,11 @@ class SettingsController extends GetxController {
 
   String get cacheUnUseableRep => settings[cacheNamedUnUseableRepKey] ?? '·';
   set cacheUnUseableRep(String value) {
+    for (var char in cacheUnUseableRepUnUseable.split('')) {
+      if (value.contains(char)) {
+        value = value.replaceAll(char, '');
+      }
+    }
     settings[cacheNamedUnUseableRepKey] = value;
   }
 

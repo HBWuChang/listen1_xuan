@@ -327,7 +327,32 @@ List<Widget> get cacheSettingsTiles => [
     },
     child: const Text('清除所有歌曲缓存'),
   ),
+  ListTile(
+    leading: Icon(Icons.edit),
+    title: const Text('缓存命名方式'),
+    subtitle: Obx(() {
+      return Text(
+        Get.find<SettingsController>().cacheNamedMethod.fold<String>('', (
+          previousValue,
+          element,
+        ) {
+          final method = NamedMethod.values.firstWhere(
+            (m) => m.index == element,
+            orElse: () => NamedMethod.id,
+          );
+          if (previousValue.isEmpty) {
+            return method.name;
+          } else {
+            return '$previousValue${Get.find<SettingsController>().cacheNamedConnection}${method.name}';
+          }
+        }),
+        style: TextStyle(fontSize: 12),
+      );
+    }),
+    onTap: () => Get.toNamed(RouteName.cacheNamingPage, id: 1),
+  ),
 ].map((e) => Padding(padding: EdgeInsets.all(8.0), child: e)).toList();
+
 Widget winSettingsTiles(
   BuildContext context,
   FocusNode _focusNode2,
@@ -500,6 +525,62 @@ Widget get themeSettingsTiles => Column(
               throw '请输入有效的数值';
             }
             Get.find<SettingsController>().lyricBackgroundBlurRadius = intValue
+                .toDouble();
+            showSuccessSnackbar('设置成功', null);
+            return true;
+          },
+          keyboardType: TextInputType.number,
+        );
+      },
+    ),
+    ListTile(
+      leading: Icon(Icons.border_outer_rounded),
+      title: Text('底部播放栏及歌词页顶部圆角/竖'),
+      subtitle: Obx(() {
+        return Text(
+          Get.find<SettingsController>().lyricBorderRadiusV.toString(),
+        );
+      }),
+      onTap: () async {
+        await showInputDialog(
+          title: '底部播放栏及歌词页顶部圆角/竖',
+          initialValue: Get.find<SettingsController>().lyricBorderRadiusV
+              .toString(),
+          onConfirm: (value) async {
+            if (isEmpty(value)) return false;
+            double? intValue = double.tryParse(value);
+            if (intValue == null || intValue < 0) {
+              throw '请输入有效的数值';
+            }
+            Get.find<SettingsController>().lyricBorderRadiusV = intValue
+                .toDouble();
+            showSuccessSnackbar('设置成功', '重启生效');
+            return true;
+          },
+          keyboardType: TextInputType.number,
+        );
+      },
+    ),
+    ListTile(
+      leading: Icon(Icons.border_top_rounded),
+      title: Text('歌词页顶部圆角/横'),
+      subtitle: Obx(() {
+        return Text(
+          Get.find<SettingsController>().lyricBorderRadiusH.toString(),
+        );
+      }),
+      onTap: () async {
+        await showInputDialog(
+          title: '歌词页顶部圆角/横',
+          initialValue: Get.find<SettingsController>().lyricBorderRadiusH
+              .toString(),
+          onConfirm: (value) async {
+            if (isEmpty(value)) return false;
+            double? intValue = double.tryParse(value);
+            if (intValue == null || intValue < 0) {
+              throw '请输入有效的数值';
+            }
+            Get.find<SettingsController>().lyricBorderRadiusH = intValue
                 .toDouble();
             showSuccessSnackbar('设置成功', null);
             return true;

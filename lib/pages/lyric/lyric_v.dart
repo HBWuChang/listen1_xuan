@@ -276,6 +276,8 @@ class _LyricVBackPageState extends State<LyricVBackPage>
     );
   }
 
+  double lyricBorderRadius = Get.find<SettingsController>().lyricBorderRadius;
+
   Widget _buildBackgroundCover(BuildContext context) {
     return Obx(() {
       PlayController playController = Get.find<PlayController>();
@@ -330,6 +332,7 @@ class SheetOffsetClip extends StatelessWidget {
   final bool type2;
 
   SheetOffsetClip({required this.child, this.type2 = false});
+  double lyricBorderRadius = Get.find<SettingsController>().lyricBorderRadius;
 
   @override
   Widget build(BuildContext context) {

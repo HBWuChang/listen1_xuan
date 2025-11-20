@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
+import 'global_settings_animations.dart';
+
 late FToast fToast;
 
 /// 创建统一的自定义 Toast 组件
@@ -17,11 +19,9 @@ Widget _buildCustomToast({
     builder: (context, constraints) {
       // 计算最大宽度：屏幕宽度 - 两侧各64的margin
       final maxWidth = MediaQuery.of(context).size.width - 128;
-      
+
       return Container(
-        constraints: BoxConstraints(
-          maxWidth: maxWidth,
-        ),
+        constraints: BoxConstraints(maxWidth: maxWidth),
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12.0),
@@ -169,7 +169,9 @@ void showLoadingDialog(RxString message) {
           children: [
             const CircularProgressIndicator(strokeWidth: 4),
             const SizedBox(width: 20),
-            Obx(() => Text(message.value, style: const TextStyle(fontSize: 16))),
+            Obx(
+              () => Text(message.value, style: const TextStyle(fontSize: 16)),
+            ),
           ],
         ),
       ),
@@ -229,7 +231,7 @@ Future<bool> showConfirmDialog(
 }
 
 /// 显示文本输入对话框
-/// 
+///
 /// [title] 对话框标题
 /// [message] 提示消息（可选）
 /// [initialValue] 初始文本值
@@ -241,7 +243,7 @@ Future<bool> showConfirmDialog(
 /// [onConfirm] 确认回调函数，返回true表示可以关闭对话框，false表示保持打开
 /// [confirmText] 确认按钮文本
 /// [cancelText] 取消按钮文本
-/// 
+///
 /// 返回用户输入的文本，如果取消则返回null
 Future<String?> showInputDialog({
   required String title,
@@ -259,7 +261,14 @@ Future<String?> showInputDialog({
   final controller = TextEditingController(text: initialValue);
   final errorMessage = RxnString();
   final isProcessing = false.obs;
-
+  final FocusNode focusNode = FocusNode();
+  focusNode.addListener(() {
+    if (focusNode.hasFocus) {
+      set_inapp_hotkey(false);
+    } else {
+      set_inapp_hotkey(true);
+    }
+  });
   try {
     String? result = await Get.dialog<String>(
       WillPopScope(
@@ -280,53 +289,32 @@ Future<String?> showInputDialog({
                 ),
                 const SizedBox(height: 16),
               ],
-              Obx(() => TextField(
-                controller: controller,
-                keyboardType: keyboardType,
-                maxLines: maxLines,
-                maxLength: maxLength,
-                autofocus: true,
-                enabled: !isProcessing.value,
-                decoration: InputDecoration(
-                  hintText: placeholder,
-                  errorText: errorMessage.value,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+              Obx(
+                () => TextField(
+                  controller: controller,
+                  keyboardType: keyboardType,
+                  maxLines: maxLines,
+                  maxLength: maxLength,
+                  focusNode: focusNode,
+                  autofocus: true,
+                  enabled: !isProcessing.value,
+                  decoration: InputDecoration(
+                    hintText: placeholder,
+                    errorText: errorMessage.value,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    counterText: maxLength != null ? null : '',
                   ),
-                  counterText: maxLength != null ? null : '',
-                ),
-                onChanged: (value) {
-                  // 输入时清除错误消息
-                  if (errorMessage.value != null) {
-                    errorMessage.value = null;
-                  }
-                },
-                onSubmitted: (value) async {
-                  // 按回车键提交（仅限单行输入）
-                  if (maxLines == 1 && !isProcessing.value) {
-                    await _handleConfirm(
-                      controller,
-                      validator,
-                      onConfirm,
-                      errorMessage,
-                      isProcessing,
-                    );
-                  }
-                },
-              )),
-            ],
-          ),
-          actions: [
-            Obx(() => TextButton(
-              onPressed: isProcessing.value
-                  ? null
-                  : () => Get.back(result: null),
-              child: Text(cancelText),
-            )),
-            Obx(() => ElevatedButton(
-              onPressed: isProcessing.value
-                  ? null
-                  : () async {
+                  onChanged: (value) {
+                    // 输入时清除错误消息
+                    if (errorMessage.value != null) {
+                      errorMessage.value = null;
+                    }
+                  },
+                  onSubmitted: (value) async {
+                    // 按回车键提交（仅限单行输入）
+                    if (maxLines == 1 && !isProcessing.value) {
                       await _handleConfirm(
                         controller,
                         validator,
@@ -334,20 +322,48 @@ Future<String?> showInputDialog({
                         errorMessage,
                         isProcessing,
                       );
-                    },
-              child: isProcessing.value
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Get.theme.colorScheme.onPrimary,
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            Obx(
+              () => TextButton(
+                onPressed: isProcessing.value
+                    ? null
+                    : () => Get.back(result: null),
+                child: Text(cancelText),
+              ),
+            ),
+            Obx(
+              () => ElevatedButton(
+                onPressed: isProcessing.value
+                    ? null
+                    : () async {
+                        await _handleConfirm(
+                          controller,
+                          validator,
+                          onConfirm,
+                          errorMessage,
+                          isProcessing,
+                        );
+                      },
+                child: isProcessing.value
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Get.theme.colorScheme.onPrimary,
+                          ),
                         ),
-                      ),
-                    )
-                  : Text(confirmText),
-            )),
+                      )
+                    : Text(confirmText),
+              ),
+            ),
           ],
         ),
       ),
@@ -358,6 +374,8 @@ Future<String?> showInputDialog({
     // 延迟 dispose，确保对话框动画完成
     await Future.delayed(Duration(milliseconds: 100));
     controller.dispose();
+    focusNode.dispose();
+    set_inapp_hotkey(true);
   }
 }
 
@@ -386,7 +404,7 @@ Future<void> _handleConfirm(
       isProcessing.value = true;
       final canClose = await onConfirm(value);
       isProcessing.value = false;
-      
+
       if (canClose) {
         Get.back(result: value);
       }

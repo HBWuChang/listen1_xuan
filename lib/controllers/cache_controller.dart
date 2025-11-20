@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:convert';
+import '../const.dart';
 import '../global_settings_animations.dart';
 import '../main.dart';
 import 'myPlaylist_controller.dart';
@@ -161,16 +162,9 @@ class CacheController extends GetxController {
     }
     fileName = fileName.substring(0, fileName.length - namedConnection.length);
     // 处理不可用字符
-    fileName = fileName
-        .replaceAll('/', unUseableRep)
-        .replaceAll('\\', unUseableRep)
-        .replaceAll(':', unUseableRep)
-        .replaceAll('?', unUseableRep)
-        .replaceAll('*', unUseableRep)
-        .replaceAll('"', unUseableRep)
-        .replaceAll('<', unUseableRep)
-        .replaceAll('>', unUseableRep)
-        .replaceAll('|', unUseableRep);
+    for (var char in cacheUnUseableRepUnUseable.split('')) {
+      fileName = fileName.replaceAll(char, unUseableRep);
+    }
     String ext = extension(Uri.parse(url).pathSegments.last);
     // 处理重名
     Set<String> existingFileNames = _localCacheList.values.toSet().union(
