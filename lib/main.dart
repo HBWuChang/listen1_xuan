@@ -9,7 +9,6 @@ import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:media_kit/media_kit.dart' show MediaKit;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'controllers/DioController.dart';
 import 'controllers/audioHandler_controller.dart';
 import 'controllers/lyric_controller.dart';
