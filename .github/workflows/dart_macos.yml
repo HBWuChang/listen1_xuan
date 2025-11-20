@@ -1,0 +1,70 @@
+name: macos
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '**/*.dart'
+      - 'pubspec.yaml'
+      - '**/dart_macos.yml'
+
+jobs:
+  build:
+    if: "contains(github.event.head_commit.message, 'macos')"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.35.7'
+          
+      - run: flutter --version
+      - run: flutter pub get
+      
+      # 安装 CocoaPods 依赖
+      - name: Install CocoaPods dependencies
+        run: |
+          cd macos
+          pod install
+        
+      # 构建 macOS app
+      - name: Build macOS app
+        run: flutter build macos --release
+        
+      # 打包为 .app 压缩文件
+      - name: Compress macOS app
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r listen1_xuan.app.zip listen1_xuan.app
+          mv listen1_xuan.app.zip ../../../../..
+          cd ../../../../..
+          
+      # 上传 .app 文件
+      - name: Upload .app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-app-artifact
+          path: listen1_xuan.app.zip
+          
+      # 从 pubspec.yaml 提取版本号
+      - name: Extract Version from pubspec.yaml
+        id: extract_version
+        run: |
+          version=$(grep '^version:' pubspec.yaml | sed 's/version: *//')
+          echo "VERSION=$version" >> $GITHUB_ENV
+        shell: bash
+        
+      - name: Debug Version
+        run: echo "${{ env.VERSION }}"
+        
+      # 上传到 Release
+      - name: Upload New Asset to Release
+        uses: softprops/action-gh-release@v2.3.2
+        with:
+          tag_name: ${{ env.VERSION }}
+          files: listen1_xuan.app.zip
+          prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

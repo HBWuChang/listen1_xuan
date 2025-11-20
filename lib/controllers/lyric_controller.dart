@@ -119,7 +119,7 @@ class LyricController extends GetxController {
       }
     });
     ever(updFormatShowLyric, (value) {
-      if (!isAndroid) return;
+      if (isWindows) return;
       if (!value.hasMain) return;
       if (!_settingsController.tryShowLyricInNotification) return;
       change_playback_state(null, lyric: value);

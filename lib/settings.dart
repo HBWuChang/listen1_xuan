@@ -651,9 +651,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 _focusNode2,
                                 _focusNode3,
                               )
-                            : isAndroid
-                            ? androidSettingsTiles
-                            : SizedBox.shrink(),
+                            : androidSettingsTiles,
                       ),
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {
