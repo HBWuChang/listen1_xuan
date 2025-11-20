@@ -16,3 +16,8 @@ export 'WsDownloadController.dart';
 export 'BroadcastWsController.dart';
 export 'ScanBroadcastController.dart';
 export 'routeController.dart';
+export 'hyper_download_controller.dart';
+export 'nowplaying_controller.dart';
+export 'DioController.dart';
+export 'myPlaylist_controller.dart';
+export 'supabase_auth_controller.dart';
