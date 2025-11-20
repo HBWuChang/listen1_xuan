@@ -241,6 +241,12 @@ Widget updSettingsTile(BuildContext context) {
                           itemBuilder: (context, index) {
                             return ListTile(
                               title: Text(art[index]['name']),
+                              subtitle: Text(
+                                '创建时间: ${art[index]['created_at']}',
+                              ),
+                              trailing: Text(
+                                '${(art[index]['size_in_bytes'] / 1024 / 1024).toStringAsFixed(2)} MB',
+                              ),
                               onTap: () {
                                 Navigator.of(context).pop(art[index]);
                               },
