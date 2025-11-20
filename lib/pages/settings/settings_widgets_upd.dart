@@ -205,36 +205,57 @@ Widget updSettingsTile(BuildContext context) {
                   print(
                     'Kernel architecture: ${SysInfo.kernelArchitecture.name}',
                   );
-                  late var art;
+                  List<dynamic> art = [];
 
                   switch (SysInfo.kernelArchitecture.name) {
                     case "ARM64":
                       for (var i in response.data["artifacts"]) {
                         if (i['name'].indexOf("arm64") > 0) {
-                          art = i;
-                          break;
+                          art.add(i);
                         }
                       }
                     case "ARM":
                       for (var i in response.data["artifacts"]) {
                         if (i['name'].indexOf("armeabi") > 0) {
-                          art = i;
-                          break;
+                          art.add(i);
                         }
                       }
                     case "X86_64":
                       for (var i in response.data["artifacts"]) {
                         if (i['name'].indexOf("x86_64") > 0) {
-                          art = i;
-                          break;
+                          art.add(i);
                         }
                       }
                     default:
-                      art = response.data["artifacts"][0];
+                      art = response.data["artifacts"];
                   }
-                  final download_url = art["archive_download_url"];
-                  final created_at = art["created_at"];
-                  double total = art["size_in_bytes"].toDouble();
+                  // 弹窗让用户选择
+                  final res = await Get.dialog(
+                    AlertDialog(
+                      title: Text('选择适合您设备的版本'),
+                      content: Container(
+                        width: double.maxFinite,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: art.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              title: Text(art[index]['name']),
+                              onTap: () {
+                                Navigator.of(context).pop(art[index]);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                  if (res == null) {
+                    return;
+                  }
+                  final download_url = res["archive_download_url"];
+                  final created_at = res["created_at"];
+                  double total = res["size_in_bytes"].toDouble();
                   double received = 0;
                   final StreamController<double> progressStreamController =
                       StreamController<double>();
