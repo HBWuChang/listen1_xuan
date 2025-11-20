@@ -1,31 +1,41 @@
 # listen1_xuan
 
-本软件为flutter重写的Listen1
+本软件为flutter重写的Listen1,支持Windows、MacOS、Android及iOS平台。
 -https://www.bilibili.com/video/BV133VHzaEPt/
 flutter version 3.35.7
 # 第一次使用
 ## 安卓务必授予全部存储访问权限！！！
 ## 安卓务必授予全部存储访问权限！！！
 ## 安卓务必授予全部存储访问权限！！！
-- 请在设置页面登录各平台账号以确保相应平台可用
-- 播放即下载，安卓在Download/Listen1,win在默认下载文件夹/Listen1（win需要在设置中安装ffmpeg（若之前没有
-有时间我再修改修改提示啥的
+- 请在设置页面登录各平台账号(尤其`网易云账号`，否则无法搜索、查看网易云相关歌曲)以确保相应平台可用
+- `播放即下载`，安卓在Download/Listen1,win与mac在`默认下载文件夹/Listen1`,ios在`文件`中`listen1Xuan`
+- 
 - 登录Github账号后可使用Github同步歌单、一键下载最新测试版
-- 若网易、QQ、Github登录页面打不开，请尝试检查[webview2运行环境](https://github.com/jnschulze/flutter-webview-windows?tab=readme-ov-file#target-platform-requirements)
+- 若`win`下网易、QQ、Github登录页面打不开，请尝试检查[webview2运行环境](https://github.com/jnschulze/flutter-webview-windows?tab=readme-ov-file#target-platform-requirements)
+- 若你的`安卓`设备`没有`GooglePlay服务，请考虑优先下载`不带有`without.embedded.Cronet后缀的安装包，否则可能会导致部分github相关请求不成功
+
 ## ~~可能需要的~~提示
-### Windows&Android
+### 竖屏状态
+- 当应用显示`高大于宽`即会以`竖屏布局`渲染
+- 竖屏状态地步播放栏可`上划`展示更多控制组件/展示歌词
+- 点击播放栏`封面`进入歌词页面
+- 在`歌曲信息及控制按钮区域`中：
+  - `点击`弹出歌曲信息弹窗及音量控制滑块
+  - `向左右滑动`切换⬆️下一首/⬇️上一首
+  - `长按`切换播放模式
+### Windows&Android&MacOS
 - 应用内在没有获取文本框焦点时，可使用如下按键：
-  - E/.:下一首
-  - Q/,:上一首
-  - 空格:暂停/播放
-  - W/↑:增大2％音量
-  - S/↓:减小2％音量
-  - D/←:前进3秒
-  - A/→:后退3秒
-###  Windows
+  - `E`/`.`:下一首
+  - `Q`/`,`:上一首
+  - `空格`:暂停/播放
+  - `W`/`↑`:增大2％音量
+  - `S`/`↓`:减小2％音量
+  - `D`/`←`:前进3秒
+  - `A`/`→`:后退3秒
+###  Windows&MacOS
 - 在release页面下载windows压缩包后随意解压到任意目录，双击listen1_xuan.exe即可使用，可手动右键创建快捷方式到桌面或固定到“开始”
 - 页面左侧及下方可以拖动、双击最大化/取消
-- 页面右侧区域单击右键为返回，单击鼠标中键为隐藏至托盘
+- 页面右侧区域单击右键为返回，单击鼠标中键(仅win)为隐藏至托盘
 - “Listen1”处可右键隐藏至托盘、中间退出应用
 - 托盘左键单击为显示应用，右键单击为显示菜单
 - windows下载最新测试版后可能会弹出cmd请求管理员权限的提示，请点击允许以更新版本。若程序关闭后无法打开，请手动运行windows默认下载地址/Listen1/scripts.bat以更新版本
