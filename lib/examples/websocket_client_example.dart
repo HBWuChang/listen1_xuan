@@ -718,7 +718,7 @@ class _WebSocketClientControlContentState
                                 child: Slider(
                                   value: ctrl.volume,
                                   min: 0.0,
-                                  max: 1.0,
+                                  max: 100,
                                   divisions: 100,
                                   label: '${(ctrl.volume * 100).round()}%',
                                   onChangeStart: (value) {

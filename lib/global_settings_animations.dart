@@ -42,20 +42,20 @@ Future<dynamic> xuanGetdownloadDirectory({String? path}) async {
   } else if (isAndroid) {
     tempDir = Directory('/storage/emulated/0/Download');
   } else if (isIos) {
-    tempDir = await getDownloadsDirectory();
+    // tempDir = await getdirectory
   }
-  if (tempDir == null) {
-    tempDir = await getApplicationDocumentsDirectory();
-  } else {
-    // 检查是否存在 Listen1 文件夹
-    var listen1Dir = Directory(p.join(tempDir.path, downDirName));
-    if (!await listen1Dir.exists()) {
-      // 如果不存在，则创建
-      await listen1Dir.create(recursive: true);
-    }
-    // 更新 tempDir 为 Listen1 文件夹
-    tempDir = listen1Dir;
+  tempDir ??= await getApplicationDocumentsDirectory();
+  // 检查是否存在 Listen1 文件夹
+  var listen1Dir = isIos
+      ? tempDir
+      : Directory(p.join(tempDir.path, downDirName));
+  if (!await listen1Dir.exists()) {
+    // 如果不存在，则创建
+    await listen1Dir.create(recursive: true);
   }
+  // 更新 tempDir 为 Listen1 文件夹
+  tempDir = listen1Dir;
+
   if (path != null) {
     // 检查是否存在指定的文件夹
     var customDir = p.join(tempDir.path, path);

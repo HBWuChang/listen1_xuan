@@ -83,6 +83,14 @@ class PlayController extends GetxController
   void onInit() {
     super.onInit();
     music_player = Player();
+    // music_player.setAudioDevice()
+    logger.d('PlayController initialized');
+    logger.d(music_player.state.audioDevices);
+    logger.d(music_player.state.audioParams);
+    music_player.stream.error.listen((error) {
+      logger.e('Audio Player Error: $error');
+      logger.d(music_player.state.audioParams);
+    });
     // 初始化播放按钮旋转动画控制器
     playVPlayBtnProcessControllerInit();
     // androidEQEnabled =
@@ -163,7 +171,7 @@ class PlayController extends GetxController
         logger.e("播放按钮旋转曲线设置错误：$e");
       }
     });
-    
+
     // 监听 music_player.position 和 needUpdatePosToAudioService
     // 当两个流都至少更新一次时，更新 updatePosToAudioServiceNow
     rxdart.Rx.combineLatest2<Duration, int, void>(
@@ -173,7 +181,7 @@ class PlayController extends GetxController
     ).listen((_) {
       updatePosToAudioServiceNow.value++;
     });
-    
+
     playButtonRotationCurve.value =
         settingsController.settings[SettingsController
             .playButtonRotationCurveKey] ??

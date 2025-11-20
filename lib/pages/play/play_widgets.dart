@@ -394,7 +394,7 @@ Widget get positionSlider => StreamBuilder<MediaState>(
                     ? (mediaState?.mediaItem?.duration?.inMilliseconds
                               .toDouble() ??
                           1.0)
-                    : (mediaState?.position.inMilliseconds.toDouble() ?? 0.0),
+                    : (mediaState?.position.inMilliseconds.toDouble() ?? 0.0).clamp(0.0, mediaState?.mediaItem?.duration?.inMilliseconds.toDouble() ?? 1.0),
                 max:
                     mediaState?.mediaItem?.duration?.inMilliseconds
                         .toDouble() ??

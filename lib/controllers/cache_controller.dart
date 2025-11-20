@@ -170,20 +170,23 @@ class CacheController extends GetxController {
     Set<String> existingFileNames = _localCacheList.values.toSet().union(
       Get.find<PlayController>().bootStraping.values.toSet(),
     );
-    if (dedupMethod == DedupMethod.number.index) {
-      int count = 1;
-      String baseFileName = fileName;
-      while (existingFileNames.contains(fileName + ext)) {
-        fileName = '$baseFileName($count)';
-        count++;
-      }
-      // } else if (dedupMethod == DedupMethod.strs.index) {
-    } else {
-      String randomStr = Uuid().v4().substring(0, 6);
-      String baseFileName = fileName;
-      while (existingFileNames.contains(fileName + ext)) {
-        fileName = '$baseFileName$namedConnection$randomStr';
-        randomStr = Uuid().v4().substring(0, 6);
+    
+    // 检查不带后缀的情况下是否有重名
+    if (existingFileNames.contains(fileName + ext)) {
+      if (dedupMethod == DedupMethod.number.index) {
+        int count = 1;
+        String baseFileName = fileName;
+        while (existingFileNames.contains(fileName + ext)) {
+          fileName = '$baseFileName($count)';
+          count++;
+        }
+      } else {
+        String randomStr = Uuid().v4().substring(0, 6);
+        String baseFileName = fileName;
+        while (existingFileNames.contains(fileName + ext)) {
+          fileName = '$baseFileName$namedConnection$randomStr';
+          randomStr = Uuid().v4().substring(0, 6);
+        }
       }
     }
     fileName += ext;

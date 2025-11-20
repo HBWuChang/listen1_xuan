@@ -13,6 +13,7 @@ Widget get playV2 => LayoutBuilder(
       height: _playController.playVMaxHeight,
 
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Positioned(
             top: 0,
