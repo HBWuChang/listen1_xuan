@@ -309,27 +309,27 @@ class WebSocketServerController extends GetxController {
 
       switch (command) {
         case PlayControlCommands.play:
-          global_play();
+          globalPlay();
           _logger.i('$_tag 执行播放命令');
           break;
         case PlayControlCommands.pause:
         case PlayControlCommands.stop:
-          global_pause();
+          globalPause();
           _logger.i('$_tag 执行暂停命令');
           break;
         case PlayControlCommands.next:
-          global_skipToNext();
+          globalSkipToNext();
           _logger.i('$_tag 执行下一首命令');
           break;
         case PlayControlCommands.previous:
-          global_skipToPrevious();
+          globalSkipToPrevious();
           _logger.i('$_tag 执行上一首命令');
           break;
         default:
           // 检查是否为changePlayMode命令
           if (command == 'changePlayMode') {
             try {
-              final newPlayMode = await global_change_play_mode();
+              final newPlayMode = await globalChangePlayMode();
               _logger.i('$_tag 播放模式已切换为: $newPlayMode');
 
               // 发送成功响应
@@ -354,7 +354,7 @@ class WebSocketServerController extends GetxController {
                 processValue <= 1.0) {
               // 这是进度控制命令
               _logger.i('$_tag 收到进度控制命令: $processValue');
-              global_seek(null, process: processValue);
+              globalSeek(null, process: processValue);
               return;
             }
           }

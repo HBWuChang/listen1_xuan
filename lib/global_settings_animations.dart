@@ -108,21 +108,21 @@ Map<String, HotKey> inapp_hotkeys = {
   "previous": HotKey(key: PhysicalKeyboardKey.keyQ, scope: HotKeyScope.inapp),
 };
 Map<LogicalKeyboardKey, dynamic> inappShortcuts = {
-  LogicalKeyboardKey.space: global_play_or_pause,
-  LogicalKeyboardKey.keyA: global_seek_to_previous,
-  LogicalKeyboardKey.keyD: global_seek_to_next,
-  LogicalKeyboardKey.keyW: global_volume_up,
-  LogicalKeyboardKey.keyS: global_volume_down,
-  LogicalKeyboardKey.keyE: global_skipToNext,
-  LogicalKeyboardKey.keyQ: global_skipToPrevious,
-  LogicalKeyboardKey.arrowLeft: global_seek_to_previous,
-  LogicalKeyboardKey.arrowRight: global_seek_to_next,
-  LogicalKeyboardKey.arrowUp: global_volume_up,
-  LogicalKeyboardKey.arrowDown: global_volume_down,
+  LogicalKeyboardKey.space: globalPlayOrPause,
+  LogicalKeyboardKey.keyA: globalSeekToPrevious,
+  LogicalKeyboardKey.keyD: globalSeekToNext,
+  LogicalKeyboardKey.keyW: globalVolumeUp,
+  LogicalKeyboardKey.keyS: globalVolumeDown,
+  LogicalKeyboardKey.keyE: globalSkipToNext,
+  LogicalKeyboardKey.keyQ: globalSkipToPrevious,
+  LogicalKeyboardKey.arrowLeft: globalSeekToPrevious,
+  LogicalKeyboardKey.arrowRight: globalSeekToNext,
+  LogicalKeyboardKey.arrowUp: globalVolumeUp,
+  LogicalKeyboardKey.arrowDown: globalVolumeDown,
   // ","
-  LogicalKeyboardKey.comma: global_skipToPrevious,
+  LogicalKeyboardKey.comma: globalSkipToPrevious,
   // "."
-  LogicalKeyboardKey.period: global_skipToNext,
+  LogicalKeyboardKey.period: globalSkipToNext,
 };
 bool enable_inapp_hotkey = true;
 void set_inapp_hotkey(enable) {
@@ -140,7 +140,7 @@ Future<void> set_hotkey(s_hotkey, hotkey, name) async {
           hotkey,
           keyDownHandler: (hotKey) async {
             // 处理播放/暂停的逻辑
-            if (enable_hotkey) global_play_or_pause();
+            if (enable_hotkey) globalPlayOrPause();
           },
         );
         break;
@@ -149,7 +149,7 @@ Future<void> set_hotkey(s_hotkey, hotkey, name) async {
           hotkey,
           keyDownHandler: (hotKey) async {
             // 处理下一首的逻辑
-            if (enable_hotkey) global_skipToNext();
+            if (enable_hotkey) globalSkipToNext();
           },
         );
         break;
@@ -158,7 +158,7 @@ Future<void> set_hotkey(s_hotkey, hotkey, name) async {
           hotkey,
           keyDownHandler: (hotKey) async {
             // 处理上一首的逻辑
-            if (enable_hotkey) global_skipToPrevious();
+            if (enable_hotkey) globalSkipToPrevious();
           },
         );
         break;

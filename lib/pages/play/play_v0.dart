@@ -159,7 +159,7 @@ Widget get playV0 => Center(
                               .toDouble() ??
                           1.0,
                       onChanged: (value) {
-                        global_seek(Duration(milliseconds: value.toInt()));
+                        globalSeek(Duration(milliseconds: value.toInt()));
                       },
                     ),
                   );
@@ -176,10 +176,10 @@ Widget get playV0 => Center(
           () => Center(
             child: _playController.isplaying.value
                 ? _button(Icons.pause, () {
-                    global_pause();
+                    globalPause();
                   })
                 : _button(Icons.play_arrow, () {
-                    global_play();
+                    globalPlay();
                   }),
           ),
         ),

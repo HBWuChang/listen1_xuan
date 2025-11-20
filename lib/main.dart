@@ -82,14 +82,14 @@ void enableThumbnailToolbar() async {
           ),
           '上一首',
           () {
-            global_skipToPrevious();
+            globalSkipToPrevious();
           },
         ),
         ThumbnailToolbarButton(
           ThumbnailToolbarAssetIcon('assets/images/audio_service_pause.ico'),
           '播放/暂停',
           () {
-            global_play_or_pause();
+            globalPlayOrPause();
           },
         ),
         ThumbnailToolbarButton(
@@ -98,7 +98,7 @@ void enableThumbnailToolbar() async {
           ),
           '下一首',
           () {
-            global_skipToNext();
+            globalSkipToNext();
           },
         ),
       ]);

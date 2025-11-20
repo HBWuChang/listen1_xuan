@@ -12,7 +12,7 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
           child: Center(
             // 上一首
             child: _button(Icons.skip_previous, () {
-              global_skipToPrevious();
+              globalSkipToPrevious();
             }, h: true),
           ),
         ),
@@ -23,10 +23,10 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
             () => Center(
               child: _playController.isplaying.value
                   ? _button(Icons.pause, () {
-                      global_pause();
+                      globalPause();
                     }, h: true)
                   : _button(Icons.play_arrow, () {
-                      global_play();
+                      globalPlay();
                     }, h: true),
             ),
           ),
@@ -37,7 +37,7 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
           child: Center(
             // 上一首
             child: _button(Icons.skip_next, () {
-              global_skipToNext();
+              globalSkipToNext();
             }, h: true),
           ),
         ),
@@ -156,7 +156,7 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
                               .toDouble() ??
                           1.0,
                       onChanged: (value) {
-                        global_seek(Duration(milliseconds: value.toInt()));
+                        globalSeek(Duration(milliseconds: value.toInt()));
                       },
                     ),
                   );
@@ -234,7 +234,7 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
               _ => Icon(Icons.error), // 默认情况
             },
             onPressed: () {
-              global_change_play_mode();
+              globalChangePlayMode();
             },
           );
         }),

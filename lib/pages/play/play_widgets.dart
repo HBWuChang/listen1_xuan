@@ -78,15 +78,15 @@ Future<void> _onTap(BuildContext context) async {
 Future<void> _onDoubleTap() async {
   if (isAndroid || isIos) Vibration.vibrate(duration: 100);
   if (Get.find<PlayController>().music_player.state.playing) {
-    global_pause();
+    globalPause();
   } else {
-    global_play();
+    globalPlay();
   }
 }
 
 void _onLongPress() {
   if (isAndroid || isIos) Vibration.vibrate(duration: 100);
-  global_change_play_mode();
+  globalChangePlayMode();
 }
 
 void _onHorizontalDragEnd(DragEndDetails details) {
@@ -94,9 +94,9 @@ void _onHorizontalDragEnd(DragEndDetails details) {
   if (movePos.dx.abs() < movePos.dy.abs()) return;
   if (isAndroid || isIos) Vibration.vibrate(duration: 100);
   if (movePos.dx < 0) {
-    global_skipToNext();
+    globalSkipToNext();
   } else {
-    global_skipToPrevious();
+    globalSkipToPrevious();
   }
 }
 
@@ -201,7 +201,7 @@ Widget get playModeButton => Obx(() {
       2 => Icon(Icons.repeat_one, size: 64.w),
       _ => Icon(Icons.error, size: 64.w), // 默认情况
     },
-    onPressed: global_change_play_mode,
+    onPressed: globalChangePlayMode,
   );
 });
 
@@ -210,7 +210,7 @@ Widget buildPreviousButton() {
   return IconButton(
     style: controlBtnsStyle,
     icon: Icon(Icons.skip_previous, size: controlButtonIconSize),
-    onPressed: global_skipToPrevious,
+    onPressed: globalSkipToPrevious,
   );
 }
 
@@ -271,9 +271,9 @@ Widget buildPlayPauseButton(double expandProgress) {
           ),
           onPressed: () {
             if (_playController.isplaying.value) {
-              global_pause();
+              globalPause();
             } else {
-              global_play();
+              globalPlay();
             }
           },
         ),
@@ -287,7 +287,7 @@ Widget buildNextButton() {
   return IconButton(
     style: controlBtnsStyle,
     icon: Icon(Icons.skip_next, size: controlButtonIconSize),
-    onPressed: global_skipToNext,
+    onPressed: globalSkipToNext,
   );
 }
 
@@ -400,7 +400,7 @@ Widget get positionSlider => StreamBuilder<MediaState>(
                         .toDouble() ??
                     1.0,
                 onChanged: (value) {
-                  global_seek(Duration(milliseconds: value.toInt()));
+                  globalSeek(Duration(milliseconds: value.toInt()));
                 },
               ),
             ),

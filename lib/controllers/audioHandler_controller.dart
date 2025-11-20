@@ -30,7 +30,6 @@ class AudioHandlerController extends GetxController {
       cacheManager: null,
     );
     await fresh_playmode();
-    update_playmode_to_audio_service();
     final track = await getnowplayingsong();
     if (track['index'] != -1) {
       if (isWindows) {

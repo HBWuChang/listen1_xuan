@@ -201,22 +201,22 @@ Future<void> bind_smtc() async {
             switch (event) {
               case PressedButton.play:
                 smtc.setPlaybackStatus(PlaybackStatus.playing);
-                global_play();
+                globalPlay();
                 break;
               case PressedButton.pause:
                 smtc.setPlaybackStatus(PlaybackStatus.paused);
-                global_pause();
+                globalPause();
                 break;
               case PressedButton.next:
                 print('Next');
-                global_skipToNext();
+                globalSkipToNext();
                 break;
               case PressedButton.previous:
                 print('Previous');
-                global_skipToPrevious();
+                globalSkipToPrevious();
                 break;
               case PressedButton.stop:
-                global_change_play_mode();
+                globalChangePlayMode();
                 break;
               default:
                 break;
@@ -469,19 +469,19 @@ class MediaState {
   MediaState(this.mediaItem, this.position);
 }
 
-Future<void> global_play_or_pause() async {
+Future<void> globalPlayOrPause() async {
   await _playController.music_player.playOrPause();
 }
 
-Future<void> global_play() async {
+Future<void> globalPlay() async {
   _playController.music_player.play();
 }
 
-Future<void> global_pause() async {
+Future<void> globalPause() async {
   _playController.music_player.pause();
 }
 
-Future<void> global_seek(Duration? position, {double? process}) async {
+Future<void> globalSeek(Duration? position, {double? process}) async {
   if (position == null && process != null) {
     position = Duration(
       milliseconds:
@@ -504,7 +504,7 @@ Future<void> global_seek(Duration? position, {double? process}) async {
   }
 }
 
-Future<void> global_seek_to_next({
+Future<void> globalSeekToNext({
   Duration time = const Duration(seconds: 3),
 }) async {
   var now_pos = _playController.music_player.state.position;
@@ -516,7 +516,7 @@ Future<void> global_seek_to_next({
   _playController.music_player.seek(next_pos);
 }
 
-Future<void> global_seek_to_previous({
+Future<void> globalSeekToPrevious({
   Duration time = const Duration(seconds: 3),
 }) async {
   var now_pos = _playController.music_player.state.position;
@@ -524,7 +524,7 @@ Future<void> global_seek_to_previous({
   _playController.music_player.seek(next_pos);
 }
 
-Future<void> global_volume_up({double step = 2}) async {
+Future<void> globalVolumeUp({double step = 2}) async {
   var now_pos = _playController.music_player.state.volume;
   var next_pos = now_pos + step;
   if (next_pos > 1) {
@@ -533,7 +533,7 @@ Future<void> global_volume_up({double step = 2}) async {
   _playController.currentVolume = next_pos;
 }
 
-Future<void> global_volume_down({double step = 2}) async {
+Future<void> globalVolumeDown({double step = 2}) async {
   var now_pos = _playController.music_player.state.volume;
   var next_pos = now_pos - step;
   if (next_pos < 0) {
@@ -542,7 +542,7 @@ Future<void> global_volume_down({double step = 2}) async {
   _playController.currentVolume = next_pos;
 }
 
-Future<void> global_skipToPrevious() async {
+Future<void> globalSkipToPrevious() async {
   await fresh_playmode();
 
   final current_playing = await get_current_playing();
@@ -586,37 +586,11 @@ Future<void> global_skipToPrevious() async {
   }
 }
 
-Future<void> global_skipToNext() async {
+Future<void> globalSkipToNext() async {
   await onPlaybackCompleted(true);
 }
 
-Future<void> update_playmode_to_audio_service() async {
-  try {
-    switch (playmode.value) {
-      case 0:
-        await Get.find<AudioHandlerController>().audioHandler.setRepeatMode(
-          AudioServiceRepeatMode.all,
-        );
-        break;
-      case 1:
-        await Get.find<AudioHandlerController>().audioHandler.setRepeatMode(
-          AudioServiceRepeatMode.group,
-        );
-        break;
-      case 2:
-        await Get.find<AudioHandlerController>().audioHandler.setRepeatMode(
-          AudioServiceRepeatMode.one,
-        );
-        break;
-      default:
-        break;
-    }
-  } catch (e) {
-    print(e);
-  }
-}
-
-Future<int> global_change_play_mode() async {
+Future<int> globalChangePlayMode() async {
   change_p = true;
   await fresh_playmode();
   playmode.value = (playmode.value + 1) % 3;
@@ -683,20 +657,20 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   // @override
   // Future<void> play() => _player.play();
   @override
-  Future<void> play() => global_play();
+  Future<void> play() => globalPlay();
 
   // @override
   // Future<void> pause() => _playController.music_player.pause();
   @override
-  Future<void> pause() => global_pause();
+  Future<void> pause() => globalPause();
 
   @override
-  Future<void> seek(Duration position) => global_seek(position);
+  Future<void> seek(Duration position) => globalSeek(position);
   @override
-  Future<void> skipToPrevious() => global_skipToPrevious();
+  Future<void> skipToPrevious() => globalSkipToPrevious();
 
   @override
-  Future<void> skipToNext() => global_skipToNext();
+  Future<void> skipToNext() => globalSkipToNext();
 
   PlaybackState _transformEvent(bool playing) {
     return PlaybackState(

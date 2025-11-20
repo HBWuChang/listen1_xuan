@@ -2,7 +2,7 @@
 
 本软件为flutter重写的Listen1
 -https://www.bilibili.com/video/BV133VHzaEPt/
-flutter version 3.32.1
+flutter version 3.35.7
 # 第一次使用
 ## 安卓务必授予全部存储访问权限！！！
 ## 安卓务必授予全部存储访问权限！！！
