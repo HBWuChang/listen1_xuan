@@ -37,8 +37,8 @@ jobs:
       - name: Compress macOS app
         run: |
           cd build/macos/Build/Products/Release
-          zip -r listen1_xuan.app.zip listen1_xuan.app
-          mv listen1_xuan.app.zip ../../../../..
+          zip -r listen1_xuan-macos.app.zip listen1_xuan.app
+          mv listen1_xuan-macos.app.zip ../../../../..
           cd ../../../../..
           
       # 上传 .app 文件
@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-app-artifact
-          path: listen1_xuan.app.zip
+          path: listen1_xuan-macos.app.zip
           
       # 从 pubspec.yaml 提取版本号
       - name: Extract Version from pubspec.yaml
@@ -64,7 +64,7 @@ jobs:
         uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ env.VERSION }}
-          files: listen1_xuan.app.zip
+          files: listen1_xuan-macos.app.zip
           prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
