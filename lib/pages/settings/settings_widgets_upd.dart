@@ -62,93 +62,78 @@ Widget updSettingsTile(BuildContext context) {
                 }
                 if (flag) {
                   final download_url = art["archive_download_url"];
-                  final created_at = art["created_at"];
-                  double total = art["size_in_bytes"].toDouble();
-                  double received = 0;
-                  final StreamController<double> progressStreamController =
-                      StreamController<double>();
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) {
-                      dia_context = context;
-                      return PopScope(
-                        canPop: false,
-                        onPopInvokedWithResult: (didPop, result) => {},
-                        child: StatefulBuilder(
-                          builder: (BuildContext context, StateSetter setState) {
-                            return AlertDialog(
-                              title: Text('下载进度: ${created_at}'),
-                              content: StreamBuilder<double>(
-                                stream: progressStreamController.stream,
-                                builder: (context, snapshot) {
-                                  double progress = snapshot.data ?? 0;
-                                  return Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      LinearProgressIndicator(value: progress),
-                                      SizedBox(height: 20),
-                                      Text(
-                                        '${(progress * total / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB',
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  );
-                  await dioWithProxyAdapter.download(
+
+                  // 首先获取302重定向的实际下载链接
+                  final redirectResponse = await dioWithProxyAdapter.get(
                     download_url,
-                    filePath,
                     options: Options(
+                      followRedirects: false,
+                      validateStatus: (status) => status! < 400,
                       headers: {
                         'accept': 'application/vnd.github.v3+json',
                         'authorization': 'Bearer ' + token,
                         'x-github-api-version': '2022-11-28',
                       },
                     ),
-                    onReceiveProgress: (receivedBytes, totalBytes) {
-                      received = receivedBytes.toDouble();
-                      double progress = received / total;
-                      progressStreamController.add(progress);
+                  );
+                  String actualDownloadUrl = download_url;
+                  if (redirectResponse.statusCode == 302) {
+                    actualDownloadUrl =
+                        redirectResponse.headers.value('location') ??
+                        download_url;
+                  }
+
+                  // 使用 HyperDownloadController 下载
+                  // 移除旧的控制器实例（如果存在）
+                  if (Get.isRegistered<HyperDownloadController>()) {
+                    Get.delete<HyperDownloadController>();
+                  }
+                  final hyperDownloadController = Get.put(
+                    HyperDownloadController(),
+                  );
+
+                  await hyperDownloadController.downloadFile(
+                    url: actualDownloadUrl,
+                    savePath: filePath,
+                    context: context,
+                    threadCount: Platform.numberOfProcessors,
+                    onComplete: () async {
+                      showSuccessSnackbar('下载成功', null);
+                      // 解压 ZIP 文件
+                      final bytes = File(filePath).readAsBytesSync();
+                      final archive = ZipDecoder().decodeBytes(bytes);
+                      // 删除canary文件夹
+                      final canaryDir = Directory(p.join(tempPath, 'canary'));
+                      if (await canaryDir.exists()) {
+                        await canaryDir.delete(recursive: true);
+                      }
+                      for (final file in archive) {
+                        final filename = file.name;
+                        if (file.isFile) {
+                          final data = file.content as List<int>;
+                          final extractPath = p.join(
+                            tempPath,
+                            'canary',
+                            filename,
+                          );
+                          File(extractPath)
+                            ..createSync(recursive: true)
+                            ..writeAsBytesSync(data);
+                        } else {
+                          final dirPath = p.join(tempPath, 'canary', file.name);
+                          Directory(dirPath).create(recursive: true);
+                        }
+                      }
+                      String executablePath = Platform.resolvedExecutable;
+                      String executableDir = File(executablePath).parent.path;
+                      debugPrint(executableDir);
+                      createAndRunBatFile(tempPath, executableDir);
+                    },
+                    onFailed: (String reason) {
+                      showErrorSnackbar('下载失败', reason);
                     },
                   );
-                  try {
-                    Navigator.of(dia_context).pop(); // 关闭进度条对话框
-                  } catch (e) {
-                    print('关闭进度条对话框失败: $e');
-                  }
                 }
-                showSuccessSnackbar('下载成功', null);
-                // 解压 ZIP 文件
-                final bytes = File(filePath).readAsBytesSync();
-                final archive = ZipDecoder().decodeBytes(bytes);
-                // 删除canary文件夹
-                final canaryDir = Directory('$tempPath\\canary');
-                if (await canaryDir.exists()) {
-                  await canaryDir.delete(recursive: true);
-                }
-                for (final file in archive) {
-                  final filename = file.name;
-                  if (file.isFile) {
-                    final data = file.content as List<int>;
-                    File('$tempPath\\canary\\$filename')
-                      ..createSync(recursive: true)
-                      ..writeAsBytesSync(data);
-                  } else {
-                    Directory(
-                      '$filePath\\canary\\$filename',
-                    ).create(recursive: true);
-                  }
-                }
-                String executablePath = Platform.resolvedExecutable;
-                String executableDir = File(executablePath).parent.path;
-                print(executableDir);
-                createAndRunBatFile(tempPath, executableDir);
               } catch (e) {
                 try {
                   Navigator.of(dia_context).pop(); // 关闭进度条对话框
@@ -165,24 +150,35 @@ Widget updSettingsTile(BuildContext context) {
                     await Permission.storage.request().isGranted) {
                   final tempPath = (await xuanGetdownloadDirectory()).path;
 
-                  final apkFile = File(apkfile_name);
-                  print('apkFile: $apkFile');
-                  if (await apkFile.exists()) {
+                  // 检查 tempPath 下是否已存在 .apk 文件
+                  final tempDir = Directory(tempPath);
+                  final apkFiles = await tempDir
+                      .list()
+                      .where(
+                        (entity) =>
+                            entity is File && entity.path.endsWith('.apk'),
+                      )
+                      .toList();
+
+                  if (apkFiles.isNotEmpty) {
                     try {
-                      InstallPlugin.installApk(apkfile_name)
+                      final apkPath = (apkFiles.first as File).path;
+                      debugPrint('apkFile: $apkPath');
+                      InstallPlugin.installApk(apkPath)
                           .then((result) {
-                            print('install apk $result');
+                            debugPrint('install apk $result');
                           })
                           .catchError((error) {
-                            print('install apk error: $error');
+                            debugPrint('install apk error: $error');
                           });
                       return;
                     } catch (e) {
-                      print('安装APK失败: $e');
+                      debugPrint('安装APK失败: $e');
                       return;
                     }
                   }
-                  final filePath = '$tempPath/canary.zip';
+
+                  final filePath = p.join(tempPath, 'canary.zip');
 
                   final url_list =
                       'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
@@ -202,7 +198,7 @@ Widget updSettingsTile(BuildContext context) {
                       },
                     ),
                   );
-                  print(
+                  debugPrint(
                     'Kernel architecture: ${SysInfo.kernelArchitecture.name}',
                   );
                   List<dynamic> art = [];
@@ -260,45 +256,16 @@ Widget updSettingsTile(BuildContext context) {
                     return;
                   }
                   final download_url = res["archive_download_url"];
-                  final created_at = res["created_at"];
-                  double total = res["size_in_bytes"].toDouble();
-                  double received = 0;
-                  final StreamController<double> progressStreamController =
-                      StreamController<double>();
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) {
-                      dia_context = context;
-                      return PopScope(
-                        canPop: false,
-                        onPopInvokedWithResult: (didPop, result) => {},
-                        child: StatefulBuilder(
-                          builder: (BuildContext context, StateSetter setState) {
-                            return AlertDialog(
-                              title: Text('下载进度: ${created_at}'),
-                              content: StreamBuilder<double>(
-                                stream: progressStreamController.stream,
-                                builder: (context, snapshot) {
-                                  double progress = snapshot.data ?? 0;
-                                  return Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      LinearProgressIndicator(value: progress),
-                                      SizedBox(height: 20),
-                                      Text(
-                                        '${(progress * total / 1024 / 1024).toStringAsFixed(2)}MB/${(total / 1024 / 1024).toStringAsFixed(2)}MB',
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
+
+                  // 使用 HyperDownloadController 下载
+                  // 移除旧的控制器实例（如果存在）
+                  if (Get.isRegistered<HyperDownloadController>()) {
+                    Get.delete<HyperDownloadController>();
+                  }
+                  final hyperDownloadController = Get.put(
+                    HyperDownloadController(),
                   );
+
                   // 首先获取302重定向的实际下载链接
                   final redirectResponse = await dioWithProxyAdapter.get(
                     download_url,
@@ -319,54 +286,55 @@ Widget updSettingsTile(BuildContext context) {
                         download_url;
                   }
 
-                  // 使用实际下载链接进行下载，不添加GitHub API请求头
-                  await dioWithProxyAdapter.download(
-                    // await Dio().download(
-                    actualDownloadUrl,
-                    filePath,
-                    onReceiveProgress: (receivedBytes, totalBytes) {
-                      received = receivedBytes.toDouble();
-                      double progress = received / total;
-                      progressStreamController.add(progress);
+                  await hyperDownloadController.downloadFile(
+                    url: actualDownloadUrl,
+                    savePath: filePath,
+                    context: context,
+                    threadCount: Platform.numberOfProcessors,
+                    onComplete: () async {
+                      showSuccessSnackbar('下载成功', null);
+                      // 解压 ZIP 文件
+                      final bytes = File(filePath).readAsBytesSync();
+                      final archive = ZipDecoder().decodeBytes(bytes);
+                      String apkfilePath = '';
+                      for (final file in archive) {
+                        final filename = file.name;
+                        if (file.isFile) {
+                          final data = file.content as List<int>;
+                          final extractPath = p.join(tempPath, filename);
+                          File(extractPath)
+                            ..createSync(recursive: true)
+                            ..writeAsBytesSync(data);
+                          if (p.extension(filename) == '.apk') {
+                            apkfilePath = extractPath;
+                          }
+                        } else {
+                          Directory(
+                            p.join(tempPath, filename),
+                          ).create(recursive: true);
+                        }
+                      }
+
+                      if (apkfilePath.isNotEmpty) {
+                        try {
+                          InstallPlugin.installApk(apkfilePath)
+                              .then((result) {
+                                debugPrint('install apk $result');
+                              })
+                              .catchError((error) {
+                                debugPrint('install apk error: $error');
+                              });
+                        } catch (e) {
+                          debugPrint('安装APK失败: $e');
+                        }
+                      } else {
+                        showErrorSnackbar('APK 文件未找到', null);
+                      }
+                    },
+                    onFailed: (String reason) {
+                      showErrorSnackbar('下载失败', reason);
                     },
                   );
-
-                  try {
-                    Navigator.of(dia_context).pop(); // 关闭进度条对话框
-                  } catch (e) {
-                    print('关闭进度条对话框失败: $e');
-                  }
-                  // 解压 ZIP 文件
-                  final bytes = File(filePath).readAsBytesSync();
-                  final archive = ZipDecoder().decodeBytes(bytes);
-
-                  for (final file in archive) {
-                    final filename = file.name;
-                    if (file.isFile) {
-                      final data = file.content as List<int>;
-                      File('$tempPath/$filename')
-                        ..createSync(recursive: true)
-                        ..writeAsBytesSync(data);
-                    } else {
-                      Directory('$filePath/$filename').create(recursive: true);
-                    }
-                  }
-                  if (await apkFile.exists()) {
-                    try {
-                      InstallPlugin.installApk(apkfile_name)
-                          .then((result) {
-                            print('install apk $result');
-                          })
-                          .catchError((error) {
-                            print('install apk error: $error');
-                          });
-                    } catch (e) {
-                      print('安装APK失败: $e');
-                    }
-                  } else {
-                    showErrorSnackbar('APK 文件未找到', null);
-                  }
-                  showSuccessSnackbar('下载成功', null);
                 } else {
                   throw Exception("没有权限访问存储空间");
                 }
@@ -374,7 +342,7 @@ Widget updSettingsTile(BuildContext context) {
                 try {
                   Navigator.of(dia_context).pop(); // 关闭进度条对话框
                 } catch (e) {
-                  print('关闭进度条对话框失败: $e');
+                  debugPrint('关闭进度条对话框失败: $e');
                 }
                 showErrorSnackbar('下载失败', e.toString());
               }
@@ -397,54 +365,27 @@ Widget updSettingsTile(BuildContext context) {
             onPressed: () async {
               if (await Permission.manageExternalStorage.request().isGranted ||
                   await Permission.storage.request().isGranted) {
-                final tempDir = await getApplicationDocumentsDirectory();
-                var tempPath = tempDir.path;
-                var filePath = '$tempPath/canary.zip';
-
-                var file = File(filePath);
-                if (await file.exists()) {
-                  await file.delete();
+                Directory tempPath = await xuanGetdownloadDirectory();
+                final filelist = tempPath
+                    .listSync()
+                    .where(
+                      (element) =>
+                          element is File &&
+                          (p.extension(element.path).endsWith('.apk') ||
+                              p.basename(element.path) == 'canary.zip'),
+                    )
+                    .toList();
+                if (filelist.isEmpty) {
+                  showWarningSnackbar('没有找到安装包缓存', null);
+                  return;
                 }
-                file = File('$tempPath/app-arm64-v8a-release.apk');
-                if (await file.exists()) {
-                  await file.delete();
+                for (var file in filelist) {
+                  try {
+                    await file.delete();
+                  } catch (e) {
+                    debugPrint('删除文件失败: $e');
+                  }
                 }
-                file = File('$tempPath/app-armeabi-v7a-release.apk');
-                if (await file.exists()) {
-                  await file.delete();
-                }
-                file = File('$tempPath/app-x86_64-release.apk');
-                if (await file.exists()) {
-                  await file.delete();
-                }
-                file = File('$tempPath/app-release.apk');
-                if (await file.exists()) {
-                  await file.delete();
-                }
-                tempPath = '/storage/emulated/0/Download/Listen1';
-                filePath = '$tempPath/canary.zip';
-
-                file = File(filePath);
-                if (await file.exists()) {
-                  await file.delete();
-                }
-                file = File('$tempPath/app-arm64-v8a-release.apk');
-                if (await file.exists()) {
-                  await file.delete();
-                }
-                file = File('$tempPath/app-armeabi-v7a-release.apk');
-                if (await file.exists()) {
-                  await file.delete();
-                }
-                file = File('$tempPath/app-x86_64-release.apk');
-                if (await file.exists()) {
-                  await file.delete();
-                }
-                file = File('$tempPath/app-release.apk');
-                if (await file.exists()) {
-                  await file.delete();
-                }
-
                 showSuccessSnackbar('清理成功', null);
               } else {
                 showErrorSnackbar('没有权限访问存储空间', null);

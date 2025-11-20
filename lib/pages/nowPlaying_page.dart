@@ -111,34 +111,34 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     );
 
     if (currentIndex != -1 && scrollController.hasClients) {
-      // // 计算滚动位置 - 使用动态高度
-      // final targetOffset = currentIndex * itemHeight;
+      // 计算滚动位置 - 使用动态高度
+      final targetOffset = currentIndex * controller.itemHeight;
 
-      // // 获取可视区域高度
-      // final viewportHeight = scrollController.position.viewportDimension;
+      // 获取可视区域高度
+      final viewportHeight = scrollController.position.viewportDimension;
 
-      // // 调整滚动位置，让当前播放的项目在屏幕中央
-      // final centeredOffset =
-      //     targetOffset - (viewportHeight / 2) + (itemHeight / 2);
+      // 调整滚动位置，让当前播放的项目在屏幕中央
+      final centeredOffset =
+          targetOffset - (viewportHeight / 2) + (controller.itemHeight / 2);
 
-      // // 确保滚动位置在有效范围内
-      // final maxOffset = scrollController.position.maxScrollExtent;
-      // final finalOffset = centeredOffset.clamp(0.0, maxOffset);
+      // 确保滚动位置在有效范围内
+      final maxOffset = scrollController.position.maxScrollExtent;
+      final finalOffset = centeredOffset.clamp(0.0, maxOffset);
       if (animated) {
-        listObserverController.animateTo(
-          index: currentIndex,
+        //   listObserverController.animateTo(
+        //     index: currentIndex,
+        //     duration: Duration(milliseconds: 500),
+        //     curve: Curves.easeInOut,
+        //     alignment: 0.5, // 使其居中
+        //   );
+        scrollController.animateTo(
+          finalOffset,
           duration: Duration(milliseconds: 500),
           curve: Curves.easeInOut,
-          alignment: 0.5, // 使其居中
         );
-        // scrollController.animateTo(
-        //   finalOffset,
-        //   duration: Duration(milliseconds: 500),
-        //   curve: Curves.easeInOut,
-        // );
       } else {
-        listObserverController.jumpTo(index: currentIndex);
-        // scrollController.jumpTo(finalOffset);
+        // listObserverController.jumpTo(index: currentIndex);
+        scrollController.jumpTo(finalOffset);
       }
 
       // 添加震动反馈
@@ -146,7 +146,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     }
   }
 
-  Widget _buildHeader(BuildContext context, NowPlayingPageController controller) {
+  Widget _buildHeader(
+    BuildContext context,
+    NowPlayingPageController controller,
+  ) {
     final theme = Theme.of(context);
 
     return Container(
@@ -504,7 +507,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     );
   }
 
-  void _showClearDialog(BuildContext context, NowPlayingPageController controller) {
+  void _showClearDialog(
+    BuildContext context,
+    NowPlayingPageController controller,
+  ) {
     Get.defaultDialog(
       title: '清空播放列表',
       middleText: '确定要清空整个播放列表吗？',
@@ -541,8 +547,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         scale: controller.showScrollButton.value ? 1.0 : 0.0,
         duration: Duration(milliseconds: 200),
         child: FloatingActionButton.small(
-          onPressed: listObserverController.reattach,
-          // onPressed: controller.scrollToCurrentTrack,
+          // onPressed: listObserverController.reattach,
+          onPressed: scrollToCurrentTrack,
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
           child: Icon(Icons.my_location, size: 20),

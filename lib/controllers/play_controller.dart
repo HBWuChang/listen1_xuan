@@ -19,6 +19,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:rxdart/rxdart.dart' as rxdart;
 import '../global_settings_animations.dart';
 import '../loweb.dart';
 import '../models/AndroidEQBand.dart';
@@ -42,6 +43,7 @@ class PlayController extends GetxController
   final currentPlayingRx = <Track>[].obs;
   final logger = Logger();
   final updatePosToAudioServiceNow = 0.obs;
+  final needUpdatePosToAudioService = 0.obs; // 新增：触发位置更新的流
   final _next_track = Rx<Track?>(null);
   RxString nowPlayingTrackIdRx = ''.obs;
   String get nowPlayingTrackId => nowPlayingTrackIdRx.value;
@@ -161,6 +163,17 @@ class PlayController extends GetxController
         logger.e("播放按钮旋转曲线设置错误：$e");
       }
     });
+    
+    // 监听 music_player.position 和 needUpdatePosToAudioService
+    // 当两个流都至少更新一次时，更新 updatePosToAudioServiceNow
+    rxdart.Rx.combineLatest2<Duration, int, void>(
+      music_player.stream.position,
+      needUpdatePosToAudioService.stream,
+      (position, needUpdate) => null,
+    ).listen((_) {
+      updatePosToAudioServiceNow.value++;
+    });
+    
     playButtonRotationCurve.value =
         settingsController.settings[SettingsController
             .playButtonRotationCurveKey] ??

@@ -739,6 +739,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.0"
+  hyper_thread_downloader:
+    dependency: "direct main"
+    description:
+      name: hyper_thread_downloader
+      sha256: "4b928da5e030c1fd2cce5a9de84e053b4b23c15c1c4e7e3a851179bb7ab794ab"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.5+3"
   iconify_flutter_plus:
     dependency: "direct main"
     description:

@@ -497,10 +497,10 @@ Future<void> globalSeek(Duration? position, {double? process}) async {
   }
   if (position == null) return;
   _playController.music_player.seek(position);
-  if (_playController.updatePosToAudioServiceNow.value > 10000) {
-    _playController.updatePosToAudioServiceNow.value = 0;
+  if (_playController.needUpdatePosToAudioService.value > 10000) {
+    _playController.needUpdatePosToAudioService.value = 0;
   } else {
-    _playController.updatePosToAudioServiceNow.value++;
+    _playController.needUpdatePosToAudioService.value++;
   }
 }
 
@@ -618,11 +618,14 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // what state to display, here we set up our audio handler to broadcast all
     // playback state changes as they happen via playbackState...
 
-    rxdart.Rx.combineLatest2<bool, int, bool>(
-      _playController.music_player.stream.playing,
-      _playController.updatePosToAudioServiceNow.stream,
-      (a, b) => a,
-    ).map(_transformEvent).pipe(playbackState);
+    // 使用 merge 替代 combineLatest2，任一流更新即立即发出
+    rxdart.Rx.merge([
+          _playController.music_player.stream.playing,
+          _playController.updatePosToAudioServiceNow.stream.cast<int>(),
+        ])
+        .map((_) => _playController.music_player.state.playing)
+        .map(_transformEvent)
+        .pipe(playbackState);
     // _playController.music_player.stream.duration
     //     .map(_transformEvent)
     //     .pipe(playbackState);

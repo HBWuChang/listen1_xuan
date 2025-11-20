@@ -90,6 +90,7 @@ dependencies:
   badges: ^3.1.2
   scrollview_observer: ^1.26.2
   path: ^1.9.1
+  hyper_thread_downloader: ^1.0.5+3
 dev_dependencies:
   flutter_test:
     sdk: flutter

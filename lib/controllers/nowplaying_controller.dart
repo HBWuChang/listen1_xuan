@@ -17,7 +17,6 @@ class NowPlayingPageController extends GetxController {
   MyPlayListController get playlistController =>
       Get.find<MyPlayListController>();
   late TextEditingController searchController;
-  Function? scrollToCurrentTrack;
   @override
   void onInit() {
     super.onInit();
