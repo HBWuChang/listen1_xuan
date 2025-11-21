@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:get/get.dart';
 
@@ -17,7 +18,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
     facing: CameraFacing.back, // 使用后置摄像头
     torchEnabled: false, // 闪光灯
   );
-  
+
   bool isFlashOn = false;
   bool isScanned = false; // 防止重复处理
 
@@ -53,7 +54,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
             controller: cameraController,
             onDetect: (capture) {
               if (isScanned) return; // 防止重复处理
-              
+
               final List<Barcode> barcodes = capture.barcodes;
               for (final barcode in barcodes) {
                 final String? code = barcode.rawValue;
@@ -64,17 +65,14 @@ class _QRScannerPageState extends State<QRScannerPage> {
               }
             },
           ),
-          
+
           // 扫描框和引导UI
           Center(
             child: Container(
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.red,
-                  width: 3,
-                ),
+                border: Border.all(color: Colors.red, width: 3),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Stack(
@@ -88,7 +86,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
                       height: 20,
                       decoration: const BoxDecoration(
                         color: Colors.red,
-                        borderRadius: BorderRadius.only(topLeft: Radius.circular(12)),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -100,7 +100,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
                       height: 20,
                       decoration: const BoxDecoration(
                         color: Colors.red,
-                        borderRadius: BorderRadius.only(topRight: Radius.circular(12)),
+                        borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -112,7 +114,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
                       height: 20,
                       decoration: const BoxDecoration(
                         color: Colors.red,
-                        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(12)),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -124,7 +128,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
                       height: 20,
                       decoration: const BoxDecoration(
                         color: Colors.red,
-                        borderRadius: BorderRadius.only(bottomRight: Radius.circular(12)),
+                        borderRadius: BorderRadius.only(
+                          bottomRight: Radius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -132,7 +138,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
               ),
             ),
           ),
-          
+
           // 提示文字
           Positioned(
             bottom: 120,
@@ -143,7 +149,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
               child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(20),
@@ -151,15 +160,15 @@ class _QRScannerPageState extends State<QRScannerPage> {
                     child: const Text(
                       '将服务器二维码对准扫描框',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
+                      style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(16),
@@ -167,17 +176,14 @@ class _QRScannerPageState extends State<QRScannerPage> {
                     child: const Text(
                       '格式: IP地址:端口号',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          
+
           // 手动输入按钮
           Positioned(
             bottom: 40,
@@ -195,7 +201,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
                 ),
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.black.withOpacity(0.7),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                 ),
               ),
             ),
@@ -208,21 +217,14 @@ class _QRScannerPageState extends State<QRScannerPage> {
   void _handleScanResult(String result) {
     if (isScanned) return;
     isScanned = true;
-    
+
     // 验证扫描结果格式
     if (_isValidServerAddress(result)) {
       Get.back(result: result);
     } else {
       // 显示错误提示
-      Get.snackbar(
-        '扫描失败',
-        '无效的服务器地址格式\n期望格式: IP地址:端口号',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-      
+      showErrorSnackbar('扫描失败', '无效的服务器地址格式\n期望格式: IP地址:端口号');
+
       // 重新允许扫描
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
@@ -236,7 +238,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
   void _showManualInputDialog() {
     final TextEditingController inputController = TextEditingController();
-    
+
     Get.dialog(
       AlertDialog(
         title: const Text('手动输入服务器地址'),
@@ -259,10 +261,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('取消'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('取消')),
           ElevatedButton(
             onPressed: () {
               final address = inputController.text.trim();
@@ -270,13 +269,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
                 Get.back();
                 Get.back(result: address);
               } else {
-                Get.snackbar(
-                  '输入错误',
-                  '无效的服务器地址格式',
-                  snackPosition: SnackPosition.TOP,
-                  backgroundColor: Colors.red.withOpacity(0.8),
-                  colorText: Colors.white,
-                );
+                showErrorSnackbar('输入错误', '无效的服务器地址格式');
               }
             },
             child: const Text('确定'),

@@ -232,7 +232,7 @@ class _WebSocketClientControlContentState
                       return Container(
                         padding: EdgeInsets.only(
                           left: 12,
-                          bottom: isWindows||isMacOS ? 12 : 4,
+                          bottom: isWindows || isMacOS ? 12 : 4,
                           right: rightPadding,
                         ),
                         alignment: Alignment.bottomCenter,
@@ -1117,7 +1117,7 @@ class _WebSocketClientControlContentState
                       textAlign: TextAlign.center,
                     ),
                   ),
-                if (Platform.isAndroid)
+                if (!isWindows)
                   SizedBox(
                     width: 100,
                     child: ElevatedButton.icon(
@@ -1406,38 +1406,17 @@ class _WebSocketClientControlContentState
           controller.updateServerAddress(result);
 
           // 显示成功提示
-          Get.snackbar(
-            '扫描成功',
-            '已选中历史地址: $result',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.blue.withOpacity(0.8),
-            colorText: Colors.white,
-            duration: const Duration(seconds: 3),
-          );
+          showSuccessSnackbar('扫描成功', '已选中历史地址: $result');
         } else {
           // 如果地址不存在，添加到历史列表F并选中
           controller.addHistoryAddress(result);
 
           // 显示成功提示
-          Get.snackbar(
-            '扫描成功',
-            '已添加并选中新地址: $result',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.green.withOpacity(0.8),
-            colorText: Colors.white,
-            duration: const Duration(seconds: 3),
-          );
+          showSuccessSnackbar('扫描成功', '已添加并选中新地址: $result');
         }
       }
     } catch (e) {
-      Get.snackbar(
-        '扫描失败',
-        e.toString(),
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
+      showErrorSnackbar('扫描失败', e.toString());
     }
   }
 }
@@ -1516,14 +1495,7 @@ class _ServerAddressEditDialogState extends State<_ServerAddressEditDialog> {
             if (_isValidServerAddress(address)) {
               Get.back(result: address);
             } else {
-              Get.snackbar(
-                '输入错误',
-                '无效的服务器地址格式',
-                snackPosition: SnackPosition.TOP,
-                backgroundColor: Colors.red.withOpacity(0.8),
-                colorText: Colors.white,
-                duration: const Duration(seconds: 2),
-              );
+              showErrorSnackbar('输入错误', '无效的服务器地址格式');
             }
           },
           child: const Text('保存'),

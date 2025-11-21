@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
+import 'package:listen1_xuan/funcs.dart';
 import '../controllers/WsDownloadController.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/cache_controller.dart';
@@ -135,31 +136,15 @@ class DownloadPage extends StatelessWidget {
           );
 
           // 显示成功消息
-          Get.snackbar(
-            '成功',
-            '已添加 ${filteredCacheMap.length} 个文件到下载列表',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-          );
+          showSuccessSnackbar('成功', '已添加 ${filteredCacheMap.length} 个文件到下载列表');
         } else {
-          Get.snackbar(
-            '提示',
-            '当前播放列表中没有服务器缓存的文件',
-            snackPosition: SnackPosition.BOTTOM,
-          );
+          showInfoSnackbar('提示', '当前播放列表中没有服务器缓存的文件');
         }
       } else {
         throw Exception('服务器响应错误: ${response.statusCode}');
       }
     } catch (e) {
-      Get.snackbar(
-        '错误',
-        '获取服务器缓存列表失败: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      showErrorSnackbar('错误', '获取服务器缓存列表失败: $e');
     } finally {
       downloadController.isLoading.value = false;
     }

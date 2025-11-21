@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 
@@ -135,13 +136,90 @@ class WebSocketCardController extends GetxController {
     saveWebSocketSettings();
   }
 
-    /// 如果设置了自动启动，则启动WebSocket服务器
+  /// 如果设置了自动启动，则启动WebSocket服务器
   Future<void> autoStartServerIfNeeded() async {
     if (_wsServerAutoStart.value) {
       _logger.i('$_tag 自动启动WebSocket服务器');
 
       // 直接尝试启动服务器（使用固定的0.0.0.0地址）
       await _tryStartServer();
+    }
+  }
+
+  final RxList<String> availableIpAddresses = <String>[].obs;
+  final RxBool isLoadingIpAddresses = false.obs;
+  RxString selectBestAvailableAddress = '127.0.0.1'.obs;
+
+  /// 刷新本地IP地址列表
+  Future<void> refreshIpAddresses() async {
+    if (isLoadingIpAddresses.value) return;
+
+    try {
+      isLoadingIpAddresses.value = true;
+      _logger.i('$_tag 正在获取本地IP地址...');
+
+      final List<String> ipList = <String>[]; // 不包含默认的0.0.0.0
+
+      // 获取网络接口列表
+      List<NetworkInterface> interfaces = await NetworkInterface.list(
+        includeLoopback: true, // 是否包含回环接口
+        includeLinkLocal: true, // 是否包含链路本地接口（例如IPv6的自动配置地址）。
+        type: InternetAddressType.any,
+      );
+
+      // 筛选IPv4地址，并按优先级排序
+      final List<String> localAreaNetworkIps = <String>[];
+      final List<String> otherIps = <String>[];
+      final List<String> loopbackIps = <String>[];
+
+      for (NetworkInterface interface in interfaces) {
+        for (InternetAddress address in interface.addresses) {
+          if (address.type == InternetAddressType.IPv4) {
+            final ip = address.address;
+            if (ip == '127.0.0.1') {
+              // 回环地址优先级最低
+              if (!loopbackIps.contains(ip)) {
+                loopbackIps.add(ip);
+              }
+            } else if (ip.startsWith('192.168.') ||
+                ip.startsWith('10.') ||
+                ip.startsWith('172.')) {
+              // 局域网地址优先级较高
+              if (!localAreaNetworkIps.contains(ip)) {
+                localAreaNetworkIps.add(ip);
+              }
+            } else {
+              // 其他地址（可能是公网地址）
+              if (!otherIps.contains(ip)) {
+                otherIps.add(ip);
+              }
+            }
+          }
+        }
+      }
+
+      // 按优先级顺序添加：局域网地址 > 其他地址 > 回环地址
+      ipList.addAll(localAreaNetworkIps);
+      ipList.addAll(otherIps);
+      ipList.addAll(loopbackIps);
+
+      availableIpAddresses.value = ipList;
+      _logger.i('$_tag 获取到IP地址: $ipList');
+
+      // 检查当前选中的地址是否在列表中，如果不在则自动选择最优地址
+      if (!ipList.contains(selectBestAvailableAddress.value)) {
+        if (ipList.isNotEmpty) {
+          selectBestAvailableAddress.value = ipList.first;
+          _logger.i('$_tag 选择新的最佳IP地址: ${selectBestAvailableAddress.value}');
+        }
+      }
+    } catch (e) {
+      _logger.e('$_tag 获取IP地址失败', error: e);
+      _showError('获取IP地址失败: $e');
+      // 设置默认值（仅包含回环地址）
+      availableIpAddresses.value = ['127.0.0.1'];
+    } finally {
+      isLoadingIpAddresses.value = false;
     }
   }
 
@@ -376,44 +454,17 @@ class WebSocketCardController extends GetxController {
 
   /// 显示成功消息
   void _showSuccess(String message) {
-    // try {
-    //   Get.snackbar(
-    //     '成功',
-    //     message,
-    //     backgroundColor: Colors.green.withOpacity(0.8),
-    //     colorText: Colors.white,
-    //     duration: const Duration(seconds: 2),
-    //     snackPosition: SnackPosition.TOP,
-    //   );
-    // } catch (e) {}
+    showSuccessSnackbar(message, null);
   }
 
   /// 显示错误消息
   void _showError(String message) {
-    // try {
-    //   Get.snackbar(
-    //     '错误',
-    //     message,
-    //     backgroundColor: Colors.red.withOpacity(0.8),
-    //     colorText: Colors.white,
-    //     duration: const Duration(seconds: 3),
-    //     snackPosition: SnackPosition.TOP,
-    //   );
-    // } catch (e) {}
+    showErrorSnackbar(message, null);
   }
 
   /// 显示信息消息
   void _showInfo(String message) {
-    // try {
-    //   Get.snackbar(
-    //     '信息',
-    //     message,
-    //     backgroundColor: Colors.blue.withOpacity(0.8),
-    //     colorText: Colors.white,
-    //     duration: const Duration(seconds: 2),
-    //     snackPosition: SnackPosition.TOP,
-    //   );
-    // } catch (e) {}
+    showInfoSnackbar(message, null);
   }
 }
 

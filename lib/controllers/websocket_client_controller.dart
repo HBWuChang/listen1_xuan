@@ -1051,35 +1051,17 @@ class WebSocketClientController extends GetxController {
 
   /// 显示成功消息
   void _showSuccess(String message) {
-    // try {
-    //   Get.snackbar(
-    //     '成功',
-    //     message,
-    //     backgroundColor: Colors.green.withOpacity(0.8),
-    //     colorText: Colors.white,
-    //     duration: const Duration(seconds: 2),
-    //     snackPosition: SnackPosition.TOP,
-    //   );
-    // } catch (e) {}
+    showSuccessSnackbar(message, null);
   }
 
   /// 显示错误消息
   void _showError(String message) {
-    showErrorSnackbar(message, '');
+    showErrorSnackbar(message, null);
   }
 
   /// 显示信息消息
   void _showInfo(String message) {
-    // try {
-    //   Get.snackbar(
-    //     '信息',
-    //     message,
-    //     backgroundColor: Colors.blue.withOpacity(0.8),
-    //     colorText: Colors.white,
-    //     duration: const Duration(seconds: 2),
-    //     snackPosition: SnackPosition.TOP,
-    //   );
-    // } catch (e) {}
+    showInfoSnackbar(message, null);
   }
 
   /// 检查字符串是否包含非 ASCII 字符（用于检测中文等字符）

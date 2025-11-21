@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/websocket_card_controller.dart';
 import 'package:listen1_xuan/controllers/BroadcastWsController.dart';
+import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -221,8 +223,9 @@ class _WebSocketControlContentState extends State<WebSocketControlContent> {
   /// 显示二维码对话框
   void _showQrCodeDialog(WebSocketCardController controller) {
     // 使用BroadcastWsController的deviceId作为二维码数据
-    final broadcastController = Get.find<BroadcastWsController>();
-    final qrData = broadcastController.deviceId;
+    // final broadcastController = Get.find<BroadcastWsController>();
+    // final qrData = broadcastController.deviceId;
+    controller.refreshIpAddresses();
 
     Get.dialog(
       Dialog(
@@ -265,46 +268,51 @@ class _WebSocketControlContentState extends State<WebSocketControlContent> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.grey.shade300, width: 2),
                 ),
-                child: QrImageView(
-                  data: qrData,
-                  version: QrVersions.auto,
-                  size: 200.0,
-                  backgroundColor: Colors.white,
+                child: Obx(
+                  () => QrImageView(
+                    data:
+                        '${controller.selectBestAvailableAddress.value}:${controller.port}',
+                    version: QrVersions.auto,
+                    size: 200.0,
+                    backgroundColor: Colors.white,
+                  ),
                 ),
               ),
 
               const SizedBox(height: 20),
-
-              // 连接信息
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '设备ID',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    clipBehavior: Clip.none,
+                    child: Obx(
+                      () => controller.isLoadingIpAddresses.value
+                          ? globalLoadingAnime
+                          : DropdownMenu(
+                              dropdownMenuEntries: controller
+                                  .availableIpAddresses
+                                  .map(
+                                    (ip) =>
+                                        DropdownMenuEntry(value: ip, label: ip),
+                                  )
+                                  .toList(),
+                              initialSelection:
+                                  controller.selectBestAvailableAddress.value,
+                              onSelected: (String? value) {
+                                if (value != null) {
+                                  controller.selectBestAvailableAddress.value =
+                                      value;
+                                }
+                              },
+                            ),
                     ),
-                    const SizedBox(height: 8),
-                    SelectableText(
-                      qrData,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    onPressed: controller.refreshIpAddresses,
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 20),
@@ -315,15 +323,13 @@ class _WebSocketControlContentState extends State<WebSocketControlContent> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: qrData));
-                        Get.snackbar(
-                          '成功',
-                          '设备ID已复制到剪贴板',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: Colors.green.withOpacity(0.8),
-                          colorText: Colors.white,
-                          duration: const Duration(seconds: 2),
+                        Clipboard.setData(
+                          ClipboardData(
+                            text:
+                                '${controller.selectBestAvailableAddress.value}:${controller.port}',
+                          ),
                         );
+                        showSuccessSnackbar('成功', '地址已复制到剪贴板');
                       },
                       icon: const Icon(Icons.copy, size: 16),
                       label: const Text('复制地址'),
