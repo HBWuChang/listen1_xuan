@@ -257,6 +257,8 @@ class WebSocketCardController extends GetxController {
         _serverUrl.value = '';
         _clientCount.value = 0;
         _updateStatusMessage('启动失败');
+        _showError('服务器启动失败，请检查端口 $_port 是否被占用或其他资源冲突');
+        _logger.e('$_tag 启动服务器失败: 服务器返回 false');
         return false;
       }
     } catch (e) {
@@ -265,7 +267,9 @@ class WebSocketCardController extends GetxController {
       _serverUrl.value = '';
       _clientCount.value = 0;
       _updateStatusMessage('启动失败');
-      _logger.e('$_tag 启动服务器失败', error: e);
+      final errorMsg = '启动服务器异常: $e';
+      _showError(errorMsg);
+      _logger.e('$_tag $errorMsg', error: e);
       return false;
     } finally {
       _isStarting.value = false;
@@ -335,9 +339,8 @@ class WebSocketCardController extends GetxController {
 
     if (success) {
       _showSuccess('WebSocket 服务器启动成功');
-    } else {
-      _showError('服务器启动失败，请检查端口是否被占用');
     }
+    // 错误消息已在 _tryStartServer 中显示，不重复弹出
   }
 
   /// 停止WebSocket服务器

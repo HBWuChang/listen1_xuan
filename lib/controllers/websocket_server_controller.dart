@@ -354,8 +354,17 @@ class WebSocketServerController extends GetxController {
                 processValue <= 1.0) {
               // 这是进度控制命令
               _logger.i('$_tag 收到进度控制命令: $processValue');
-              globalSeek(null, process: processValue);
-              return;
+              try {
+                globalSeek(null, process: processValue);
+                return;
+              } catch (e) {
+                _logger.e('$_tag 进度控制失败', error: e);
+                final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+                  '设置进度失败: $e',
+                );
+                _sendMessage(connection, errorMessage);
+                return;
+              }
             }
           }
           // 尝试解析为音量控制命令
@@ -424,19 +433,27 @@ class WebSocketServerController extends GetxController {
       _logger.i('$_tag 准备播放歌曲: ${track.title} - ${track.artist}');
 
       // 调用playsong方法播放歌曲
-      playsong(track, isByClick: true);
+      try {
+        playsong(track, isByClick: true);
 
-      // 发送成功响应
-      final successMessage = WebSocketMessageBuilder.createMessage(
-        '开始播放歌曲: ${track.title} - ${track.artist}',
-      );
-      _sendMessage(connection, successMessage);
+        // 发送成功响应
+        final successMessage = WebSocketMessageBuilder.createMessage(
+          '开始播放歌曲: ${track.title} - ${track.artist}',
+        );
+        _sendMessage(connection, successMessage);
 
-      _logger.i('$_tag 播放歌曲命令已执行: ${track.title}');
+        _logger.i('$_tag 播放歌曲命令已执行: ${track.title}');
+      } catch (e) {
+        _logger.e('$_tag 播放歌曲执行失败', error: e);
+        final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+          '播放歌曲失败: $e',
+        );
+        _sendMessage(connection, errorMessage);
+      }
     } catch (e) {
-      _logger.e('$_tag 处理播放歌曲消息失败', error: e);
+      _logger.e('$_tag 处理播放歌曲消息失败 (解析阶段)', error: e);
       final errorMessage = WebSocketMessageBuilder.createErrorMessage(
-        '播放歌曲失败: $e',
+        '解析歌曲数据失败: $e',
       );
       _sendMessage(connection, errorMessage);
     }
@@ -455,14 +472,28 @@ class WebSocketServerController extends GetxController {
       // 将Map转换为Track对象
       final track = Track.fromJson(trackData);
 
-      _logger.i('$_tag 准备播放歌曲: ${track.title} - ${track.artist}');
-      Get.find<PlayController>().nextTrack = track;
-
-      _logger.i('$_tag 播放歌曲命令已执行: ${track.title}');
+      _logger.i('$_tag 准备设置下一首歌曲: ${track.title} - ${track.artist}');
+      
+      try {
+        Get.find<PlayController>().nextTrack = track;
+        _logger.i('$_tag 下一首歌曲已设置: ${track.title}');
+        
+        // 发送成功响应
+        final successMessage = WebSocketMessageBuilder.createMessage(
+          '下一首已设置: ${track.title} - ${track.artist}',
+        );
+        _sendMessage(connection, successMessage);
+      } catch (e) {
+        _logger.e('$_tag 设置下一首歌曲失败', error: e);
+        final errorMessage = WebSocketMessageBuilder.createErrorMessage(
+          '设置下一首歌曲失败: $e',
+        );
+        _sendMessage(connection, errorMessage);
+      }
     } catch (e) {
-      _logger.e('$_tag 处理播放歌曲消息失败', error: e);
+      _logger.e('$_tag 处理播放下一首消息失败 (解析阶段)', error: e);
       final errorMessage = WebSocketMessageBuilder.createErrorMessage(
-        '播放歌曲失败: $e',
+        '解析歌曲数据失败: $e',
       );
       _sendMessage(connection, errorMessage);
     }
