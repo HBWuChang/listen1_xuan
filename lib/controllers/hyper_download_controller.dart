@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hyper_thread_downloader/hyper_thread_downloader.dart';
@@ -35,6 +37,9 @@ class HyperDownloadController extends GetxController {
     try {
       // 重置下载状态
       _resetDownloadState();
+      if (File(savePath).existsSync()) {
+        await File(savePath).delete();
+      }
       isDownloading.value = true;
 
       // 显示不可关闭的下载进度对话框
