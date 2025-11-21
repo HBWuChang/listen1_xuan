@@ -255,9 +255,75 @@ start "" "$folderA\\listen1_xuan.exe"\r
   // 像双击一样运行 .bat 文件
   try {
     await Process.run('cmd', ['/c', batFilePath], runInShell: true);
-    print('Script executed successfully');
+    logger.i('Script executed successfully');
   } catch (e) {
     print('Error while executing script: $e');
+  }
+}
+
+Future<void> createAndRunMacOSScript(String tempPath, String appPath) async {
+  // 定义路径
+  final newAppPath = p.join(tempPath, 'canary', 'listen1_xuan.app');
+  final scriptPath = p.join(tempPath, 'update_macos.command');
+  
+  // 获取当前进程PID
+  final currentPid = pid;
+  
+  // 创建更新脚本内容
+  final script = '''#!/bin/bash
+
+# 等待当前应用进程结束
+echo "Waiting for application to quit..."
+while kill -0 $currentPid 2>/dev/null; do
+  sleep 1
+done
+
+# 额外等待2秒确保完全退出
+sleep 2
+
+# 备份当前应用
+echo "Backing up current application..."
+if [ -d "$appPath.backup" ]; then
+  rm -rf "$appPath.backup"
+fi
+mv "$appPath" "$appPath.backup"
+
+# 复制新应用
+echo "Installing new version..."
+cp -R "$newAppPath" "$appPath"
+
+# 设置执行权限
+chmod -R +x "$appPath/Contents/MacOS/"
+
+# 启动新应用
+echo "Launching new version..."
+open "$appPath"
+
+# 清理备份（可选，等待10秒后删除）
+sleep 10
+rm -rf "$appPath.backup"
+''';
+  
+  // 写入脚本文件
+  final scriptFile = File(scriptPath);
+  await scriptFile.writeAsString(script);
+  
+  // 设置执行权限
+  await Process.run('chmod', ['+x', scriptPath]);
+  
+  // 在Terminal窗口中显示执行脚本（类似Windows的命令窗口）
+  try {
+    await Process.start(
+      'open',
+      [
+        '-a', 'Terminal.app',
+        scriptPath,
+      ],
+      mode: ProcessStartMode.detached,
+    );
+    debugPrint('macOS update script started successfully in Terminal');
+  } catch (e) {
+    debugPrint('Error while executing macOS update script: $e');
   }
 }
 

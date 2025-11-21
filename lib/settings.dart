@@ -7,6 +7,7 @@ import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/hyper_download_controller.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/play.dart';
+import 'package:logger/logger.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -72,7 +73,7 @@ class SettingsPage extends StatefulWidget {
   @override
   _SettingsPageState createState() => _SettingsPageState();
 }
-
+Logger logger = Logger();
 class LoginWebview extends StatefulWidget {
   final dynamic controller;
   final String config_key;

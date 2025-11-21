@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -52,9 +53,11 @@ class HyperDownloadController extends GetxController {
       );
       debugPrint('Attempting download with proxy URL: $proxyUrl');
 
-      bool proxyDownloadSuccess = false;
+      // 使用 Completer 等待下载完成或失败
+      final completer = Completer<bool>();
+      
       try {
-        await _hyperDownload.startDownload(
+        _hyperDownload.startDownload(
           url: proxyUrl,
           savePath: savePath,
           threadCount: threadCount,
@@ -73,15 +76,15 @@ class HyperDownloadController extends GetxController {
                 totalCount.value = total;
               },
           downloadComplete: () {
-            debugPrint('Download completed');
-            proxyDownloadSuccess = true;
+            debugPrint('Proxy download completed');
             isDownloading.value = false;
             _closeDownloadDialog();
             onComplete?.call();
+            if (!completer.isCompleted) completer.complete(true);
           },
           downloadFailed: (String reason) {
             debugPrint('Proxy download failed: $reason');
-            proxyDownloadSuccess = false;
+            if (!completer.isCompleted) completer.complete(false);
           },
           downloadTaskId: (int id) {
             debugPrint('Download task id: $id');
@@ -97,16 +100,26 @@ class HyperDownloadController extends GetxController {
             debugPrint('Working merge: $ret');
           },
         );
+        
+        // 等待代理下载完成或失败
+        final proxySuccess = await completer.future;
+        
+        // 如果代理下载成功，直接返回
+        if (proxySuccess) {
+          return;
+        }
       } catch (e) {
         debugPrint('Proxy download error: $e');
-        proxyDownloadSuccess = false;
+        if (!completer.isCompleted) completer.complete(false);
       }
 
       // 如果代理下载失败，尝试普通下载
-      if (!proxyDownloadSuccess && isDownloading.value) {
+      if (isDownloading.value) {
         debugPrint('Proxy download failed, attempting regular download: $url');
+        final regularCompleter = Completer<void>();
+        
         try {
-          await _hyperDownload.startDownload(
+          _hyperDownload.startDownload(
             url: url,
             savePath: savePath,
             threadCount: threadCount,
@@ -125,16 +138,18 @@ class HyperDownloadController extends GetxController {
                   totalCount.value = total;
                 },
             downloadComplete: () {
-              debugPrint('Download completed');
+              debugPrint('Regular download completed');
               isDownloading.value = false;
               _closeDownloadDialog();
               onComplete?.call();
+              if (!regularCompleter.isCompleted) regularCompleter.complete();
             },
             downloadFailed: (String reason) {
               debugPrint('Regular download failed: $reason');
               isDownloading.value = false;
               _closeDownloadDialog();
               onFailed?.call('代理和普通下载均失败: $reason');
+              if (!regularCompleter.isCompleted) regularCompleter.complete();
             },
             downloadTaskId: (int id) {
               debugPrint('Download task id: $id');
@@ -150,6 +165,9 @@ class HyperDownloadController extends GetxController {
               debugPrint('Working merge: $ret');
             },
           );
+          
+          // 等待普通下载完成
+          await regularCompleter.future;
         } catch (e) {
           debugPrint('Regular download error: $e');
           isDownloading.value = false;
