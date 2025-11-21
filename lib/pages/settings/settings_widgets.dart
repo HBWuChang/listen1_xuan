@@ -466,8 +466,8 @@ Widget get themeSettingsTiles => Column(
           onConfirm: (value) async {
             if (isEmpty(value)) return false;
             int? intValue = int.tryParse(value);
-            if (intValue == null || intValue < 0) {
-              throw '请输入有效的正整数';
+            if (intValue == null || intValue < 100) {
+              throw '请输入有效的正整数.且不能小于100';
             }
             Get.find<SettingsController>()
                     .playVPlayBtnProcessControllerDuration =

@@ -1,0 +1,27 @@
+output: dist/
+releases:
+  - name: apk
+    jobs:
+      - name: release-apk-without.embedded.Cronet
+        package:
+          platform: android
+          target: apk
+          build_args:
+            target-platform: android-arm,android-arm64,android-x64
+      - name: release-apk
+        package:
+          platform: android
+          target: apk
+          build_args:
+            target-platform: android-arm,android-arm64,android-x64
+            dart-define:
+              cronetHttpNoPlay: true
+  # - name: win
+  #   jobs:
+  #     # 构建并发布 APK 到 PGYER
+  #     - name: release-win
+  #       package:
+  #         platform: windows
+  #         target: exe
+  #         build_args:
+  #           target-platform: windows-x64
