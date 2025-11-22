@@ -207,7 +207,9 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
             badgeStyle: badges.BadgeStyle(
               shape: badges.BadgeShape.square,
               borderRadius: BorderRadius.circular(8),
-              badgeColor: Get.theme.colorScheme.primaryContainer,
+              badgeColor: AdaptiveTheme.of(
+                Get.context!,
+              ).theme.colorScheme.primaryContainer,
               padding: EdgeInsets.symmetric(horizontal: 3, vertical: 1),
             ),
             child: IconButton(

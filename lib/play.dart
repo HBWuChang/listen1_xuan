@@ -40,6 +40,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:path/path.dart' as p;
+import 'package:adaptive_theme/adaptive_theme.dart';
 
 import 'widgets/container_with_outer_shadow.dart';
 
