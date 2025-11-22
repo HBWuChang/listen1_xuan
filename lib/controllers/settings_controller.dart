@@ -335,7 +335,7 @@ class SettingsController extends GetxController {
   int get playVPlayBtnProcessControllerDuration {
     return (settings[playVPlayBtnProcessControllerDurationKey] ?? 8280) < 100
         ? 8280
-        : settings[playVPlayBtnProcessControllerDurationKey];
+        : (settings[playVPlayBtnProcessControllerDurationKey] ?? 8280);
   }
 
   set playVPlayBtnProcessControllerDuration(int value) {
