@@ -40,7 +40,7 @@ Widget updSettingsTile(BuildContext context) {
                     break;
                   }
                 }
-                bool flag = true;
+                bool needDownload = true;
                 if (await File(filePath).exists()) {
                   // 获取sha256值
                   var sha256 = await Process.run('certutil', [
@@ -57,10 +57,12 @@ Widget updSettingsTile(BuildContext context) {
                       .replaceAll("sha256:", "")
                       .trim();
                   if (sha256_str == r_sha256) {
-                    flag = false;
+                    needDownload = false;
+                    debugPrint('文件已存在且hash一致，跳过下载');
                   }
                 }
-                if (flag) {
+                
+                if (needDownload) {
                   final download_url = art["archive_download_url"];
 
                   // 首先获取302重定向的实际下载链接
@@ -99,40 +101,16 @@ Widget updSettingsTile(BuildContext context) {
                     threadCount: Platform.numberOfProcessors,
                     onComplete: () async {
                       showSuccessSnackbar('下载成功', null);
-                      // 解压 ZIP 文件
-                      final bytes = File(filePath).readAsBytesSync();
-                      final archive = ZipDecoder().decodeBytes(bytes);
-                      // 删除canary文件夹
-                      final canaryDir = Directory(p.join(tempPath, 'canary'));
-                      if (await canaryDir.exists()) {
-                        await canaryDir.delete(recursive: true);
-                      }
-                      for (final file in archive) {
-                        final filename = file.name;
-                        if (file.isFile) {
-                          final data = file.content as List<int>;
-                          final extractPath = p.join(
-                            tempPath,
-                            'canary',
-                            filename,
-                          );
-                          File(extractPath)
-                            ..createSync(recursive: true)
-                            ..writeAsBytesSync(data);
-                        } else {
-                          final dirPath = p.join(tempPath, 'canary', file.name);
-                          Directory(dirPath).create(recursive: true);
-                        }
-                      }
-                      String executablePath = Platform.resolvedExecutable;
-                      String executableDir = File(executablePath).parent.path;
-                      debugPrint(executableDir);
-                      createAndRunBatFile(tempPath, executableDir);
+                      // 继续进行解压和更新
+                      await _performWindowsExtractAndUpdate(tempPath, filePath);
                     },
                     onFailed: (String reason) {
                       showErrorSnackbar('下载失败', reason);
                     },
                   );
+                } else {
+                  // 跳过下载，直接进行解压和更新
+                  await _performWindowsExtractAndUpdate(tempPath, filePath);
                 }
               } catch (e) {
                 try {
@@ -685,4 +663,55 @@ Widget updSettingsTile(BuildContext context) {
       ].map((e) => Padding(padding: EdgeInsets.all(8.0), child: e)),
     ],
   );
+}
+
+/// Windows 平台的解压和更新辅助函数
+Future<void> _performWindowsExtractAndUpdate(
+  String tempPath,
+  String filePath,
+) async {
+  try {
+    showSuccessSnackbar('正在解压...', null);
+    // 解压 ZIP 文件
+    final bytes = File(filePath).readAsBytesSync();
+    final archive = ZipDecoder().decodeBytes(bytes);
+    
+    // 删除 canary 文件夹
+    final canaryDir = Directory(p.join(tempPath, 'canary'));
+    if (await canaryDir.exists()) {
+      await canaryDir.delete(recursive: true);
+      debugPrint('已删除旧的 canary 文件夹');
+    }
+    
+    // 解压文件
+    for (final file in archive) {
+      final filename = file.name;
+      if (file.isFile) {
+        final data = file.content as List<int>;
+        final extractPath = p.join(
+          tempPath,
+          'canary',
+          filename,
+        );
+        File(extractPath)
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(data);
+      } else {
+        final dirPath = p.join(tempPath, 'canary', file.name);
+        Directory(dirPath).createSync(recursive: true);
+      }
+    }
+    
+    debugPrint('解压完成，准备更新...');
+    
+    String executablePath = Platform.resolvedExecutable;
+    String executableDir = File(executablePath).parent.path;
+    debugPrint('应用目录: $executableDir');
+    
+    showSuccessSnackbar('解压成功，准备更新', null);
+    createAndRunBatFile(tempPath, executableDir);
+  } catch (e) {
+    debugPrint('Windows 解压或更新失败: $e');
+    showErrorSnackbar('解压或更新失败', e.toString());
+  }
 }

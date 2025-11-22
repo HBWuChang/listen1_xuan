@@ -8,7 +8,6 @@
 
 #include <app_links/app_links_plugin_c_api.h>
 #include <audioplayers_windows/audioplayers_windows_plugin.h>
-#include <auto_updater_windows/auto_updater_windows_plugin_c_api.h>
 #include <bonsoir_windows/bonsoir_windows_plugin_c_api.h>
 #include <charset_converter/charset_converter_plugin.h>
 #include <connectivity_plus/connectivity_plus_windows_plugin.h>
@@ -28,8 +27,6 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("AppLinksPluginCApi"));
   AudioplayersWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("AudioplayersWindowsPlugin"));
-  AutoUpdaterWindowsPluginCApiRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("AutoUpdaterWindowsPluginCApi"));
   BonsoirWindowsPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("BonsoirWindowsPluginCApi"));
   CharsetConverterPluginRegisterWithRegistrar(
