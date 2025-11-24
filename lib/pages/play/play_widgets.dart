@@ -299,7 +299,9 @@ Widget get buildPlaylistButton => Obx(
     badgeContent: Text(
       '${_playController.current_playing.length}',
       style: TextStyle(
-        color: Get.theme.colorScheme.onPrimaryContainer,
+        color: AdaptiveTheme.of(
+          Get.context!,
+        ).theme.colorScheme.onPrimaryContainer,
         fontSize: 30.w,
         fontWeight: FontWeight.bold,
       ),
