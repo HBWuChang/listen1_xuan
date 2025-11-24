@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 part of '../bodys.dart';
 class Searchlistinfo extends StatefulWidget {
   TextEditingController input_text_Controller;
@@ -25,9 +27,40 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   bool searchPlayList = false;
   final FocusNode _focusNode = FocusNode(); // 创建 FocusNode
   final query = ''.obs;
+
+  // 平台映射
+  final Map<String, String> platformMap = {
+    '网易云': 'netease',
+    'QQ': 'qq',
+    '酷狗': 'kugou',
+    'BiliBili': 'bilibili',
+  };
+
+  void _loadLastSelectedPlatform() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? savedPlatform = prefs.getString('last_search_platform');
+    String? savedDisplayOption = prefs.getString('last_search_display_option');
+
+    if (savedPlatform != null && platformMap.containsValue(savedPlatform)) {
+      source = savedPlatform;
+      lastsource = savedPlatform;
+    } else {
+      source = 'netease'; // 默认值
+      lastsource = 'netease';
+    }
+
+    if (savedDisplayOption != null && _options.contains(savedDisplayOption)) {
+      selectedOption = savedDisplayOption;
+      selectedOptionNotifier.value = savedDisplayOption;
+    } else {
+      selectedOption = '网易云'; // 默认值
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _loadLastSelectedPlatform(); // 加载上一次选择的平台
     widget.input_text_Controller.addListener(() {
       query.value = widget.input_text_Controller.text;
     });
@@ -47,20 +80,18 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
   }
 
   void change_source() async {
-    switch (selectedOptionNotifier.value) {
-      case 'BiliBili':
-        source = 'bilibili';
-        break;
-      case '网易云':
-        source = 'netease';
-        break;
-      case 'QQ':
-        source = 'qq';
-        break;
-      case '酷狗':
-        source = 'kugou';
-        break;
+    String? platformCode = platformMap[selectedOptionNotifier.value];
+    if (platformCode != null) {
+      source = platformCode;
+    } else {
+      source = 'netease'; // 默认值
     }
+  }
+
+  void _saveSelectedPlatform(String platformName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('last_search_platform', platformMap[platformName]!);
+    await prefs.setString('last_search_display_option', platformName);
   }
 
   void _onScroll() {
@@ -212,10 +243,21 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
               value: selectedOption,
               icon: Icon(Icons.arrow_downward),
               onChanged: (String? newValue) {
-                setState(() {
-                  selectedOption = newValue!;
-                  selectedOptionNotifier.value = newValue;
-                });
+                if (newValue != null) {
+                  setState(() {
+                    selectedOption = newValue;
+                    selectedOptionNotifier.value = newValue;
+                  });
+                  // 保存用户选择的平台
+                  _saveSelectedPlatform(newValue);
+                  // 更新当前搜索源
+                  String? platformCode = platformMap[newValue];
+                  if (platformCode != null) {
+                    source = platformCode;
+                    // 重新执行搜索
+                    _filterTracks();
+                  }
+                }
               },
               items: _options.map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
