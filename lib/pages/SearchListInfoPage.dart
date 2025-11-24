@@ -1,4 +1,5 @@
 part of '../bodys.dart';
+
 class Searchlistinfo extends StatefulWidget {
   TextEditingController input_text_Controller;
   final Function(String) onPlaylistTap;
@@ -10,6 +11,8 @@ class Searchlistinfo extends StatefulWidget {
   @override
   _SearchlistinfoState createState() => _SearchlistinfoState();
 }
+
+final List<String> searchOptions = ['BiliBili', '网易云', "QQ", '酷狗'];
 
 class _SearchlistinfoState extends State<Searchlistinfo> {
   bool _loading = true;
@@ -94,7 +97,9 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
           if (mounted) {
             setState(() {
               tracks.addAll(
-                List<Track>.from(data['result'].map((item) => Track.fromJson(item))),
+                List<Track>.from(
+                  data['result'].map((item) => Track.fromJson(item)),
+                ),
               );
               _loadingMore = false;
             });
@@ -185,11 +190,10 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
     super.dispose();
   }
 
-  String selectedOption = '网易云';
+  String selectedOption = Get.find<SettingsController>().searchLastSource;
   final ValueNotifier<String> selectedOptionNotifier = ValueNotifier<String>(
-    'Option 1',
+    Get.find<SettingsController>().searchLastSource,
   );
-  final List<String> _options = ['BiliBili', '网易云', "QQ", '酷狗'];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,8 +220,13 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                   selectedOption = newValue!;
                   selectedOptionNotifier.value = newValue;
                 });
+                if (Get.find<SettingsController>().searchUseLastSource) {
+                  Get.find<SettingsController>().searchLastSource = newValue!;
+                }
               },
-              items: _options.map<DropdownMenuItem<String>>((String value) {
+              items: searchOptions.map<DropdownMenuItem<String>>((
+                String value,
+              ) {
                 return DropdownMenuItem<String>(
                   value: value,
                   child: Text(value),
@@ -234,39 +243,36 @@ class _SearchlistinfoState extends State<Searchlistinfo> {
                 controller: _scrollController,
                 slivers: [
                   SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        var _key = GlobalKey();
-                        final track = tracks[index];
-                        return ListTile(
-                          title: Text(track.title!),
-                          subtitle: Text('${track.artist} - ${track.album}'),
-                          trailing: IconButton(
-                            key: _key,
-                            icon: Icon(Icons.more_vert),
-                            onPressed: () {
-                              song_dialog(
-                                context,
-                                track,
-                                change_main_status: widget.onPlaylistTap,
-                                position: Offset(
-                                  MediaQuery.of(context).size.width,
-                                  (_key.currentContext!.findRenderObject()
-                                          as RenderBox)
-                                      .localToGlobal(Offset.zero)
-                                      .dy,
-                                ),
-                              );
-                            },
-                          ),
-                          onTap: () {
-                            showInfoSnackbar('尝试播放：${track.title}', null);
-                            playsong(track, isByClick: true);
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      var _key = GlobalKey();
+                      final track = tracks[index];
+                      return ListTile(
+                        title: Text(track.title!),
+                        subtitle: Text('${track.artist} - ${track.album}'),
+                        trailing: IconButton(
+                          key: _key,
+                          icon: Icon(Icons.more_vert),
+                          onPressed: () {
+                            song_dialog(
+                              context,
+                              track,
+                              change_main_status: widget.onPlaylistTap,
+                              position: Offset(
+                                MediaQuery.of(context).size.width,
+                                (_key.currentContext!.findRenderObject()
+                                        as RenderBox)
+                                    .localToGlobal(Offset.zero)
+                                    .dy,
+                              ),
+                            );
                           },
-                        );
-                      },
-                      childCount: tracks.length,
-                    ),
+                        ),
+                        onTap: () {
+                          showInfoSnackbar('尝试播放：${track.title}', null);
+                          playsong(track, isByClick: true);
+                        },
+                      );
+                    }, childCount: tracks.length),
                   ),
                   if (_loadingMore)
                     SliverToBoxAdapter(

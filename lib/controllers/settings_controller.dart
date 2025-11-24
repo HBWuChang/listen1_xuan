@@ -104,6 +104,18 @@ class SettingsController extends GetxController {
     settings['hideOrMinimize'] = value;
   }
 
+  static const String searchUseLastSourceKey = 'searchUseLastSource';
+  bool get searchUseLastSource => settings[searchUseLastSourceKey] ?? true;
+  set searchUseLastSource(bool value) {
+    settings[searchUseLastSourceKey] = value;
+  }
+
+  static const String searchLastSourceKey = 'searchLastSource';
+  String get searchLastSource => settings[searchLastSourceKey] ?? '网易云';
+  set searchLastSource(String value) {
+    settings[searchLastSourceKey] = value;
+  }
+
   RxSet<int> settingsPageExpansion = <int>{}.obs;
   Set<int> _lastSettingsPageExpansion = <int>{};
 

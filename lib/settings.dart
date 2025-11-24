@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'bl.dart';
+import 'bodys.dart';
 import 'controllers/DioController.dart';
 import 'controllers/cache_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
@@ -73,7 +74,9 @@ class SettingsPage extends StatefulWidget {
   @override
   _SettingsPageState createState() => _SettingsPageState();
 }
+
 Logger logger = Logger();
+
 class LoginWebview extends StatefulWidget {
   final dynamic controller;
   final String config_key;
@@ -704,6 +707,53 @@ class _SettingsPageState extends State<SettingsPage> {
                                   set_useHttpOverrides(value);
                                   useHttpOverrides.value = value;
                                 },
+                              ),
+                            ),
+                            Obx(
+                              () => SwitchListTile(
+                                title: const Text('默认搜索源/记忆上次搜索源'),
+                                value: Get.find<SettingsController>()
+                                    .searchUseLastSource,
+                                onChanged: (bool value) {
+                                  Get.find<SettingsController>()
+                                          .searchUseLastSource =
+                                      value;
+                                },
+                              ),
+                            ),
+                            AnimatedSize(
+                              duration: Duration(milliseconds: 300),
+                              child: Obx(
+                                () =>
+                                    Get.find<SettingsController>()
+                                        .searchUseLastSource
+                                    ? SizedBox.shrink()
+                                    : ListTile(
+                                        leading: Icon(Icons.search),
+                                        title: const Text('选择默认搜索源'),
+                                        trailing: DropdownButton<String>(
+                                          value: Get.find<SettingsController>()
+                                              .searchLastSource,
+                                          icon: Icon(Icons.arrow_downward),
+                                          onChanged: (String? newValue) {
+                                            setState(() {
+                                              Get.find<SettingsController>()
+                                                      .searchLastSource =
+                                                  newValue!;
+                                            });
+                                          },
+                                          items: searchOptions
+                                              .map<DropdownMenuItem<String>>((
+                                                String value,
+                                              ) {
+                                                return DropdownMenuItem<String>(
+                                                  value: value,
+                                                  child: Text(value),
+                                                );
+                                              })
+                                              .toList(),
+                                        ),
+                                      ),
                               ),
                             ),
                           ],

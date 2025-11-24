@@ -820,6 +820,10 @@ class QQ {
         var response = await dio_get_with_cookie_and_csrf(target_url);
         var data = jsonDecode(response.data);
         var all = [];
+        if (data['data'] == null || data['data']['categories'] == null) {
+          fn({'recommend': [], 'all': []});
+          return;
+        }
         data['data']['categories'].forEach((cate) {
           var result = {'category': cate['categoryGroupName'], 'filters': []};
           if (cate['usable'] == 1) {
