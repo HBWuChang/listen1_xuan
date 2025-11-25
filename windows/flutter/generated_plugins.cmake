@@ -9,6 +9,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   charset_converter
   connectivity_plus
   dynamic_color
+  flutter_acrylic
   hotkey_manager_windows
   media_kit_libs_windows_audio
   permission_handler_windows

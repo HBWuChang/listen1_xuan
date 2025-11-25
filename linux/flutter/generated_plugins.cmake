@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
   charset_converter
   dynamic_color
+  flutter_acrylic
   gtk
   hotkey_manager_linux
   media_kit_libs_linux

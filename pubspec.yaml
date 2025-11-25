@@ -91,6 +91,10 @@ dependencies:
   scrollview_observer: ^1.26.2
   path: ^1.9.1
   hyper_thread_downloader: ^1.0.5+3
+  flutter_acrylic: ^1.1.4
+  material_wave_slider:
+    git:
+      url: https://github.com/alexmercerind/material_wave_slider
   # auto_updater: ^1.0.0
 dev_dependencies:
   flutter_test:

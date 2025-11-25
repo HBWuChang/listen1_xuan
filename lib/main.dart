@@ -41,6 +41,7 @@ import 'package:adaptive_theme/adaptive_theme.dart';
 import 'controllers/theme.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 
 String supabaseUrl = 'https://jtvxrwybwvgpqobyhaoy.supabase.co';
 

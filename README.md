@@ -41,6 +41,8 @@ flutter version 3.35.7
 - 托盘左键单击为显示应用，右键单击为显示菜单
 - windows下载最新测试版后可能会弹出cmd请求管理员权限的提示，请点击允许以更新版本。若程序关闭后无法打开，请手动运行windows默认下载地址/Listen1/scripts.bat以更新版本
 # TODO
+- [ ] flutter_acrylic
+- [ ] material_wave_slider
 - [x] 从WebSocket服务器下载缓存文件（连接服务器后在设置页面可进入
 - [x] [小米手势条适配](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=1629)
 - [x] 安卓添加EQ音效调节功能
