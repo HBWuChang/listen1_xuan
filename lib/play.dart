@@ -41,6 +41,7 @@ import 'package:listen1_xuan/models/Track.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:path/path.dart' as p;
 import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:material_wave_slider/material_wave_slider.dart';
 
 import 'widgets/container_with_outer_shadow.dart';
 
@@ -437,8 +438,12 @@ class _PlayState extends State<Play> {
 Stream<MediaState> get _mediaStateStream =>
     rxdart.Rx.combineLatest2<MediaItem?, Duration, MediaState>(
       Get.find<AudioHandlerController>().audioHandler.mediaItem,
-      _music_player.stream.position,
+      rxdart.Rx.merge([
+        _music_player.stream.position,
+        _music_player.stream.playing.map((_) => _music_player.state.position),
+      ]),
       (mediaItem, position) {
+        final playing = _music_player.state.playing;
         if (isWindows) {
           // 计算进度并更新到 PlayController 的响应式变量
           final progress =
@@ -448,7 +453,7 @@ Stream<MediaState> get _mediaStateStream =>
                   .toInt();
           _playController.taskbarProgress.value = progress;
         }
-        return MediaState(mediaItem, position);
+        return MediaState(mediaItem, position, playing: playing);
       },
     );
 
@@ -466,8 +471,8 @@ IconButton _button(
 class MediaState {
   final MediaItem? mediaItem;
   final Duration position;
-
-  MediaState(this.mediaItem, this.position);
+  final bool? playing;
+  MediaState(this.mediaItem, this.position, {this.playing});
 }
 
 Future<void> globalPlayOrPause() async {

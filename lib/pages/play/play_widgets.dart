@@ -361,6 +361,7 @@ Widget get sheetHandle => Positioned.fill(
     ),
   ),
 );
+final materialWaveSliderStateKeyV = GlobalKey<MaterialWaveSliderState>();
 
 Widget get positionSlider => StreamBuilder<MediaState>(
   stream: _mediaStateStream,
@@ -373,53 +374,73 @@ Widget get positionSlider => StreamBuilder<MediaState>(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              formatDuration(mediaState?.position ?? Duration.zero),
-              style: TextStyle(fontSize: 48.0.w),
+          SizedBox(
+            width: 120.w,
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  formatDuration(mediaState?.position ?? Duration.zero),
+                  style: TextStyle(fontSize: 48.0.w),
+                ),
+              ),
             ),
           ),
           Expanded(
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                sliderTheme: SliderTheme.of(context).copyWith(
-                  trackHeight: 20.w,
-                  thumbShape: RoundSliderThumbShape(enabledThumbRadius: 10.w),
-                  overlayShape: RoundSliderOverlayShape(overlayRadius: 32.w),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  sliderTheme: SliderTheme.of(context).copyWith(
+                    trackHeight: 4.w,
+                    thumbShape: RoundSliderThumbShape(enabledThumbRadius: 10.w),
+                    // overlayShape: RoundSliderOverlayShape(overlayRadius: 32.w),
+                  ),
                 ),
-              ),
-              child: Slider(
-                value:
-                    (mediaState?.position.inMilliseconds.toDouble() ?? 0.0) >
-                        (mediaState?.mediaItem?.duration?.inMilliseconds
+                child: MaterialWaveSlider(
+                  key: materialWaveSliderStateKeyV,
+                  height: 60.w,
+                  amplitude: 8.w,
+                  velocity: 1800.0,
+                  paused: mediaState?.playing == false,
+                  transitionOnChange: false,
+                  thumbWidth: 8.w,
+                  value:
+                      (mediaState?.position.inMilliseconds.toDouble() ?? 0.0) >
+                          (mediaState?.mediaItem?.duration?.inMilliseconds
+                                  .toDouble() ??
+                              1.0)
+                      ? (mediaState?.mediaItem?.duration?.inMilliseconds
                                 .toDouble() ??
                             1.0)
-                    ? (mediaState?.mediaItem?.duration?.inMilliseconds
-                              .toDouble() ??
-                          1.0)
-                    : (mediaState?.position.inMilliseconds.toDouble() ?? 0.0)
-                          .clamp(
-                            0.0,
-                            mediaState?.mediaItem?.duration?.inMilliseconds
-                                    .toDouble() ??
-                                1.0,
-                          ),
-                max:
-                    mediaState?.mediaItem?.duration?.inMilliseconds
-                        .toDouble() ??
-                    1.0,
-                onChanged: (value) {
-                  globalSeek(Duration(milliseconds: value.toInt()));
-                },
+                      : (mediaState?.position.inMilliseconds.toDouble() ?? 0.0)
+                            .clamp(
+                              0.0,
+                              mediaState?.mediaItem?.duration?.inMilliseconds
+                                      .toDouble() ??
+                                  1.0,
+                            ),
+                  max:
+                      mediaState?.mediaItem?.duration?.inMilliseconds
+                          .toDouble() ??
+                      1.0,
+                  onChanged: (value) {
+                    globalSeek(Duration(milliseconds: value.toInt()));
+                  },
+                ),
               ),
             ),
           ),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              formatDuration(mediaState?.mediaItem?.duration ?? Duration.zero),
-              style: TextStyle(fontSize: 48.0.w),
+          SizedBox(
+            width: 120.w,
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  formatDuration(mediaState?.mediaItem?.duration ?? Duration.zero),
+                  style: TextStyle(fontSize: 48.0.w),
+                ),
+              ),
             ),
           ),
         ],

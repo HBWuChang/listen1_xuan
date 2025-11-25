@@ -1,6 +1,7 @@
 part of '../../play.dart';
 
 final GlobalKey _buttonKey = GlobalKey();
+final materialWaveSliderStateKeyH = GlobalKey<MaterialWaveSliderState>();
 Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
   return Center(
     child: Row(
@@ -132,14 +133,17 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
                   ],
                 ),
               ),
-              StreamBuilder<MediaState>(
-                stream: _mediaStateStream,
-                builder: (context, snapshot) {
-                  final mediaState = snapshot.data;
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: StreamBuilder<MediaState>(
+                  stream: _mediaStateStream,
+                  builder: (context, snapshot) {
+                    final mediaState = snapshot.data;
 
-                  return Container(
-                    height: 20,
-                    child: Slider(
+                    return MaterialWaveSlider(
+                      key: materialWaveSliderStateKeyH,
+                      height: 20,
+                      paused: !(mediaState?.playing ?? false),
                       value:
                           (mediaState?.position.inMilliseconds.toDouble() ??
                                   0.0) >
@@ -158,9 +162,9 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
                       onChanged: (value) {
                         globalSeek(Duration(milliseconds: value.toInt()));
                       },
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ],
           ),

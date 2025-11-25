@@ -917,11 +917,9 @@ packages:
   material_wave_slider:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "7e4563faf32c06fe5f312cb020cddeb659ea98c0"
-      url: "https://github.com/alexmercerind/material_wave_slider"
-    source: git
+      path: "packages/material_wave_slider"
+      relative: true
+    source: path
     version: "0.0.1"
   media_kit:
     dependency: "direct main"
