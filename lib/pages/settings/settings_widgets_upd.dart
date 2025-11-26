@@ -61,7 +61,7 @@ Widget updSettingsTile(BuildContext context) {
                     debugPrint('文件已存在且hash一致，跳过下载');
                   }
                 }
-                
+
                 if (needDownload) {
                   final download_url = art["archive_download_url"];
 
@@ -139,20 +139,31 @@ Widget updSettingsTile(BuildContext context) {
                       .toList();
 
                   if (apkFiles.isNotEmpty) {
-                    try {
-                      final apkPath = (apkFiles.first as File).path;
-                      debugPrint('apkFile: $apkPath');
-                      InstallPlugin.installApk(apkPath)
-                          .then((result) {
-                            debugPrint('install apk $result');
-                          })
-                          .catchError((error) {
-                            debugPrint('install apk error: $error');
-                          });
-                      return;
-                    } catch (e) {
-                      debugPrint('安装APK失败: $e');
-                      return;
+                    final res = await showConfirmDialog(
+                      '检测到已有下载好的安装包',
+                      '安装包已存在',
+                      cancelText: '安装已有安装包',
+                      confirmText: '继续下载最新安装包',
+                      barrierDismissible: false,
+                    );
+                    if (res == false) {
+                      try {
+                        final apkPath = (apkFiles.first as File).path;
+                        debugPrint('apkFile: $apkPath');
+                        InstallPlugin.installApk(apkPath)
+                            .then((result) {
+                              debugPrint('install apk $result');
+                            })
+                            .catchError((error) {
+                              debugPrint('install apk error: $error');
+                            });
+                        return;
+                      } catch (e) {
+                        debugPrint('安装APK失败: $e');
+                        return;
+                      }
+                    } else {
+                      await delAndroidApkCache();
                     }
                   }
 
@@ -376,7 +387,7 @@ Widget updSettingsTile(BuildContext context) {
                     debugPrint('文件已存在且hash一致，跳过下载');
                   }
                 }
-                
+
                 if (needDownload) {
                   final download_url = art["archive_download_url"];
 
@@ -422,7 +433,7 @@ Widget updSettingsTile(BuildContext context) {
                     },
                   );
                 }
-                
+
                 // 无论是否下载，都进行解压和更新操作
                 if (await File(filePath).exists()) {
                   try {
@@ -435,7 +446,7 @@ Widget updSettingsTile(BuildContext context) {
                     if (await canaryDir.exists()) {
                       await canaryDir.delete(recursive: true);
                     }
-                    
+
                     String innerZipPath = '';
                     for (final file in archive) {
                       final filename = file.name;
@@ -449,7 +460,7 @@ Widget updSettingsTile(BuildContext context) {
                         File(extractPath)
                           ..createSync(recursive: true)
                           ..writeAsBytesSync(data);
-                        
+
                         // 查找内部的 .app.zip 文件
                         if (filename.endsWith('.app.zip')) {
                           innerZipPath = extractPath;
@@ -459,13 +470,14 @@ Widget updSettingsTile(BuildContext context) {
                         Directory(dirPath).create(recursive: true);
                       }
                     }
-                    
+
                     // 第二次解压（从 listen1_xuan-macos.app.zip 解压出 listen1_xuan.app）
-                    if (innerZipPath.isNotEmpty && await File(innerZipPath).exists()) {
+                    if (innerZipPath.isNotEmpty &&
+                        await File(innerZipPath).exists()) {
                       debugPrint('找到内部zip文件: $innerZipPath');
                       final innerBytes = File(innerZipPath).readAsBytesSync();
                       final innerArchive = ZipDecoder().decodeBytes(innerBytes);
-                      
+
                       for (final file in innerArchive) {
                         final filename = file.name;
                         if (file.isFile) {
@@ -483,14 +495,14 @@ Widget updSettingsTile(BuildContext context) {
                           Directory(dirPath).create(recursive: true);
                         }
                       }
-                      
+
                       // 删除内部zip文件
                       await File(innerZipPath).delete();
                     } else {
                       showErrorSnackbar('未找到 .app.zip 文件', null);
                       return;
                     }
-                    
+
                     // 获取当前应用路径
                     String executablePath = Platform.resolvedExecutable;
                     // macOS应用路径通常是 .../listen1_xuan.app/Contents/MacOS/listen1_xuan
@@ -498,10 +510,10 @@ Widget updSettingsTile(BuildContext context) {
                     while (!appPath.endsWith('.app') && appPath.isNotEmpty) {
                       appPath = File(appPath).parent.path;
                     }
-                    
+
                     debugPrint('当前应用路径: $appPath');
                     debugPrint('解压路径: ${p.join(tempPath, 'canary')}');
-                    
+
                     // 显示提示并执行更新
                     await Get.dialog(
                       AlertDialog(
@@ -518,12 +530,18 @@ Widget updSettingsTile(BuildContext context) {
                             ),
                             Text(
                               '1. 如果macOS阻止脚本运行，请前往 系统设置 -> 隐私与安全性 中手动允许运行更新脚本和新版本应用。',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                             ),
                             SizedBox(height: 4),
                             Text(
                               '2. 若更新脚本没有自动运行，请前往 下载/Listen1/ 文件夹手动运行 update_macos.command。',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                             ),
                           ],
                         ),
@@ -542,7 +560,7 @@ Widget updSettingsTile(BuildContext context) {
                               // 打开macOS的隐私与安全性设置页面
                               try {
                                 await Process.run('open', [
-                                  'x-apple.systempreferences:com.apple.preference.security'
+                                  'x-apple.systempreferences:com.apple.preference.security',
                                 ]);
                               } catch (e) {
                                 debugPrint('打开系统设置失败: $e');
@@ -585,35 +603,7 @@ Widget updSettingsTile(BuildContext context) {
         ),
         if (isAndroid)
           ElevatedButton(
-            onPressed: () async {
-              if (await Permission.manageExternalStorage.request().isGranted ||
-                  await Permission.storage.request().isGranted) {
-                Directory tempPath = await xuanGetdownloadDirectory();
-                final filelist = tempPath
-                    .listSync()
-                    .where(
-                      (element) =>
-                          element is File &&
-                          (p.extension(element.path).endsWith('.apk') ||
-                              p.basename(element.path) == 'canary.zip'),
-                    )
-                    .toList();
-                if (filelist.isEmpty) {
-                  showWarningSnackbar('没有找到安装包缓存', null);
-                  return;
-                }
-                for (var file in filelist) {
-                  try {
-                    await file.delete();
-                  } catch (e) {
-                    debugPrint('删除文件失败: $e');
-                  }
-                }
-                showSuccessSnackbar('清理成功', null);
-              } else {
-                showErrorSnackbar('没有权限访问存储空间', null);
-              }
-            },
+            onPressed: delAndroidApkCache,
             child: const Text('清除安装包缓存'),
           ),
         if (isMacOS)
@@ -627,21 +617,22 @@ Widget updSettingsTile(BuildContext context) {
                       (element) =>
                           element is File &&
                           (p.basename(element.path) == 'canary.zip' ||
-                              p.basename(element.path) == 'update_macos.command'),
+                              p.basename(element.path) ==
+                                  'update_macos.command'),
                     )
                     .toList();
-                
+
                 // 同时清理canary文件夹
                 final canaryDir = Directory(p.join(tempPath.path, 'canary'));
                 if (await canaryDir.exists()) {
                   filelist.add(canaryDir);
                 }
-                
+
                 if (filelist.isEmpty) {
                   showWarningSnackbar('没有找到安装包缓存', null);
                   return;
                 }
-                
+
                 for (var file in filelist) {
                   try {
                     if (file is Directory) {
@@ -675,24 +666,20 @@ Future<void> _performWindowsExtractAndUpdate(
     // 解压 ZIP 文件
     final bytes = File(filePath).readAsBytesSync();
     final archive = ZipDecoder().decodeBytes(bytes);
-    
+
     // 删除 canary 文件夹
     final canaryDir = Directory(p.join(tempPath, 'canary'));
     if (await canaryDir.exists()) {
       await canaryDir.delete(recursive: true);
       debugPrint('已删除旧的 canary 文件夹');
     }
-    
+
     // 解压文件
     for (final file in archive) {
       final filename = file.name;
       if (file.isFile) {
         final data = file.content as List<int>;
-        final extractPath = p.join(
-          tempPath,
-          'canary',
-          filename,
-        );
+        final extractPath = p.join(tempPath, 'canary', filename);
         File(extractPath)
           ..createSync(recursive: true)
           ..writeAsBytesSync(data);
@@ -701,17 +688,47 @@ Future<void> _performWindowsExtractAndUpdate(
         Directory(dirPath).createSync(recursive: true);
       }
     }
-    
+
     debugPrint('解压完成，准备更新...');
-    
+
     String executablePath = Platform.resolvedExecutable;
     String executableDir = File(executablePath).parent.path;
     debugPrint('应用目录: $executableDir');
-    
+
     showSuccessSnackbar('解压成功，准备更新', null);
     createAndRunBatFile(tempPath, executableDir);
   } catch (e) {
     debugPrint('Windows 解压或更新失败: $e');
     showErrorSnackbar('解压或更新失败', e.toString());
+  }
+}
+
+Future<void> delAndroidApkCache() async {
+  if (await Permission.manageExternalStorage.request().isGranted ||
+      await Permission.storage.request().isGranted) {
+    Directory tempPath = await xuanGetdownloadDirectory();
+    final filelist = tempPath
+        .listSync()
+        .where(
+          (element) =>
+              element is File &&
+              (p.extension(element.path).endsWith('.apk') ||
+                  p.basename(element.path) == 'canary.zip'),
+        )
+        .toList();
+    if (filelist.isEmpty) {
+      showWarningSnackbar('没有找到安装包缓存', null);
+      return;
+    }
+    for (var file in filelist) {
+      try {
+        await file.delete();
+      } catch (e) {
+        debugPrint('删除文件失败: $e');
+      }
+    }
+    showSuccessSnackbar('清理成功', null);
+  } else {
+    showErrorSnackbar('没有权限访问存储空间', null);
   }
 }

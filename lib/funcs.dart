@@ -188,6 +188,7 @@ Future<bool> showConfirmDialog(
   ConfirmLevel confirmLevel = ConfirmLevel.info,
   String confirmText = '确认',
   String cancelText = '取消',
+  bool barrierDismissible = true,
 }) async {
   ButtonStyle style;
   switch (confirmLevel) {
@@ -226,6 +227,7 @@ Future<bool> showConfirmDialog(
         ),
       ],
     ),
+    barrierDismissible: barrierDismissible,
   );
   return result ?? false;
 }
