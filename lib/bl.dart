@@ -531,7 +531,7 @@ class Bilibili {
   }
 
   static Future<Map<String, dynamic>> bi_track(String url) async {
-    final trackId = getParameterByName('list_id', url)?.split('_').last;
+    final trackId = getParameterByName('list_id', url)?.split('_').last.split('-').first;
     final targetUrl =
         'https://api.bilibili.com/x/web-interface/view?bvid=$trackId';
 

@@ -5,13 +5,11 @@ class PlaylistController extends GetxController {
   final String source;
   final int initialOffset;
   final Map<String, dynamic> filter;
-  final Function(String) onPlaylistTap;
 
   PlaylistController({
     required this.source,
     required this.initialOffset,
     required this.filter,
-    required this.onPlaylistTap,
   });
 
   // Reactive state variables
@@ -137,13 +135,11 @@ class Playlist extends GetView<PlaylistController> {
   final String source;
   final int offset;
   final Map<String, dynamic> filter;
-  final Function(String) onPlaylistTap;
 
   const Playlist({
     required this.source,
     required this.offset,
     required this.filter,
-    required this.onPlaylistTap,
     Key? key,
   }) : super(key: key);
 
@@ -158,12 +154,7 @@ class Playlist extends GetView<PlaylistController> {
       filter,
     );
     Get.put(
-      PlaylistController(
-        source: source,
-        initialOffset: offset,
-        filter: filter,
-        onPlaylistTap: onPlaylistTap,
-      ),
+      PlaylistController(source: source, initialOffset: offset, filter: filter),
       tag: controllerTag,
     );
 

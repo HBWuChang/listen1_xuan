@@ -395,9 +395,8 @@ void _openNowPlayListPage() {
 }
 
 class Play extends StatefulWidget {
-  final Function(String, {bool is_my, String search_text}) onPlaylistTap;
   final bool horizon;
-  Play({required this.onPlaylistTap, this.horizon = false});
+  Play({this.horizon = false});
   @override
   _PlayState createState() => _PlayState();
 }
@@ -424,7 +423,7 @@ class _PlayState extends State<Play> {
           return Center(child: globalLoadingAnime);
         } else {
           Widget tW = widget.horizon
-              ? SizedBox(height: 60, child: playH(widget.onPlaylistTap))
+              ? SizedBox(height: 60, child: playH())
               : playV2;
           return tW;
         }

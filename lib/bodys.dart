@@ -4,8 +4,9 @@ import 'controllers/controllers.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/websocket_client_controller.dart';
+import 'controllers/search_controller.dart';
 import 'examples/websocket_client_example.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide SearchController;
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/qq.dart';
 import 'netease.dart';
@@ -29,7 +30,6 @@ part './pages/SearchListInfoPage.dart';
 Future<dynamic> song_dialog(
   BuildContext context,
   Track track, {
-  Function? change_main_status,
   bool is_my = false,
   PlayListInfo? nowplaylistinfo,
   Function? deltrack,
@@ -41,6 +41,7 @@ Future<dynamic> song_dialog(
   bool horizon = screenSize.height > screenSize.width ? false : true;
   debugPrint("horizon:$horizon");
   debugPrint("position:$position");
+  XSearchController xSearchController = Get.find<XSearchController>();
   return await showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -147,10 +148,11 @@ Future<dynamic> song_dialog(
               ListTile(
                 title: Text('搜索此音乐'),
                 onTap: () {
-                  if (change_main_status != null) {
-                    Navigator.of(context).pop();
-                    change_main_status!("", search_text: track.title);
-                  }
+                  Navigator.of(context).pop();
+                  xSearchController.change_main_status(
+                    "",
+                    search_text: track.title!,
+                  );
                 },
                 onLongPress: () {
                   Clipboard.setData(
@@ -162,10 +164,8 @@ Future<dynamic> song_dialog(
               ListTile(
                 title: Text('作者：${track.artist ?? '未知艺术家'}'),
                 onTap: () {
-                  if (change_main_status != null) {
-                    Navigator.of(context).pop();
-                    change_main_status!(track.artist_id ?? '');
-                  }
+                  Navigator.of(context).pop();
+                  xSearchController.change_main_status(track.artist_id ?? '');
                 },
                 onLongPress: () {
                   Clipboard.setData(
@@ -174,12 +174,20 @@ Future<dynamic> song_dialog(
                   showSuccessSnackbar('作者已复制到剪切板', null);
                 },
               ),
+              if (track.id.startsWith('bitrack_'))
+                ListTile(
+                  title: Text('查看可能的分集'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    xSearchController.change_main_status(track.id);
+                  },
+                ),
               if (track.album != null)
                 ListTile(
                   title: Text('专辑：${track.album}'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    change_main_status!(track.album_id);
+                    xSearchController.change_main_status(track.album_id!);
                   },
                   onLongPress: () {
                     Clipboard.setData(ClipboardData(text: track.album!));
@@ -342,8 +350,7 @@ Future<dynamic> song_dialog(
 }
 
 class MyPlaylist extends StatefulWidget {
-  final Function(String, {bool is_my, String search_text}) onPlaylistTap;
-  MyPlaylist({required this.onPlaylistTap});
+  MyPlaylist();
   @override
   _MyPlaylistState createState() => _MyPlaylistState();
 }
@@ -839,14 +846,9 @@ class _MyPlaylistState extends State<MyPlaylist> {
 
 class PlaylistInfo extends StatefulWidget {
   final String listId;
-  final Function(String) onPlaylistTap;
   bool is_my = false;
-  PlaylistInfo({
-    Key? key,
-    required this.listId,
-    required this.onPlaylistTap,
-    this.is_my = false,
-  }) : super(key: key);
+  PlaylistInfo({Key? key, required this.listId, this.is_my = false})
+    : super(key: key);
 
   @override
   _PlaylistInfoState createState() => _PlaylistInfoState();
@@ -1296,7 +1298,6 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                               var ret = await song_dialog(
                                 context_PlaylistInfo,
                                 track,
-                                change_main_status: widget.onPlaylistTap,
                                 is_my: widget.is_my,
                                 nowplaylistinfo: result.info,
                                 deltrack: deltrack,

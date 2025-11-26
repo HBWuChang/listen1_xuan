@@ -58,12 +58,7 @@ Future<void> _onTap(BuildContext context) async {
     main_showVolumeSlider();
   }
   final track = await getnowplayingsong();
-  var ret = await song_dialog(
-    context,
-    track['track'],
-    change_main_status: onPlaylistTap,
-    position: position,
-  );
+  var ret = await song_dialog(context, track['track'], position: position);
   if (ret != null) {
     if (ret["push"] != null) {
       Get.toNamed(
@@ -330,7 +325,6 @@ Widget get songDialogBtn {
       var ret = await song_dialog(
         Get.context!,
         track['track'],
-        change_main_status: onPlaylistTap,
         position: position,
       );
       if (ret != null) {
@@ -437,7 +431,9 @@ Widget get positionSlider => StreamBuilder<MediaState>(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  formatDuration(mediaState?.mediaItem?.duration ?? Duration.zero),
+                  formatDuration(
+                    mediaState?.mediaItem?.duration ?? Duration.zero,
+                  ),
                   style: TextStyle(fontSize: 48.0.w),
                 ),
               ),

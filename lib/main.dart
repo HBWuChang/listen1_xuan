@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
+import 'package:listen1_xuan/controllers/search_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:media_kit/media_kit.dart' show MediaKit;
@@ -141,6 +142,7 @@ void main() async {
   Get.put(WsDownloadController(), permanent: true);
   Get.put(Applinkscontroller(), permanent: true);
   Get.put(SupabaseAuthController(), permanent: true);
+  Get.put(XSearchController(), permanent: true);
   init_apkfilepath();
   if (isWindows || isMacOS) {
     if (isWindows) {
@@ -343,12 +345,12 @@ List<bool> show_filters = [false, false, true, true, false];
 var main_showVolumeSlider;
 
 late bool globalHorizon;
-var onPlaylistTap;
 
 class _MyHomePageState extends State<MyHomePage>
     with TrayListener, WindowListener {
   final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
-  TextEditingController input_text_Controller = TextEditingController();
+  TextEditingController get input_text_Controller =>
+      Get.find<XSearchController>().searchTextController;
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
   late PreloadPageController _pageControllerHorizon; // 声明 PageController
@@ -362,7 +364,6 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     trayManager.addListener(this);
     updatePageControllers();
-    onPlaylistTap = change_main_status;
     main_showVolumeSlider = showVolumeSlider;
     if (isWindows || isMacOS) {
       _initTrayManager();
@@ -451,7 +452,6 @@ class _MyHomePageState extends State<MyHomePage>
 
   var _selectedIndex = 0.obs;
   List<int> offsets = List.generate(sources.length, (i) => 0);
-  bool main_is_my = false;
   final source = 'myplaylist'.obs;
   RxList<Map<String, dynamic>> filters = List<Map<String, dynamic>>.generate(
     sources.length,
@@ -480,29 +480,6 @@ class _MyHomePageState extends State<MyHomePage>
       'id': id,
       'name': name,
     }));
-  }
-
-  void change_main_status(
-    String id, {
-    bool is_my = false,
-    String search_text = "",
-  }) {
-    main_is_my = is_my;
-    if (id != "") {
-      Get.toNamed(id, arguments: {'listId': id, 'is_my': is_my}, id: 1);
-    } else {
-      if (search_text != "") {
-        input_text_Controller.text = search_text;
-        Get.toNamed(
-          RouteName.searchPage,
-          arguments: {
-            'input_text_Controller': input_text_Controller,
-            'onPlaylistTap': change_main_status,
-          },
-          id: 1,
-        );
-      }
-    }
   }
 
   @override
@@ -624,17 +601,10 @@ class _MyHomePageState extends State<MyHomePage>
                   controller: input_text_Controller,
                   readOnly: true,
                   onTap: () async {
-                    Get.toNamed(
-                      RouteName.searchPage,
-                      arguments: {
-                        'input_text_Controller': input_text_Controller,
-                        'onPlaylistTap': change_main_status,
-                      },
-                      id: 1,
-                    );
+                    Get.toNamed(RouteName.searchPage, id: 1);
                   },
                 ),
-                Expanded(child: MyPlaylist(onPlaylistTap: change_main_status)),
+                Expanded(child: MyPlaylist()),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   mainAxisSize: MainAxisSize.min,
@@ -663,10 +633,7 @@ class _MyHomePageState extends State<MyHomePage>
               ],
             ),
           );
-          Widget _play = Play(
-            onPlaylistTap: change_main_status,
-            horizon: globalHorizon,
-          );
+          Widget _play = Play(horizon: globalHorizon);
           return PopScope(
             canPop: false,
             onPopInvokedWithResult: (didPop, result) {
@@ -938,8 +905,6 @@ class _MyHomePageState extends State<MyHomePage>
                                                                         offsets[index],
                                                                     filter:
                                                                         filters[index],
-                                                                    onPlaylistTap:
-                                                                        change_main_status,
                                                                     key: Key(
                                                                       filters[index]
                                                                           .toString(),
@@ -1106,10 +1071,7 @@ class _MyHomePageState extends State<MyHomePage>
                                                                 if (index ==
                                                                     0) {
                                                                   // 第一个页面：我的歌单
-                                                                  return MyPlaylist(
-                                                                    onPlaylistTap:
-                                                                        change_main_status,
-                                                                  );
+                                                                  return MyPlaylist();
                                                                 } else {
                                                                   // 其他页面：动态生成
                                                                   return Obx(() {
@@ -1120,8 +1082,6 @@ class _MyHomePageState extends State<MyHomePage>
                                                                           offsets[index],
                                                                       filter:
                                                                           filters[index],
-                                                                      onPlaylistTap:
-                                                                          change_main_status,
                                                                       key: Key(
                                                                         filters[index]
                                                                             .toString(),
@@ -1141,12 +1101,7 @@ class _MyHomePageState extends State<MyHomePage>
                                               case RouteName.searchPage:
                                                 var route = GetPageRoute(
                                                   settings: settings,
-                                                  page: () => Searchlistinfo(
-                                                    input_text_Controller:
-                                                        input_text_Controller,
-                                                    onPlaylistTap:
-                                                        change_main_status,
-                                                  ),
+                                                  page: () => Searchlistinfo(),
                                                   transition:
                                                       Transition.upToDown,
                                                   middlewares: [
@@ -1254,8 +1209,7 @@ class _MyHomePageState extends State<MyHomePage>
                                                   settings: settings,
                                                   transition: Transition
                                                       .rightToLeftWithFade,
-                                                  page: () =>
-                                                      CacheNamingPage(),
+                                                  page: () => CacheNamingPage(),
                                                   middlewares: [
                                                     ListenPopMiddleware(),
                                                   ],
@@ -1278,8 +1232,6 @@ class _MyHomePageState extends State<MyHomePage>
                                                         {};
                                                     return PlaylistInfo(
                                                       listId: args['listId'],
-                                                      onPlaylistTap:
-                                                          change_main_status,
                                                       is_my:
                                                           args['is_my'] ??
                                                           false,

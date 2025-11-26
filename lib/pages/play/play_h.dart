@@ -2,7 +2,7 @@ part of '../../play.dart';
 
 final GlobalKey _buttonKey = GlobalKey();
 final materialWaveSliderStateKeyH = GlobalKey<MaterialWaveSliderState>();
-Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
+Widget playH() {
   return Center(
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -179,7 +179,6 @@ Widget playH(Function(String, {bool is_my, String search_text}) onPlaylistTap) {
             var ret = await song_dialog(
               Get.context!,
               track['track'],
-              change_main_status: onPlaylistTap,
               position:
                   (_buttonKey.currentContext!.findRenderObject() as RenderBox)
                       .localToGlobal(Offset.zero),

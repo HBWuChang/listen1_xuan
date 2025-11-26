@@ -8,6 +8,7 @@ import 'package:listen1_xuan/controllers/hyper_download_controller.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/play.dart';
 import 'package:logger/logger.dart';
+import 'controllers/search_controller.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -61,6 +62,7 @@ import 'package:iconify_flutter_plus/icons/fa_solid.dart';
 import 'package:path/path.dart' as p;
 import 'utils/curve_utils.dart';
 import 'widgets/curve_selector_dialog.dart';
+import 'package:flutter/material.dart' hide SearchController;
 import 'pages/settings/cache_naming_page.dart';
 part 'pages/settings/settings_utils.dart';
 part 'pages/settings/settings_github.dart';
@@ -771,7 +773,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                   newValue!;
                                             });
                                           },
-                                          items: searchOptions
+                                          items: XSearchController.searchOptions
                                               .map<DropdownMenuItem<String>>((
                                                 String value,
                                               ) {
