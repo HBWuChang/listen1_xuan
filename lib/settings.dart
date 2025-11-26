@@ -422,11 +422,26 @@ class _SettingsPageState extends State<SettingsPage> {
               // Update loading bar.
             },
             onPageStarted: (String url) {},
-            onPageFinished: (String url) {},
+            onPageFinished: (String url) async {
+              // 注入CSS来优化移动端显示
+              await controller.runJavaScript('''
+                (function() {
+                  var meta = document.createElement('meta');
+                  meta.name = 'viewport';
+                  meta.content = 'width=device-width, initial-scale=0.5, maximum-scale=3.0, user-scalable=yes';
+                  document.getElementsByTagName('head')[0].appendChild(meta);
+                  
+                  // 调整body的最小宽度
+                  document.body.style.minWidth = '100vw';
+                  document.body.style.minHeight = '100vh';
+                })();
+              ''');
+            },
             onHttpError: (HttpResponseError error) {},
             onWebResourceError: (WebResourceError error) {},
           ),
         )
+        ..enableZoom(true)
         ..setUserAgent(
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
         )
@@ -457,7 +472,21 @@ class _SettingsPageState extends State<SettingsPage> {
               // Update loading bar.
             },
             onPageStarted: (String url) {},
-            onPageFinished: (String url) {},
+            onPageFinished: (String url) async {
+              // 注入CSS来优化移动端显示
+              await controller.runJavaScript('''
+                (function() {
+                  var meta = document.createElement('meta');
+                  meta.name = 'viewport';
+                  meta.content = 'width=device-width, initial-scale=0.5, maximum-scale=3.0, user-scalable=yes';
+                  document.getElementsByTagName('head')[0].appendChild(meta);
+                  
+                  // 调整body的最小宽度
+                  document.body.style.minWidth = '100vw';
+                  document.body.style.minHeight = '100vh';
+                })();
+              ''');
+            },
             onHttpError: (HttpResponseError error) {},
             onWebResourceError: (WebResourceError error) {},
           ),

@@ -95,6 +95,7 @@ dependencies:
   flutter_acrylic: ^1.1.4
   material_wave_slider:
     path: packages/material_wave_slider
+  objective_c: 9.1.0
   # auto_updater: ^1.0.0
 dev_dependencies:
   flutter_test:

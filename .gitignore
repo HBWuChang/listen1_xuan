@@ -50,3 +50,4 @@ app.*.map.json
 # Environment variables (contains sensitive keys)
 .env
 dsa_priv.pem
+.vscode/settings.json
