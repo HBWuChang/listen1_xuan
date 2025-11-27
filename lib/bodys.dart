@@ -149,7 +149,7 @@ Future<dynamic> song_dialog(
                 title: Text('搜索此音乐'),
                 onTap: () {
                   Navigator.of(context).pop();
-                  xSearchController.change_main_status(
+                  xSearchController.toListByIDOrSearch(
                     "",
                     search_text: track.title!,
                   );
@@ -165,7 +165,7 @@ Future<dynamic> song_dialog(
                 title: Text('作者：${track.artist ?? '未知艺术家'}'),
                 onTap: () {
                   Navigator.of(context).pop();
-                  xSearchController.change_main_status(track.artist_id ?? '');
+                  xSearchController.toListByIDOrSearch(track.artist_id ?? '');
                 },
                 onLongPress: () {
                   Clipboard.setData(
@@ -179,7 +179,7 @@ Future<dynamic> song_dialog(
                   title: Text('查看可能的分集'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    xSearchController.change_main_status(track.id);
+                    xSearchController.toListByIDOrSearch(track.id);
                   },
                 ),
               if (track.album != null)
@@ -187,7 +187,7 @@ Future<dynamic> song_dialog(
                   title: Text('专辑：${track.album}'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    xSearchController.change_main_status(track.album_id!);
+                    xSearchController.toListByIDOrSearch(track.album_id!);
                   },
                   onLongPress: () {
                     Clipboard.setData(ClipboardData(text: track.album!));

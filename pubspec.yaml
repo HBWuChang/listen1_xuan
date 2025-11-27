@@ -96,12 +96,15 @@ dependencies:
   material_wave_slider:
     path: packages/material_wave_slider
   objective_c: 9.1.0
+  json_annotation: ^4.9.0
   # auto_updater: ^1.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^5.0.0
+  build_runner: ^2.10.4
+  json_serializable: ^6.11.3
 
 flutter:
   uses-material-design: true

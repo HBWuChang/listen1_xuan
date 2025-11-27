@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:listen1_xuan/models/SearchPlayListRes.dart';
 import 'package:listen1_xuan/loweb.dart';
 
 import '../funcs.dart';
@@ -10,7 +11,6 @@ import 'routeController.dart';
 
 // SearchController for GetX state management
 class XSearchController extends GetxController {
-
   XSearchController();
 
   // Search options
@@ -27,6 +27,20 @@ class XSearchController extends GetxController {
   final RxInt currentPage = 1.obs;
   final RxString lastQuery = ''.obs;
   final RxString searchQuery = ''.obs;
+  
+  // 歌单搜索相关变量
+  final RxBool playlistLoading = true.obs;
+  final RxBool playlistLoadingMore = false.obs;
+  final RxList<SearchPlayListItem> playlists = <SearchPlayListItem>[].obs;
+  final RxMap<String, dynamic> playlistResult = <String, dynamic>{}.obs;
+  final RxInt playlistCurrentPage = 1.obs;
+  final RxString playlistLastQuery = ''.obs;
+  final RxString playlistLastSource = 'netease'.obs;
+  
+  // Tab 控制
+  final RxInt currentTabIndex = 0.obs;
+  final RxBool showTabBar = true.obs;
+  double _lastScrollOffset = 0.0;
 
   // 计算属性：从 source 获取显示名称
   String get selectedOption {
@@ -46,7 +60,8 @@ class XSearchController extends GetxController {
 
   // Controllers
   late TextEditingController searchTextController;
-  final ScrollController scrollController = ScrollController();
+  final ScrollController songScrollController = ScrollController();
+  final ScrollController playlistScrollController = ScrollController();
   final FocusNode focusNode = FocusNode();
 
   // Settings controller
@@ -61,6 +76,29 @@ class XSearchController extends GetxController {
 
     // Setup listeners
     _setupListeners();
+  }
+  
+  void switchTab(int index) {
+    currentTabIndex.value = index;
+    // 切换 tab 时重置滚动状态
+    _lastScrollOffset = 0.0;
+    showTabBar.value = true;
+    
+    // 检查切换到的 tab 是否需要更新搜索结果
+    final query = searchQuery.value.trim();
+    if (query.isEmpty) return;
+    
+    if (index == 0) {
+      // 切换到歌曲 tab，检查是否需要重新搜索
+      if (lastQuery.value != query || lastSource.value != source.value) {
+        _performSongSearch();
+      }
+    } else {
+      // 切换到歌单 tab，检查是否需要重新搜索
+      if (playlistLastQuery.value != query || playlistLastSource.value != source.value) {
+        _performPlaylistSearch();
+      }
+    }
   }
 
   // 每次进入页面时调用，重新加载平台设置
@@ -83,7 +121,8 @@ class XSearchController extends GetxController {
     );
 
     // Scroll listener for pagination
-    scrollController.addListener(_onScroll);
+    songScrollController.addListener(_onSongScroll);
+    playlistScrollController.addListener(_onPlaylistScroll);
 
     // Focus listener for hotkey management
     focusNode.addListener(_onFocusChange);
@@ -97,10 +136,53 @@ class XSearchController extends GetxController {
     }
   }
 
-  void _onScroll() {
-    if (scrollController.position.pixels >=
-        scrollController.position.maxScrollExtent) {
+  void _onSongScroll() {
+    final currentOffset = songScrollController.position.pixels;
+    
+    // 控制 TabBar 显示/隐藏
+    if (currentOffset > _lastScrollOffset && currentOffset > 50) {
+      // 向下滚动，隐藏 TabBar
+      if (showTabBar.value) {
+        showTabBar.value = false;
+      }
+    } else if (currentOffset < _lastScrollOffset) {
+      // 向上滚动，显示 TabBar
+      if (!showTabBar.value) {
+        showTabBar.value = true;
+      }
+    }
+    
+    _lastScrollOffset = currentOffset;
+    
+    // 分页加载
+    if (songScrollController.position.pixels >=
+        songScrollController.position.maxScrollExtent) {
       loadMoreData();
+    }
+  }
+
+  void _onPlaylistScroll() {
+    final currentOffset = playlistScrollController.position.pixels;
+    
+    // 控制 TabBar 显示/隐藏
+    if (currentOffset > _lastScrollOffset && currentOffset > 50) {
+      // 向下滚动，隐藏 TabBar
+      if (showTabBar.value) {
+        showTabBar.value = false;
+      }
+    } else if (currentOffset < _lastScrollOffset) {
+      // 向上滚动，显示 TabBar
+      if (!showTabBar.value) {
+        showTabBar.value = true;
+      }
+    }
+    
+    _lastScrollOffset = currentOffset;
+    
+    // 分页加载
+    if (playlistScrollController.position.pixels >=
+        playlistScrollController.position.maxScrollExtent) {
+      loadMorePlaylistData();
     }
   }
 
@@ -140,6 +222,24 @@ class XSearchController extends GetxController {
   Future<void> _performSearch() async {
     final query = searchQuery.value.trim();
 
+    // Skip if query is empty
+    if (query.isEmpty) {
+      return;
+    }
+
+    // 只搜索当前显示的 tab
+    if (currentTabIndex.value == 0) {
+      // 当前显示歌曲 tab
+      _performSongSearch();
+    } else {
+      // 当前显示歌单 tab
+      _performPlaylistSearch();
+    }
+  }
+  
+  Future<void> _performSongSearch() async {
+    final query = searchQuery.value.trim();
+
     // Skip if query is empty or unchanged
     if (query.isEmpty ||
         (query == lastQuery.value && source.value == lastSource.value)) {
@@ -162,7 +262,7 @@ class XSearchController extends GetxController {
       final ret = await MediaService.search(source.value, {
         'keywords': query,
         'curpage': currentPage.value,
-        'type': songOrPlaylist.value ? 1 : 0,
+        'type': 0, // 搜索歌曲
       });
 
       ret["success"]((data) {
@@ -182,6 +282,54 @@ class XSearchController extends GetxController {
       _rollbackSearch(previousQuery, previousSource, previousPage);
       loading.value = false;
       showErrorSnackbar('搜索请求失败', e.toString());
+    }
+  }
+  
+  Future<void> _performPlaylistSearch() async {
+    final query = searchQuery.value.trim();
+
+    // Skip if query is empty or unchanged
+    if (query.isEmpty ||
+        (query == playlistLastQuery.value && source.value == playlistLastSource.value)) {
+      return;
+    }
+
+    // Save previous state for rollback
+    final previousQuery = playlistLastQuery.value;
+    final previousSource = playlistLastSource.value;
+    final previousPage = playlistCurrentPage.value;
+
+    // Update state
+    playlistLastQuery.value = query;
+    playlistLastSource.value = source.value;
+    playlistCurrentPage.value = 1;
+
+    try {
+      playlistLoading.value = true;
+
+      final ret = await MediaService.search(source.value, {
+        'keywords': query,
+        'curpage': playlistCurrentPage.value,
+        'type': 1, // 搜索歌单
+      });
+
+      ret["success"]((data) {
+        try {
+          playlistResult.value = data;
+          playlists.value = List<SearchPlayListItem>.from(
+            data['result'].map((item) => SearchPlayListItem.fromJson(item)),
+          );
+        } catch (e) {
+          _rollbackPlaylistSearch(previousQuery, previousSource, previousPage);
+          showErrorSnackbar('歌单搜索失败', e.toString());
+        } finally {
+          playlistLoading.value = false;
+        }
+      });
+    } catch (e) {
+      _rollbackPlaylistSearch(previousQuery, previousSource, previousPage);
+      playlistLoading.value = false;
+      showErrorSnackbar('歌单搜索请求失败', e.toString());
     }
   }
 
@@ -206,7 +354,7 @@ class XSearchController extends GetxController {
       final ret = await MediaService.search(source.value, {
         'keywords': searchQuery.value,
         'curpage': currentPage.value,
-        'type': songOrPlaylist.value ? 1 : 0,
+        'type': 0, // 搜索歌曲
       });
 
       ret["success"]((data) {
@@ -230,32 +378,86 @@ class XSearchController extends GetxController {
       showErrorSnackbar('加载更多数据失败', e.toString());
     }
   }
+  
+  Future<void> loadMorePlaylistData() async {
+    if (playlistLoading.value || playlistLoadingMore.value) return;
+
+    final previousPage = playlistCurrentPage.value;
+
+    try {
+      playlistCurrentPage.value += 1;
+
+      // Check if we've reached the end
+      if (playlistResult.isNotEmpty &&
+          playlistCurrentPage.value >=
+              playlistResult['total'] / (playlists.length / (playlistCurrentPage.value - 1))) {
+        playlistCurrentPage.value = previousPage;
+        return;
+      }
+
+      playlistLoadingMore.value = true;
+
+      final ret = await MediaService.search(source.value, {
+        'keywords': searchQuery.value,
+        'curpage': playlistCurrentPage.value,
+        'type': 1, // 搜索歌单
+      });
+
+      ret["success"]((data) {
+        try {
+          playlistResult.value = data;
+          playlists.addAll(
+            List<SearchPlayListItem>.from(
+              data['result'].map((item) => SearchPlayListItem.fromJson(item)),
+            ),
+          );
+        } catch (e) {
+          playlistCurrentPage.value = previousPage;
+          showErrorSnackbar('加载更多歌单失败', e.toString());
+        } finally {
+          playlistLoadingMore.value = false;
+        }
+      });
+    } catch (e) {
+      playlistCurrentPage.value = previousPage;
+      playlistLoadingMore.value = false;
+      showErrorSnackbar('加载更多歌单失败', e.toString());
+    }
+  }
 
   void _rollbackSearch(String prevQuery, String prevSource, int prevPage) {
     lastQuery.value = prevQuery;
     lastSource.value = prevSource;
     currentPage.value = prevPage;
   }
+  
+  void _rollbackPlaylistSearch(String prevQuery, String prevSource, int prevPage) {
+    playlistLastQuery.value = prevQuery;
+    playlistLastSource.value = prevSource;
+    playlistCurrentPage.value = prevPage;
+  }
 
   @override
   void onClose() {
-    scrollController.removeListener(_onScroll);
-    scrollController.dispose();
+    songScrollController.removeListener(_onSongScroll);
+    songScrollController.dispose();
+    playlistScrollController.removeListener(_onPlaylistScroll);
+    playlistScrollController.dispose();
     focusNode.removeListener(_onFocusChange);
     focusNode.dispose();
     searchTextController.dispose();
     super.onClose();
   }
 
-  void change_main_status(
+  void toListByIDOrSearch(
     String id, {
     bool is_my = false,
     String search_text = "",
   }) {
-    if (id != "") {
+    if (!isEmpty(id)) {
       Get.toNamed(id, arguments: {'listId': id, 'is_my': is_my}, id: 1);
     } else {
-      if (search_text != "") {
+      if (!isEmpty(search_text)) {
         final searchController = Get.find<XSearchController>();
         searchController.searchTextController.text = search_text;
         Get.toNamed(RouteName.searchPage, id: 1);

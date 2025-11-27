@@ -60,7 +60,7 @@ class PlaylistController extends GetxController {
           hasMore.value = true;
           loading.value = false;
         } catch (e) {
-          print(e);
+          showErrorSnackbar('加载歌单数据失败', e.toString());
           loading.value = false;
         }
       });

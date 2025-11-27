@@ -444,7 +444,7 @@ class QQ {
                     'url': 'qqplaylist_${info['dissid']}',
                     'author': UnicodeToAscii(info['creator']['name']),
                     'count': info['song_count'],
-                  }));
+                  })).toList();
           total = data['req']['data']['meta']['sum'];
         }
         return fn({'result': result, 'total': total, 'type': searchType});
