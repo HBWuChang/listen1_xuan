@@ -1,83 +1,113 @@
 part of '../bodys.dart';
 
-class Searchlistinfo extends StatelessWidget {
+class Searchlistinfo extends StatefulWidget {
   Searchlistinfo();
 
   @override
-  Widget build(BuildContext context) {
-    // Get the global controller
-    final controller = Get.find<XSearchController>();
+  State<Searchlistinfo> createState() => _SearchlistinfoState();
+}
 
-    // 每次进入页面时刷新平台设置
-    controller.refreshFromSettings();
+class _SearchlistinfoState extends State<Searchlistinfo> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  XSearchController? controller;
 
-    return DefaultTabController(
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.find<XSearchController>();
+    
+    // 使用保存的 tab 索引初始化 TabController
+    _tabController = TabController(
       length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: TextField(
-                  focusNode: controller.focusNode,
-                  decoration: const InputDecoration(
-                    hintText: '请输入歌曲名，歌手或专辑',
-                    border: InputBorder.none,
-                  ),
-                  controller: controller.searchTextController,
-                  autofocus: true,
-                ),
-              ),
-              Obx(
-                () => DropdownButton<String>(
-                  value: controller.selectedOption,
-                  icon: const Icon(Icons.arrow_downward),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      controller.updateSelectedOption(newValue);
-                    }
-                  },
-                  items: XSearchController.searchOptions
-                      .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      })
-                      .toList(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        body: Column(
+      vsync: this,
+      initialIndex: controller!.currentTabIndex.value,
+    );
+    
+    // 监听 TabController 的变化
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        controller?.switchTab(_tabController.index);
+      }
+    });
+    
+    // 每次进入页面时刷新平台设置
+    controller?.refreshFromSettings();
+    
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Obx(
-              () => AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: controller.showTabBar.value ? 48 : 0,
-                child: controller.showTabBar.value
-                    ? TabBar(
-                        onTap: (index) => controller.switchTab(index),
-                        tabs: const [
-                          Tab(text: '歌曲'),
-                          Tab(text: '歌单'),
-                        ],
-                      )
-                    : const SizedBox.shrink(),
+            Expanded(
+              child: TextField(
+                focusNode: controller!.focusNode,
+                decoration: const InputDecoration(
+                  hintText: '请输入歌曲名，歌手或专辑',
+                  border: InputBorder.none,
+                ),
+                controller: controller!.searchTextController,
+                autofocus: true,
               ),
             ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _buildSongList(controller),
-                  _buildPlaylistList(controller),
-                ],
+            Obx(
+              () => DropdownButton<String>(
+                value: controller!.selectedOption,
+                icon: const Icon(Icons.arrow_downward),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    controller!.updateSelectedOption(newValue);
+                  }
+                },
+                items: XSearchController.searchOptions
+                    .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    })
+                    .toList(),
               ),
             ),
           ],
         ),
+      ),
+      body: Column(
+        children: [
+          Obx(
+            () => AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: controller!.showTabBar.value ? 48 : 0,
+              child: controller!.showTabBar.value
+                  ? TabBar(
+                      controller: _tabController,
+                      tabs: const [
+                        Tab(text: '歌曲'),
+                        Tab(text: '歌单'),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildSongList(controller!),
+                _buildPlaylistList(controller!),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
