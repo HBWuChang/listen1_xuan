@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:get/get.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:listen1_xuan/settings.dart';
@@ -73,6 +74,22 @@ class ThemeController extends GetxController {
     customColorG.toInt(),
     customColorB.toInt(),
   );
+  static const String desktopOpKey = 'desktop_opacity';
+  int get desktopOpacity {
+    final settings = Get.find<SettingsController>().settings;
+    return (settings[desktopOpKey] ?? 175).toInt();
+  }
+
+  set desktopOpacity(int value) {
+    Get.find<SettingsController>().setSetting(desktopOpKey, value);
+    if (value == 255) {
+      playHBackgroundColor.value = null;
+    } else {
+      playHBackgroundColor.value = AdaptiveTheme.of(
+        Get.context!,
+      ).theme.scaffoldBackgroundColor.withAlpha(desktopOpacity);
+    }
+  }
 
   // 从Color更新RGB滑块值
   void updateCustomColorFromColor(Color color) {
@@ -85,6 +102,12 @@ class ThemeController extends GetxController {
   void onInit() {
     super.onInit();
     loadThemeSettings();
+    ever(themeMode, (callback) {
+      didChangePlatformBrightnessOrManual();
+    });
+    ever(toUpd, (callback) {
+      didChangePlatformBrightnessOrManual();
+    });
     if (isWindows) _setupWindowsThemeListener();
   }
 
@@ -351,6 +374,43 @@ class ThemeController extends GetxController {
       case AdaptiveThemeMode.system:
         return '跟随系统';
     }
+  }
+
+  bool get isLightMode {
+    final currentMode = themeMode.value;
+    if (currentMode == AdaptiveThemeMode.light) {
+      return true;
+    } else if (currentMode == AdaptiveThemeMode.dark) {
+      return false;
+    } else {
+      return WidgetsBinding.instance.window.platformBrightness ==
+          Brightness.light;
+    }
+  }
+
+  Rx<Color?> playHBackgroundColor = Rx<Color?>(null);
+  bool firstDidChangePlatformBrightnessOrManual = true;
+  Future<void> didChangePlatformBrightnessOrManual() async {
+    if (isMobile) return;
+    if (firstDidChangePlatformBrightnessOrManual) {
+      firstDidChangePlatformBrightnessOrManual = false;
+      await Window.setEffect(effect: WindowEffect.disabled);
+    }
+    bool isLight =
+        themeMode.value == AdaptiveThemeMode.light ||
+        (themeMode.value == AdaptiveThemeMode.system &&
+            WidgetsBinding.instance.window.platformBrightness ==
+                Brightness.light);
+    Color t = isLight
+        ? AdaptiveTheme.of(Get.context!).lightTheme.scaffoldBackgroundColor
+        : AdaptiveTheme.of(Get.context!).darkTheme.scaffoldBackgroundColor;
+    playHBackgroundColor.value = t.withAlpha(desktopOpacity);
+    playHBackgroundColor.refresh();
+    await Window.setEffect(
+      effect: WindowEffect.acrylic,
+      dark: !isLight,
+      color: t,
+    );
   }
 }
 

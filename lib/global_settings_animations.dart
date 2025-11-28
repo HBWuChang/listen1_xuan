@@ -68,7 +68,12 @@ final bool isWindows = universal_io.Platform.isWindows;
 final bool isIos = universal_io.Platform.isIOS;
 final bool isMacOS = universal_io.Platform.isMacOS;
 final bool isAndroid = universal_io.Platform.isAndroid;
-
+final bool isDesktop =
+    universal_io.Platform.isWindows ||
+    universal_io.Platform.isMacOS ||
+    universal_io.Platform.isLinux;
+final bool isMobile =
+    universal_io.Platform.isIOS || universal_io.Platform.isAndroid;
 void init_hotkeys() async {
   var settings = settings_getsettings();
   var hotskeys = settings["hotkeys"];

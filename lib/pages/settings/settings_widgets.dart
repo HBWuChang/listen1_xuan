@@ -299,6 +299,53 @@ void _showEditNicknameDialog(SupabaseAuthController authController) {
   );
 }
 
+/// 显示不透明度调整对话框
+void _showOpacityDialog() {
+  final themeController = Get.find<ThemeController>();
+
+  Get.dialog(
+    StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          title: Text('调整背景不透明度'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 16),
+              Row(
+                children: [
+                  Text('透明'),
+                  Expanded(
+                    child: Slider(
+                      value: themeController.desktopOpacity.toDouble(),
+                      min: 0,
+                      max: 255,
+                      divisions: 255,
+                      label: themeController.desktopOpacity.toString(),
+                      onChanged: (value) {
+                        setState(() {
+                          themeController.desktopOpacity = value.toInt();
+                        });
+                      },
+                    ),
+                  ),
+                  Text('不透明'),
+                ],
+              ),
+              SizedBox(height: 8),
+              Text(
+                '提示: 255为完全不透明，0为完全透明',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [TextButton(onPressed: () => Get.back(), child: Text('关闭'))],
+        );
+      },
+    ),
+  );
+}
+
 List<Widget> get cacheSettingsTiles => [
   Obx(() {
     WebSocketClientController wscc = Get.find<WebSocketClientController>();
@@ -448,6 +495,19 @@ Widget get themeSettingsTiles => Column(
         showThemeDialog();
       },
     ),
+    if (isDesktop)
+      ListTile(
+        leading: Icon(Icons.opacity_rounded),
+        title: Text('横屏播放栏背景不透明度'),
+        subtitle: Obx(() {
+          return Text(
+            '${Get.find<ThemeController>().desktopOpacity} (值越小越透明，255为不透明)',
+          );
+        }),
+        onTap: () async {
+          _showOpacityDialog();
+        },
+      ),
     ListTile(
       leading: Icon(Icons.timelapse_rounded),
       title: Text('播放按钮旋转时间'),
