@@ -73,12 +73,12 @@ Widget playH() {
             );
           },
         ),
-        Container(
+        SizedBox(
           width: (MediaQuery.of(Get.context!).size.width - 514),
           height: 50,
           child: Column(
             children: [
-              Container(
+              SizedBox(
                 height: 20,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
