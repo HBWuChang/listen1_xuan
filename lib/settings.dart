@@ -732,11 +732,21 @@ class _SettingsPageState extends State<SettingsPage> {
                           children: [
                             Obx(
                               () => SwitchListTile(
-                                title: const Text('禁用ssl证书验证'),
-                                value: useHttpOverrides.value,
+                                title: const Text('下一首播放模式'),
+                                subtitle: Obx(
+                                  () => Text(
+                                    Get.find<SettingsController>()
+                                            .nextTrackQueueOrStackMethod
+                                        ? '队列：先添加的曲目将先播放'
+                                        : '栈：后添加的曲目将先播放',
+                                  ),
+                                ),
+                                value: Get.find<SettingsController>()
+                                    .nextTrackQueueOrStackMethod,
                                 onChanged: (bool value) {
-                                  set_useHttpOverrides(value);
-                                  useHttpOverrides.value = value;
+                                  Get.find<SettingsController>()
+                                          .nextTrackQueueOrStackMethod =
+                                      value;
                                 },
                               ),
                             ),
@@ -785,6 +795,16 @@ class _SettingsPageState extends State<SettingsPage> {
                                               .toList(),
                                         ),
                                       ),
+                              ),
+                            ),
+                            Obx(
+                              () => SwitchListTile(
+                                title: const Text('禁用ssl证书验证'),
+                                value: useHttpOverrides.value,
+                                onChanged: (bool value) {
+                                  set_useHttpOverrides(value);
+                                  useHttpOverrides.value = value;
+                                },
                               ),
                             ),
                           ],

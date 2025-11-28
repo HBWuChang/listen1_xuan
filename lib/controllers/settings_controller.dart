@@ -119,6 +119,16 @@ class SettingsController extends GetxController {
   RxSet<int> settingsPageExpansion = <int>{}.obs;
   Set<int> _lastSettingsPageExpansion = <int>{};
 
+  static const String nextTrackQueueOrStackMethodKey =
+      'nextTrackQueueOrStackMethod';
+
+  /// true 队列模式 false 栈模式
+  bool get nextTrackQueueOrStackMethod =>
+      settings[nextTrackQueueOrStackMethodKey] ?? true;
+  set nextTrackQueueOrStackMethod(bool value) {
+    settings[nextTrackQueueOrStackMethodKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};

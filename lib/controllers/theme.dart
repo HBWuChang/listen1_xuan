@@ -590,7 +590,12 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
               Obx(
                 () => SwitchListTile(
                   title: Text('使用动态颜色'),
-                  subtitle: Text('根据壁纸自动调整颜色'),
+                  subtitle: InkWell(
+                    onTap: () => g_launchURL(
+                      Uri.parse('https://pub.dev/packages/dynamic_color'),
+                    ),
+                    child: Text('不支持IOS,@dynamic_color'),
+                  ),
                   value: themeController.useDynamicColor.value,
                   onChanged: (value) {
                     themeController.setUseDynamicColor(value);

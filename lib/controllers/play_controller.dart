@@ -44,7 +44,7 @@ class PlayController extends GetxController
   final logger = Logger();
   final updatePosToAudioServiceNow = 0.obs;
   final needUpdatePosToAudioService = 0.obs; // 新增：触发位置更新的流
-  final _next_track = Rx<Track?>(null);
+  final _next_tracks = RxList<Track>([]);
   RxString nowPlayingTrackIdRx = ''.obs;
   String get nowPlayingTrackId => nowPlayingTrackIdRx.value;
   set nowPlayingTrackId(String value) {
@@ -57,11 +57,22 @@ class PlayController extends GetxController
   // Windows任务栏进度 (0-100)
   final taskbarProgress = 0.obs;
 
+  /// 获取或设置下一首曲目
+  /// 设置为 null 时表示使用了（移除）下一首曲目
+  Track? get nextTrack => _next_tracks.isNotEmpty
+      ? (Get.find<SettingsController>().nextTrackQueueOrStackMethod
+            ? _next_tracks.first
+            : _next_tracks.last)
+      : null;
   set nextTrack(Track? track) {
-    _next_track.value = track;
+    if (track == null) {
+      Get.find<SettingsController>().nextTrackQueueOrStackMethod
+          ? _next_tracks.removeAt(0)
+          : _next_tracks.removeLast();
+    } else {
+      _next_tracks.add(track);
+    }
   }
-
-  Track? get nextTrack => _next_track.value;
 
   var isplaying = false.obs;
 
