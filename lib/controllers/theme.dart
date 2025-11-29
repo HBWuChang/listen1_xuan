@@ -390,11 +390,11 @@ class ThemeController extends GetxController {
 
   Rx<Color?> playHBackgroundColor = Rx<Color?>(null);
   bool firstDidChangePlatformBrightnessOrManual = true;
-  Future<void> didChangePlatformBrightnessOrManual() async {
+  Future<void> didChangePlatformBrightnessOrManual({bool once = false}) async {
     if (isMobile) return;
-    if (firstDidChangePlatformBrightnessOrManual) {
+    if (once && firstDidChangePlatformBrightnessOrManual) {
       firstDidChangePlatformBrightnessOrManual = false;
-      await Window.setEffect(effect: WindowEffect.disabled);
+      await Window.setEffect(effect: WindowEffect.acrylic);
     }
     bool isLight =
         themeMode.value == AdaptiveThemeMode.light ||

@@ -180,6 +180,7 @@ void main() async {
         await windowManager.maximize();
       }
       await windowManager.show();
+      createThemeController().didChangePlatformBrightnessOrManual();
     });
   }
   createThemeController();
@@ -429,11 +430,14 @@ class _MyHomePageState extends State<MyHomePage>
     xshow();
   }
 
-  void xshow() {
-    windowManager.show();
+  Future<void> xshow() async {
+    await windowManager.show();
     windowManager.setSkipTaskbar(false);
-    windowManager.setAlwaysOnTop(true);
-    windowManager.setAlwaysOnTop(false);
+    await windowManager.setAlwaysOnTop(true);
+    await windowManager.setAlwaysOnTop(false);
+    await windowManager.setBackgroundColor(Colors.transparent);
+    // await
+    createThemeController().didChangePlatformBrightnessOrManual();
   }
 
   @override
@@ -1272,59 +1276,44 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
 
                 ///测试按钮
-                // Positioned.fill(
-                //   child: SafeArea(
-                //     top: false,
-                //     child: Align(
-                //       alignment: Alignment.bottomRight,
-                //       child: Padding(
-                //         padding: EdgeInsets.only(
-                //           bottom: globalHorizon ? 76 : 300.w,
-                //           right: globalHorizon ? 16 : 40.w,
-                //         ),
-                //         child: Row(
-                //           mainAxisSize: MainAxisSize.min,
-                //           children: [
-                //             FloatingActionButton(
-                //               onPressed: () async {
-                //                 await Window.setEffect(
-                //                   effect: WindowEffect.acrylic,
-                //                   color: AdaptiveTheme.of(
-                //                     Get.context!,
-                //                   ).theme.scaffoldBackgroundColor,
-                //                   dark: !Get.find<ThemeController>()
-                //                       .isLightMode,
-                //                 );
-                //               },
-                //               child: Icon(Icons.bug_report),
-                //             ),
-                //             FloatingActionButton(
-                //               onPressed: () async {
-                //                 createThemeController()
-                //                     .playHBackgroundColor
-                //                     .value = AdaptiveTheme.of(Get.context!)
-                //                     .theme
-                //                     .scaffoldBackgroundColor
-                //                     .withAlpha(190);
-                //               },
-                //               child: Icon(Icons.bug_report),
-                //             ),
-                //             FloatingActionButton(
-                //               onPressed: () async {
-                //                 await Window.setEffect(
-                //                   effect: WindowEffect.disabled,
-                //                   dark: !Get.find<ThemeController>()
-                //                       .isLightMode,
-                //                 );
-                //               },
-                //               child: Icon(Icons.bug_report),
-                //             ),
-                //           ],
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                // ),
+                Positioned.fill(
+                  child: SafeArea(
+                    top: false,
+                    child: Align(
+                      alignment: Alignment.bottomRight,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          bottom: globalHorizon ? 76 : 300.w,
+                          right: globalHorizon ? 16 : 40.w,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FloatingActionButton(
+                              onPressed: () async {
+                                // await Window.initialize();
+                                await createThemeController()
+                                    .didChangePlatformBrightnessOrManual();
+                              },
+                              child: Icon(Icons.bug_report),
+                            ),
+                            FloatingActionButton(
+                              onPressed: () async {
+                                logger.i(
+                                  Get.find<PlayController>()
+                                      .music_player
+                                      .state
+                                      .playing,
+                                );
+                              },
+                              child: Icon(Icons.bug_report),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
 
                 ///WebSocketClientControlPanel悬浮按钮
                 Positioned.fill(
@@ -1383,9 +1372,9 @@ class _MyHomePageState extends State<MyHomePage>
       if (isWindows) {
         enableThumbnailToolbar();
       }
-      if (isDesktop) {
-        Get.find<ThemeController>().didChangePlatformBrightnessOrManual();
-      }
+      // if (isDesktop) {
+      //   Get.find<ThemeController>().didChangePlatformBrightnessOrManual();
+      // }
       setState(() {});
       // 做些什么
     }

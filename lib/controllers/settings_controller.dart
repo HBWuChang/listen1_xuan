@@ -99,7 +99,7 @@ class SettingsController extends GetxController {
 
   var showLyricTranslation = true.obs; // 歌词翻译显示设置
   // var hideOrMinimize = false.obs;
-  bool get hideOrMinimize => settings['hideOrMinimize'] ?? false;
+  bool get hideOrMinimize => settings['hideOrMinimize'] ?? true;
   set hideOrMinimize(bool value) {
     settings['hideOrMinimize'] = value;
   }

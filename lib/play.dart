@@ -25,6 +25,7 @@ import 'controllers/audioHandler_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/lyric_controller.dart';
 import 'controllers/cache_controller.dart';
+import 'controllers/theme.dart';
 import 'controllers/websocket_card_controller.dart';
 import 'funcs.dart';
 import 'loweb.dart';
@@ -151,6 +152,7 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
           break;
         }
         await _playController.music_player.seek(Duration.zero);
+        await _playController.music_player.play();
         break;
       default:
         break;
@@ -422,6 +424,11 @@ class _PlayState extends State<Play> {
         if (controller.loading.value) {
           return Center(child: globalLoadingAnime);
         } else {
+          // WidgetsBinding.instance.addPostFrameCallback((_) {
+          //   Get.find<ThemeController>().didChangePlatformBrightnessOrManual(
+          //     once: true,
+          //   );
+          // });
           Widget tW = widget.horizon
               ? SizedBox(height: 60, child: playH())
               : playV2;
