@@ -1276,44 +1276,44 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
 
                 ///测试按钮
-                Positioned.fill(
-                  child: SafeArea(
-                    top: false,
-                    child: Align(
-                      alignment: Alignment.bottomRight,
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          bottom: globalHorizon ? 76 : 300.w,
-                          right: globalHorizon ? 16 : 40.w,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FloatingActionButton(
-                              onPressed: () async {
-                                // await Window.initialize();
-                                await createThemeController()
-                                    .didChangePlatformBrightnessOrManual();
-                              },
-                              child: Icon(Icons.bug_report),
-                            ),
-                            FloatingActionButton(
-                              onPressed: () async {
-                                logger.i(
-                                  Get.find<PlayController>()
-                                      .music_player
-                                      .state
-                                      .playing,
-                                );
-                              },
-                              child: Icon(Icons.bug_report),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                // Positioned.fill(
+                //   child: SafeArea(
+                //     top: false,
+                //     child: Align(
+                //       alignment: Alignment.bottomRight,
+                //       child: Padding(
+                //         padding: EdgeInsets.only(
+                //           bottom: globalHorizon ? 76 : 300.w,
+                //           right: globalHorizon ? 16 : 40.w,
+                //         ),
+                //         child: Row(
+                //           mainAxisSize: MainAxisSize.min,
+                //           children: [
+                //             FloatingActionButton(
+                //               onPressed: () async {
+                //                 // await Window.initialize();
+                //                 await createThemeController()
+                //                     .didChangePlatformBrightnessOrManual();
+                //               },
+                //               child: Icon(Icons.bug_report),
+                //             ),
+                //             FloatingActionButton(
+                //               onPressed: () async {
+                //                 logger.i(
+                //                   Get.find<PlayController>()
+                //                       .music_player
+                //                       .state
+                //                       .playing,
+                //                 );
+                //               },
+                //               child: Icon(Icons.bug_report),
+                //             ),
+                //           ],
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
 
                 ///WebSocketClientControlPanel悬浮按钮
                 Positioned.fill(
