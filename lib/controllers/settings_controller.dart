@@ -132,9 +132,9 @@ class SettingsController extends GetxController {
 
   static const String androidCompactActionIndicesKey =
       'androidCompactActionIndices';
-  List<int> get androidCompactActionIndices =>
+  List<int> get androidActionSort =>
       List<int>.from(settings[androidCompactActionIndicesKey] ?? [2, 0, 1]);
-  set androidCompactActionIndices(List<int> value) {
+  set androidActionSort(List<int> value) {
     settings[androidCompactActionIndicesKey] = value;
     Get.find<PlayController>().updatePosToAudioServiceNow.value++;
   }

@@ -514,12 +514,12 @@ Widget get androidSettingsTiles => Column(
                   newIndex -= 1;
                 }
                 List<int> items =
-                    settingsController.androidCompactActionIndices;
+                    settingsController.androidActionSort;
                 int item = items.removeAt(oldIndex);
                 items.insert(newIndex, item);
-                settingsController.androidCompactActionIndices = items;
+                settingsController.androidActionSort = items;
               },
-              children: settingsController.androidCompactActionIndices
+              children: settingsController.androidActionSort
                   .asMap()
                   .entries
                   .map(

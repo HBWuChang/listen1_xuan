@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:audio_service/audio_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,24 @@ class PlayController extends GetxController
   final updatePosToAudioServiceNow = 0.obs;
   final needUpdatePosToAudioService = 0.obs; // 新增：触发位置更新的流
   final _next_tracks = RxList<Track>([]);
+  List<MediaControl> get androidControls => [
+    if (isplaying.value) MediaControl.pause else MediaControl.play,
+    // MediaControl.pause,
+    MediaControl.skipToNext,
+    MediaControl.skipToPrevious,
+    // MediaControl.stop,
+  ];
+  List<MediaControl> get sortedAndroidControls {
+    List<int> androidActionSort =
+        Get.find<SettingsController>().androidActionSort;
+    List<MediaControl> controls = androidControls;
+    List<MediaControl> sortedControls = [];
+    for (var index in androidActionSort) {
+      sortedControls.add(controls[index]);
+    }
+    return sortedControls;
+  }
+
   RxString nowPlayingTrackIdRx = ''.obs;
   String get nowPlayingTrackId => nowPlayingTrackIdRx.value;
   set nowPlayingTrackId(String value) {

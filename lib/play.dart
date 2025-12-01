@@ -689,20 +689,14 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
   PlaybackState _transformEvent(bool playing) {
     return PlaybackState(
-      controls: [
-        if (playing) MediaControl.pause else MediaControl.play,
-        // MediaControl.pause,
-        MediaControl.skipToNext,
-        MediaControl.skipToPrevious,
-        // MediaControl.stop,
-      ],
+      controls: _playController.sortedAndroidControls,
       systemActions: const {
         MediaAction.seek,
         MediaAction.seekForward,
         MediaAction.seekBackward,
       },
       androidCompactActionIndices:
-          Get.find<SettingsController>().androidCompactActionIndices,
+          Get.find<SettingsController>().androidActionSort,
       processingState: _music_player.state.completed
           ? AudioProcessingState.completed
           : AudioProcessingState.ready,
