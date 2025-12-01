@@ -469,8 +469,8 @@ Widget winSettingsTiles(
 
 enum AudioServiceButtonActions {
   playPause(0, '播放/暂停'),
-  skipToNext(1, '上一首'),
-  skipToPrevious(2, '下一首');
+  skipToNext(1, '下一首'),
+  skipToPrevious(2, '上一首');
 
   final int code;
   final String displayName;
