@@ -33,7 +33,7 @@ class DioController extends GetxController {
   }
 
   void loadProxy() {
-    if (isAndroid || isIos) {
+    if (isMobile) {
       dioWithProxyAdapter.httpClientAdapter = NativeAdapter(
         createCupertinoConfiguration: () =>
             URLSessionConfiguration.ephemeralSessionConfiguration()

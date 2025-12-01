@@ -663,15 +663,15 @@ class _SettingsPageState extends State<SettingsPage> {
                         headerBuilder: (BuildContext context, bool isExpanded) {
                           return ListTile(
                             leading: Icon(
-                              isWindows
+                              isDesktop
                                   ? Icons.keyboard_alt
                                   : isAndroid
                                   ? Icons.notifications
                                   : Icons.device_unknown,
                             ),
                             title: Text(
-                              isWindows
-                                  ? '热键、代理、ffmpeg及其它win设置'
+                              isDesktop
+                                  ? '热键、代理及其它Desktop设置'
                                   : isAndroid
                                   ? "安卓通知设置"
                                   : "未知平台设置",
@@ -681,8 +681,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         canTapOnHeader: true,
                         isExpanded: settingsController.settingsPageExpansion
                             .contains(4),
-                        body: isWindows
-                            ? winSettingsTiles(
+                        body: isDesktop
+                            ? desktopSettingsTiles(
                                 context,
                                 _focusNode2,
                                 _focusNode3,

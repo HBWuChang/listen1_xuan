@@ -426,7 +426,7 @@ List<Widget> get cacheSettingsTiles => [
   ),
 ].map((e) => Padding(padding: EdgeInsets.all(8.0), child: e)).toList();
 
-Widget winSettingsTiles(
+Widget desktopSettingsTiles(
   BuildContext context,
   FocusNode _focusNode2,
   FocusNode _focusNode3,
@@ -447,8 +447,7 @@ Widget winSettingsTiles(
                   text: Get.find<SettingsController>().windowsProxyAddr,
                 ),
                 decoration: InputDecoration(
-                  labelText:
-                      'Windows代理地址,仅适用于Github,例如：localhost:7890,留空表示不使用,回车以保存',
+                  labelText: '代理地址,仅适用于Github,例如：localhost:7890,留空表示不使用,回车以保存',
                 ),
                 onSubmitted: (value) async {
                   Get.find<SettingsController>().windowsProxyAddr = value;
@@ -456,18 +455,18 @@ Widget winSettingsTiles(
                   showInfoSnackbar('设置成功$value', '立即生效');
                 },
               ),
-
-              Obx(
-                () => SwitchListTile(
-                  title: const Text('在右侧页面中键时隐藏/最小化主页面'),
-                  value: Get.find<SettingsController>().hideOrMinimize,
-                  onChanged: (bool value) {
-                    Get.find<SettingsController>().hideOrMinimize = value;
-                    // _msg('设置成功', 1.0);
-                    showSuccessSnackbar('设置成功', null);
-                  },
+              if (isWindows)
+                Obx(
+                  () => SwitchListTile(
+                    title: const Text('在右侧页面中键时隐藏/最小化主页面'),
+                    value: Get.find<SettingsController>().hideOrMinimize,
+                    onChanged: (bool value) {
+                      Get.find<SettingsController>().hideOrMinimize = value;
+                      // _msg('设置成功', 1.0);
+                      showSuccessSnackbar('设置成功', null);
+                    },
+                  ),
                 ),
-              ),
               Obx(
                 () => SwitchListTile(
                   title: const Text('记住窗口大小'),
