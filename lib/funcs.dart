@@ -263,14 +263,19 @@ Future<String?> showInputDialog({
   final controller = TextEditingController(text: initialValue);
   final errorMessage = RxnString();
   final isProcessing = false.obs;
-  final FocusNode focusNode = FocusNode();
-  focusNode.addListener(() {
+  final focusNode = FocusNode();
+  
+  // 定义焦点监听器
+  void focusListener() {
     if (focusNode.hasFocus) {
       set_inapp_hotkey(false);
     } else {
       set_inapp_hotkey(true);
     }
-  });
+  }
+  
+  focusNode.addListener(focusListener);
+  
   try {
     String? result = await Get.dialog<String>(
       WillPopScope(
@@ -373,11 +378,14 @@ Future<String?> showInputDialog({
 
     return result;
   } finally {
+    // 先移除监听器，再 dispose，避免 "used after being disposed" 错误
+    focusNode.removeListener(focusListener);
+    set_inapp_hotkey(true);
+    
     // 延迟 dispose，确保对话框动画完成
     await Future.delayed(Duration(milliseconds: 100));
     controller.dispose();
     focusNode.dispose();
-    set_inapp_hotkey(true);
   }
 }
 

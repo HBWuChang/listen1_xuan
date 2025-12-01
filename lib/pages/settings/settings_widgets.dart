@@ -18,12 +18,39 @@ Widget _buildSupabaseLoginPanel() {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        authController.displayName,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              authController.displayName,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Card(
+                            color: authController.isPro
+                                ? Get.theme.colorScheme.primary
+                                : Get.theme.colorScheme.secondary,
+                            margin: EdgeInsets.only(left: 8.0),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6.0,
+                                vertical: 2.0,
+                              ),
+                              child: Text(
+                                authController.isPro ? 'unLimited用户' : '普通用户',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: authController.isPro
+                                      ? Get.theme.colorScheme.onPrimary
+                                      : Get.theme.colorScheme.onSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       if (authController.userCreatedAt != null)
                         Text(
@@ -41,8 +68,11 @@ Widget _buildSupabaseLoginPanel() {
               ],
             ),
             SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            Wrap(
+              alignment: WrapAlignment.spaceEvenly,
+              runAlignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8.0,
               children: [
                 ElevatedButton.icon(
                   onPressed: () {
@@ -50,6 +80,19 @@ Widget _buildSupabaseLoginPanel() {
                   },
                   icon: Icon(Icons.edit),
                   label: Text('修改昵称'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    final userId = authController.currentUser.value?.id ?? '';
+                    if (userId.isNotEmpty) {
+                      Clipboard.setData(ClipboardData(text: userId));
+                      showSuccessSnackbar('已复制', '用户ID已复制到剪贴板');
+                    } else {
+                      showErrorSnackbar('复制失败', '无法获取用户ID');
+                    }
+                  },
+                  icon: Icon(Icons.copy),
+                  label: Text('复制ID'),
                 ),
                 Obx(
                   () => ElevatedButton.icon(
@@ -258,44 +301,27 @@ Widget _buildThirdPartyLoginPanel(
 }
 
 /// 显示修改昵称对话框
-void _showEditNicknameDialog(SupabaseAuthController authController) {
-  final TextEditingController nicknameController = TextEditingController(
-    text: authController.userNickname ?? '',
-  );
-
-  Get.dialog(
-    AlertDialog(
-      title: Text('修改昵称'),
-      content: TextField(
-        controller: nicknameController,
-        decoration: InputDecoration(
-          hintText: '请输入新昵称',
-          border: OutlineInputBorder(),
-        ),
-        maxLength: 20,
-      ),
-      actions: [
-        TextButton(onPressed: () => Get.back(), child: Text('取消')),
-        ElevatedButton(
-          onPressed: () async {
-            final nickname = nicknameController.text.trim();
-            if (nickname.isEmpty) {
-              showWarningSnackbar(null, '昵称不能为空');
-              return;
-            }
-
-            final success = await authController.updateNickname(nickname);
-            if (success) {
-              showSuccessSnackbar(null, '昵称修改成功');
-              Get.back();
-            } else {
-              showErrorSnackbar(null, authController.errorMessage.value);
-            }
-          },
-          child: Text('确定'),
-        ),
-      ],
-    ),
+void _showEditNicknameDialog(SupabaseAuthController authController) async {
+  await showInputDialog(
+    title: '修改昵称',
+    placeholder: '请输入新昵称',
+    initialValue: authController.userNickname ?? '',
+    maxLength: 20,
+    validator: (value) {
+      if (value == null || value.trim().isEmpty) {
+        return '昵称不能为空';
+      }
+      return null;
+    },
+    onConfirm: (nickname) async {
+      final success = await authController.updateNickname(nickname);
+      if (success) {
+        showSuccessSnackbar(null, '昵称修改成功');
+        return true;
+      } else {
+        throw authController.errorMessage.value;
+      }
+    },
   );
 }
 
@@ -513,8 +539,7 @@ Widget get androidSettingsTiles => Column(
                 if (newIndex > oldIndex) {
                   newIndex -= 1;
                 }
-                List<int> items =
-                    settingsController.androidActionSort;
+                List<int> items = settingsController.androidActionSort;
                 int item = items.removeAt(oldIndex);
                 items.insert(newIndex, item);
                 settingsController.androidActionSort = items;

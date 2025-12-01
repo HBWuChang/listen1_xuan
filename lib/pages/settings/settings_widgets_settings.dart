@@ -117,7 +117,527 @@ Widget settingsWidget(BuildContext context) {
             ),
           ],
         ),
+        SizedBox(height: 10),
+        ElevatedButton.icon(
+          onPressed: Get.find<SupabaseAuthController>().isLoggedIn.value
+              ? () {
+                  if (Get.find<SupabaseAuthController>().isPro) {
+                    _showSupabasePlaylistManager(context);
+                  } else {
+                    // 显示赞助弹窗
+                    _showSponsorDialog(context);
+                  }
+                }
+              : null,
+          icon: Icon(Icons.cloud_queue),
+          label: Text(
+            (!Get.find<SupabaseAuthController>().isPro) &&
+                    Get.find<SupabaseAuthController>().isLoggedIn.value
+                ? '解锁 Supabase 歌单管理功能'
+                : 'Supabase 歌单管理',
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Get.theme.colorScheme.primaryContainer,
+            foregroundColor: Get.theme.colorScheme.onPrimaryContainer,
+          ),
+        ),
       ],
     ),
   );
+}
+
+/// 显示赞助弹窗
+void _showSponsorDialog(BuildContext context) {
+  final authController = Get.find<SupabaseAuthController>();
+  final userId = authController.currentUser.value?.id ?? '';
+
+  final markdownContent = '''
+### 由于免费版 Supabase 账号的500MB 存储空间限制，我决定对部分占用空间较大功能进行限制。
+### 目前实现的会进行限制的功能：
+- **Supabase 歌单管理**：可以将您的歌单保存到 Supabase 中,但限制最多3条记录；这实际上与使用Github Gist完全相同，唯一的优点只有受国内网络影响较小，速度通常较快。
+### 预计实现的会进行限制的功能：
+- **自动歌单同步**：未来计划实现自动在多设备间同步歌单功能。
+
+## 如果您想使用受限制功能请：
+
+### 1️⃣ 复制您的用户 ID
+
+您的用户 ID：
+
+''';
+
+  final markdownContent2 = '''
+
+### 2️⃣ 向我发送邮件
+### 发送邮件至：**[bian_xie@qq.com](mailto:bian_xie@qq.com)** 并包含您的用户ID
+
+
+
+在收到您的邮件后，我会手动更改您的账号以解锁受限功能，之后会给您回邮件，还请您耐心等待。
+### 但请注意：
+- 视Supabase 免费账号的存储空间的使用情况，未来可能会调整受限功能的范围，也可能取消您的权限，甚至整个Supabase功能均会被删除。
+- 请勿使用多个账号反复申请解锁，以免造成不必要的麻烦。
+- 若您有任何疑问，请随时通过邮件与我联系。
+- 受限用户的判断是通过users表中的“isPro”字段进行的。虽然本应用开源了全部的代码，但由于限制条件位于Supabase的配置中，您并不能通过fork此项目修改源代码来绕过限制。
+- 如您觉得本应用对您有帮助，请考虑赞助
+💡 感谢您的支持！
+''';
+
+  Get.dialog(
+    AlertDialog(
+      title: Row(
+        children: [Icon(Icons.lock_open), SizedBox(width: 8), Text('解锁受限功能')],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              MarkdownBody(data: markdownContent),
+              // 用户 ID 展示框
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Get.theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Get.theme.colorScheme.outline.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SelectableText(
+                        userId,
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Get.theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.copy, size: 20),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: userId));
+                        showSuccessSnackbar('已复制', '用户ID已复制到剪贴板');
+                      },
+                      tooltip: '复制ID',
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 8),
+              MarkdownBody(
+                data: markdownContent2,
+                selectable: true,
+                onTapLink: (text, href, title) {
+                  if (href != null) {
+                    g_launchURL(Uri.parse(href));
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Get.back();
+          },
+          child: Text('关闭'),
+        ),
+        TextButton.icon(
+          onPressed: () {
+            Get.back();
+            Get.toNamed(RouteName.settingsReadmePage, id: 1);
+          },
+          icon: Icon(Icons.book),
+          label: Text('查看 README'),
+        ),
+        ElevatedButton.icon(
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: userId));
+            showSuccessSnackbar('已复制', '用户ID已复制到剪贴板');
+          },
+          icon: Icon(Icons.copy),
+          label: Text('复制ID'),
+        ),
+      ],
+    ),
+  );
+}
+
+/// 显示 Supabase 歌单管理 Modal Sheet
+Future<void> _showSupabasePlaylistManager(BuildContext context) async {
+  await WoltModalSheet.show<void>(
+    pageIndexNotifier: ValueNotifier(0),
+    context: context,
+    pageListBuilder: (modalSheetContext) {
+      return [
+        WoltModalSheetPage(
+          hasTopBarLayer: false,
+
+          child: _SupabasePlaylistContent(),
+        ),
+      ];
+    },
+  );
+}
+
+/// Supabase 歌单管理内容
+class _SupabasePlaylistContent extends StatefulWidget {
+  @override
+  _SupabasePlaylistContentState createState() =>
+      _SupabasePlaylistContentState();
+}
+
+class _SupabasePlaylistContentState extends State<_SupabasePlaylistContent> {
+  final authController = Get.find<SupabaseAuthController>();
+  List<PlaylistModel.Playlist> playlists = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlaylists();
+  }
+
+  Future<void> _loadPlaylists() async {
+    setState(() => isLoading = true);
+    try {
+      final result = await authController.getUserPlaylists();
+      setState(() {
+        playlists = result;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
+      showErrorSnackbar('加载失败', e.toString());
+    }
+  }
+
+  Future<void> _createNewPlaylist() async {
+    // 检查是否可以创建新歌单
+    final canCreate = await authController.canCreatePlaylist();
+    if (!canCreate) {
+      showWarningSnackbar(
+        '歌单数量已达上限',
+        '每个用户最多只能创建 ${SupabaseAuthController.maxPlaylistsPerUser} 个歌单',
+      );
+      return;
+    }
+
+    // 弹出输入框获取歌单名称
+    final name = await showInputDialog(
+      title: '新建歌单',
+      placeholder: '请输入歌单名称',
+      maxLength: 50,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return '歌单名称不能为空';
+        }
+        return null;
+      },
+    );
+
+    if (name == null) return;
+
+    try {
+      final msg = '正在保存歌单到 Supabase'.obs;
+      showLoadingDialog(msg);
+
+      // 获取当前歌单设置
+      final settings = await outputAllSettingsToFile(true);
+
+      // 保存到 Supabase
+      final playlist = await authController.createPlaylist(
+        name: name,
+        data: settings,
+        isShare: false,
+      );
+
+      Get.back(); // 关闭加载对话框
+
+      if (playlist != null) {
+        showSuccessSnackbar('保存成功', '歌单已保存到 Supabase');
+        _loadPlaylists(); // 刷新列表
+      } else {
+        showErrorSnackbar('保存失败', authController.errorMessage.value);
+      }
+    } catch (e) {
+      Get.back(); // 关闭加载对话框
+      showErrorSnackbar('保存失败', e.toString());
+    }
+  }
+
+  Future<void> _renamePlaylist(PlaylistModel.Playlist playlist) async {
+    await showInputDialog(
+      title: '重命名歌单',
+      placeholder: '请输入新名称',
+      initialValue: playlist.name,
+      maxLength: 50,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return '歌单名称不能为空';
+        }
+        return null;
+      },
+      onConfirm: (name) async {
+        final success = await authController.updatePlaylist(
+          playlistId: playlist.id,
+          name: name,
+        );
+        if (success) {
+          showSuccessSnackbar('重命名成功', null);
+          _loadPlaylists(); // 刷新列表
+          return true;
+        } else {
+          throw authController.errorMessage.value;
+        }
+      },
+    );
+  }
+
+  Future<void> _deletePlaylist(PlaylistModel.Playlist playlist) async {
+    final confirm = await showConfirmDialog(
+      '确定要删除歌单 "${playlist.name}" 吗？',
+      '删除歌单',
+      confirmLevel: ConfirmLevel.danger,
+    );
+
+    if (confirm) {
+      final success = await authController.deletePlaylist(playlist.id);
+      if (success) {
+        showSuccessSnackbar('删除成功', null);
+        _loadPlaylists(); // 刷新列表
+      } else {
+        showErrorSnackbar('删除失败', authController.errorMessage.value);
+      }
+    }
+  }
+
+  Future<void> _downloadPlaylist(PlaylistModel.Playlist playlist) async {
+    try {
+      final msg = '正在下载歌单 ${playlist.name}\n获取歌单数据'.obs;
+      showLoadingDialog(msg);
+
+      // 获取完整的歌单数据(包含 data 字段)
+      final fullPlaylist = await authController.getPlaylist(playlist.id);
+
+      if (fullPlaylist == null) {
+        Get.back();
+        showErrorSnackbar('下载失败', '无法获取歌单数据');
+        return;
+      }
+
+      msg.value = '正在下载歌单 ${playlist.name}\n应用配置文件';
+      await importSettingsFromFile(true, fullPlaylist.data);
+
+      Get.back();
+      showSuccessSnackbar('下载成功', '歌单已应用到当前设置');
+    } catch (e) {
+      Get.back();
+      showErrorSnackbar('下载失败', e.toString());
+    }
+  }
+
+  Future<void> _overwritePlaylist(PlaylistModel.Playlist playlist) async {
+    final confirm = await showConfirmDialog(
+      '确定要用当前设置覆盖歌单 "${playlist.name}" 吗？',
+      '覆盖歌单',
+      confirmLevel: ConfirmLevel.warning,
+    );
+
+    if (!confirm) return;
+
+    try {
+      final msg = '正在覆盖歌单 ${playlist.name}'.obs;
+      showLoadingDialog(msg);
+
+      // 获取当前歌单设置
+      final settings = await outputAllSettingsToFile(true);
+
+      // 更新到 Supabase
+      final success = await authController.updatePlaylist(
+        playlistId: playlist.id,
+        data: settings,
+      );
+
+      Get.back(); // 关闭加载对话框
+
+      if (success) {
+        showSuccessSnackbar('覆盖成功', '歌单已更新');
+        _loadPlaylists(); // 刷新列表
+      } else {
+        showErrorSnackbar('覆盖失败', authController.errorMessage.value);
+      }
+    } catch (e) {
+      Get.back(); // 关闭加载对话框
+      showErrorSnackbar('覆盖失败', e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 刷新按钮
+        Padding(
+          padding: EdgeInsets.all(8),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _loadPlaylists,
+              icon: Icon(Icons.refresh),
+              label: Text('刷新'),
+            ),
+          ),
+        ),
+        // 内容区域
+        if (isLoading)
+          Container(
+            height: 300,
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (playlists.isEmpty)
+          Container(
+            height: 300,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.cloud_off, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    '暂无歌单',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '点击下方按钮新建歌单',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: playlists.length,
+            padding: EdgeInsets.all(8),
+            itemBuilder: (context, index) {
+              final playlist = playlists[index];
+              return Card(
+                margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                child: ListTile(
+                  leading: CircleAvatar(child: Icon(Icons.library_music)),
+                  title: Text(
+                    playlist.name,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    '创建于: ${playlist.createdAt?.toString().substring(0, 19) ?? "未知"}\n'
+                    '更新于: ${playlist.updatedAt?.toString().substring(0, 19) ?? "未知"}',
+                  ),
+                  isThreeLine: true,
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      switch (value) {
+                        case 'download':
+                          await _downloadPlaylist(playlist);
+                          break;
+                        case 'overwrite':
+                          await _overwritePlaylist(playlist);
+                          break;
+                        case 'rename':
+                          await _renamePlaylist(playlist);
+                          break;
+                        case 'delete':
+                          await _deletePlaylist(playlist);
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'download',
+                        child: Row(
+                          children: [
+                            Icon(Icons.download, size: 20),
+                            SizedBox(width: 8),
+                            Text('下载'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'overwrite',
+                        child: Row(
+                          children: [
+                            Icon(Icons.upload, size: 20),
+                            SizedBox(width: 8),
+                            Text('覆盖'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'rename',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 20),
+                            SizedBox(width: 8),
+                            Text('重命名'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuDivider(),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.delete,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              '删除',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        // 新建按钮
+        Padding(
+          padding: EdgeInsets.all(16),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _createNewPlaylist,
+              icon: Icon(Icons.add),
+              label: Text('新建歌单'),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

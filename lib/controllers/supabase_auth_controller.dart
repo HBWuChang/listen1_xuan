@@ -1,11 +1,16 @@
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
+import 'package:listen1_xuan/models/UserProfile.dart';
+import 'package:listen1_xuan/models/Playlist.dart';
 
 /// Supabase 认证控制器
 /// 管理用户登录、登出、会话状态等
 class SupabaseAuthController extends GetxController {
   final _supabase = Supabase.instance.client;
+  
+  /// 每个用户最大歌单数量
+  static const int maxPlaylistsPerUser = 3;
   
   // 当前用户状态
   final Rx<User?> currentUser = Rx<User?>(null);
@@ -17,7 +22,7 @@ class SupabaseAuthController extends GetxController {
   final RxBool isLoading = false.obs;
   
   // 用户信息
-  final RxMap<String, dynamic> userProfile = <String, dynamic>{}.obs;
+  final Rx<UserProfile?> userProfile = Rx<UserProfile?>(null);
   
   // 错误消息
   final RxString errorMessage = ''.obs;
@@ -41,7 +46,7 @@ class SupabaseAuthController extends GetxController {
       } else {
         currentUser.value = null;
         isLoggedIn.value = false;
-        userProfile.clear();
+        userProfile.value = null;
       }
     });
     
@@ -130,7 +135,7 @@ class SupabaseAuthController extends GetxController {
       await _supabase.auth.signOut();
       currentUser.value = null;
       isLoggedIn.value = false;
-      userProfile.clear();
+      userProfile.value = null;
       isLoading.value = false;
     } catch (e) {
       isLoading.value = false;
@@ -185,7 +190,7 @@ class SupabaseAuthController extends GetxController {
             .eq('user_id', currentUser.value!.id)
             .single();
         
-        userProfile.value = response;
+        userProfile.value = UserProfile.fromJson(response);
       }
     } catch (e) {
       print('加载用户资料失败: $e');
@@ -212,19 +217,12 @@ class SupabaseAuthController extends GetxController {
   
   /// 获取用户显示名称
   String get displayName {
-    // 优先显示昵称
-    if (userProfile['nickname'] != null && userProfile['nickname'].toString().isNotEmpty) {
-      return userProfile['nickname'];
-    }
-    if (currentUser.value?.email != null) {
-      return currentUser.value!.email!;
-    }
-    return '未知用户';
+    return userProfile.value?.getDisplayName(currentUser.value?.email) ?? '未知用户';
   }
   
   /// 获取用户昵称
   String? get userNickname {
-    return userProfile['nickname'];
+    return userProfile.value?.nickname;
   }
   
   /// 更新用户昵称
@@ -257,12 +255,222 @@ class SupabaseAuthController extends GetxController {
   }
   
   /// 获取用户创建时间
-  String? get userCreatedAt {
-    return userProfile['created_at'];
+  DateTime? get userCreatedAt {
+    return userProfile.value?.createdAt;
   }
   
   /// 获取用户最后登录时间
-  String? get userLastLoginAt {
-    return userProfile['last_login_at'];
+  DateTime? get userLastLoginAt {
+    return userProfile.value?.lastLoginAt;
+  }
+  
+  /// 获取用户是否为 Pro 用户
+  bool get isPro {
+    return userProfile.value?.isPro ?? false;
+  }
+  
+  /// 刷新用户 Pro 状态
+  Future<bool> checkProStatus() async {
+    try {
+      if (currentUser.value == null) {
+        return false;
+      }
+      
+      await _loadUserProfile();
+      return isPro;
+    } catch (e) {
+      print('检查 Pro 状态失败: $e');
+      return false;
+    }
+  }
+  
+  /// 创建播放列表
+  /// 注意：isPro 验证在数据库层通过 RLS 策略完成
+  /// 如果用户不是 Pro 用户，数据库会拒绝写入操作
+  Future<Playlist?> createPlaylist({
+    required String name,
+    required Map<String, dynamic> data,
+    bool isShare = false,
+  }) async {
+    try {
+      if (currentUser.value == null) {
+        errorMessage.value = '用户未登录';
+        return null;
+      }
+      
+      isLoading.value = true;
+      errorMessage.value = '';
+      
+      final response = await _supabase
+          .from('playlist')
+          .insert({
+            'user_id': currentUser.value!.id,
+            'name': name,
+            'data': data,
+            'is_share': isShare,
+          })
+          .select()
+          .single();
+      
+      isLoading.value = false;
+      return Playlist.fromJson(response);
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '创建播放列表失败: ${e.toString()}';
+      print('创建播放列表失败: $e');
+      return null;
+    }
+  }
+  
+  /// 更新播放列表
+  /// 注意：isPro 验证在数据库层通过 RLS 策略完成
+  Future<bool> updatePlaylist({
+    required String playlistId,
+    String? name,
+    Map<String, dynamic>? data,
+    bool? isShare,
+  }) async {
+    try {
+      if (currentUser.value == null) {
+        errorMessage.value = '用户未登录';
+        return false;
+      }
+      
+      isLoading.value = true;
+      errorMessage.value = '';
+      
+      final updateData = <String, dynamic>{};
+      if (name != null) updateData['name'] = name;
+      if (data != null) updateData['data'] = data;
+      if (isShare != null) updateData['is_share'] = isShare;
+      
+      if (updateData.isEmpty) {
+        isLoading.value = false;
+        return true;
+      }
+      
+      await _supabase
+          .from('playlist')
+          .update(updateData)
+          .eq('id', playlistId);
+      
+      isLoading.value = false;
+      return true;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '更新播放列表失败: ${e.toString()}';
+      print('更新播放列表失败: $e');
+      return false;
+    }
+  }
+  
+  /// 删除播放列表
+  /// 注意：isPro 验证在数据库层通过 RLS 策略完成
+  Future<bool> deletePlaylist(String playlistId) async {
+    try {
+      if (currentUser.value == null) {
+        errorMessage.value = '用户未登录';
+        return false;
+      }
+      
+      isLoading.value = true;
+      errorMessage.value = '';
+      
+      await _supabase
+          .from('playlist')
+          .delete()
+          .eq('id', playlistId);
+      
+      isLoading.value = false;
+      return true;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '删除播放列表失败: ${e.toString()}';
+      print('删除播放列表失败: $e');
+      return false;
+    }
+  }
+  
+  /// 获取用户的所有播放列表
+  /// excludeData: 是否排除 data 字段(用于列表展示,减少数据传输)
+  Future<List<Playlist>> getUserPlaylists({bool excludeData = true}) async {
+    try {
+      if (currentUser.value == null) {
+        return [];
+      }
+      
+      // 列表查询时不包含 data 字段以提升性能
+      final selectFields = excludeData
+          ? 'id,user_id,name,is_share,created_at,updated_at'
+          : '*';
+      
+      final response = await _supabase
+          .from('playlist')
+          .select(selectFields)
+          .eq('user_id', currentUser.value!.id)
+          .order('created_at', ascending: false);
+      
+      return (response as List)
+          .map((json) => Playlist.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      print('获取播放列表失败: $e');
+      return [];
+    }
+  }
+  
+  /// 获取用户歌单数量
+  Future<int> getUserPlaylistCount() async {
+    try {
+      if (currentUser.value == null) {
+        return 0;
+      }
+      
+      final playlists = await getUserPlaylists();
+      return playlists.length;
+    } catch (e) {
+      print('获取歌单数量失败: $e');
+      return 0;
+    }
+  }
+  
+  /// 检查是否可以创建新歌单
+  Future<bool> canCreatePlaylist() async {
+    final count = await getUserPlaylistCount();
+    return count < maxPlaylistsPerUser;
+  }
+  
+  /// 获取单个播放列表
+  Future<Playlist?> getPlaylist(String playlistId) async {
+    try {
+      final response = await _supabase
+          .from('playlist')
+          .select()
+          .eq('id', playlistId)
+          .single();
+      
+      return Playlist.fromJson(response);
+    } catch (e) {
+      print('获取播放列表失败: $e');
+      return null;
+    }
+  }
+  
+  /// 获取公开分享的播放列表
+  Future<List<Playlist>> getSharedPlaylists() async {
+    try {
+      final response = await _supabase
+          .from('playlist')
+          .select()
+          .eq('is_share', true)
+          .order('created_at', ascending: false);
+      
+      return (response as List)
+          .map((json) => Playlist.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      print('获取公开播放列表失败: $e');
+      return [];
+    }
   }
 }

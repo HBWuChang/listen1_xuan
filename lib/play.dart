@@ -101,7 +101,7 @@ class FileLogOutput extends LogOutput {
   }
 }
 
-var playmode = 0.obs;
+var playmode = 1.obs;
 List<Track> randommodetemplist = [];
 bool randomTrackInsertAtHead = false;
 Future<void> onPlaybackCompleted([bool force_next = false]) async {

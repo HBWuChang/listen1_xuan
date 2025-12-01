@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:ui';
 import 'package:animations/animations.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/hyper_download_controller.dart';
@@ -9,6 +11,7 @@ import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/play.dart';
 import 'package:logger/logger.dart';
 import 'controllers/search_controller.dart';
+import 'models/Playlist.dart' as PlaylistModel;
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -588,7 +591,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         headerBuilder: (BuildContext context, bool isExpanded) {
                           return ListTile(
                             leading: Icon(Icons.person),
-                            title: const Text('Supabase 账号（现在没有任何用'),
+                            title: const Text('Supabase 账号'),
                             trailing: IconButton(
                               onPressed: () async {
                                 Get.find<SupabaseAuthController>()
