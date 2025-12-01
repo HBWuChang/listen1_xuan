@@ -139,6 +139,17 @@ class SettingsController extends GetxController {
     Get.find<PlayController>().updatePosToAudioServiceNow.value++;
   }
 
+  static const String supabaseSubPlayKey = 'supabaseSubPlay';
+  bool get supabaseSubPlay => settings[supabaseSubPlayKey] ?? true;
+  set supabaseSubPlay(bool value) {
+    settings[supabaseSubPlayKey] = value;
+    if (value) {
+      Get.find<SupabaseAuthController>().subscribeToContinuePlay();
+    } else {
+      Get.find<SupabaseAuthController>().unsubscribeFromContinuePlay();
+    }
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};

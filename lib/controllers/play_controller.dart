@@ -12,20 +12,17 @@ import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:logger/logger.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart' hide Track;
-import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rxdart/rxdart.dart' as rxdart;
 import '../global_settings_animations.dart';
 import '../loweb.dart';
-import '../models/AndroidEQBand.dart';
 import '../utils/curve_utils.dart';
-import 'package:media_kit_libs_audio/media_kit_libs_audio.dart';
 import 'lyric_controller.dart';
 import 'nowplaying_controller.dart';
 import 'settings_controller.dart';
@@ -228,6 +225,11 @@ class PlayController extends GetxController
     super.onClose();
   }
 
+  /// 是否跳过Supabase 同步
+  /// 目前设想在第一次播放完成前且未获取云端时为true
+  bool skipUpdate = true;
+  bool receivedContinuePlay = false;
+  int? toSeek;
   Future<void> playsong(
     Track track, {
     bool start = true,
@@ -278,14 +280,26 @@ class PlayController extends GetxController
       Get.find<LyricController>().loadLyric();
       double t_volume = 100;
       try {
-        t_volume = Get.find<PlayController>().getPlayerSettings("volume");
+        t_volume = getPlayerSettings("volume");
       } catch (e) {
         t_volume = 100;
-        Get.find<PlayController>().setPlayerSetting("volume", t_volume);
+        setPlayerSetting("volume", t_volume);
       }
-      Get.find<PlayController>().music_player.setVolume(t_volume);
+      music_player.setVolume(t_volume);
+      if (toSeek != null) {
+        try {
+          await music_player.seek(Duration(milliseconds: toSeek ?? 0));
+        } catch (e) {
+          logger.e('seek error: $e');
+        } finally {
+          toSeek = null;
+        }
+      }
       if (start) {
-        Get.find<PlayController>().music_player.play();
+        music_player.play();
+      }
+      if (receivedContinuePlay) {
+        skipUpdate = false;
       }
       await change_playback_state(track);
     } catch (e, stackTrace) {
@@ -482,6 +496,15 @@ class PlayController extends GetxController
   /// 将当前曲目、播放状态等信息同步到云端
   Future<void> updateContinuePlay() async {
     try {
+      if (settingsController.supabaseSubPlay == false) {
+        logger.d('用户设置不同步播放状态，跳过同步');
+        return;
+      }
+      if (skipUpdate) {
+        // 首次播放时不进行同步，避免覆盖云端数据
+        logger.d('首次播放，跳过同步播放状态');
+        return;
+      }
       // 检查是否已登录
       final authController = Get.find<SupabaseAuthController>();
       if (!authController.isLoggedIn.value) {
@@ -513,6 +536,7 @@ class PlayController extends GetxController
         ext: {
           'volume': _player_settings['volume'],
           'playmode': _player_settings['playmode'],
+          'pos': music_player.state.position.inMilliseconds,
         },
       );
 
@@ -649,5 +673,56 @@ class PlayController extends GetxController
       return true;
     }
     return false;
+  }
+
+  /// 处理 continue_play 更新事件
+  /// [continuePlay] 播放状态数据
+  /// [updateDeviceId] 触发更新的设备ID
+  /// 由 SupabaseAuthController 调用
+  void handleContinuePlayUpdate(
+    SupaContinuePlay continuePlay,
+    String updateDeviceId,
+  ) {
+    try {
+      receivedContinuePlay = true;
+      // 获取当前设备ID
+      final broadcastController = Get.find<BroadcastWsController>();
+      final currentDeviceId = broadcastController.deviceId;
+
+      // 忽略自我设备触发的更新
+      if (updateDeviceId == currentDeviceId) {
+        logger.d('忽略自我设备触发的更新');
+        return;
+      }
+
+      logger.i(
+        '收到其他设备的播放状态更新: '
+        '曲目=${continuePlay.track.title}, '
+        '播放状态=${continuePlay.playing}, '
+        '设备ID=${continuePlay.deviceId}',
+      );
+
+      // TODO: 这里可以添加处理逻辑，例如：
+      // - 显示通知提示用户其他设备正在播放
+      // - 根据用户设置自动同步播放状态
+      // - 更新UI显示其他设备的播放信息等
+      if (!bootStraping.containsKey(continuePlay.track.id) &&
+          nowPlayingTrackId == continuePlay.track.id) {
+        if (music_player.state.playing == false) {
+          music_player.seek(
+            Duration(milliseconds: (continuePlay.ext?['pos'] as int?) ?? 0),
+          );
+        }
+        return;
+      }
+      if (music_player.state.playing) {
+        showInfoSnackbar('其他设备正在播放: ${continuePlay.track.title}', null);
+        return;
+      }
+      toSeek = continuePlay.ext?['pos'] as int?;
+      playsong(continuePlay.track, start: false, isByClick: false);
+    } catch (e) {
+      logger.e('处理 continue_play 更新失败: $e');
+    }
   }
 }

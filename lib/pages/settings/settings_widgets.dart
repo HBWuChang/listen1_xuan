@@ -50,6 +50,39 @@ Widget _buildSupabaseLoginPanel() {
                               ),
                             ),
                           ),
+                          Obx(
+                            () => Card(
+                              color:
+                                  authController
+                                      .isSubscribedToContinuePlay
+                                      .value
+                                  ? Get.theme.colorScheme.primary
+                                  : Get.theme.disabledColor,
+                              margin: EdgeInsets.only(left: 8.0),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6.0,
+                                  vertical: 2.0,
+                                ),
+                                child: Text(
+                                  authController
+                                          .isSubscribedToContinuePlay
+                                          .value
+                                      ? '已订阅播放状态'
+                                      : '未订阅播放状态',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color:
+                                        authController
+                                            .isSubscribedToContinuePlay
+                                            .value
+                                        ? Get.theme.colorScheme.onPrimary
+                                        : Get.theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                       if (authController.userCreatedAt != null)
@@ -111,6 +144,17 @@ Widget _buildSupabaseLoginPanel() {
                   ),
                 ),
               ],
+            ),
+            Obx(
+              () => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('同步播放状态'),
+                subtitle: Text('开启后可在多设备间同步播放状态'),
+                value: Get.find<SettingsController>().supabaseSubPlay,
+                onChanged: (bool value) {
+                  Get.find<SettingsController>().supabaseSubPlay = value;
+                },
+              ),
             ),
           ],
         ),
