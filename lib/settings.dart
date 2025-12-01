@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:ui';
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
@@ -671,7 +672,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               isWindows
                                   ? '热键、代理、ffmpeg及其它win设置'
                                   : isAndroid
-                                  ? "通知设置"
+                                  ? "安卓通知设置"
                                   : "未知平台设置",
                             ),
                           );
@@ -685,7 +686,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 _focusNode2,
                                 _focusNode3,
                               )
-                            : androidSettingsTiles,
+                            :isAndroid ? androidSettingsTiles : Container(),
                       ),
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {

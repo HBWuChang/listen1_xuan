@@ -191,6 +191,9 @@ class PlayController extends GetxController
       (position, needUpdate) => null,
     ).listen((_) {
       updatePosToAudioServiceNow.value++;
+      if (updatePosToAudioServiceNow.value > 2e9) {
+        updatePosToAudioServiceNow.value = 0;
+      }
     });
 
     playButtonRotationCurve.value =

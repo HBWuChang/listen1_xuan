@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/main.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 
@@ -87,7 +88,9 @@ class WebSocketCardController extends GetxController {
 
       // 读取WebSocket服务器配置
       _wsServerAutoStart.value = settings['wsServerAutoStart'] ?? false;
-      _wsServerBtnShow.value = settings['wsServerBtnShow'] ?? true;
+      _wsServerBtnShow.value = settings['wsServerBtnShow'] ?? globalHorizon
+          ? true
+          : false;
       final serverPort = settings['wsServerPort'] as int?;
 
       // 固定使用0.0.0.0地址，不再从设置中读取

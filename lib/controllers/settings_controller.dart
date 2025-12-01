@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/models/websocket_message.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:listen1_xuan/models/Track.dart';
@@ -127,6 +128,15 @@ class SettingsController extends GetxController {
       settings[nextTrackQueueOrStackMethodKey] ?? true;
   set nextTrackQueueOrStackMethod(bool value) {
     settings[nextTrackQueueOrStackMethodKey] = value;
+  }
+
+  static const String androidCompactActionIndicesKey =
+      'androidCompactActionIndices';
+  List<int> get androidCompactActionIndices =>
+      List<int>.from(settings[androidCompactActionIndicesKey] ?? [2, 0, 1]);
+  set androidCompactActionIndices(List<int> value) {
+    settings[androidCompactActionIndicesKey] = value;
+    Get.find<PlayController>().updatePosToAudioServiceNow.value++;
   }
 
   final String CacheController_localCacheListKey = 'local-cache-list';

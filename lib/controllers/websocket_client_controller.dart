@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/main.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:punycode/punycode.dart';
@@ -122,9 +123,11 @@ class WebSocketClientController extends GetxController {
 
       // 读取WebSocket客户端配置
       _wsClientAutoStart.value = settings['wsClientAutoStart'] ?? false;
-      _wsClientBtnShow.value = settings['wsClientBtnShow'] ?? false;
+      _wsClientBtnShow.value = settings['wsClientBtnShow'] ?? globalHorizon
+          ? true
+          : false;
       _wsClientBtnShowFloating.value =
-          settings['wsClientBtnShowFloating'] ?? true;
+          settings['wsClientBtnShowFloating'] ?? false;
       final address = settings['wsClientAddress'] as String?;
       final autoReconn = settings['wsClientAutoReconnect'] as bool?;
       final reconnInterval = settings['wsClientReconnectInterval'] as int?;

@@ -467,6 +467,26 @@ Widget winSettingsTiles(
   );
 }
 
+enum AudioServiceButtonActions {
+  playPause(0, '播放/暂停'),
+  skipToNext(1, '上一首'),
+  skipToPrevious(2, '下一首');
+
+  final int code;
+  final String displayName;
+
+  const AudioServiceButtonActions(this.code, this.displayName);
+
+  static String getDisplayNameByCode(int code) {
+    return AudioServiceButtonActions.values
+        .firstWhere(
+          (action) => action.code == code,
+          orElse: () => AudioServiceButtonActions.playPause,
+        )
+        .displayName;
+  }
+}
+
 Widget get androidSettingsTiles => Column(
   children: [
     Obx(
@@ -477,6 +497,47 @@ Widget get androidSettingsTiles => Column(
           Get.find<SettingsController>().tryShowLyricInNotification = value;
         },
       ),
+    ),
+    OpenContainer(
+      closedBuilder: (context, _) => ListTile(
+        title: const Text('通知按钮顺序调整'),
+        trailing: Icon(Icons.unfold_more_rounded),
+      ),
+      openBuilder: (context, _) {
+        final settingsController = Get.find<SettingsController>();
+        return Scaffold(
+          appBar: AppBar(title: const Text('通知按钮顺序调整')),
+          body: Obx(
+            () => ReorderableListView(
+              onReorder: (oldIndex, newIndex) {
+                if (newIndex > oldIndex) {
+                  newIndex -= 1;
+                }
+                List<int> items =
+                    settingsController.androidCompactActionIndices;
+                int item = items.removeAt(oldIndex);
+                items.insert(newIndex, item);
+                settingsController.androidCompactActionIndices = items;
+              },
+              children: settingsController.androidCompactActionIndices
+                  .asMap()
+                  .entries
+                  .map(
+                    (entry) => ListTile(
+                      key: ValueKey(entry.value),
+                      title: Text(
+                        AudioServiceButtonActions.getDisplayNameByCode(
+                          entry.value,
+                        ),
+                      ),
+                      leading: Icon(Icons.drag_handle),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        );
+      },
     ),
   ],
 );

@@ -701,7 +701,8 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         MediaAction.seekForward,
         MediaAction.seekBackward,
       },
-      androidCompactActionIndices: const [0, 1, 2],
+      androidCompactActionIndices:
+          Get.find<SettingsController>().androidCompactActionIndices,
       processingState: _music_player.state.completed
           ? AudioProcessingState.completed
           : AudioProcessingState.ready,
