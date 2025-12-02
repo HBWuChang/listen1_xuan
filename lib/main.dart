@@ -1299,11 +1299,13 @@ class _MyHomePageState extends State<MyHomePage>
                 //             FloatingActionButton(
                 //               onPressed: () async {
                 //                 logger.i(
-                //                   Get.find<PlayController>()
-                //                       .music_player
-                //                       .state
-                //                       .playing,
+                //                   Platform.executable
+                //                 );logger.i(
+                //                   Platform.resolvedExecutable
+                //                 );logger.i(
+                //                   Platform.script
                 //                 );
+                //                 showErrorSnackbar('', '${Platform.executable}\n${Platform.resolvedExecutable}\n${Platform.script}');
                 //               },
                 //               child: Icon(Icons.bug_report),
                 //             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
@@ -100,6 +101,7 @@ void showErrorSnackbar(
   String? message, {
   SnackPosition snackPosition = SnackPosition.TOP,
 }) {
+  Clipboard.setData(ClipboardData(text: message ?? title ?? ''));
   debugPrint("Showing error toast: $title - $message");
   _showCustomToast(
     icon: Icons.cancel,

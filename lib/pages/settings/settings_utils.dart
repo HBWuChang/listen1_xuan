@@ -294,6 +294,7 @@ cp -R "$newAppPath" "$appPath"
 
 # 设置执行权限
 chmod -R +x "$appPath/Contents/MacOS/"
+xattr -rd com.apple.quarantine "$appPath"
 
 # 启动新应用
 echo "Launching new version..."
@@ -306,6 +307,7 @@ rm -rf "$appPath.backup"
   
   // 写入脚本文件
   final scriptFile = File(scriptPath);
+  await scriptFile.delete();
   await scriptFile.writeAsString(script);
   
   // 设置执行权限

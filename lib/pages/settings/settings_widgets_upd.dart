@@ -447,7 +447,6 @@ Widget updSettingsTile(BuildContext context) {
                       await canaryDir.delete(recursive: true);
                     }
 
-                    String innerZipPath = '';
                     for (final file in archive) {
                       final filename = file.name;
                       if (file.isFile) {
@@ -461,55 +460,21 @@ Widget updSettingsTile(BuildContext context) {
                           ..createSync(recursive: true)
                           ..writeAsBytesSync(data);
 
-                        // 查找内部的 .app.zip 文件
-                        if (filename.endsWith('.app.zip')) {
-                          innerZipPath = extractPath;
-                        }
                       } else {
                         final dirPath = p.join(tempPath, 'canary', file.name);
                         Directory(dirPath).create(recursive: true);
                       }
                     }
 
-                    // 第二次解压（从 listen1_xuan-macos.app.zip 解压出 listen1_xuan.app）
-                    if (innerZipPath.isNotEmpty &&
-                        await File(innerZipPath).exists()) {
-                      debugPrint('找到内部zip文件: $innerZipPath');
-                      final innerBytes = File(innerZipPath).readAsBytesSync();
-                      final innerArchive = ZipDecoder().decodeBytes(innerBytes);
-
-                      for (final file in innerArchive) {
-                        final filename = file.name;
-                        if (file.isFile) {
-                          final data = file.content as List<int>;
-                          final extractPath = p.join(
-                            tempPath,
-                            'canary',
-                            filename,
-                          );
-                          File(extractPath)
-                            ..createSync(recursive: true)
-                            ..writeAsBytesSync(data);
-                        } else {
-                          final dirPath = p.join(tempPath, 'canary', file.name);
-                          Directory(dirPath).create(recursive: true);
-                        }
-                      }
-
-                      // 删除内部zip文件
-                      await File(innerZipPath).delete();
-                    } else {
-                      showErrorSnackbar('未找到 .app.zip 文件', null);
-                      return;
-                    }
-
                     // 获取当前应用路径
                     String executablePath = Platform.resolvedExecutable;
                     // macOS应用路径通常是 .../listen1_xuan.app/Contents/MacOS/listen1_xuan
                     String appPath = executablePath;
-                    while (!appPath.endsWith('.app') && appPath.isNotEmpty) {
-                      appPath = File(appPath).parent.path;
-                    }
+                    // while (!appPath.endsWith('.app') && appPath.isNotEmpty) {
+                    //   appPath = File(appPath).parent.path;
+                    // }
+                    appPath = appPath
+                        .split('/Contents/MacOS/')[0]; // 获取 .app 目录路径
 
                     debugPrint('当前应用路径: $appPath');
                     debugPrint('解压路径: ${p.join(tempPath, 'canary')}');
@@ -548,13 +513,13 @@ Widget updSettingsTile(BuildContext context) {
                         actions: [
                           TextButton(
                             onPressed: () {
-                              Navigator.of(context).pop();
+                              Get.back();
                             },
                             child: Text('取消'),
                           ),
                           TextButton(
                             onPressed: () async {
-                              Navigator.of(context).pop();
+                              Get.back();
                               // 调用脚本函数
                               await createAndRunMacOSScript(tempPath, appPath);
                               // 打开macOS的隐私与安全性设置页面
