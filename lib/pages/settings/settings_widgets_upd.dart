@@ -447,6 +447,7 @@ Widget updSettingsTile(BuildContext context) {
                       await canaryDir.delete(recursive: true);
                     }
 
+                    String innerZipPath = '';
                     for (final file in archive) {
                       final filename = file.name;
                       if (file.isFile) {
@@ -460,10 +461,46 @@ Widget updSettingsTile(BuildContext context) {
                           ..createSync(recursive: true)
                           ..writeAsBytesSync(data);
 
+                        // 查找内部的 .app.zip 文件
+                        if (filename.endsWith('macos.zip')) {
+                          innerZipPath = extractPath;
+                        }
                       } else {
                         final dirPath = p.join(tempPath, 'canary', file.name);
                         Directory(dirPath).create(recursive: true);
                       }
+                    }
+
+                    // 第二次解压（从 listen1_xuan-macos.app.zip 解压出 listen1_xuan.app）
+                    if (innerZipPath.isNotEmpty &&
+                        await File(innerZipPath).exists()) {
+                      debugPrint('找到内部zip文件: $innerZipPath');
+                      final innerBytes = File(innerZipPath).readAsBytesSync();
+                      final innerArchive = ZipDecoder().decodeBytes(innerBytes);
+
+                      for (final file in innerArchive) {
+                        final filename = file.name;
+                        if (file.isFile) {
+                          final data = file.content as List<int>;
+                          final extractPath = p.join(
+                            tempPath,
+                            'canary',
+                            filename,
+                          );
+                          File(extractPath)
+                            ..createSync(recursive: true)
+                            ..writeAsBytesSync(data);
+                        } else {
+                          final dirPath = p.join(tempPath, 'canary', file.name);
+                          Directory(dirPath).create(recursive: true);
+                        }
+                      }
+
+                      // 删除内部zip文件
+                      await File(innerZipPath).delete();
+                    } else {
+                      showErrorSnackbar('未找到 .app.zip 文件', null);
+                      return;
                     }
 
                     // 获取当前应用路径
