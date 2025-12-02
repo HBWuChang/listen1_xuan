@@ -603,7 +603,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         canTapOnHeader: true,
                         isExpanded: settingsController.settingsPageExpansion
                             .contains(0),
-                        body: _buildSupabaseLoginPanel(),
+                        body: _buildSupabasePanel(),
                       ),
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {
@@ -688,7 +688,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                 _focusNode2,
                                 _focusNode3,
                               )
-                            :isAndroid ? androidSettingsTiles : Container(),
+                            : isAndroid
+                            ? androidSettingsTiles
+                            : Container(),
                       ),
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {

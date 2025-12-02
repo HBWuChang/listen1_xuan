@@ -499,10 +499,14 @@ class PlayController extends GetxController
 
   /// 更新当前播放状态到 Supabase
   /// 将当前曲目、播放状态等信息同步到云端
-  Future<void> updateContinuePlay() async {
+  Future<void> updateContinuePlay({bool onlyPlaying = false}) async {
     try {
       if (settingsController.supabaseSubPlay == false) {
         logger.d('用户设置不同步播放状态，跳过同步');
+        return;
+      }
+      if (onlyPlaying && !isplaying.value) {
+        logger.d('仅在播放时同步，当前未播放，跳过同步');
         return;
       }
       if (skipUpdate) {

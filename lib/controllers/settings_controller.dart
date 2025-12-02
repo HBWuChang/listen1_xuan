@@ -150,6 +150,14 @@ class SettingsController extends GetxController {
     }
   }
 
+  static const String supabaseUploadTimeoutDurationOnExitKey =
+      'supabaseUploadTimeoutDurationOnExit';
+  int get supabaseUploadTimeoutDurationOnExit =>
+      settings[supabaseUploadTimeoutDurationOnExitKey] ?? 3000;
+  set supabaseUploadTimeoutDurationOnExit(int value) {
+    settings[supabaseUploadTimeoutDurationOnExitKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};

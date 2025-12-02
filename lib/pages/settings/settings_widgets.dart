@@ -1,7 +1,7 @@
 part of '../../settings.dart';
 
 /// 构建 Supabase 登录面板
-Widget _buildSupabaseLoginPanel() {
+Widget _buildSupabasePanel() {
   final authController = Get.find<SupabaseAuthController>();
 
   return Obx(() {
@@ -153,6 +153,38 @@ Widget _buildSupabaseLoginPanel() {
                 value: Get.find<SettingsController>().supabaseSubPlay,
                 onChanged: (bool value) {
                   Get.find<SettingsController>().supabaseSubPlay = value;
+                },
+              ),
+            ),
+            Obx(
+              () => ListTile(
+                leading: Icon(Icons.timelapse_rounded),
+                title: const Text('退出应用同步播放超时时间'),
+                subtitle: Text(
+                  '${Get.find<SettingsController>().supabaseUploadTimeoutDurationOnExit} 毫秒',
+                ),
+                trailing: Icon(Icons.edit),
+                onTap: () async {
+                  await showInputDialog(
+                    title: '退出应用同步播放超时时间',
+                    message: '单位为毫秒',
+                    initialValue: Get.find<SettingsController>()
+                        .supabaseUploadTimeoutDurationOnExit
+                        .toString(),
+                    onConfirm: (value) async {
+                      if (isEmpty(value)) return false;
+                      int? intValue = int.tryParse(value);
+                      if (intValue == null || intValue < 0) {
+                        throw '请输入有效的非负整数';
+                      }
+                      Get.find<SettingsController>()
+                              .supabaseUploadTimeoutDurationOnExit =
+                          intValue;
+                      showSuccessSnackbar('设置成功', null);
+                      return true;
+                    },
+                    keyboardType: TextInputType.number,
+                  );
                 },
               ),
             ),

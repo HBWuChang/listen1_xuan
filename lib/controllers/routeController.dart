@@ -90,17 +90,107 @@ void router_pop() {
 }
 
 Future<void> closeApp() async {
+  final RxBool settingsSaved = false.obs;
+  final RxBool continuePlaysaved = false.obs;
+  final RxBool timeoutReached = false.obs;
+
+  // 设置超时时间（例如5秒）
+  Duration timeoutDuration = Duration(
+    milliseconds:
+        Get.find<SettingsController>().supabaseUploadTimeoutDurationOnExit,
+  );
+
+  void performExit() {
+    Get.back();
+    if (kDebugMode) {
+      print("exit(0)");
+    } else {
+      exit(0);
+    }
+  }
+
   Get.dialog(
-    AlertDialog(title: Text('正在保存设置'), content: CircularProgressIndicator()),
+    Obx(() {
+      // 当两个任务都完成时，自动关闭
+      // 或者超时且 saveSettings 完成时，自动关闭
+      if ((settingsSaved.value && continuePlaysaved.value) ||
+          (timeoutReached.value && settingsSaved.value)) {
+        Future.microtask(performExit);
+      }
+
+      return AlertDialog(
+        title: Text('正在退出'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                if (settingsSaved.value)
+                  Icon(Icons.check_circle, color: Colors.green)
+                else
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                SizedBox(width: 12),
+                Text('保存设置'),
+              ],
+            ),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                if (continuePlaysaved.value)
+                  Icon(Icons.check_circle, color: Colors.green)
+                else if (timeoutReached.value)
+                  Icon(Icons.warning, color: Colors.orange)
+                else
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                SizedBox(width: 12),
+                Text(
+                  timeoutReached.value && !continuePlaysaved.value
+                      ? '同步超时'
+                      : '同步播放状态',
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          // 只有当 saveSettings 完成但 updateContinuePlay 未完成时显示跳过按钮
+          if (settingsSaved.value && !continuePlaysaved.value)
+            TextButton(
+              onPressed: performExit,
+              child: Text('跳过向 Supabase 更新状态'),
+            ),
+        ],
+      );
+    }),
     barrierDismissible: false,
   );
-  await Get.find<SettingsController>().saveSettings();
-  if (kDebugMode) {
-    print("exit(0)");
-    Get.back();
-    return;
-  }
-  exit(0);
+
+  // 设置超时计时器
+  Future.delayed(timeoutDuration, () {
+    if (!continuePlaysaved.value) {
+      timeoutReached.value = true;
+    }
+  });
+
+  // 并行执行两个任务
+  Future.wait([
+    Get.find<SettingsController>().saveSettings().then((_) {
+      settingsSaved.value = true;
+    }),
+    Get.find<PlayController>().updateContinuePlay(onlyPlaying: true).then((
+      _,
+    ) async {
+      continuePlaysaved.value = true;
+    }),
+  ]);
 }
 
 class RouteController extends GetxController {
