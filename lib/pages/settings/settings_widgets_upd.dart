@@ -475,27 +475,30 @@ Widget updSettingsTile(BuildContext context) {
                     if (innerZipPath.isNotEmpty &&
                         await File(innerZipPath).exists()) {
                       debugPrint('找到内部zip文件: $innerZipPath');
-                      final innerBytes = File(innerZipPath).readAsBytesSync();
-                      final innerArchive = ZipDecoder().decodeBytes(innerBytes);
+                      // final innerBytes = await File(innerZipPath).readAsBytes();
+                      // final innerArchive = ZipDecoder().decodeBytes(innerBytes);
 
-                      for (final file in innerArchive) {
-                        final filename = file.name;
-                        if (file.isFile) {
-                          final data = file.content as List<int>;
-                          final extractPath = p.join(
-                            tempPath,
-                            'canary',
-                            filename,
-                          );
-                          File(extractPath)
-                            ..createSync(recursive: true)
-                            ..writeAsBytesSync(data);
-                        } else {
-                          final dirPath = p.join(tempPath, 'canary', file.name);
-                          Directory(dirPath).create(recursive: true);
-                        }
-                      }
-
+                      // for (final file in innerArchive) {
+                      //   final filename = file.name;
+                      //   if (file.isFile) {
+                      //     final data = file.content as List<int>;
+                      //     final extractPath = p.join(
+                      //       tempPath,
+                      //       'canary',
+                      //       filename,
+                      //     );
+                      //     File(extractPath)
+                      //       ..createSync(recursive: true)
+                      //       ..writeAsBytesSync(data);
+                      //   } else {
+                      //     final dirPath = p.join(tempPath, 'canary', file.name);
+                      //     Directory(dirPath).create(recursive: true);
+                      //   }
+                      // }
+                      await extractFileToDisk(
+                        innerZipPath,
+                        p.join(tempPath, 'canary'),
+                      );
                       // 删除内部zip文件
                       await File(innerZipPath).delete();
                     } else {
@@ -541,6 +544,14 @@ Widget updSettingsTile(BuildContext context) {
                             SizedBox(height: 4),
                             Text(
                               '2. 若更新脚本没有自动运行，请前往 下载/Listen1/ 文件夹手动运行 update_macos.command。',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              '3. 若更新脚本运行后仍无法启动应用,请手动移动并运行 下载/Listen1/canary 文件夹下的 新版应用程序',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],

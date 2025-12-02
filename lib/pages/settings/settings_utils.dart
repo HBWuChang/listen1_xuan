@@ -282,13 +282,6 @@ done
 # 额外等待2秒确保完全退出
 sleep 2
 
-# 备份当前应用
-echo "Backing up current application..."
-if [ -d "$appPath.backup" ]; then
-  rm -rf "$appPath.backup"
-fi
-mv "$appPath" "$appPath.backup"
-
 # 复制新应用
 echo "Installing new version..."
 cp -R "$newAppPath" "$appPath"
@@ -301,9 +294,6 @@ xattr -rd com.apple.quarantine "$appPath"
 echo "Launching new version..."
 open "$appPath"
 
-# 清理备份（可选，等待10秒后删除）
-sleep 10
-rm -rf "$appPath.backup"
 ''';
 
   // 写入脚本文件
