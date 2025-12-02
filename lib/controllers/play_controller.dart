@@ -288,11 +288,16 @@ class PlayController extends GetxController
       music_player.setVolume(t_volume);
       if (toSeek != null) {
         try {
-          await music_player.seek(Duration(milliseconds: toSeek ?? 0));
+          music_player.stream.duration
+              .firstWhere((duration) => duration.inMilliseconds > 0)
+              .then((duration) {
+                if (toSeek != null && toSeek! < duration.inMilliseconds) {
+                  music_player.seek(Duration(milliseconds: toSeek!));
+                }
+                toSeek = null;
+              });
         } catch (e) {
           logger.e('seek error: $e');
-        } finally {
-          toSeek = null;
         }
       }
       if (start) {
@@ -684,16 +689,16 @@ class PlayController extends GetxController
     String updateDeviceId,
   ) {
     try {
-      receivedContinuePlay = true;
       // 获取当前设备ID
       final broadcastController = Get.find<BroadcastWsController>();
       final currentDeviceId = broadcastController.deviceId;
 
       // 忽略自我设备触发的更新
-      if (updateDeviceId == currentDeviceId) {
+      if (updateDeviceId == currentDeviceId && receivedContinuePlay) {
         logger.d('忽略自我设备触发的更新');
         return;
       }
+      receivedContinuePlay = true;
 
       logger.i(
         '收到其他设备的播放状态更新: '
