@@ -282,6 +282,9 @@ done
 # 额外等待2秒确保完全退出
 sleep 2
 
+# 删除旧应用
+echo "Removing old version..."
+rm -rf "$appPath"
 # 复制新应用
 echo "Installing new version..."
 cp -R "$newAppPath" "$appPath"
