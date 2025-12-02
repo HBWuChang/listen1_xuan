@@ -1397,6 +1397,12 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   void showVolumeSlider() async {
+    if (volumeSliderVisible) {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+      volumeSliderVisible = false;
+      return;
+    }
     volumeSliderVisible = true;
     _overlayEntry?.remove();
     _overlayEntry = null;

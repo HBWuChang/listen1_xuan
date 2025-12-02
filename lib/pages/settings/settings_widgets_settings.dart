@@ -290,33 +290,23 @@ Future<void> _showSupabasePlaylistManager(BuildContext context) async {
 }
 
 /// Supabase 歌单管理内容
-class _SupabasePlaylistContent extends StatefulWidget {
-  @override
-  _SupabasePlaylistContentState createState() =>
-      _SupabasePlaylistContentState();
-}
-
-class _SupabasePlaylistContentState extends State<_SupabasePlaylistContent> {
+class _SupabasePlaylistContent extends StatelessWidget {
   final authController = Get.find<SupabaseAuthController>();
-  List<PlaylistModel.Playlist> playlists = [];
-  bool isLoading = true;
+  final playlists = <PlaylistModel.Playlist>[].obs;
+  final isLoading = true.obs;
 
-  @override
-  void initState() {
-    super.initState();
+  _SupabasePlaylistContent() {
     _loadPlaylists();
   }
 
   Future<void> _loadPlaylists() async {
-    setState(() => isLoading = true);
+    isLoading.value = true;
     try {
       final result = await authController.getUserPlaylists();
-      setState(() {
-        playlists = result;
-        isLoading = false;
-      });
+      playlists.value = result;
+      isLoading.value = false;
     } catch (e) {
-      setState(() => isLoading = false);
+      isLoading.value = false;
       showErrorSnackbar('加载失败', e.toString());
     }
   }
@@ -499,129 +489,12 @@ class _SupabasePlaylistContentState extends State<_SupabasePlaylistContent> {
             ),
           ),
         ),
-        // 内容区域
-        if (isLoading)
-          Container(
-            height: 300,
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else if (playlists.isEmpty)
-          Container(
-            height: 300,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.cloud_off, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    '暂无歌单',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    '点击下方按钮新建歌单',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: playlists.length,
-            padding: EdgeInsets.all(8),
-            itemBuilder: (context, index) {
-              final playlist = playlists[index];
-              return Card(
-                margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                child: ListTile(
-                  leading: CircleAvatar(child: Icon(Icons.library_music)),
-                  title: Text(
-                    playlist.name,
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    '创建于: ${playlist.createdAt?.toString().substring(0, 19) ?? "未知"}\n'
-                    '更新于: ${playlist.updatedAt?.toString().substring(0, 19) ?? "未知"}',
-                  ),
-                  isThreeLine: true,
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      switch (value) {
-                        case 'download':
-                          await _downloadPlaylist(playlist);
-                          break;
-                        case 'overwrite':
-                          await _overwritePlaylist(playlist);
-                          break;
-                        case 'rename':
-                          await _renamePlaylist(playlist);
-                          break;
-                        case 'delete':
-                          await _deletePlaylist(playlist);
-                          break;
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'download',
-                        child: Row(
-                          children: [
-                            Icon(Icons.download, size: 20),
-                            SizedBox(width: 8),
-                            Text('下载'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'overwrite',
-                        child: Row(
-                          children: [
-                            Icon(Icons.upload, size: 20),
-                            SizedBox(width: 8),
-                            Text('覆盖'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'rename',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit, size: 20),
-                            SizedBox(width: 8),
-                            Text('重命名'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuDivider(),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.delete,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              '删除',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+        // 内容区域 - 使用 AnimatedSize 实现平滑高度变化
+        Obx(() => AnimatedSize(
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: _buildContent(),
+            )),
         // 新建按钮
         Padding(
           padding: EdgeInsets.all(16),
@@ -638,6 +511,129 @@ class _SupabasePlaylistContentState extends State<_SupabasePlaylistContent> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildContent() {
+    if (isLoading.value)
+      return Container(height: 300, child: Center(child: globalLoadingAnime));
+    
+    if (playlists.isEmpty)
+      return Container(
+        height: 300,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_off, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                '暂无歌单',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              SizedBox(height: 8),
+              Text(
+                '点击下方按钮新建歌单',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      );
+    
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: playlists.length,
+      padding: EdgeInsets.all(8),
+      itemBuilder: (context, index) {
+        final playlist = playlists[index];
+        return Card(
+          margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          child: ListTile(
+            leading: CircleAvatar(child: Icon(Icons.library_music)),
+            title: Text(
+              playlist.name,
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              '创建于: ${playlist.createdAt?.toString().substring(0, 19) ?? "未知"}\n'
+              '更新于: ${playlist.updatedAt?.toString().substring(0, 19) ?? "未知"}',
+            ),
+            isThreeLine: true,
+            trailing: PopupMenuButton<String>(
+              onSelected: (value) async {
+                switch (value) {
+                  case 'download':
+                    await _downloadPlaylist(playlist);
+                    break;
+                  case 'overwrite':
+                    await _overwritePlaylist(playlist);
+                    break;
+                  case 'rename':
+                    await _renamePlaylist(playlist);
+                    break;
+                  case 'delete':
+                    await _deletePlaylist(playlist);
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'download',
+                  child: Row(
+                    children: [
+                      Icon(Icons.download, size: 20),
+                      SizedBox(width: 8),
+                      Text('下载'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'overwrite',
+                  child: Row(
+                    children: [
+                      Icon(Icons.upload, size: 20),
+                      SizedBox(width: 8),
+                      Text('覆盖'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'rename',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, size: 20),
+                      SizedBox(width: 8),
+                      Text('重命名'),
+                    ],
+                  ),
+                ),
+                PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete,
+                        size: 20,
+                        color: Get.theme.colorScheme.error,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        '删除',
+                        style: TextStyle(
+                          color: Get.theme.colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
