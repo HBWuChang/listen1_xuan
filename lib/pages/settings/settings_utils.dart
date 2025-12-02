@@ -265,12 +265,13 @@ Future<void> createAndRunMacOSScript(String tempPath, String appPath) async {
   // 定义路径
   final newAppPath = p.join(tempPath, 'canary', 'listen1_xuan.app');
   final scriptPath = p.join(tempPath, 'update_macos.command');
-  
+
   // 获取当前进程PID
   final currentPid = pid;
-  
+
   // 创建更新脚本内容
-  final script = '''#!/bin/bash
+  final script =
+      '''#!/bin/bash
 
 # 等待当前应用进程结束
 echo "Waiting for application to quit..."
@@ -304,29 +305,24 @@ open "$appPath"
 sleep 10
 rm -rf "$appPath.backup"
 ''';
-  
+
   // 写入脚本文件
   final scriptFile = File(scriptPath);
-  await scriptFile.delete();
+  if (await scriptFile.exists()) {
+    await scriptFile.delete();
+  }
   await scriptFile.writeAsString(script);
-  
+
   // 设置执行权限
   await Process.run('chmod', ['+x', scriptPath]);
-  
+
   // 在Terminal窗口中显示执行脚本（类似Windows的命令窗口）
-  try {
-    await Process.start(
-      'open',
-      [
-        '-a', 'Terminal.app',
-        scriptPath,
-      ],
-      mode: ProcessStartMode.detached,
-    );
-    debugPrint('macOS update script started successfully in Terminal');
-  } catch (e) {
-    debugPrint('Error while executing macOS update script: $e');
-  }
+  await Process.start('open', [
+    '-a',
+    'Terminal.app',
+    scriptPath,
+  ], mode: ProcessStartMode.detached);
+  debugPrint('macOS update script started successfully in Terminal');
 }
 
 Future<void> outputPlaylistToGithubGist() async {

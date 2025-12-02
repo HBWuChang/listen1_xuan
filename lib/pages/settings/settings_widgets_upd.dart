@@ -510,8 +510,9 @@ Widget updSettingsTile(BuildContext context) {
                     // while (!appPath.endsWith('.app') && appPath.isNotEmpty) {
                     //   appPath = File(appPath).parent.path;
                     // }
-                    appPath = appPath
-                        .split('/Contents/MacOS/')[0]; // 获取 .app 目录路径
+                    appPath = appPath.split(
+                      '/Contents/MacOS/',
+                    )[0]; // 获取 .app 目录路径
 
                     debugPrint('当前应用路径: $appPath');
                     debugPrint('解压路径: ${p.join(tempPath, 'canary')}');
@@ -556,19 +557,23 @@ Widget updSettingsTile(BuildContext context) {
                           ),
                           TextButton(
                             onPressed: () async {
-                              Get.back();
-                              // 调用脚本函数
-                              await createAndRunMacOSScript(tempPath, appPath);
-                              // 打开macOS的隐私与安全性设置页面
                               try {
+                                Get.back();
+                                // 调用脚本函数
+                                await createAndRunMacOSScript(
+                                  tempPath,
+                                  appPath,
+                                );
+                                // 打开macOS的隐私与安全性设置页面
                                 await Process.run('open', [
                                   'x-apple.systempreferences:com.apple.preference.security',
                                 ]);
+
+                                // 退出应用
+                                closeApp();
                               } catch (e) {
-                                debugPrint('打开系统设置失败: $e');
+                                showErrorSnackbar('更新失败', e.toString());
                               }
-                              // 退出应用
-                              closeApp();
                             },
                             child: Text('确定'),
                           ),
