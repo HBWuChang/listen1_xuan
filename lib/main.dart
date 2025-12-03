@@ -182,6 +182,7 @@ void main() async {
       await windowManager.show();
       createThemeController().didChangePlatformBrightnessOrManual();
     });
+    windowManager.setPreventClose(true);
   }
   createThemeController();
   // 初始化WebSocket控制器并加载配置
@@ -242,6 +243,7 @@ void main() async {
   //     return client;
   //   },
   // );
+
   initDeepLinks();
   runApp(MyApp());
 }
@@ -381,6 +383,11 @@ class _MyHomePageState extends State<MyHomePage>
     fToast = FToast();
     // if you want to use context from globally instead of content we need to pass navigatorKey.currentContext!
     fToast.init(navigatorKey.currentContext!);
+  }
+
+  @override
+  void onWindowClose() {
+    closeApp();
   }
 
   void updatePageControllers() {
