@@ -4,19 +4,19 @@ part of '../../settings.dart';
 Future<Map<String, dynamic>> outputAllSettingsToFile([
   bool toJsonString = false,
 ]) async {
-  final prefs = await SharedPreferences.getInstance();
+  final prefs = SharedPreferencesAsync();
   Map<String, dynamic> settings = {};
-  final allkeys = prefs.getKeys();
+  final allkeys = await prefs.getKeys();
   for (var key in allkeys) {
     switch (key) {
       case 'playerlists':
-        settings[key] = prefs.getStringList(key);
+        settings[key] = await prefs.getStringList(key);
         break;
       case 'auto_choose_source_list':
-        settings[key] = prefs.getStringList(key);
+        settings[key] = await prefs.getStringList(key);
         break;
       case 'favoriteplayerlists':
-        settings[key] = prefs.getStringList(key);
+        settings[key] = await prefs.getStringList(key);
         break;
       case 'settings':
         if (toJsonString) continue;
@@ -24,11 +24,9 @@ Future<Map<String, dynamic>> outputAllSettingsToFile([
         continue;
       default:
         try {
-          settings[key] = jsonDecode(prefs.getString(key) ?? '{}');
+          settings[key] = jsonDecode(await prefs.getString(key) ?? '{}');
         } catch (e) {
-          try {
-            settings[key] = prefs.get(key);
-          } catch (e) {}
+          logger.e('Error decoding key $key: $e');
         }
     }
   }
@@ -59,25 +57,27 @@ Future<void> importSettingsFromFile(
 // [bool fromjson = false, String jsonString = '']) async {
 [bool fromjson = false, Map<String, dynamic> jsonString = const {}]) async {
   Future<void> _sets(Map<String, dynamic> settings) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = SharedPreferencesAsync();
     for (var key in settings.keys) {
       switch (key) {
         case 'playerlists':
           // settings[key] = prefs.getStringList(key);
-          prefs.setStringList(key, settings[key].cast<String>());
+          await prefs.setStringList(key, settings[key].cast<String>());
           break;
         case 'auto_choose_source_list':
-          prefs.setStringList(key, settings[key].cast<String>());
+          await prefs.setStringList(key, settings[key].cast<String>());
           break;
         case 'favoriteplayerlists':
-          prefs.setStringList(key, settings[key].cast<String>());
+          await prefs.setStringList(key, settings[key].cast<String>());
           break;
         case 'settings':
           continue;
         default:
           try {
-            prefs.setString(key, jsonEncode(settings[key]));
-          } catch (e) {}
+            await prefs.setString(key, jsonEncode(settings[key]));
+          } catch (e) {
+            logger.e('Error encoding key $key: $e');
+          }
       }
     }
     await Get.find<SettingsController>().loadSettings();
@@ -163,8 +163,8 @@ Map<String, dynamic> settings_getsettings() {
 
 Future<String?> outputPlatformToken(String platform) async {
   if (platform == 'github') {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('githubOauthAccessKey');
+    final prefs = SharedPreferencesAsync();
+    return await prefs.getString('githubOauthAccessKey');
   }
   return Get.find<SettingsController>().settings[platform];
 }
@@ -176,8 +176,8 @@ Future<void> savePlatformToken(
 }) async {
   try {
     if (platform == 'github') {
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString('githubOauthAccessKey', token);
+      final prefs = SharedPreferencesAsync();
+      await prefs.setString('githubOauthAccessKey', token);
       return;
     }
     final settings = Get.find<SettingsController>().settings;
@@ -285,6 +285,7 @@ sleep 2
 # 删除旧应用
 echo "Removing old version..."
 rm -rf "$appPath"
+
 # 复制新应用
 echo "Installing new version..."
 cp -R "$newAppPath" "$appPath"

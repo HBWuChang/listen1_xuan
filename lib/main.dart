@@ -11,6 +11,7 @@ import 'package:listen1_xuan/controllers/search_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:media_kit/media_kit.dart' show MediaKit;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'examples/websocket_server_example.dart';
 import 'examples/websocket_client_example.dart';
 import 'pages/download_page.dart';
@@ -44,6 +45,7 @@ import 'controllers/theme.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
 
 String supabaseUrl = 'https://jtvxrwybwvgpqobyhaoy.supabase.co';
 
@@ -121,6 +123,14 @@ void main() async {
       systemNavigationBarColor: Colors.transparent, // 设置导航栏背景色为透明
       systemNavigationBarDividerColor: Colors.transparent, // 设置导航栏分割线为透明
     ),
+  );
+  const SharedPreferencesOptions sharedPreferencesOptions =
+      SharedPreferencesOptions();
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await migrateLegacySharedPreferencesToSharedPreferencesAsyncIfNecessary(
+    legacySharedPreferencesInstance: prefs,
+    sharedPreferencesAsyncOptions: sharedPreferencesOptions,
+    migrationCompletedKey: 'migrationCompleted',
   );
   SettingsController settingsController = Get.put(
     SettingsController(),

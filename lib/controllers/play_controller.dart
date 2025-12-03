@@ -106,6 +106,9 @@ class PlayController extends GetxController
       ? currentPlayingRx.firstWhere((track) => track.id == nowPlayingTrackId)
       : Track(id: '');
 
+  static const String positionInMillisecondsKey = 'positionInMilliseconds';
+  static const String lastPositionUpdateTimeKey = 'lastPositionUpdateTime';
+  RxInt positionInMilliseconds = 0.obs;
   @override
   void onInit() {
     super.onInit();
@@ -216,6 +219,21 @@ class PlayController extends GetxController
         settingsController.settings[SettingsController
             .playButtonRotationCurveKey] ??
         'easeInSine';
+    music_player.stream.position.listen((position) {
+      positionInMilliseconds.value = position.inMilliseconds;
+    });
+    positionInMilliseconds.value =
+        settingsController.settings[positionInMillisecondsKey] ?? 0;
+
+    toSeek = isEmpty(positionInMilliseconds.value)
+        ? null
+        : positionInMilliseconds.value;
+    interval(positionInMilliseconds, (pos) {
+      settingsController.settings[positionInMillisecondsKey] = pos;
+      settingsController.settings[lastPositionUpdateTimeKey] = DateTime.now()
+          .toUtc()
+          .millisecondsSinceEpoch;
+    }, time: Duration(milliseconds: 2000));
   }
 
   @override
@@ -227,7 +245,6 @@ class PlayController extends GetxController
 
   /// 是否跳过Supabase 同步
   /// 目前设想在第一次播放完成前且未获取云端时为true
-  bool skipUpdate = true;
   bool receivedContinuePlay = false;
   int? toSeek;
   Future<void> playsong(
@@ -302,9 +319,6 @@ class PlayController extends GetxController
       }
       if (start) {
         music_player.play();
-      }
-      if (receivedContinuePlay) {
-        skipUpdate = false;
       }
       await change_playback_state(track);
     } catch (e, stackTrace) {
@@ -435,7 +449,7 @@ class PlayController extends GetxController
   // }
 
   Future<void> _saveSingleSetting(String key) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = SharedPreferencesAsync();
     switch (key) {
       case 'player-settings':
         String jsonString = jsonEncode(_player_settings);
@@ -509,9 +523,8 @@ class PlayController extends GetxController
         logger.d('仅在播放时同步，当前未播放，跳过同步');
         return;
       }
-      if (skipUpdate) {
-        // 首次播放时不进行同步，避免覆盖云端数据
-        logger.d('首次播放，跳过同步播放状态');
+      if (receivedContinuePlay == false) {
+        logger.d('未接收到继续播放状态，跳过同步播放状态');
         return;
       }
       // 检查是否已登录
@@ -718,6 +731,17 @@ class PlayController extends GetxController
       if (!bootStraping.containsKey(continuePlay.track.id) &&
           nowPlayingTrackId == continuePlay.track.id) {
         if (music_player.state.playing == false) {
+          if ((continuePlay.updTime ?? DateTime.fromMillisecondsSinceEpoch(0))
+              .isBefore(
+                DateTime.fromMillisecondsSinceEpoch(
+                  settingsController.settings[PlayController
+                          .lastPositionUpdateTimeKey] ??
+                      0,
+                  isUtc: true,
+                ),
+              )) {
+            return;
+          }
           music_player.seek(
             Duration(milliseconds: (continuePlay.ext?['pos'] as int?) ?? 0),
           );

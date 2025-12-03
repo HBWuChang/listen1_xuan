@@ -99,7 +99,7 @@ class MyPlayListController extends GetxController {
   void onInit() {
     super.onInit();
     debounce(playerlists, (callback) async {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = SharedPreferencesAsync();
       await prefs.setStringList('playerlists', playerlists.keys.toList());
       for (var playlist in playerlists.entries) {
         String jsonString = jsonEncode(playlist.value.toJson());
@@ -107,7 +107,7 @@ class MyPlayListController extends GetxController {
       }
     });
     debounce(favoriteplayerlists, (callback) async {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = SharedPreferencesAsync();
       await prefs.setStringList(
           'favoriteplayerlists', favoriteplayerlists.keys.toList());
       for (var playlist in favoriteplayerlists.entries) {

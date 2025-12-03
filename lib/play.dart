@@ -105,7 +105,6 @@ var playmode = 1.obs;
 List<Track> randommodetemplist = [];
 bool randomTrackInsertAtHead = false;
 Future<void> onPlaybackCompleted([bool force_next = false]) async {
-  _playController.skipUpdate = false;
   await fresh_playmode();
   final current_playing = await get_current_playing();
   final nowplaying_track = await getnowplayingsong();

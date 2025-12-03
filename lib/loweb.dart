@@ -342,9 +342,9 @@ class MediaService {
     //   'success': (Function fn) => fn(),
     // };
     // shared_preferences
-    final prefs = await SharedPreferences.getInstance();
-    final tarData = jsonDecode(prefs.getString(target)!)['tracks'];
-    final srcData = jsonDecode(prefs.getString(source)!)['tracks'];
+    final prefs = SharedPreferencesAsync();
+    final tarData = jsonDecode((await prefs.getString(target))!)['tracks'];
+    final srcData = jsonDecode((await prefs.getString(source))!)['tracks'];
     for (var tarTrack in tarData) {
       if (!srcData.any((srcTrack) => srcTrack['id'] == tarTrack['id'])) {
         myplaylist.addTrackToMyPlaylist(source, tarTrack);

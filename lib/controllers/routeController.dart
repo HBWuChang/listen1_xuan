@@ -179,7 +179,9 @@ Future<void> closeApp() async {
       timeoutReached.value = true;
     }
   });
-
+  Get.find<SettingsController>().settings[PlayController
+          .positionInMillisecondsKey] =
+      Get.find<PlayController>().positionInMilliseconds.value;
   // 并行执行两个任务
   Future.wait([
     Get.find<SettingsController>().saveSettings().then((_) {

@@ -186,14 +186,14 @@ class SettingsController extends GetxController {
   }
 
   Future<void> loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? jsonString = prefs.getString('settings');
+    final prefs = SharedPreferencesAsync();
+    String? jsonString = await prefs.getString('settings');
     if (jsonString != null) {
       settings.value = jsonDecode(jsonString);
     }
     // 加载 showLyricTranslation 的值
     showLyricTranslation.value = settings['showLyricTranslation'] ?? true;
-    final localCacheListJson = prefs.getString(
+    final localCacheListJson = await prefs.getString(
       CacheController_localCacheListKey,
     );
     if (localCacheListJson != null) {
@@ -225,20 +225,20 @@ class SettingsController extends GetxController {
     }
     MyPlayListController_playerlists.clear();
     MyPlayListController_favoriteplayerlists.clear();
-    List<String>? playlists = prefs.getStringList('playerlists');
+    List<String>? playlists = await prefs.getStringList('playerlists');
     for (var playlist in playlists ?? []) {
-      final playlistJson = prefs.getString(playlist);
+      final playlistJson = await prefs.getString(playlist);
       if (playlistJson != null) {
         MyPlayListController_playerlists[playlist] = PlayList.fromJson(
           jsonDecode(playlistJson),
         );
       }
     }
-    List<String>? favoritePlaylists = prefs.getStringList(
+    List<String>? favoritePlaylists = await prefs.getStringList(
       'favoriteplayerlists',
     );
     for (var playlist in favoritePlaylists ?? []) {
-      final playlistJson = prefs.getString(playlist);
+      final playlistJson = await prefs.getString(playlist);
       if (playlistJson != null) {
         MyPlayListController_favoriteplayerlists[playlist] = PlayList.fromJson(
           jsonDecode(playlistJson),
@@ -248,7 +248,7 @@ class SettingsController extends GetxController {
   }
 
   Future<void> saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = SharedPreferencesAsync();
     String jsonString = jsonEncode(settings);
     await prefs.setString('settings', jsonString);
   }

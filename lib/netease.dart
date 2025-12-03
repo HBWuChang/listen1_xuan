@@ -123,10 +123,7 @@ class Netease {
         ),
       );
     } catch (e) {
-      return await dioWithCookieManager.post(
-        url,
-        data: FormData.fromMap(data),
-      );
+      return await dioWithCookieManager.post(url, data: FormData.fromMap(data));
     }
   }
 
@@ -317,8 +314,8 @@ class Netease {
     const nuidName = '_ntes_nuid';
     const nnidName = '_ntes_nnid';
 
-    final prefs = await SharedPreferences.getInstance();
-    if (!prefs.containsKey(nuidName)) {
+    final prefs = SharedPreferencesAsync();
+    if (!await prefs.containsKey(nuidName)) {
       final nuidValue = _createSecretKey(32);
       final nnidValue = '$nuidValue,${DateTime.now().millisecondsSinceEpoch}';
       final expire =

@@ -16,8 +16,8 @@ Widget updSettingsTile(BuildContext context) {
                 final filePath = p.join(tempPath, 'canary.zip');
                 final url_list =
                     'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
-                final prefs = await SharedPreferences.getInstance();
-                final token = prefs.getString('githubOauthAccessKey');
+                final prefs = SharedPreferencesAsync();
+                final token = await prefs.getString('githubOauthAccessKey');
                 if (token == null) {
                   showWarningSnackbar('请先登录Github', null);
                   return;
@@ -171,8 +171,8 @@ Widget updSettingsTile(BuildContext context) {
 
                   final url_list =
                       'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
-                  final prefs = await SharedPreferences.getInstance();
-                  final token = prefs.getString('githubOauthAccessKey');
+                  final prefs = SharedPreferencesAsync();
+                  final token = await prefs.getString('githubOauthAccessKey');
                   if (token == null) {
                     showWarningSnackbar('请先登录Github', null);
                     return;
@@ -342,8 +342,8 @@ Widget updSettingsTile(BuildContext context) {
                 final filePath = p.join(tempPath, 'canary.zip');
                 final url_list =
                     'https://api.github.com/repos/HBWuChang/listen1_xuan/actions/artifacts';
-                final prefs = await SharedPreferences.getInstance();
-                final token = prefs.getString('githubOauthAccessKey');
+                final prefs = SharedPreferencesAsync();
+                final token = await prefs.getString('githubOauthAccessKey');
                 if (token == null) {
                   showWarningSnackbar('请先登录Github', null);
                   return;
