@@ -79,7 +79,6 @@ dependencies:
   app_links: ^6.4.1
   msix: ^3.16.12
   win32_registry: ^2.1.0
-  # bson: ^5.0.7
   dynamic_color: ^1.8.1
   bonsoir: ^6.0.1
   punycode: ^1.0.0
