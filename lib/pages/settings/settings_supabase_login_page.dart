@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/supabase_auth_controller.dart';
+import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/funcs.dart';
 
 import '../../global_settings_animations.dart';
@@ -217,6 +218,35 @@ class _SupabaseLoginPageState extends State<SupabaseLoginPage> {
                       ),
                     )
                   : const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 20),
+            // 分隔线
+            const Divider(thickness: 1),
+            // 提示信息
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '💡 提示：',
+                    style: TextStyle(
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '通过验证码登录后，可在"Supabase 账号"设置中点击"密码管理"来设置密码，之后即可使用邮箱密码直接登录。',
+                    style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

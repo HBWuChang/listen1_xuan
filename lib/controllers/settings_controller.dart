@@ -150,6 +150,19 @@ class SettingsController extends GetxController {
     }
   }
 
+  // Supabase 账号密码保存（用于自动重连）
+  static const String supabaseEmailKey = 'supabaseEmail';
+  String get supabaseEmail => settings[supabaseEmailKey] ?? '';
+  set supabaseEmail(String value) {
+    settings[supabaseEmailKey] = value;
+  }
+
+  static const String supabasePasswordKey = 'supabasePassword';
+  String get supabasePassword => settings[supabasePasswordKey] ?? '';
+  set supabasePassword(String value) {
+    settings[supabasePasswordKey] = value;
+  }
+
   static const String supabaseUploadTimeoutDurationOnExitKey =
       'supabaseUploadTimeoutDurationOnExit';
   int get supabaseUploadTimeoutDurationOnExit =>

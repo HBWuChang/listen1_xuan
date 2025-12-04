@@ -127,6 +127,13 @@ Widget _buildSupabasePanel() {
                   icon: Icon(Icons.copy),
                   label: Text('复制ID'),
                 ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    _showPasswordManagementDialog(authController);
+                  },
+                  icon: Icon(Icons.lock),
+                  label: Text('密码管理'),
+                ),
                 Obx(
                   () => ElevatedButton.icon(
                     onPressed: authController.isLoading.value
@@ -202,15 +209,31 @@ Widget _buildSupabasePanel() {
               style: TextStyle(color: Colors.grey),
             ),
             SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                Get.toNamed('/supabase_login', id: 1);
-              },
-              icon: Icon(Icons.login),
-              label: Text('登录 / 注册'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 45),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Get.toNamed(RouteName.supabasePasswordLoginPage, id: 1);
+                    },
+                    icon: Icon(Icons.email),
+                    label: Text('邮箱登录'),
+                    style: ElevatedButton.styleFrom(minimumSize: Size(0, 45)),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Get.toNamed(RouteName.supabaseLoginPage, id: 1);
+                    },
+                    icon: Icon(Icons.verified_user),
+                    label: Text('验证码登录'),
+                    style: ElevatedButton.styleFrom(minimumSize: Size(0, 45)),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -399,6 +422,51 @@ void _showEditNicknameDialog(SupabaseAuthController authController) async {
       }
     },
   );
+}
+
+/// 显示密码管理对话框
+void _showPasswordManagementDialog(SupabaseAuthController authController) {
+  Get.dialog(
+    AlertDialog(
+      title: const Text('密码管理'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (authController.currentUser.value?.identities?.isNotEmpty ?? false)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                '您已通过邮箱验证码登录。建议设置密码以便后续直接使用邮箱密码登录。',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Get.back(), child: const Text('关闭')),
+        ElevatedButton(
+          onPressed: () {
+            Get.back();
+            _showSetPasswordDialog(isUpdate: false);
+          },
+          child: const Text('设置密码'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Get.back();
+            _showSetPasswordDialog(isUpdate: true);
+          },
+          child: const Text('修改密码'),
+        ),
+      ],
+    ),
+  );
+}
+
+/// 显示设置/修改密码对话框
+void _showSetPasswordDialog({required bool isUpdate}) {
+  showSetPasswordDialog(isUpdateMode: isUpdate);
 }
 
 /// 显示不透明度调整对话框
@@ -600,6 +668,8 @@ Widget get androidSettingsTiles => Column(
       ),
     ),
     OpenContainer(
+      closedColor: AdaptiveTheme.of(Get.context!).theme.cardColor,
+      openColor: AdaptiveTheme.of(Get.context!).theme.scaffoldBackgroundColor,
       closedBuilder: (context, _) => ListTile(
         title: const Text('通知按钮顺序调整'),
         trailing: Icon(Icons.unfold_more_rounded),

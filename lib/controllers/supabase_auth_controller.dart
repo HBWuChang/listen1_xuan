@@ -44,26 +44,36 @@ class SupabaseAuthController extends GetxController {
   void onInit() {
     super.onInit();
     // 监听认证状态变化
-    _supabase.auth.onAuthStateChange.listen((data) {
-      final Session? session = data.session;
+    _supabase.auth.onAuthStateChange.listen(
+      (data) {
+        final Session? session = data.session;
 
-      if (session != null) {
-        currentUser.value = session.user;
-        isLoggedIn.value = true;
-        _updateUserLoginTime();
-        _loadUserProfile();
-        // 认证成功后自动订阅 continue_play
-        if (Get.find<SettingsController>().supabaseSubPlay) {
-          subscribeToContinuePlay();
+        if (session != null) {
+          currentUser.value = session.user;
+          isLoggedIn.value = true;
+          _updateUserLoginTime();
+          _loadUserProfile();
+          // 认证成功后自动订阅 continue_play
+          if (Get.find<SettingsController>().supabaseSubPlay) {
+            subscribeToContinuePlay();
+          }
         }
-      } else {
-        currentUser.value = null;
-        isLoggedIn.value = false;
-        userProfile.value = null;
-        // 登出时自动取消订阅
-        unsubscribeFromContinuePlay();
-      }
-    });
+        if (data.event.jsName == 'INITIAL_SESSION') {
+          _tryReconnectWithSavedCredentials();
+        } else if (data.event.jsName == 'SIGNED_OUT') {
+          currentUser.value = null;
+          isLoggedIn.value = false;
+          userProfile.value = null;
+          // 登出时自动取消订阅
+          unsubscribeFromContinuePlay();
+        }
+      },
+      onError: (error) {
+        logger.e('认证状态监听错误: $error');
+        // 尝试使用保存的账号密码进行自动重连
+        _tryReconnectWithSavedCredentials();
+      },
+    );
 
     // 检查当前会话
     _checkCurrentSession();
@@ -74,6 +84,39 @@ class SupabaseAuthController extends GetxController {
     _countdownTimer?.cancel();
     unsubscribeFromContinuePlay();
     super.onClose();
+  }
+
+  /// 使用保存的凭证尝试自动重连
+  Future<void> _tryReconnectWithSavedCredentials() async {
+    try {
+      final settingsController = Get.find<SettingsController>();
+      final savedEmail = settingsController.supabaseEmail;
+      final savedPassword = settingsController.supabasePassword;
+
+      // 如果没有保存的凭证，则跳过
+      if (savedEmail.isEmpty || savedPassword.isEmpty) {
+        logger.i('没有保存的账号密码，跳过自动重连');
+        return;
+      }
+
+      logger.i('尝试使用保存的凭证进行自动重连...');
+
+      final AuthResponse response = await _supabase.auth.signInWithPassword(
+        email: savedEmail,
+        password: savedPassword,
+      );
+
+      if (response.session != null) {
+        currentUser.value = response.session!.user;
+        isLoggedIn.value = true;
+        await _updateUserLoginTime();
+        logger.i('自动重连成功');
+      } else {
+        logger.w('自动重连失败：无法获取会话');
+      }
+    } catch (e) {
+      logger.e('自动重连异常: $e');
+    }
   }
 
   /// 检查当前会话
@@ -87,6 +130,70 @@ class SupabaseAuthController extends GetxController {
       }
     } catch (e) {
       print('检查会话失败: $e');
+    }
+  }
+
+  /// 使用邮箱和密码进行注册
+  Future<bool> signUpWithEmailAndPassword(String email, String password) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final AuthResponse response = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      if (response.user != null) {
+        // 创建用户资料
+        await _createOrUpdateUserProfile(response.user!.id);
+        isLoading.value = false;
+        return true;
+      }
+
+      isLoading.value = false;
+      errorMessage.value = '注册失败';
+      return false;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '注册失败: ${e.toString()}';
+      print('邮箱密码注册失败: $e');
+      return false;
+    }
+  }
+
+  /// 使用邮箱和密码进行登录
+  Future<bool> signInWithEmailAndPassword(String email, String password) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final AuthResponse response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      if (response.session != null) {
+        currentUser.value = response.session!.user;
+        isLoggedIn.value = true;
+        await _updateUserLoginTime();
+
+        // 保存账号密码用于自动重连
+        Get.find<SettingsController>().supabaseEmail = email;
+        Get.find<SettingsController>().supabasePassword = password;
+
+        isLoading.value = false;
+        return true;
+      }
+
+      isLoading.value = false;
+      errorMessage.value = '登录失败：邮箱或密码不正确';
+      return false;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '登录失败: ${e.toString()}';
+      print('邮箱密码登录失败: $e');
+      return false;
     }
   }
 
@@ -149,6 +256,11 @@ class SupabaseAuthController extends GetxController {
       currentUser.value = null;
       isLoggedIn.value = false;
       userProfile.value = null;
+
+      // 清除保存的账号密码
+      Get.find<SettingsController>().supabaseEmail = '';
+      Get.find<SettingsController>().supabasePassword = '';
+
       isLoading.value = false;
     } catch (e) {
       isLoading.value = false;
@@ -597,6 +709,79 @@ class SupabaseAuthController extends GetxController {
       await subscribeToContinuePlay();
     } else {
       logger.w('用户未登录，无法订阅');
+    }
+  }
+
+  /// 设置密码（用于 OTP 登录后的用户设置密码）
+  Future<bool> setPassword(String newPassword) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      if (currentUser.value == null) {
+        errorMessage.value = '用户未登录';
+        isLoading.value = false;
+        return false;
+      }
+
+      if (newPassword.length < 6) {
+        errorMessage.value = '密码至少需要6个字符';
+        isLoading.value = false;
+        return false;
+      }
+
+      await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+
+      isLoading.value = false;
+      return true;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '设置密码失败: ${e.toString()}';
+      print('设置密码失败: $e');
+      return false;
+    }
+  }
+
+  /// 修改密码
+  Future<bool> updatePassword(String oldPassword, String newPassword) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      if (currentUser.value == null) {
+        errorMessage.value = '用户未登录';
+        isLoading.value = false;
+        return false;
+      }
+
+      if (newPassword.length < 6) {
+        errorMessage.value = '新密码至少需要6个字符';
+        isLoading.value = false;
+        return false;
+      }
+
+      // 先验证旧密码是否正确
+      try {
+        await _supabase.auth.signInWithPassword(
+          email: currentUser.value!.email ?? '',
+          password: oldPassword,
+        );
+      } catch (e) {
+        errorMessage.value = '旧密码不正确';
+        isLoading.value = false;
+        return false;
+      }
+
+      // 更新密码
+      await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+
+      isLoading.value = false;
+      return true;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '修改密码失败: ${e.toString()}';
+      print('修改密码失败: $e');
+      return false;
     }
   }
 }

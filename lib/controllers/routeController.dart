@@ -225,5 +225,6 @@ class RouteName {
   static const String settingsReadmePage = '/settings_readme';
   static const String downloadPage = '/download';
   static const String supabaseLoginPage = '/supabase_login';
+  static const String supabasePasswordLoginPage = '/supabase_password_login';
   static const String cacheNamingPage = '/cache_naming';
 }

@@ -18,6 +18,7 @@ import 'pages/download_page.dart';
 import 'pages/nowPlaying_page.dart';
 import 'pages/settings/settings_readme.dart';
 import 'pages/settings/settings_supabase_login_page.dart';
+import 'pages/settings/settings_supabase_password_login_page.dart';
 import 'pages/settings/cache_naming_page.dart';
 import 'settings.dart';
 import 'loweb.dart';
@@ -1227,6 +1228,21 @@ class _MyHomePageState extends State<MyHomePage>
                                               addAndCleanReapeatRoute(
                                                 route,
                                                 RouteName.supabaseLoginPage,
+                                              );
+                                              return route;
+                                            case RouteName.supabasePasswordLoginPage:
+                                              var route = GetPageRoute(
+                                                settings: settings,
+                                                transition: Transition
+                                                    .rightToLeftWithFade,
+                                                page: () => SupabasePasswordLoginPage(),
+                                                middlewares: [
+                                                  ListenPopMiddleware(),
+                                                ],
+                                              );
+                                              addAndCleanReapeatRoute(
+                                                route,
+                                                RouteName.supabasePasswordLoginPage,
                                               );
                                               return route;
                                             case RouteName.cacheNamingPage:
