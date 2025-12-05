@@ -55,40 +55,32 @@ flutter version 3.35.7
   - [ ] 下载功能着实好用，但是可能会招来平台不必要的麻烦（Listen1在2017年就是差不多这样），可以在源代码里留一个开关来打开功能
   - [ ] LineageOS（安卓14）会产生通知栏“播放”按钮变成旋转进度条
 # 一些预览
-## 横屏
 ### 主页、我的(各平台)歌单及各平台推荐歌单
 ![alt text](readme/image1.png)
+![alt text](readme/主页.jpg) 
+![alt text](readme/各平台歌单.jpg) 
+### 竖屏播放控制及歌词页面
+![alt text](readme/播放控制.jpg) 
+![alt text](readme/歌词页面.jpg) 
 ### 歌单内容
 ![alt text](readme/image.png)
-### 选择分类
-![alt text](readme/image-1.png)
-### 歌曲对话框
-![alt text](readme/image-2.png)
-### 设置页面
-![alt text](readme/image-3.png)
-## 竖屏
-### 主页
-![alt text](readme\主页.jpg) 
-### 播放控制及歌词页面
-![alt text](readme\播放控制.jpg) 
-![alt text](readme\歌词页面.jpg) 
-### 选择分类
-![alt text](readme\选择分类.jpg) 
-### 各平台歌单
-![alt text](readme\各平台歌单.jpg) 
-### 歌单内容
-![alt text](readme\歌单内容.jpg) 
-![alt text](readme\歌单内容2.jpg) 
-### 歌曲对话框
-![alt text](readme/歌曲对话框.jpg) 
+![alt text](readme/歌单内容.jpg) 
+![alt text](readme/歌单内容2.jpg) 
 ### 搜索歌曲
 ![alt text](readme/搜索歌曲.jpg) 
 ### 搜索歌单
 ![alt text](readme/搜索歌单.jpg) 
 ### 歌手歌曲
 ![alt text](readme/歌手歌曲.jpg)
+### 选择分类
+![alt text](readme/image-1.png)
+![alt text](readme/选择分类.jpg) 
+### 歌曲对话框
+![alt text](readme/image-2.png)
+![alt text](readme/歌曲对话框.jpg) 
 ### 设置页面
-![alt text](readme\设置页面.jpg) 
+![alt text](readme/image-3.png)
+![alt text](readme/设置页面.jpg) 
 ## [更新日志](./CHANGELOG.md)
 
 帮我买杯蜜雪冰城能提升鼠鼠重写的积极性！
