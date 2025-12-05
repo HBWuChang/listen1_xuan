@@ -212,9 +212,9 @@ class Bilibili {
         };
         List<dynamic> medias = data['list'];
         final tracks = medias.map((item) {
-          return biConvertSongxuan(item);
+          return biConvertSongxuanToView(item);
         }).toList();
-        throw '测试阶段，稍后再看功能未完成';
+        // throw '测试阶段，稍后再看功能未完成';
         return {
           'success': (fn) {
             fn({'info': info, 'tracks': tracks});
@@ -511,6 +511,20 @@ class Bilibili {
       'source': 'bilibili',
       'source_url': 'https://www.bilibili.com/${songInfo['bvid']}',
       'img_url': songInfo['cover'],
+    };
+  }
+
+  static Map<String, dynamic> biConvertSongxuanToView(
+    Map<String, dynamic> songInfo,
+  ) {
+    return {
+      'id': 'bitrack_v_${songInfo['bvid']}',
+      'title': htmlDecode(songInfo['title']),
+      'artist': htmlDecode(songInfo['owner']['name']),
+      'artist_id': 'biartist_v_${songInfo['owner']['mid']}',
+      'source': 'bilibili',
+      'source_url': 'https://www.bilibili.com/${songInfo['bvid']}',
+      'img_url': songInfo['cover'] ?? songInfo['pic'] ?? songInfo['cover43'],
     };
   }
 
