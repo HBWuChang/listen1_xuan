@@ -33,6 +33,15 @@ class DioController extends GetxController {
   }
 
   void loadProxy() {
+    // dioWithCookieManager.httpClientAdapter = IOHttpClientAdapter(
+    //   createHttpClient: () {
+    //     final client = HttpClient();
+    //     client.findProxy = (uri) {
+    //       return 'PROXY 192.168.2.123:9000';
+    //     };
+    //     return client;
+    //   },
+    // );
     if (isMobile) {
       dioWithProxyAdapter.httpClientAdapter = NativeAdapter(
         createCupertinoConfiguration: () =>

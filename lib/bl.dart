@@ -87,11 +87,19 @@ class Bilibili {
         });
       }
       // return retdata.cast<PlayList>();
-      return List.from(
-        retdata.map((item) {
+      return List.from([
+        PlayList(
+          info: PlayListInfo(
+            id: 'biplaylistxuan_toview$upMid',
+            title: '稍后再看',
+            cover_img_url: '',
+            source_url: 'https://www.bilibili.com/watchlater/list',
+          ),
+        ),
+        ...(retdata.map((item) {
           return PlayList.fromJson(item);
-        }),
-      );
+        })),
+      ]);
     } on DioException catch (e) {
       print('请求失败: ${e.message}');
       if (e.response != null) {
@@ -122,15 +130,13 @@ class Bilibili {
     }
     try {
       if (selectmid.substring(0, 2) == 'my') {
-        final settings = settings_getsettings();
-        final cookie = settings['bl'];
         var url = '';
         url =
             'https://api.bilibili.com/x/v3/fav/resource/list?ps=20&keyword&order=mtime&type=0&tid=0&platform=web&';
         var turl = '${url}pn=1&media_id=${selectmid.substring(2)}';
-        final headers = {'content-type': 'application/json', 'cookie': cookie};
+        final headers = {'content-type': 'application/json'};
         var medias = [];
-        var response = await Dio().get(
+        var response = await dioWithCookieManager.get(
           turl,
           options: Options(headers: headers),
         );
@@ -150,7 +156,7 @@ class Bilibili {
           var pn = 2;
           do {
             turl = '${url}pn=$pn&media_id=${selectmid.substring(2)}';
-            response = await Dio().get(
+            response = await dioWithCookieManager.get(
               turl,
               options: Options(headers: headers),
             );
@@ -171,16 +177,57 @@ class Bilibili {
             fn({'info': info, 'tracks': tracks});
           },
         };
+      } else if (selectmid.substring(0, 6) == 'toview') {
+        final url = 'https://api.bilibili.com/x/v2/history/toview/web';
+        final res = await dioWithCookieManager.get(
+          url,
+          options: Options(
+            headers: {
+              "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0",
+              "Connection": "keep-alive",
+              "Accept": "*/*",
+              "Accept-Encoding": "gzip, deflate, br, zstd",
+              "sec-ch-ua-platform": "\"Windows\"",
+              "sec-ch-ua":
+                  "\"Chromium\";v=\"142\", \"Microsoft Edge\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+              "sec-ch-ua-mobile": "?0",
+              "origin": "https://space.bilibili.com",
+              "sec-fetch-site": "same-site",
+              "sec-fetch-mode": "cors",
+              "sec-fetch-dest": "empty",
+              "referer": "https://www.bilibili.com/",
+              "accept-language":
+                  "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+              "priority": "u=1, i",
+            },
+          ),
+        );
+        Map<String, dynamic> data = res.data['data'];
+        final info = {
+          'cover_img_url': '',
+          'title': '稍后再看',
+          'id': 'biplaylistxuan_$selectmid',
+          'source_url': 'https://www.bilibili.com/watchlater/list',
+        };
+        List<dynamic> medias = data['list'];
+        final tracks = medias.map((item) {
+          return biConvertSongxuan(item);
+        }).toList();
+        throw '测试阶段，稍后再看功能未完成';
+        return {
+          'success': (fn) {
+            fn({'info': info, 'tracks': tracks});
+          },
+        };
       } else {
-        final settings = settings_getsettings();
-        final cookie = settings['bl'];
         var url = '';
         url =
             'https://api.bilibili.com/x/space/fav/season/list?pn=1&ps=20&season_id=';
         var turl = url + selectmid.toString();
-        final headers = {'content-type': 'application/json', 'cookie': cookie};
+        final headers = {'content-type': 'application/json'};
         var medias = [];
-        var response = await Dio().get(
+        var response = await dioWithCookieManager.get(
           turl,
           options: Options(headers: headers),
         );
@@ -210,7 +257,7 @@ class Bilibili {
         };
       }
     } catch (e) {
-      print(e);
+      showErrorSnackbar('Bilibili获取歌单错误', e.toString());
       // return {'info': {}, 'tracks': []};
       return {
         'success': (fn) {
@@ -531,7 +578,10 @@ class Bilibili {
   }
 
   static Future<Map<String, dynamic>> bi_track(String url) async {
-    final trackId = getParameterByName('list_id', url)?.split('_').last.split('-').first;
+    final trackId = getParameterByName(
+      'list_id',
+      url,
+    )?.split('_').last.split('-').first;
     final targetUrl =
         'https://api.bilibili.com/x/web-interface/view?bvid=$trackId';
 

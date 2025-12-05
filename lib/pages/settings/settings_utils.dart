@@ -188,7 +188,7 @@ Future<void> savePlatformToken(
       // 除去两端空格
       var cookie = item.trim().split('=');
       var cookieName = cookie[0].trim();
-      var cookieValue = Uri.encodeComponent(cookie[1].trim());
+      var cookieValue = cookie[1].trim();
       cookies.add(Cookie(cookieName, cookieValue));
     }
 

@@ -245,7 +245,7 @@ void main() async {
   if (settingsController.settingsPageExpansion.contains(0)) {
     settingsController.refreshLoginData();
   }
-  // dio_with_cookie_manager.httpClientAdapter = IOHttpClientAdapter(
+  // dioWithCookieManager.httpClientAdapter = IOHttpClientAdapter(
   //   createHttpClient: () {
   //     final client = HttpClient();
   //     client.findProxy = (uri) {
