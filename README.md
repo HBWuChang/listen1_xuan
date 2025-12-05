@@ -68,22 +68,27 @@ flutter version 3.35.7
 ![alt text](readme/image-3.png)
 ## 竖屏
 ### 主页
-![alt text](readme/Screenshot_2025-06-26-23-18-32-955_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme\主页.jpg) 
+### 播放控制及歌词页面
+![alt text](readme\播放控制.jpg) 
+![alt text](readme\歌词页面.jpg) 
 ### 选择分类
-![alt text](readme/Screenshot_2025-06-26-23-18-44-251_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme\选择分类.jpg) 
 ### 各平台歌单
-![alt text](readme/Screenshot_2025-04-25-21-59-43-363_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme\各平台歌单.jpg) 
 ### 歌单内容
-![alt text](readme/Screenshot_2025-06-26-23-19-05-745_com.xiebian.listen1_xuan.jpg) 
-![alt text](readme/Screenshot_2025-04-25-21-59-56-835_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme\歌单内容.jpg) 
+![alt text](readme\歌单内容2.jpg) 
 ### 歌曲对话框
-![alt text](readme/Screenshot_2025-06-26-23-19-16-088_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme/歌曲对话框.jpg) 
 ### 搜索歌曲
-![alt text](readme/Screenshot_2025-04-25-22-00-12-080_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme/搜索歌曲.jpg) 
+### 搜索歌单
+![alt text](readme/搜索歌单.jpg) 
 ### 歌手歌曲
-![alt text](readme/Screenshot_2025-04-25-22-00-24-511_com.xiebian.listen1_xuan.jpg)
+![alt text](readme/歌手歌曲.jpg)
 ### 设置页面
-![alt text](readme/Screenshot_2025-06-26-23-19-29-460_com.xiebian.listen1_xuan.jpg) 
+![alt text](readme\设置页面.jpg) 
 ## [更新日志](./CHANGELOG.md)
 
 帮我买杯蜜雪冰城能提升鼠鼠重写的积极性！
