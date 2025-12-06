@@ -7,6 +7,7 @@ import 'package:listen1_xuan/models/UserProfile.dart';
 import 'package:listen1_xuan/models/Playlist.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 import 'package:logger/logger.dart';
+import 'package:listen1_xuan/settings.dart' as settings;
 
 /// Supabase 认证控制器
 /// 管理用户登录、登出、会话状态等
@@ -781,6 +782,242 @@ class SupabaseAuthController extends GetxController {
       isLoading.value = false;
       errorMessage.value = '修改密码失败: ${e.toString()}';
       print('修改密码失败: $e');
+      return false;
+    }
+  }
+
+  // ==================== Token 管理相关方法 ====================
+
+  /// 上传指定平台的 token 到云端
+  /// [platform] 平台代码 (bl, ne, qq, github)
+  /// [token] token 值
+  Future<bool> uploadPlatformToken(String platform, String token) async {
+    try {
+      if (currentUser.value == null) {
+        errorMessage.value = '用户未登录';
+        return false;
+      }
+
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      // 检查用户是否已有 tokens 记录
+      final existing = await _supabase
+          .from('tokens')
+          .select()
+          .eq('user_id', currentUser.value!.id)
+          .maybeSingle();
+
+      if (existing == null) {
+        // 创建新记录
+        await _supabase.from('tokens').insert({
+          'user_id': currentUser.value!.id,
+          platform: token,
+        });
+      } else {
+        // 更新现有记录
+        await _supabase
+            .from('tokens')
+            .update({platform: token})
+            .eq('user_id', currentUser.value!.id);
+      }
+
+      isLoading.value = false;
+      return true;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '上传 token 失败: ${e.toString()}';
+      logger.e('上传 token 失败: $e');
+      return false;
+    }
+  }
+
+  /// 从云端下载指定平台的 token
+  /// [platform] 平台代码 (bl, ne, qq, github)
+  /// 返回 token 字符串，如果不存在则返回 null
+  Future<String?> downloadPlatformToken(String platform) async {
+    try {
+      if (currentUser.value == null) {
+        errorMessage.value = '用户未登录';
+        return null;
+      }
+
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final response = await _supabase
+          .from('tokens')
+          .select(platform)
+          .eq('user_id', currentUser.value!.id)
+          .maybeSingle();
+
+      isLoading.value = false;
+
+      if (response == null) {
+        return null;
+      }
+
+      return response[platform] as String?;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '下载 token 失败: ${e.toString()}';
+      logger.e('下载 token 失败: $e');
+      return null;
+    }
+  }
+
+  /// 删除云端指定平台的 token
+  /// [platform] 平台代码 (bl, ne, qq, github)
+  Future<bool> deletePlatformToken(String platform) async {
+    try {
+      if (currentUser.value == null) {
+        errorMessage.value = '用户未登录';
+        return false;
+      }
+
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      // 将指定平台的 token 设置为 null
+      await _supabase
+          .from('tokens')
+          .update({platform: null})
+          .eq('user_id', currentUser.value!.id);
+
+      isLoading.value = false;
+      return true;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '删除 token 失败: ${e.toString()}';
+      logger.e('删除 token 失败: $e');
+      return false;
+    }
+  }
+
+  /// 获取云端所有平台的 token
+  /// 返回一个 Map，key 为平台代码，value 为 token
+  Future<Map<String, String?>> getAllCloudTokens() async {
+    try {
+      if (currentUser.value == null) {
+        return {};
+      }
+
+      final response = await _supabase
+          .from('tokens')
+          .select('bl, ne, qq, github')
+          .eq('user_id', currentUser.value!.id)
+          .maybeSingle();
+
+      if (response == null) {
+        return {};
+      }
+
+      return {
+        'bl': response['bl'] as String?,
+        'ne': response['ne'] as String?,
+        'qq': response['qq'] as String?,
+        'github': response['github'] as String?,
+      };
+    } catch (e) {
+      logger.e('获取云端 tokens 失败: $e');
+      return {};
+    }
+  }
+
+  /// 一键上传所有平台的 token 到云端
+  Future<bool> uploadAllTokens() async {
+    try {
+      if (currentUser.value == null) {
+        errorMessage.value = '用户未登录';
+        return false;
+      }
+
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      // 获取所有本地 token
+      final tokens = <String, String?>{};
+      for (var platform in ['bl', 'ne', 'qq', 'github']) {
+        final token = await settings.outputPlatformToken(platform);
+        if (token != null && token.isNotEmpty) {
+          tokens[platform] = token;
+        }
+      }
+
+      if (tokens.isEmpty) {
+        errorMessage.value = '没有可上传的 token';
+        isLoading.value = false;
+        return false;
+      }
+
+      // 检查用户是否已有 tokens 记录
+      final existing = await _supabase
+          .from('tokens')
+          .select()
+          .eq('user_id', currentUser.value!.id)
+          .maybeSingle();
+
+      if (existing == null) {
+        // 创建新记录
+        tokens['user_id'] = currentUser.value!.id;
+        await _supabase.from('tokens').insert(tokens);
+      } else {
+        // 更新现有记录
+        await _supabase
+            .from('tokens')
+            .update(tokens)
+            .eq('user_id', currentUser.value!.id);
+      }
+
+      isLoading.value = false;
+      return true;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '一键上传失败: ${e.toString()}';
+      logger.e('一键上传失败: $e');
+      return false;
+    }
+  }
+
+  /// 一键下载所有平台的 token 到本地
+  Future<bool> downloadAllTokens() async {
+    try {
+      if (currentUser.value == null) {
+        errorMessage.value = '用户未登录';
+        return false;
+      }
+
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final cloudTokens = await getAllCloudTokens();
+
+      if (cloudTokens.isEmpty) {
+        errorMessage.value = '云端没有可下载的 token';
+        isLoading.value = false;
+        return false;
+      }
+
+      // 将云端 token 保存到本地
+      for (var entry in cloudTokens.entries) {
+        if (entry.value != null && entry.value!.isNotEmpty) {
+          await settings.savePlatformToken(
+            entry.key,
+            entry.value!,
+            saveRightNow: false,
+          );
+        }
+      }
+
+      // 最后统一保存设置
+      Get.find<SettingsController>().saveSettings();
+
+      isLoading.value = false;
+      return true;
+    } catch (e) {
+      isLoading.value = false;
+      errorMessage.value = '一键下载失败: ${e.toString()}';
+      logger.e('一键下载失败: $e');
       return false;
     }
   }

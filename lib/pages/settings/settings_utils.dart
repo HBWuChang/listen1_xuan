@@ -176,7 +176,7 @@ Map<String, dynamic> settings_getsettings() {
 }
 
 Future<String?> outputPlatformToken(String platform) async {
-  if (platform == 'github') {
+  if (platform == PlantformCodes.github) {
     final prefs = SharedPreferencesAsync();
     return await prefs.getString('githubOauthAccessKey');
   }

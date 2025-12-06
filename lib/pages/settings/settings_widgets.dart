@@ -383,18 +383,33 @@ Widget _buildThirdPartyLoginPanel(
           ],
         ),
       ),
-
-      Obx(() {
-        WebSocketClientController wscc = Get.find<WebSocketClientController>();
-        return ElevatedButton(
-          onPressed: !wscc.isConnected
-              ? null
-              : () {
-                  wscc.sendGetCookieMessage();
-                },
-          child: Text('从WebSocket服务器获取登录信息'),
-        );
-      }),
+      Wrap(
+        children: [
+          Obx(() {
+            WebSocketClientController wscc =
+                Get.find<WebSocketClientController>();
+            return ElevatedButton(
+              onPressed: !wscc.isConnected
+                  ? null
+                  : () {
+                      wscc.sendGetCookieMessage();
+                    },
+              child: Text('从WebSocket服务器获取登录信息'),
+            );
+          }),
+          Obx(() {
+            final authController = Get.find<SupabaseAuthController>();
+            return ElevatedButton(
+              onPressed: !authController.isLoggedIn.value
+                  ? null
+                  : () {
+                      _showSupabaseTokenManagementDialog();
+                    },
+              child: Text('Supabase登录信息管理'),
+            );
+          }),
+        ],
+      ),
     ].map((e) => Padding(padding: EdgeInsets.all(8.0), child: e)).toList(),
   );
 }
@@ -882,3 +897,295 @@ Widget get themeSettingsTiles => Column(
     ),
   ],
 );
+
+/// 显示 Supabase Token 管理 Modal Sheet
+Future<void> _showSupabaseTokenManagementDialog() async {
+  await WoltModalSheet.show<void>(
+    pageIndexNotifier: ValueNotifier(0),
+    context: Get.context!,
+    pageListBuilder: (modalSheetContext) {
+      return [
+        WoltModalSheetPage(
+          hasTopBarLayer: false,
+          child: _SupabaseTokenManagementContent(),
+        ),
+      ];
+    },
+  );
+}
+
+/// Supabase Token 管理内容
+class _SupabaseTokenManagementContent extends StatelessWidget {
+  final authController = Get.find<SupabaseAuthController>();
+  final cloudTokens = <String, String?>{}.obs;
+  final isLoading = false.obs;
+
+  // 平台信息
+  final platforms = const [
+    {'code': 'bl', 'name': 'Bilibili'},
+    {'code': 'ne', 'name': '网易云音乐'},
+    {'code': 'qq', 'name': 'QQ音乐'},
+    {'code': 'github', 'name': 'GitHub'},
+  ];
+
+  _SupabaseTokenManagementContent() {
+    _loadCloudTokens();
+  }
+
+  Future<void> _loadCloudTokens() async {
+    isLoading.value = true;
+    cloudTokens.value = await authController.getAllCloudTokens();
+    isLoading.value = false;
+  }
+
+  Future<void> _uploadAllTokens() async {
+    try {
+      showInfoSnackbar('正在上传', null);
+      final success = await authController.uploadAllTokens();
+      if (success) {
+        showSuccessSnackbar('一键上传成功', null);
+        await _loadCloudTokens();
+      } else {
+        showErrorSnackbar('一键上传失败', authController.errorMessage.value);
+      }
+    } catch (e) {
+      showErrorSnackbar('一键上传失败', '$e');
+    }
+  }
+
+  Future<void> _downloadAllTokens() async {
+    try {
+      showInfoSnackbar('正在下载', null);
+      final success = await authController.downloadAllTokens();
+      if (success) {
+        showSuccessSnackbar('一键下载成功', '请重启应用以生效');
+      } else {
+        showErrorSnackbar('一键下载失败', authController.errorMessage.value);
+      }
+    } catch (e) {
+      showErrorSnackbar('一键下载失败', '$e');
+    }
+  }
+
+  Future<void> _uploadPlatformToken(
+    String platformCode,
+    String platformName,
+  ) async {
+    try {
+      showInfoSnackbar('正在上传', null);
+      final localToken = await outputPlatformToken(platformCode);
+      if (localToken == null || localToken.isEmpty) {
+        showErrorSnackbar('本地无 Token', '请先登录 $platformName');
+        return;
+      }
+      final success = await authController.uploadPlatformToken(
+        platformCode,
+        localToken,
+      );
+      if (success) {
+        showSuccessSnackbar('上传成功', null);
+        await _loadCloudTokens();
+      } else {
+        showErrorSnackbar('上传失败', authController.errorMessage.value);
+      }
+    } catch (e) {
+      showErrorSnackbar('上传失败', '$e');
+    }
+  }
+
+  Future<void> _downloadPlatformToken(String platformCode) async {
+    try {
+      showInfoSnackbar('正在下载', null);
+      final cloudToken = await authController.downloadPlatformToken(
+        platformCode,
+      );
+      if (cloudToken != null && cloudToken.isNotEmpty) {
+        await savePlatformToken(platformCode, cloudToken);
+        showSuccessSnackbar('下载成功', '请重启应用以生效');
+      } else {
+        showErrorSnackbar('下载失败', '云端 Token 为空');
+      }
+    } catch (e) {
+      showErrorSnackbar('下载失败', '$e');
+    }
+  }
+
+  Future<void> _deletePlatformToken(
+    String platformCode,
+    String platformName,
+  ) async {
+    final confirmed = await showConfirmDialog(
+      '确认删除云端 $platformName Token？',
+      '删除 Token',
+      confirmLevel: ConfirmLevel.warning,
+    );
+    if (!confirmed) return;
+
+    try {
+      showInfoSnackbar('正在删除', null);
+      final success = await authController.deletePlatformToken(platformCode);
+      if (success) {
+        showSuccessSnackbar('删除成功', null);
+        await _loadCloudTokens();
+      } else {
+        showErrorSnackbar('删除失败', authController.errorMessage.value);
+      }
+    } catch (e) {
+      showErrorSnackbar('删除失败', '$e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 标题和刷新按钮
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Supabase 登录信息管理',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              IconButton(
+                onPressed: _loadCloudTokens,
+                icon: Icon(Icons.refresh),
+                tooltip: '刷新',
+              ),
+            ],
+          ),
+        ),
+        // 内容区域 - 使用 AnimatedSize 实现平滑高度变化
+        Obx(
+          () => AnimatedSize(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: _buildContent(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent() {
+    if (isLoading.value) {
+      return Container(height: 300, child: Center(child: globalLoadingAnime));
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 一键操作按钮
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _uploadAllTokens,
+                  icon: const Icon(Icons.cloud_upload),
+                  label: const Text('一键上传'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _downloadAllTokens,
+                  icon: const Icon(Icons.cloud_download),
+                  label: const Text('一键下载'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Divider(),
+        const SizedBox(height: 8),
+        // 各平台操作列表
+        ListView.builder(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          itemCount: platforms.length,
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          itemBuilder: (context, index) {
+            final platform = platforms[index];
+            final platformCode = platform['code']!;
+            final platformName = platform['name']!;
+
+            return Obx(() {
+              final hasCloudToken =
+                  cloudTokens[platformCode]?.isNotEmpty ?? false;
+
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    child: Icon(
+                      hasCloudToken ? Icons.cloud_done : Icons.cloud_off,
+                      color: hasCloudToken ? Colors.green : Colors.grey,
+                    ),
+                  ),
+                  title: Text(
+                    platformName,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    hasCloudToken ? '云端已存在 Token' : '云端无 Token',
+                    style: TextStyle(
+                      color: hasCloudToken ? Colors.green : Colors.grey,
+                    ),
+                  ),
+                  trailing: Wrap(
+                    spacing: 4,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.upload, size: 20),
+                        tooltip: '上传',
+                        onPressed: () =>
+                            _uploadPlatformToken(platformCode, platformName),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.download, size: 20),
+                        tooltip: '下载',
+                        onPressed: hasCloudToken
+                            ? () => _downloadPlatformToken(platformCode)
+                            : null,
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete,
+                          size: 20,
+                          color: hasCloudToken
+                              ? Get.theme.colorScheme.error
+                              : null,
+                        ),
+                        tooltip: '删除',
+                        onPressed: hasCloudToken
+                            ? () => _deletePlatformToken(
+                                platformCode,
+                                platformName,
+                              )
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}
