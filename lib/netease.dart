@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 import 'package:dio/dio.dart';
@@ -85,7 +86,6 @@ class Netease {
     String url,
     dynamic data,
   ) async {
-    print("dio_post_with_cookie_and_csrf");
     final tokens = settings_getsettings();
     try {
       final _cookies = tokens['ne'];
@@ -117,7 +117,6 @@ class Netease {
             "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
             "accept": "*/*",
             "sec-ch-ua-platform": "\"Windows\"",
-            // "cookie": _cookies,
           },
           contentType: 'application/x-www-form-urlencoded',
         ),
@@ -242,16 +241,21 @@ class Netease {
     final data = weapi({});
     return {
       'success': (fn) async {
-        final response = await dio_post_with_cookie_and_csrf(url, data);
-        final result = response.data['list'].map((item) {
-          return {
-            'cover_img_url': item['coverImgUrl'],
-            'id': 'neplaylist_${item['id']}',
-            'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
-            'title': item['name'],
-          };
-        }).toList();
-        fn(result);
+        try {
+          final response = await dio_post_with_cookie_and_csrf(url, data);
+          final result = response.data['list'].map((item) {
+            return {
+              'cover_img_url': item['coverImgUrl'],
+              'id': 'neplaylist_${item['id']}',
+              'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+              'title': item['name'],
+            };
+          }).toList();
+          fn(result);
+        } catch (e) {
+          showErrorSnackbar('网易加载歌单失败', e.toString());
+          fn([]);
+        }
       },
     };
   }
@@ -350,6 +354,7 @@ class Netease {
     }
   }
 
+  ///好像没用到
   Future<void> ng_render_playlist_result_item(
     int index,
     dynamic item,
@@ -661,19 +666,24 @@ class Netease {
     });
     return {
       'success': (fn) async {
-        final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
-        final resData = jsonDecode(response.data);
-        var lrc = '';
-        var tlrc = '';
-        if (resData['lrc'] != null) {
-          lrc = resData['lrc']['lyric'];
+        try {
+          final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+          final resData = jsonDecode(response.data);
+          var lrc = '';
+          var tlrc = '';
+          if (resData['lrc'] != null) {
+            lrc = resData['lrc']['lyric'];
+          }
+          if (resData['tlyric'] != null && resData['tlyric']['lyric'] != null) {
+            tlrc = resData['tlyric']['lyric']
+                .replaceAll(RegExp(r'(|\\)'), '')
+                .replaceAll(RegExp(r'[\u2005]+'), ' ');
+          }
+          fn({'lyric': lrc, 'tlyric': tlrc});
+        } catch (e) {
+          showErrorSnackbar('网易加载歌词失败', e.toString());
+          fn({'lyric': null, 'tlyric': null});
         }
-        if (resData['tlyric'] != null && resData['tlyric']['lyric'] != null) {
-          tlrc = resData['tlyric']['lyric']
-              .replaceAll(RegExp(r'(|\\)'), '')
-              .replaceAll(RegExp(r'[\u2005]+'), ' ');
-        }
-        fn({'lyric': lrc, 'tlyric': tlrc});
       },
     };
   }
@@ -931,22 +941,30 @@ class Netease {
     final encryptReqData = weapi(reqData);
     return {
       'success': (fn) async {
-        final response = await dio_post_with_cookie_and_csrf(
-          targetUrl,
-          encryptReqData,
-        );
-        final playlists = (response.data['result'] as List).map((item) {
-          return {
-            'cover_img_url': item['picUrl'],
-            'id': 'neplaylist_${item['id']}',
-            'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
-            'title': item['name'],
-          };
-        }).toList();
-        fn({
-          'status': 'success',
-          'data': {'playlists': playlists},
-        });
+        try {
+          final response = await dio_post_with_cookie_and_csrf(
+            targetUrl,
+            encryptReqData,
+          );
+          final playlists = (response.data['result'] as List).map((item) {
+            return {
+              'cover_img_url': item['picUrl'],
+              'id': 'neplaylist_${item['id']}',
+              'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+              'title': item['name'],
+            };
+          }).toList();
+          fn({
+            'status': 'success',
+            'data': {'playlists': playlists},
+          });
+        } catch (e) {
+          showErrorSnackbar('网易加载推荐歌单失败', e.toString());
+          fn({
+            'status': 'fail',
+            'data': {'playlists': []},
+          });
+        }
       },
     };
   }

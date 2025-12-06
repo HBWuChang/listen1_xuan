@@ -285,6 +285,18 @@ class Playlist extends GetView<PlaylistController> {
                   playlist['cover_img_url'],
                   fit: BoxFit.cover,
                   cache: true,
+                  loadStateChanged: (ExtendedImageState state) {
+                    if (state.extendedImageLoadState == LoadState.failed) {
+                      return Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          color: Colors.grey,
+                          size: 40,
+                        ),
+                      );
+                    }
+                    return null; // Use default rendering
+                  },
                 ),
               ),
             ),

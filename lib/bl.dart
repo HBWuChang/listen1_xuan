@@ -22,26 +22,28 @@ final bilibili = Bilibili();
 
 class Bilibili {
   Future<List<PlayList>> Xuan_get_bl_playlist() async {
-    bool b1 = false;
     var bilibiliData = {};
     var bilibiliData2 = [];
-    b1 = false;
     String url = 'https://api.bilibili.com/x/v3/fav/folder/list4navigate';
     final settings = settings_getsettings();
     final cookie = settings['bl'];
 
-    var headers = {'content-type': 'application/json', 'cookie': cookie};
-    final dio = Dio();
+    var headers = {'content-type': 'application/json'};
     try {
-      print(headers);
-      final response = await Dio().get(url, options: Options(headers: headers));
+      final response = await dioWithCookieManager.get(
+        url,
+        options: Options(headers: headers),
+      );
       print(response.statusCode);
       print(response.data);
       bilibiliData = response.data;
       url = 'https://api.bilibili.com/x/v3/fav/folder/collected/list';
       String upMid = cookie.split('DedeUserID=')[1].split(';')[0];
       String turl = url + '?pn=1&ps=20&up_mid=' + upMid + '&platform=web';
-      var response2 = await Dio().get(turl, options: Options(headers: headers));
+      var response2 = await dioWithCookieManager.get(
+        turl,
+        options: Options(headers: headers),
+      );
       var res2 = response2.data;
       bilibiliData2.clear();
       res2['data']['list'].forEach((element) {
@@ -51,7 +53,10 @@ class Bilibili {
         var pn = 2;
         do {
           turl = url + '?pn=$pn&ps=20&up_mid=' + upMid + '&platform=web';
-          response2 = await dio.get(turl, options: Options(headers: headers));
+          response2 = await dioWithCookieManager.get(
+            turl,
+            options: Options(headers: headers),
+          );
           res2 = response2.data;
           res2['data']['list'].forEach((element) {
             bilibiliData2.add(element);
@@ -61,7 +66,7 @@ class Bilibili {
       }
       var retdata = [];
       bilibiliData["data"].forEach((item) {
-        if (item["mediaListResponse"]["list"] != null)
+        if (item["mediaListResponse"]["list"] != null) {
           item["mediaListResponse"]["list"].forEach((element) {
             retdata.add({
               'info': {
@@ -73,6 +78,7 @@ class Bilibili {
               },
             });
           });
+        }
       });
       for (var i = 0; i < bilibiliData2.length; i++) {
         var item = bilibiliData2[i];
@@ -101,18 +107,22 @@ class Bilibili {
         })),
       ]);
     } on DioException catch (e) {
-      print('请求失败: ${e.message}');
+      debugPrint('请求失败: ${e.message}');
       if (e.response != null) {
-        print('响应数据: ${e.response?.data}');
-        print('响应头: ${e.response?.headers}');
-        print('请求信息: ${e.response?.requestOptions}');
+        debugPrint('响应数据: ${e.response?.data}');
+        debugPrint('响应头: ${e.response?.headers}');
+        debugPrint('请求信息: ${e.response?.requestOptions}');
       } else {
-        print('请求未发送: ${e.requestOptions}');
-        print('错误信息: ${e.message}');
+        debugPrint('请求未发送: ${e.requestOptions}');
+        debugPrint('错误信息: ${e.message}');
       }
+      showErrorSnackbar(
+        'Bilibili获取歌单失败\n${e.message}',
+        e.response?.data.toString() ?? '',
+      );
       return [];
     } catch (e) {
-      print('未知错误: $e');
+      debugPrint('未知错误: $e');
       showErrorSnackbar('Bilibili获取歌单未知错误', e.toString());
       return [];
     }
@@ -121,7 +131,6 @@ class Bilibili {
   static Future<Map<String, dynamic>> biGetPlaylistxuan(String url) async {
     final selectmid = getParameterByName('list_id', url)?.split('_').last;
     if (selectmid == null) {
-      // return {'info': {}, 'tracks': []};
       return {
         'success': (fn) {
           fn({'info': {}, 'tracks': []});
@@ -535,21 +544,20 @@ class Bilibili {
         'https://www.bilibili.com/audio/music-service-c/web/menu/hit?ps=20&pn=$page';
 
     return {
-      'success': (Function fn) {
+      'success': (Function fn) async {
         try {
-          Dio().get(targetUrl).then((response) {
-            final data = response.data['data']["data"] as List;
-            final result = data.map((item) {
-              return {
-                'cover_img_url': item['cover'],
-                'title': item['title'],
-                'id': 'biplaylist_${item['menuId']}',
-                'source_url':
-                    'https://www.bilibili.com/audio/am${item['menuId']}',
-              };
-            }).toList();
-            fn(result);
-          });
+          final res = await dioWithCookieManager.get(targetUrl);
+          final data = res.data['data']["data"] as List;
+          final result = data.map((item) {
+            return {
+              'cover_img_url': item['cover'],
+              'title': item['title'],
+              'id': 'biplaylist_${item['menuId']}',
+              'source_url':
+                  'https://www.bilibili.com/audio/am${item['menuId']}',
+            };
+          }).toList();
+          fn(result);
         } catch (e) {
           debugPrint('Error fetching playlist: $e');
           fn([]);

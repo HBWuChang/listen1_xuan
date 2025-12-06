@@ -56,33 +56,47 @@ Future<Map<String, dynamic>> outputAllSettingsToFile([
 Future<void> importSettingsFromFile(
 // [bool fromjson = false, String jsonString = '']) async {
 [bool fromjson = false, Map<String, dynamic> jsonString = const {}]) async {
+  // logger.d('1');
   Future<void> _sets(Map<String, dynamic> settings) async {
     final prefs = SharedPreferencesAsync();
-    for (var key in settings.keys) {
-      switch (key) {
-        case 'playerlists':
-          // settings[key] = prefs.getStringList(key);
-          await prefs.setStringList(key, settings[key].cast<String>());
-          break;
-        case 'auto_choose_source_list':
-          await prefs.setStringList(key, settings[key].cast<String>());
-          break;
-        case 'favoriteplayerlists':
-          await prefs.setStringList(key, settings[key].cast<String>());
-          break;
-        case 'settings':
-          continue;
-        default:
-          try {
-            await prefs.setString(key, jsonEncode(settings[key]));
-          } catch (e) {
-            logger.e('Error encoding key $key: $e');
-          }
-      }
-    }
+    // logger.d('2');
+
+    await Future.wait(
+      settings.keys.map((key) async {
+        switch (key) {
+          case 'playerlists':
+            await prefs.setStringList(key, settings[key].cast<String>());
+            break;
+          case 'auto_choose_source_list':
+            await prefs.setStringList(key, settings[key].cast<String>());
+            break;
+          case 'favoriteplayerlists':
+            await prefs.setStringList(key, settings[key].cast<String>());
+            break;
+          case 'settings':
+            return;
+          default:
+            try {
+              await prefs.setString(
+                key,
+                await compute(
+                  (dynamic value) => jsonEncode(value),
+                  settings[key],
+                ),
+              );
+            } catch (e) {
+              logger.e('Error encoding key $key: $e');
+            }
+        }
+      }),
+    );
+    // logger.d('3');
     await Get.find<SettingsController>().loadSettings();
+    // logger.d('4');
     Get.find<PlayController>().loadDatas();
+    // logger.d('5');
     Get.find<MyPlayListController>().loadDatas();
+    // logger.d('6');
     showSuccessSnackbar('配置导入成功', null);
   }
 

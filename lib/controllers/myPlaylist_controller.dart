@@ -1,16 +1,10 @@
-import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
-import 'package:audio_service/audio_service.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:smtc_windows/smtc_windows.dart';
 
-import '../global_settings_animations.dart';
-import '../play.dart';
-import 'play_controller.dart';
 import 'settings_controller.dart';
 
 class PlayListInfo {
@@ -95,6 +89,7 @@ class MyPlayListController extends GetxController {
     }
     return ids;
   }
+
   @override
   void onInit() {
     super.onInit();
@@ -102,24 +97,34 @@ class MyPlayListController extends GetxController {
       final prefs = SharedPreferencesAsync();
       await prefs.setStringList('playerlists', playerlists.keys.toList());
       for (var playlist in playerlists.entries) {
-        String jsonString = jsonEncode(playlist.value.toJson());
+        String jsonString = await compute(
+          (PlayList pl) => jsonEncode(pl.toJson()),
+          playlist.value,
+        );
         await prefs.setString(playlist.key, jsonString);
       }
     });
     debounce(favoriteplayerlists, (callback) async {
       final prefs = SharedPreferencesAsync();
       await prefs.setStringList(
-          'favoriteplayerlists', favoriteplayerlists.keys.toList());
+        'favoriteplayerlists',
+        favoriteplayerlists.keys.toList(),
+      );
       for (var playlist in favoriteplayerlists.entries) {
-        String jsonString = jsonEncode(playlist.value.toJson());
+        String jsonString = await compute(
+          (PlayList pl) => jsonEncode(pl.toJson()),
+          playlist.value,
+        );
         await prefs.setString(playlist.key, jsonString);
       }
     });
   }
 
-  void loadDatas()  {
-    playerlists.value=Get.find<SettingsController>().MyPlayListController_playerlists;
-    favoriteplayerlists.value=Get.find<SettingsController>().MyPlayListController_favoriteplayerlists;
+  void loadDatas() {
+    playerlists.value =
+        Get.find<SettingsController>().MyPlayListController_playerlists;
+    favoriteplayerlists.value =
+        Get.find<SettingsController>().MyPlayListController_favoriteplayerlists;
     update();
   }
 }

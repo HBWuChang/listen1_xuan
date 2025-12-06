@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -200,62 +201,142 @@ class SettingsController extends GetxController {
 
   Future<void> loadSettings() async {
     final prefs = SharedPreferencesAsync();
-    String? jsonString = await prefs.getString('settings');
+    
+    // 第一批：并行获取所有字符串数据
+    final results = await Future.wait([
+      prefs.getString('settings'),
+      prefs.getString(CacheController_localCacheListKey),
+      prefs.getString('player-settings'),
+      prefs.getString('current-playing'),
+      prefs.getStringList('playerlists'),
+      prefs.getStringList('favoriteplayerlists'),
+    ]);
+    
+    final jsonString = results[0] as String?;
+    final localCacheListJson = results[1] as String?;
+    final player_settings = results[2] as String?;
+    final current_playing = results[3] as String?;
+    final playlists = results[4] as List<String>?;
+    final favoritePlaylists = results[5] as List<String>?;
+    
+    // 第二批：并行解析所有 JSON 数据
+    final computeTasks = <Future<dynamic>>[];
+    
     if (jsonString != null) {
-      settings.value = jsonDecode(jsonString);
+      computeTasks.add(compute(
+        (String jsonStr) => jsonDecode(jsonStr) as Map<String, dynamic>,
+        jsonString,
+      ));
+    } else {
+      computeTasks.add(Future.value(null));
     }
-    // 加载 showLyricTranslation 的值
-    showLyricTranslation.value = settings['showLyricTranslation'] ?? true;
-    final localCacheListJson = await prefs.getString(
-      CacheController_localCacheListKey,
-    );
+    
     if (localCacheListJson != null) {
-      final localCacheList = jsonDecode(localCacheListJson);
+      computeTasks.add(compute(
+        (String jsonStr) => jsonDecode(jsonStr) as Map<String, dynamic>,
+        localCacheListJson,
+      ));
+    } else {
+      computeTasks.add(Future.value(null));
+    }
+    
+    if (player_settings != null) {
+      computeTasks.add(compute(
+        (String jsonStr) => jsonDecode(jsonStr) as Map<String, dynamic>,
+        player_settings,
+      ).catchError((_) => <String, dynamic>{}));
+    } else {
+      computeTasks.add(Future.value(null));
+    }
+    
+    if (current_playing != null) {
+      computeTasks.add(compute(
+        (String jsonStr) => jsonDecode(jsonStr) as List,
+        current_playing,
+      ).catchError((_) => <dynamic>[]));
+    } else {
+      computeTasks.add(Future.value(null));
+    }
+    
+    final computeResults = await Future.wait(computeTasks);
+    
+    // 应用解析结果
+    if (computeResults[0] != null) {
+      settings.value = computeResults[0] as Map<String, dynamic>;
+    }
+    showLyricTranslation.value = settings['showLyricTranslation'] ?? true;
+    
+    if (computeResults[1] != null) {
       CacheController_localCacheList.assignAll(
-        Map<String, String>.from(localCacheList),
+        Map<String, String>.from(computeResults[1] as Map<String, dynamic>),
       );
     } else {
       CacheController_localCacheList.clear();
     }
+    
     settingsPageExpansion.value = Set<int>.from(
       settings['settingsPageExpansion'] ?? <int>[],
     );
-    _lastSettingsPageExpansion = Set<int>.from(settingsPageExpansion.value);
-
-    final player_settings = await prefs.getString('player-settings');
-    if (player_settings != null) {
-      try {
-        PlayController_player_settings = jsonDecode(player_settings);
-      } catch (e) {}
+    _lastSettingsPageExpansion = Set<int>.from(settingsPageExpansion);
+    
+    if (computeResults[2] != null) {
+      PlayController_player_settings = computeResults[2] as Map<String, dynamic>;
     }
-    final current_playing = await prefs.getString('current-playing');
-    if (current_playing != null) {
-      try {
-        PlayController_current_playing = (jsonDecode(current_playing) as List)
-            .map((track) => Track.fromJson(track))
-            .toList();
-      } catch (e) {}
+    
+    if (computeResults[3] != null) {
+      PlayController_current_playing = (computeResults[3] as List)
+          .map((track) => Track.fromJson(track))
+          .toList();
     }
+    
+    // 第三批：并行获取所有播放列表数据
     MyPlayListController_playerlists.clear();
     MyPlayListController_favoriteplayerlists.clear();
-    List<String>? playlists = await prefs.getStringList('playerlists');
+    
+    final playlistFutures = <Future<MapEntry<String, PlayList>?>>[];
+    
     for (var playlist in playlists ?? []) {
-      final playlistJson = await prefs.getString(playlist);
-      if (playlistJson != null) {
-        MyPlayListController_playerlists[playlist] = PlayList.fromJson(
-          jsonDecode(playlistJson),
-        );
-      }
+      playlistFutures.add(
+        prefs.getString(playlist).then((playlistJson) async {
+          if (playlistJson != null) {
+            final decoded = await compute(
+              (String jsonStr) => jsonDecode(jsonStr),
+              playlistJson,
+            );
+            return MapEntry(playlist, PlayList.fromJson(decoded));
+          }
+          return null;
+        }),
+      );
     }
-    List<String>? favoritePlaylists = await prefs.getStringList(
-      'favoriteplayerlists',
-    );
+    
     for (var playlist in favoritePlaylists ?? []) {
-      final playlistJson = await prefs.getString(playlist);
-      if (playlistJson != null) {
-        MyPlayListController_favoriteplayerlists[playlist] = PlayList.fromJson(
-          jsonDecode(playlistJson),
-        );
+      playlistFutures.add(
+        prefs.getString(playlist).then((playlistJson) async {
+          if (playlistJson != null) {
+            final decoded = await compute(
+              (String jsonStr) => jsonDecode(jsonStr),
+              playlistJson,
+            );
+            return MapEntry(playlist, PlayList.fromJson(decoded));
+          }
+          return null;
+        }),
+      );
+    }
+    
+    final playlistResults = await Future.wait(playlistFutures);
+    
+    // 将结果分配到对应的 Map
+    final playlistCount = (playlists ?? []).length;
+    for (var i = 0; i < playlistResults.length; i++) {
+      final result = playlistResults[i];
+      if (result != null) {
+        if (i < playlistCount) {
+          MyPlayListController_playerlists[result.key] = result.value;
+        } else {
+          MyPlayListController_favoriteplayerlists[result.key] = result.value;
+        }
       }
     }
   }
