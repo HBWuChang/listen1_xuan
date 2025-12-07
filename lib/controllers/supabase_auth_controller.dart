@@ -9,6 +9,8 @@ import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/settings.dart' as settings;
 
+import '../funcs.dart';
+
 /// Supabase 认证控制器
 /// 管理用户登录、登出、会话状态等
 class SupabaseAuthController extends GetxController {
@@ -266,7 +268,7 @@ class SupabaseAuthController extends GetxController {
     } catch (e) {
       isLoading.value = false;
       errorMessage.value = '登出失败: ${e.toString()}';
-      print('登出失败: $e');
+      showErrorSnackbar('登出失败', e.toString());
     }
   }
 
