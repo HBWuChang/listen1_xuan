@@ -211,69 +211,57 @@ Widget buildPreviousButton() {
 
 // 播放/暂停按钮
 Widget buildPlayPauseButton(double expandProgress) {
-  return Obx(
-    () => Stack(
-      children: [
-        Positioned.fill(
-          child: AnimatedOpacity(
-            opacity: expandProgress < 0.5 ? 1.0 : 0.0,
-            duration: Duration(milliseconds: 200),
-            child: StreamBuilder<MediaState>(
-              stream: _mediaStateStream,
-              builder: (context, snapshot) {
-                final mediaState = snapshot.data;
-                final duration = (mediaState
-                    ?.mediaItem
-                    ?.duration
-                    ?.inMilliseconds
-                    .toDouble());
-                if (duration == null || duration <= 0) {
-                  return CircularProgressIndicator();
-                }
-                final position =
-                    mediaState?.position.inMilliseconds.toDouble() ?? 0.0;
-                final progress = (position / duration).clamp(0.0, 1.0);
+  return Stack(
+    children: [
+      Positioned.fill(
+        child: AnimatedOpacity(
+          opacity: expandProgress < 0.5 ? 1.0 : 0.0,
+          duration: Duration(milliseconds: 200),
+          child: StreamBuilder<MediaState>(
+            stream: _mediaStateStream,
+            builder: (context, snapshot) {
+              final mediaState = snapshot.data;
+              final duration = (mediaState?.mediaItem?.duration?.inMilliseconds
+                  .toDouble());
+              if (duration == null || duration <= 0) {
+                return CircularProgressIndicator();
+              }
+              final position =
+                  mediaState?.position.inMilliseconds.toDouble() ?? 0.0;
+              final progress = (position / duration).clamp(0.0, 1.0);
 
-                // 使用 AnimatedBuilder 监听旋转动画控制器
-                return AnimatedBuilder(
-                  animation: _playController.playVPlayBtnProcessController,
-                  builder: (context, child) {
-                    // 应用选中的曲线
-                    final curvedValue = _playController
-                        .playButtonRotationCurveValue
-                        .transform(
-                          _playController.playVPlayBtnProcessController.value,
-                        );
+              // 使用 AnimatedBuilder 监听旋转动画控制器
+              return AnimatedBuilder(
+                animation: _playController.playVPlayBtnProcessController,
+                builder: (context, child) {
+                  // 应用选中的曲线
+                  final curvedValue = _playController
+                      .playButtonRotationCurveValue
+                      .transform(
+                        _playController.playVPlayBtnProcessController.value,
+                      );
 
-                    return Transform.rotate(
-                      angle: curvedValue * 2 * pi,
-                      child: CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 8.w,
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+                  return Transform.rotate(
+                    angle: curvedValue * 2 * pi,
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 8.w,
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
-        IconButton(
-          style: controlBtnsStyle,
-          icon: Icon(
-            _playController.isplaying.value ? Icons.pause : Icons.play_arrow,
-            size: controlButtonIconSize,
-          ),
-          onPressed: () {
-            if (_playController.isplaying.value) {
-              globalPause();
-            } else {
-              globalPlay();
-            }
-          },
-        ),
-      ],
-    ),
+      ),
+      PlayPauseBtn(
+        isPlaying: _playController.isplaying,
+        size: controlButtonIconSize,
+        onPlayPressed: globalPlay,
+        onPausePressed: globalPause,
+        style: controlBtnsStyle,
+      ),
+    ],
   );
 }
 
@@ -499,4 +487,79 @@ class SizedBoxWithOverflow extends StatelessWidget {
 // 内联歌词组件 - 在播放器展开时显示
 Widget _buildInlineLyric() {
   return LyricVPage();
+}
+
+// 播放/暂停按钮组件 - 带动画效果
+class PlayPauseBtn extends StatefulWidget {
+  final RxBool isPlaying;
+  final double size;
+  final VoidCallback? onPlayPressed;
+  final VoidCallback? onPausePressed;
+  final ButtonStyle? style;
+  const PlayPauseBtn({
+    Key? key,
+    required this.isPlaying,
+    this.size = 50.0,
+    this.onPlayPressed,
+    this.onPausePressed,
+    this.style,
+  }) : super(key: key);
+
+  @override
+  State<PlayPauseBtn> createState() => _PlayPauseBtnState();
+}
+
+class _PlayPauseBtnState extends State<PlayPauseBtn>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Worker _worker;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    // 初始化状态
+    if (widget.isPlaying.value) {
+      _animationController.value = 1.0;
+    }
+
+    // 监听 RxBool 变化
+    _worker = ever(widget.isPlaying, (isPlaying) {
+      if (isPlaying) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _worker.dispose();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      style: widget.style,
+      iconSize: globalHorizon ? 32 : 100.w,
+      icon: AnimatedIcon(
+        icon: AnimatedIcons.play_pause,
+        progress: _animationController,
+      ),
+      onPressed: () {
+        if (widget.isPlaying.value) {
+          widget.onPausePressed?.call();
+        } else {
+          widget.onPlayPressed?.call();
+        }
+      },
+    );
+  }
 }

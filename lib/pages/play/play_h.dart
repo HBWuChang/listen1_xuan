@@ -20,15 +20,13 @@ Widget playH() {
         Container(
           width: 50,
           height: 50,
-          child: Obx(
-            () => Center(
-              child: _playController.isplaying.value
-                  ? _button(Icons.pause, () {
-                      globalPause();
-                    }, h: true)
-                  : _button(Icons.play_arrow, () {
-                      globalPlay();
-                    }, h: true),
+          child: Center(
+            // 上一首
+            child: PlayPauseBtn(
+              isPlaying: _playController.isplaying,
+              size: 50,
+              onPlayPressed: globalPlay,
+              onPausePressed: globalPause,
             ),
           ),
         ),
