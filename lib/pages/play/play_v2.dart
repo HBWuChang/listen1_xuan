@@ -382,37 +382,60 @@ Widget get playV2 => LayoutBuilder(
                                             child: Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.spaceEvenly,
-                                              children: [
-                                                SizedBoxWithOverflow.processMaxSizeDir(
-                                                  maxSize: controlButtonSize,
-                                                  process: expandProgress,
-                                                  child: showVolumeSliderBtn,
-                                                ),
-                                                SizedBoxWithOverflow.processMaxSizeDir(
-                                                  maxSize: controlButtonSize,
-                                                  process: expandProgress,
-                                                  child: playModeButton,
-                                                ),
-                                                SizedBoxWithOverflow.processMaxSizeDir(
-                                                  maxSize: controlButtonSize,
-                                                  process: expandProgress,
-                                                  child: buildPreviousButton(),
-                                                ),
-                                                buildPlayPauseButton(
-                                                  expandProgress,
-                                                ),
-                                                SizedBoxWithOverflow.processMaxSizeDir(
-                                                  maxSize: controlButtonSize,
-                                                  process: expandProgress,
-                                                  child: buildNextButton(),
-                                                ),
-                                                buildPlaylistButton,
-                                                SizedBoxWithOverflow.processMaxSizeDir(
-                                                  maxSize: controlButtonSize,
-                                                  process: expandProgress,
-                                                  child: songDialogBtn,
-                                                ),
-                                              ],
+                                              children: Get.find<SettingsController>()
+                                                  .playVBtns
+                                                  .map((tindex) {
+                                                    Widget btn;
+                                                    PlayVBtns setBtn = PlayVBtns
+                                                        .values[tindex];
+                                                    if (setBtn ==
+                                                        PlayVBtns
+                                                            .volumeSlider) {
+                                                      btn = showVolumeSliderBtn;
+                                                    } else if (setBtn ==
+                                                        PlayVBtns.playMode) {
+                                                      btn = playModeButton;
+                                                    } else if (setBtn ==
+                                                        PlayVBtns.previous) {
+                                                      btn =
+                                                          buildPreviousButton();
+                                                    } else if (setBtn ==
+                                                        PlayVBtns.playPause) {
+                                                      btn =
+                                                          buildPlayPauseButton(
+                                                            expandProgress,
+                                                          );
+                                                    } else if (setBtn ==
+                                                        PlayVBtns.next) {
+                                                      btn = buildNextButton();
+                                                    } else if (setBtn ==
+                                                        PlayVBtns
+                                                            .nowPlayinglist) {
+                                                      btn = buildPlaylistButton;
+                                                    } else if (setBtn ==
+                                                        PlayVBtns.songDialog) {
+                                                      btn = songDialogBtn;
+                                                    } else {
+                                                      btn = SizedBox.shrink();
+                                                    }
+                                                    if (Get.find<
+                                                          SettingsController
+                                                        >()
+                                                        .playVShowBtns
+                                                        .contains(
+                                                          setBtn.index,
+                                                        )) {
+                                                      return btn;
+                                                    } else {
+                                                      return SizedBoxWithOverflow.processMaxSizeDir(
+                                                        maxSize:
+                                                            controlButtonSize,
+                                                        process: expandProgress,
+                                                        child: btn,
+                                                      );
+                                                    }
+                                                  })
+                                                  .toList(),
                                             ),
                                           ),
                                         ),

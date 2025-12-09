@@ -10,6 +10,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/models/websocket_message.dart';
+import 'package:listen1_xuan/play.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:window_manager/window_manager.dart';
@@ -172,6 +173,36 @@ class SettingsController extends GetxController {
     settings[supabaseUploadTimeoutDurationOnExitKey] = value;
   }
 
+  static const String playVShowBtnsKey = 'playVShowBtns';
+  Set<int> get playVShowBtns {
+    final value = settings[playVShowBtnsKey];
+    if (value is List) {
+      return value.map((e) => e as int).toSet();
+    }
+    return {PlayVBtns.playPause.index, PlayVBtns.nowPlayinglist.index};
+  }
+  set playVShowBtns(Set<int> value) {
+    if (value.length != 2) {
+      throw '按钮个数必须为2';
+    }
+    settings[playVShowBtnsKey] = value.toList();
+  }
+
+  static const String playVBtnsKey = 'playVBtns';
+  List<int> get playVBtns {
+    final value = settings[playVBtnsKey];
+    if (value is List) {
+      return value.map((e) => e as int).toList();
+    }
+    return List.generate(PlayVBtns.values.length, (index) => index);
+  }
+  set playVBtns(List<int> value) {
+    if (value.length != PlayVBtns.values.length) {
+      throw '按钮个数必须为${PlayVBtns.values.length}';
+    }
+    settings[playVBtnsKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
@@ -201,7 +232,7 @@ class SettingsController extends GetxController {
 
   Future<void> loadSettings() async {
     final prefs = SharedPreferencesAsync();
-    
+
     // 第一批：并行获取所有字符串数据
     final results = await Future.wait([
       prefs.getString('settings'),
@@ -211,61 +242,69 @@ class SettingsController extends GetxController {
       prefs.getStringList('playerlists'),
       prefs.getStringList('favoriteplayerlists'),
     ]);
-    
+
     final jsonString = results[0] as String?;
     final localCacheListJson = results[1] as String?;
     final player_settings = results[2] as String?;
     final current_playing = results[3] as String?;
     final playlists = results[4] as List<String>?;
     final favoritePlaylists = results[5] as List<String>?;
-    
+
     // 第二批：并行解析所有 JSON 数据
     final computeTasks = <Future<dynamic>>[];
-    
+
     if (jsonString != null) {
-      computeTasks.add(compute(
-        (String jsonStr) => jsonDecode(jsonStr) as Map<String, dynamic>,
-        jsonString,
-      ));
+      computeTasks.add(
+        compute(
+          (String jsonStr) => jsonDecode(jsonStr) as Map<String, dynamic>,
+          jsonString,
+        ),
+      );
     } else {
       computeTasks.add(Future.value(null));
     }
-    
+
     if (localCacheListJson != null) {
-      computeTasks.add(compute(
-        (String jsonStr) => jsonDecode(jsonStr) as Map<String, dynamic>,
-        localCacheListJson,
-      ));
+      computeTasks.add(
+        compute(
+          (String jsonStr) => jsonDecode(jsonStr) as Map<String, dynamic>,
+          localCacheListJson,
+        ),
+      );
     } else {
       computeTasks.add(Future.value(null));
     }
-    
+
     if (player_settings != null) {
-      computeTasks.add(compute(
-        (String jsonStr) => jsonDecode(jsonStr) as Map<String, dynamic>,
-        player_settings,
-      ).catchError((_) => <String, dynamic>{}));
+      computeTasks.add(
+        compute(
+          (String jsonStr) => jsonDecode(jsonStr) as Map<String, dynamic>,
+          player_settings,
+        ).catchError((_) => <String, dynamic>{}),
+      );
     } else {
       computeTasks.add(Future.value(null));
     }
-    
+
     if (current_playing != null) {
-      computeTasks.add(compute(
-        (String jsonStr) => jsonDecode(jsonStr) as List,
-        current_playing,
-      ).catchError((_) => <dynamic>[]));
+      computeTasks.add(
+        compute(
+          (String jsonStr) => jsonDecode(jsonStr) as List,
+          current_playing,
+        ).catchError((_) => <dynamic>[]),
+      );
     } else {
       computeTasks.add(Future.value(null));
     }
-    
+
     final computeResults = await Future.wait(computeTasks);
-    
+
     // 应用解析结果
     if (computeResults[0] != null) {
       settings.value = computeResults[0] as Map<String, dynamic>;
     }
     showLyricTranslation.value = settings['showLyricTranslation'] ?? true;
-    
+
     if (computeResults[1] != null) {
       CacheController_localCacheList.assignAll(
         Map<String, String>.from(computeResults[1] as Map<String, dynamic>),
@@ -273,28 +312,32 @@ class SettingsController extends GetxController {
     } else {
       CacheController_localCacheList.clear();
     }
-    
-    settingsPageExpansion.value = Set<int>.from(
-      settings['settingsPageExpansion'] ?? <int>[],
-    );
+
+    final expansionValue = settings['settingsPageExpansion'];
+    final expansionSet = expansionValue is List
+        ? expansionValue.map((e) => e as int).toSet()
+        : <int>{};
+    settingsPageExpansion.clear();
+    settingsPageExpansion.addAll(expansionSet);
     _lastSettingsPageExpansion = Set<int>.from(settingsPageExpansion);
-    
+
     if (computeResults[2] != null) {
-      PlayController_player_settings = computeResults[2] as Map<String, dynamic>;
+      PlayController_player_settings =
+          computeResults[2] as Map<String, dynamic>;
     }
-    
+
     if (computeResults[3] != null) {
       PlayController_current_playing = (computeResults[3] as List)
           .map((track) => Track.fromJson(track))
           .toList();
     }
-    
+
     // 第三批：并行获取所有播放列表数据
     MyPlayListController_playerlists.clear();
     MyPlayListController_favoriteplayerlists.clear();
-    
+
     final playlistFutures = <Future<MapEntry<String, PlayList>?>>[];
-    
+
     for (var playlist in playlists ?? []) {
       playlistFutures.add(
         prefs.getString(playlist).then((playlistJson) async {
@@ -309,7 +352,7 @@ class SettingsController extends GetxController {
         }),
       );
     }
-    
+
     for (var playlist in favoritePlaylists ?? []) {
       playlistFutures.add(
         prefs.getString(playlist).then((playlistJson) async {
@@ -324,9 +367,9 @@ class SettingsController extends GetxController {
         }),
       );
     }
-    
+
     final playlistResults = await Future.wait(playlistFutures);
-    
+
     // 将结果分配到对应的 Map
     final playlistCount = (playlists ?? []).length;
     for (var i = 0; i < playlistResults.length; i++) {

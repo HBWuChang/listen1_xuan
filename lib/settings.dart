@@ -26,6 +26,7 @@ import 'controllers/settings_controller.dart';
 import 'controllers/routeController.dart';
 import 'controllers/supabase_auth_controller.dart';
 import 'controllers/websocket_client_controller.dart';
+import 'pages/settings/play_buttons_settings_page.dart';
 import 'pages/settings/settings_supabase_login_page.dart';
 import 'pages/settings/settings_password_dialog.dart';
 import 'examples/equalizer_integration_example.dart';

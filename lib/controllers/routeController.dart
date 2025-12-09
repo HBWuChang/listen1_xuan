@@ -126,7 +126,7 @@ Future<void> closeApp() async {
             Row(
               children: [
                 if (settingsSaved.value)
-                  Icon(Icons.check_circle, color: Colors.green)
+                  Icon(Icons.check_circle, color: Get.theme.colorScheme.primary)
                 else
                   SizedBox(
                     width: 24,
@@ -141,9 +141,9 @@ Future<void> closeApp() async {
             Row(
               children: [
                 if (continuePlaysaved.value)
-                  Icon(Icons.check_circle, color: Colors.green)
+                  Icon(Icons.check_circle, color: Get.theme.colorScheme.primary)
                 else if (timeoutReached.value)
-                  Icon(Icons.warning, color: Colors.orange)
+                  Icon(Icons.warning, color: Get.theme.colorScheme.error)
                 else
                   SizedBox(
                     width: 24,

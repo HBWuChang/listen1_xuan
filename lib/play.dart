@@ -52,6 +52,18 @@ part 'pages/play/play_v2.dart';
 part 'pages/play/play_h.dart';
 part 'pages/play/play_widgets.dart';
 
+enum PlayVBtns {
+  volumeSlider('显示音量滑块'),
+  playMode('播放模式'),
+  previous('上一曲'),
+  playPause('播放/暂停'),
+  next('下一曲'),
+  nowPlayinglist('正在播放列表'),
+  songDialog('歌曲信息');
+
+  final String desc;
+  const PlayVBtns(this.desc);
+}
 // Windows Taskbar API 调用的安全包装器
 // 用于处理窗口未初始化的情况
 bool _windowsTaskbarInitialized = false;

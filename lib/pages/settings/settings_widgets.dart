@@ -384,6 +384,9 @@ Widget _buildThirdPartyLoginPanel(
         ),
       ),
       Wrap(
+        spacing: 8.0,
+        runSpacing: 8.0,
+        alignment: WrapAlignment.center,
         children: [
           Obx(() {
             WebSocketClientController wscc =
@@ -581,6 +584,7 @@ List<Widget> get cacheSettingsTiles => [
         style: TextStyle(fontSize: 12),
       );
     }),
+    trailing: Icon(Icons.chevron_right),
     onTap: () => Get.toNamed(RouteName.cacheNamingPage, id: 1),
   ),
 ].map((e) => Padding(padding: EdgeInsets.all(8.0), child: e)).toList();
@@ -741,6 +745,19 @@ Widget get themeSettingsTiles => Column(
         showThemeDialog();
       },
     ),
+    OpenContainer(
+      closedColor: AdaptiveTheme.of(Get.context!).theme.cardColor,
+      openColor: AdaptiveTheme.of(Get.context!).theme.scaffoldBackgroundColor,
+      closedBuilder: (context, _) => ListTile(
+        leading: Icon(Icons.smart_button_rounded),
+        title: Text('竖屏播放栏按钮'),
+        trailing: Icon(Icons.unfold_more_rounded)
+      ),
+      openBuilder: (context, _) {
+        return PlayButtonsSettingsPage();
+      },
+    ),
+
     if (isDesktop)
       ListTile(
         leading: Icon(Icons.opacity_rounded),

@@ -35,7 +35,7 @@ class WebSocketClientController extends GetxController {
   /// WebSocket客户端是否自动启动的标志位
   final RxBool _wsClientAutoStart = false.obs;
   final RxBool _wsClientBtnShow = false.obs;
-  final RxBool _wsClientBtnShowFloating = true.obs;
+  final RxBool _wsClientBtnShowFloating = false.obs;
 
   /// 客户端配置
   final RxString _serverAddress = '127.0.0.1:25917'.obs;
