@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:audio_service/audio_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/controllers/cache_controller.dart';
@@ -22,6 +23,7 @@ import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:rxdart/rxdart.dart' as rxdart;
 import '../global_settings_animations.dart';
 import '../loweb.dart';
+import '../models/SongReplaceSettings.dart';
 import '../utils/curve_utils.dart';
 import 'lyric_controller.dart';
 import 'nowplaying_controller.dart';
@@ -39,6 +41,8 @@ class PlayController extends GetxController
   CacheController cacheController = Get.find<CacheController>();
   final _player_settings = <String, dynamic>{}.obs;
   final currentPlayingRx = <Track>[].obs;
+  bool songReplaceSettingsSkipOnceSave = false;
+  final songReplaceSettings = SongReplaceSettings().obs;
   final logger = Logger();
   final updatePosToAudioServiceNow = 0.obs;
   final needUpdatePosToAudioService = 0.obs; // 新增：触发位置更新的流
@@ -219,6 +223,8 @@ class PlayController extends GetxController
         settingsController.settings[SettingsController
             .playButtonRotationCurveKey] ??
         'easeInSine';
+
+    /// 恢复上次播放位置
     music_player.stream.position.listen((position) {
       positionInMilliseconds.value = position.inMilliseconds;
     });
@@ -234,6 +240,18 @@ class PlayController extends GetxController
           .toUtc()
           .millisecondsSinceEpoch;
     }, time: Duration(milliseconds: 2000));
+
+    ///歌曲替换保存
+    debounce(songReplaceSettings, (value) async {
+      if (songReplaceSettingsSkipOnceSave) {
+        songReplaceSettingsSkipOnceSave = false;
+        return;
+      }
+      await SharedPreferencesAsync().setString(
+        SettingsController.PlayController_play_replaceKey,
+        await compute((SongReplaceSettings s) => jsonEncode(s.toJson()), value),
+      );
+    });
   }
 
   @override
@@ -492,6 +510,9 @@ class PlayController extends GetxController
         Get.find<SettingsController>().PlayController_player_settings;
     currentPlayingRx.value =
         Get.find<SettingsController>().PlayController_current_playing;
+    songReplaceSettingsSkipOnceSave = true;
+    songReplaceSettings.value =
+        Get.find<SettingsController>().PlayController_play_replace;
   }
 
   List<Track> get current_playing => currentPlayingRx.toList();

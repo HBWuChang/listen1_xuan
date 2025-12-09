@@ -19,6 +19,7 @@ import '../bl.dart';
 import '../const.dart';
 import '../global_settings_animations.dart';
 import '../main.dart';
+import '../models/SongReplaceSettings.dart';
 import '../netease.dart';
 import '../qq.dart';
 import '../settings.dart';
@@ -181,6 +182,7 @@ class SettingsController extends GetxController {
     }
     return {PlayVBtns.playPause.index, PlayVBtns.nowPlayinglist.index};
   }
+
   set playVShowBtns(Set<int> value) {
     if (value.length != 2) {
       throw '按钮个数必须为2';
@@ -196,6 +198,7 @@ class SettingsController extends GetxController {
     }
     return List.generate(PlayVBtns.values.length, (index) => index);
   }
+
   set playVBtns(List<int> value) {
     if (value.length != PlayVBtns.values.length) {
       throw '按钮个数必须为${PlayVBtns.values.length}';
@@ -207,6 +210,9 @@ class SettingsController extends GetxController {
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
   var PlayController_current_playing = <Track>[];
+  static const String PlayController_play_replaceKey =
+      'song_replace_settings_xuan';
+  SongReplaceSettings PlayController_play_replace = SongReplaceSettings();
   var MyPlayListController_playerlists = <String, PlayList>{};
   var MyPlayListController_favoriteplayerlists = <String, PlayList>{};
   @override
@@ -241,6 +247,7 @@ class SettingsController extends GetxController {
       prefs.getString('current-playing'),
       prefs.getStringList('playerlists'),
       prefs.getStringList('favoriteplayerlists'),
+      prefs.getString(PlayController_play_replaceKey),
     ]);
 
     final jsonString = results[0] as String?;
@@ -249,6 +256,7 @@ class SettingsController extends GetxController {
     final current_playing = results[3] as String?;
     final playlists = results[4] as List<String>?;
     final favoritePlaylists = results[5] as List<String>?;
+    final play_replace = results[6] as String?;
 
     // 第二批：并行解析所有 JSON 数据
     final computeTasks = <Future<dynamic>>[];
@@ -296,7 +304,16 @@ class SettingsController extends GetxController {
     } else {
       computeTasks.add(Future.value(null));
     }
-
+    if (play_replace != null) {
+      computeTasks.add(
+        compute(
+          (String jsonStr) => jsonDecode(jsonStr) as Map<String, dynamic>,
+          play_replace,
+        ).catchError((_) => <String, dynamic>{}),
+      );
+    } else {
+      computeTasks.add(Future.value(null));
+    }
     final computeResults = await Future.wait(computeTasks);
 
     // 应用解析结果
@@ -330,6 +347,12 @@ class SettingsController extends GetxController {
       PlayController_current_playing = (computeResults[3] as List)
           .map((track) => Track.fromJson(track))
           .toList();
+    }
+    if (computeResults[4] != null) {
+      PlayController_play_replace = await compute(
+        (Map<String, dynamic> json) => SongReplaceSettings.fromJson(json),
+        computeResults[6] as Map<String, dynamic>,
+      );
     }
 
     // 第三批：并行获取所有播放列表数据

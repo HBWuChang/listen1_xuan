@@ -23,10 +23,18 @@ Future<Map<String, dynamic>> outputAllSettingsToFile([
       case 'local-cache-list':
         continue;
       default:
+        if (key.startsWith('flutter.') ||
+            key.startsWith('supabase.') ||
+            key.contains('token'))
+          continue;
         try {
           settings[key] = jsonDecode(await prefs.getString(key) ?? '{}');
         } catch (e) {
-          logger.e('Error decoding key $key: $e');
+          try {
+            settings[key] = await prefs.getString(key);
+          } catch (e) {
+            logger.e('Error getting key $key: $e');
+          }
         }
     }
   }
@@ -74,9 +82,10 @@ Future<void> importSettingsFromFile(
             await prefs.setStringList(key, settings[key].cast<String>());
             break;
           case 'settings':
-            return;
+            break;
           default:
             try {
+              if (settings[key] is String) throw "String! :${settings[key]}";
               await prefs.setString(
                 key,
                 await compute(
@@ -85,6 +94,11 @@ Future<void> importSettingsFromFile(
                 ),
               );
             } catch (e) {
+              try {
+                await prefs.setString(key, settings[key].toString());
+              } catch (e) {
+                logger.e('Error saving key $key: $e');
+              }
               logger.e('Error encoding key $key: $e');
             }
         }
