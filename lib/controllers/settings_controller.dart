@@ -206,6 +206,26 @@ class SettingsController extends GetxController {
     settings[playVBtnsKey] = value;
   }
 
+  ///歌曲替换按钮位置及大小设置
+  static const String songReplaceFabLocationKey = 'songReplaceFabLocation';
+  static const String songReplaceFabMiniKey = 'songReplaceFabMini';
+  SongReplaceFabLocation get songReplaceFabLocation {
+    int? locationIndex = settings[songReplaceFabLocationKey];
+    return SongReplaceFabLocation.values.firstWhere(
+      (element) => element.index == locationIndex,
+      orElse: () => SongReplaceFabLocation.startFloat,
+    );
+  }
+
+  set songReplaceFabLocation(SongReplaceFabLocation location) {
+    settings[songReplaceFabLocationKey] = location.index;
+  }
+
+  bool get songReplaceFabMini => settings[songReplaceFabMiniKey] ?? true;
+  set songReplaceFabMini(bool value) {
+    settings[songReplaceFabMiniKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
@@ -552,4 +572,62 @@ class SettingsController extends GetxController {
   set playVPlayBtnProcessControllerDuration(int value) {
     settings[playVPlayBtnProcessControllerDurationKey] = value;
   }
+}
+
+///歌曲替换按钮位置及大小设置
+enum SongReplaceFabLocation {
+  startTop(
+    'StartTop',
+    FloatingActionButtonLocation.startTop,
+    FloatingActionButtonLocation.miniStartTop,
+  ),
+  centerTop(
+    'CenterTop',
+    FloatingActionButtonLocation.centerTop,
+    FloatingActionButtonLocation.miniCenterTop,
+  ),
+  endTop(
+    'EndTop',
+    FloatingActionButtonLocation.endTop,
+    FloatingActionButtonLocation.miniEndTop,
+  ),
+  startFloat(
+    'StartFloat',
+    FloatingActionButtonLocation.startFloat,
+    FloatingActionButtonLocation.miniStartFloat,
+  ),
+  centerFloat(
+    'CenterFloat',
+    FloatingActionButtonLocation.centerFloat,
+    FloatingActionButtonLocation.miniCenterFloat,
+  ),
+  endFloat(
+    'EndFloat',
+    FloatingActionButtonLocation.endFloat,
+    FloatingActionButtonLocation.miniEndFloat,
+  ),
+  startDocked(
+    'StartDocked',
+    FloatingActionButtonLocation.startDocked,
+    FloatingActionButtonLocation.miniStartDocked,
+  ),
+  centerDocked(
+    'CenterDocked',
+    FloatingActionButtonLocation.centerDocked,
+    FloatingActionButtonLocation.miniCenterDocked,
+  ),
+  endDocked(
+    'EndDocked',
+    FloatingActionButtonLocation.endDocked,
+    FloatingActionButtonLocation.miniEndDocked,
+  );
+
+  final String desc;
+  final FloatingActionButtonLocation fabLocation;
+  final FloatingActionButtonLocation fabMiniLocation;
+  const SongReplaceFabLocation(
+    this.desc,
+    this.fabLocation,
+    this.fabMiniLocation,
+  );
 }

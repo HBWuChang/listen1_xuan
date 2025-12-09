@@ -198,18 +198,22 @@ Future<void> closeApp() async {
 class RouteController extends GetxController {
   RxBool inLyricPage = false.obs;
   RxBool inNowPlayListPage = false.obs;
+  RxBool inSongReplacePage = false.obs;
   @override
   void onInit() {
     super.onInit();
     ever(top_routeWithName, (callback) {
       inLyricPage.value = false;
       inNowPlayListPage.value = false;
+      inSongReplacePage.value = false;
       if (top_routeWithName.isNotEmpty) {
         switch (top_routeWithName.last.name) {
           case RouteName.lyricPage:
             inLyricPage.value = true;
           case RouteName.nowPlayingPage:
             inNowPlayListPage.value = true;
+          case RouteName.songReplacePage:
+            inSongReplacePage.value = true;
         }
       }
     });
@@ -227,4 +231,5 @@ class RouteName {
   static const String supabaseLoginPage = '/supabase_login';
   static const String supabasePasswordLoginPage = '/supabase_password_login';
   static const String cacheNamingPage = '/cache_naming';
+  static const String songReplacePage = '/song_replace';
 }

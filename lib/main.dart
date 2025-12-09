@@ -20,6 +20,7 @@ import 'pages/settings/settings_readme.dart';
 import 'pages/settings/settings_supabase_login_page.dart';
 import 'pages/settings/settings_supabase_password_login_page.dart';
 import 'pages/settings/cache_naming_page.dart';
+import 'pages/songReplace_page.dart';
 import 'settings.dart';
 import 'loweb.dart';
 import 'bodys.dart';
@@ -1230,19 +1231,22 @@ class _MyHomePageState extends State<MyHomePage>
                                                 RouteName.supabaseLoginPage,
                                               );
                                               return route;
-                                            case RouteName.supabasePasswordLoginPage:
+                                            case RouteName
+                                                .supabasePasswordLoginPage:
                                               var route = GetPageRoute(
                                                 settings: settings,
                                                 transition: Transition
                                                     .rightToLeftWithFade,
-                                                page: () => SupabasePasswordLoginPage(),
+                                                page: () =>
+                                                    SupabasePasswordLoginPage(),
                                                 middlewares: [
                                                   ListenPopMiddleware(),
                                                 ],
                                               );
                                               addAndCleanReapeatRoute(
                                                 route,
-                                                RouteName.supabasePasswordLoginPage,
+                                                RouteName
+                                                    .supabasePasswordLoginPage,
                                               );
                                               return route;
                                             case RouteName.cacheNamingPage:
@@ -1258,6 +1262,19 @@ class _MyHomePageState extends State<MyHomePage>
                                               addAndCleanReapeatRoute(
                                                 route,
                                                 RouteName.cacheNamingPage,
+                                              );
+                                              return route;
+                                            case RouteName.songReplacePage:
+                                              var route = GetPageRoute(
+                                                settings: settings,
+                                                page: () => SongReplacePage(),
+                                                middlewares: [
+                                                  ListenPopMiddleware(),
+                                                ],
+                                              );
+                                              addAndCleanReapeatRoute(
+                                                route,
+                                                RouteName.songReplacePage,
                                               );
                                               return route;
                                             default:

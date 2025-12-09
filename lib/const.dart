@@ -3,3 +3,8 @@
 
 const String downDirName = 'Listen1';
 const String cacheUnUseableRepUnUseable = '/\\:*?"<>|';
+
+///Heros
+class HeroTags {
+  static const String  songReplaceFab = 'songReplaceFab';
+}
