@@ -96,6 +96,7 @@ dependencies:
     path: packages/material_wave_slider
   objective_c: 9.1.0
   json_annotation: ^4.9.0
+  dotted_border: ^3.1.0
   # auto_updater: ^1.0.0
 dev_dependencies:
   flutter_test:

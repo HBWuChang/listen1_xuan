@@ -371,7 +371,7 @@ class SettingsController extends GetxController {
     if (computeResults[4] != null) {
       PlayController_play_replace = await compute(
         (Map<String, dynamic> json) => SongReplaceSettings.fromJson(json),
-        computeResults[6] as Map<String, dynamic>,
+        computeResults[4] as Map<String, dynamic>,
       );
     }
 

@@ -27,6 +27,7 @@ import '../models/SongReplaceSettings.dart';
 import '../utils/curve_utils.dart';
 import 'lyric_controller.dart';
 import 'nowplaying_controller.dart';
+import 'routeController.dart';
 import 'settings_controller.dart';
 import 'websocket_card_controller.dart';
 import 'supabase_auth_controller.dart';
@@ -43,6 +44,11 @@ class PlayController extends GetxController
   final currentPlayingRx = <Track>[].obs;
   bool songReplaceSettingsSkipOnceSave = false;
   final songReplaceSettings = SongReplaceSettings().obs;
+  // 歌曲替换临时变量：源歌曲和替换歌曲
+  final Rx<Track?> songReplaceSourceTrack = Rx<Track?>(null);
+  final Rx<Track?> songReplaceTargetTrack = Rx<Track?>(null);
+  final RxBool songReplaceAdding = false.obs;
+  final RxBool isSongReplacingSource = true.obs;
   final logger = Logger();
   final updatePosToAudioServiceNow = 0.obs;
   final needUpdatePosToAudioService = 0.obs; // 新增：触发位置更新的流
@@ -272,6 +278,13 @@ class PlayController extends GetxController
     bool isByClick = false,
   }) async {
     try {
+      if (songReplaceAdding.value && isByClick) {
+        selectReplaceSong(track);
+        return;
+      }
+      if (isByClick) {
+        showInfoSnackbar('尝试播放：${track.title}', null);
+      }
       //若引导成功，但用户最终意图播放的不是该曲目，则返回
       //若意图播放的曲目已经在引导中，则返回
       if ((onBootstrapTrackSuccessCallback && nowPlayingTrackId != track.id) ||
@@ -777,6 +790,20 @@ class PlayController extends GetxController
       playsong(continuePlay.track, start: false, isByClick: false);
     } catch (e) {
       logger.e('处理 continue_play 更新失败: $e');
+    }
+  }
+
+  void selectReplaceSong(Track source) {
+    if (isSongReplacingSource.value) {
+      songReplaceSourceTrack.value = source;
+      showInfoSnackbar('已选择 ${source.title} 作为歌曲信息及歌词来源', null);
+    } else {
+      songReplaceTargetTrack.value = source;
+      showInfoSnackbar('已选择 ${source.title} 作为音频数据来源', null);
+    }
+    songReplaceAdding.value = false;
+    if (!Get.find<RouteController>().inSongReplacePage.value) {
+      Get.toNamed(RouteName.songReplacePage, id: 1);
     }
   }
 }

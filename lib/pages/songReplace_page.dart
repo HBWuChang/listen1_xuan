@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
-import 'package:listen1_xuan/models/SongReplaceSettings.dart';
 import 'package:listen1_xuan/models/Track.dart';
+
+import '../funcs.dart';
 
 /// 歌曲替换设置页面
 class SongReplacePage extends StatefulWidget {
@@ -14,13 +15,10 @@ class SongReplacePage extends StatefulWidget {
 
 class _SongReplacePageState extends State<SongReplacePage> {
   final PlayController _playController = Get.find<PlayController>();
-  late SongReplaceSettings _settings;
 
   @override
   void initState() {
     super.initState();
-    // 从 PlayController 获取设置数据
-    _settings = _playController.songReplaceSettings.value;
   }
 
   @override
@@ -36,46 +34,272 @@ class _SongReplacePageState extends State<SongReplacePage> {
           ),
         ],
       ),
-      body: Obx(() {
-        // 监听 songReplaceSettings 变化
-        final settings = _playController.songReplaceSettings.value;
-        final mappings = settings.idMappings;
+      body: Column(
+        children: [
+          // 固定标题行
+          _buildHeaderRow(),
+          // 可滚动内容
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                // 解释信息行（可滚动隐藏）
+                SliverToBoxAdapter(child: _buildExplanationRow()),
+                SliverToBoxAdapter(child: _buildAddArea()),
+                SliverFillRemaining(
+                  hasScrollBody: true,
+                  child: Obx(() {
+                    // 监听 songReplaceSettings 变化
+                    final settings = _playController.songReplaceSettings.value;
+                    final mappings = settings.idMappings;
 
-        if (mappings.isEmpty) {
-          return const Center(
-            child: Text(
-              '暂无歌曲替换设置',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+                    if (mappings.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          '暂无歌曲替换设置',
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.all(8.0),
+                      itemCount: mappings.length,
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final entry = mappings.entries.elementAt(index);
+                        final originalId = entry.key;
+                        final replacementId = entry.value;
+
+                        // 从 trackDetails 获取歌曲信息
+                        final originalTrack = settings.getTrackDetails(
+                          originalId,
+                        );
+                        final replacementTrack = settings.getTrackDetails(
+                          replacementId,
+                        );
+
+                        return _buildSongReplaceItem(
+                          originalId: originalId,
+                          originalTrack: originalTrack,
+                          replacementId: replacementId,
+                          replacementTrack: replacementTrack,
+                        );
+                      },
+                    );
+                  }),
+                ),
+              ],
             ),
-          );
-        }
+          ),
+        ],
+      ),
+    );
+  }
 
-        return ListView.separated(
-          padding: const EdgeInsets.all(8.0),
-          itemCount: mappings.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final entry = mappings.entries.elementAt(index);
-            final originalId = entry.key;
-            final replacementId = entry.value;
+  /// 构建固定标题行
+  Widget _buildHeaderRow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+      decoration: BoxDecoration(color: Get.theme.cardColor),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '源歌曲',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Get.theme.colorScheme.primary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 60), // 中间箭头区域的宽度
+          Expanded(
+            child: Text(
+              '替换歌曲',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Get.theme.colorScheme.primary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 48), // 右侧按钮区域的宽度
+        ],
+      ),
+    );
+  }
 
-            // 从 trackDetails 获取歌曲信息
-            final originalTrack = settings.getTrackDetails(originalId);
-            final replacementTrack = settings.getTrackDetails(replacementId);
+  /// 构建解释信息行
+  Widget _buildExplanationRow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+      decoration: BoxDecoration(color: Get.theme.cardColor.withOpacity(0.5)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '歌曲信息及歌词来源',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 60),
+          Expanded(
+            child: Text(
+              '音频数据来源',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
 
-            return _buildSongReplaceItem(
-              originalId: originalId,
-              originalTrack: originalTrack,
-              replacementId: replacementId,
-              replacementTrack: replacementTrack,
-            );
-          },
-        );
-      }),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addReplacement,
-        tooltip: '添加替换',
-        child: const Icon(Icons.add),
+  /// 构建添加区域
+  Widget _buildAddArea() {
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          children: [
+            // 左侧：源歌曲选择
+            Expanded(
+              child: Obx(() {
+                final sourceTrack =
+                    _playController.songReplaceSourceTrack.value;
+                final isEditing =
+                    _playController.songReplaceAdding.value &&
+                    _playController.isSongReplacingSource.value;
+
+                return InkWell(
+                  onTap: _selectSourceTrack,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: isEditing
+                          ? Border.all(
+                              color: Get.theme.colorScheme.primary,
+                              width: 2,
+                              strokeAlign: BorderSide.strokeAlignInside,
+                            )
+                          : null,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: sourceTrack == null
+                        ? _buildAddButtonContent(
+                            label: '选择源歌曲',
+                            isActive: isEditing,
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: _buildTrackInfo(
+                              track: sourceTrack,
+                              trackId: sourceTrack.id,
+                            ),
+                          ),
+                  ),
+                );
+              }),
+            ),
+            // 中间：分割和箭头
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: const Icon(Icons.arrow_forward, size: 24),
+            ),
+            // 右侧：替换歌曲选择
+            Expanded(
+              child: Obx(() {
+                final targetTrack =
+                    _playController.songReplaceTargetTrack.value;
+                final isEditing =
+                    _playController.songReplaceAdding.value &&
+                    !_playController.isSongReplacingSource.value;
+
+                return InkWell(
+                  onTap: _selectTargetTrack,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: isEditing
+                          ? Border.all(
+                              color: Get.theme.colorScheme.primary,
+                              width: 2,
+                              strokeAlign: BorderSide.strokeAlignInside,
+                            )
+                          : null,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: targetTrack == null
+                        ? _buildAddButtonContent(
+                            label: '选择替换歌曲',
+                            isActive: isEditing,
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: _buildTrackInfo(
+                              track: targetTrack,
+                              trackId: targetTrack.id,
+                            ),
+                          ),
+                  ),
+                );
+              }),
+            ),
+            // 操作按钮
+            Obx(() {
+              bool canConfirm =
+                  _playController.songReplaceSourceTrack.value != null &&
+                  _playController.songReplaceTargetTrack.value != null &&
+                  _playController.songReplaceSourceTrack.value!.id !=
+                      _playController.songReplaceTargetTrack.value!.id;
+              return IconButton(
+                icon: Icon(
+                  Icons.check,
+                  color: canConfirm
+                      ? Get.theme.colorScheme.primary
+                      : Get.theme.disabledColor,
+                ),
+                tooltip: '确认添加',
+                onPressed: canConfirm ? _confirmAddReplacement : null,
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构建添加按钮内容
+  Widget _buildAddButtonContent({
+    required String label,
+    bool isActive = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+      decoration: BoxDecoration(
+        border: isActive
+            ? null
+            : Border.all(
+                color: Theme.of(context).disabledColor.withOpacity(0.3),
+                width: 2,
+              ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.add,
+          size: 32,
+          color: isActive
+              ? Get.theme.colorScheme.primary
+              : Theme.of(context).disabledColor,
+        ),
       ),
     );
   }
@@ -95,33 +319,18 @@ class _SongReplacePageState extends State<SongReplacePage> {
           children: [
             // 左侧：源歌曲信息
             Expanded(
-              child: _buildTrackInfo(
-                track: originalTrack,
-                trackId: originalId,
-                label: '源歌曲',
-              ),
+              child: _buildTrackInfo(track: originalTrack, trackId: originalId),
             ),
             // 中间：分割和箭头
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.arrow_forward, size: 24),
-                  const SizedBox(height: 4),
-                  Text(
-                    '替换为',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
+              child: const Icon(Icons.arrow_forward, size: 24),
             ),
             // 右侧：替换歌曲信息
             Expanded(
               child: _buildTrackInfo(
                 track: replacementTrack,
                 trackId: replacementId,
-                label: '替换歌曲',
               ),
             ),
             // 操作按钮
@@ -137,25 +346,12 @@ class _SongReplacePageState extends State<SongReplacePage> {
   }
 
   /// 构建歌曲信息展示
-  Widget _buildTrackInfo({
-    required Track? track,
-    required String trackId,
-    required String label,
-  }) {
+  Widget _buildTrackInfo({required Track? track, required String trackId}) {
     if (track == null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
           Text(
             '未找到歌曲信息',
             style: TextStyle(
@@ -180,15 +376,6 @@ class _SongReplacePageState extends State<SongReplacePage> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
           track.title ?? '未知歌名',
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           maxLines: 1,
@@ -205,12 +392,67 @@ class _SongReplacePageState extends State<SongReplacePage> {
     );
   }
 
-  /// 添加替换（占位方法）
-  void _addReplacement() {
-    // TODO: 实现添加替换功能
+  /// 选择源歌曲
+  void _selectSourceTrack() {
+    // 如果正在编辑源歌曲，取消编辑
+    if (_playController.songReplaceAdding.value &&
+        _playController.isSongReplacingSource.value) {
+      _playController.songReplaceAdding.value = false;
+      return;
+    }
+
+    // 开始编辑源歌曲
+    _playController.isSongReplacingSource.value = true;
+    _playController.songReplaceAdding.value = true;
+    showInfoSnackbar('请“点击”选择源歌曲', '作为歌曲信息及歌词来源');
+  }
+
+  /// 选择替换歌曲
+  void _selectTargetTrack() {
+    // 如果正在编辑替换歌曲，取消编辑
+    if (_playController.songReplaceAdding.value &&
+        !_playController.isSongReplacingSource.value) {
+      _playController.songReplaceAdding.value = false;
+      return;
+    }
+
+    // 开始编辑替换歌曲
+    _playController.isSongReplacingSource.value = false;
+    _playController.songReplaceAdding.value = true;
+    showInfoSnackbar('请“点击”选择替换歌曲', '作为音频数据来源');
+  }
+
+  /// 确认添加替换
+  void _confirmAddReplacement() {
+    final sourceTrack = _playController.songReplaceSourceTrack.value;
+    final targetTrack = _playController.songReplaceTargetTrack.value;
+
+    if (sourceTrack == null || targetTrack == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请先选择源歌曲和替换歌曲')));
+      return;
+    }
+
+    // 创建新的设置对象并添加映射
+    final newSettings = _playController.songReplaceSettings.value.copyWith();
+    newSettings.setMapping(sourceTrack.id, targetTrack.id, track: targetTrack);
+
+    // 如果源歌曲信息也需要保存
+    if (newSettings.getTrackDetails(sourceTrack.id) == null) {
+      newSettings.trackDetails[sourceTrack.id] = sourceTrack;
+    }
+
+    // 更新 PlayController
+    _playController.songReplaceSettings.value = newSettings;
+
+    // 清空选择
+    _playController.songReplaceSourceTrack.value = null;
+    _playController.songReplaceTargetTrack.value = null;
+
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('添加替换功能待实现')));
+    ).showSnackBar(const SnackBar(content: Text('已添加替换设置')));
   }
 
   /// 删除替换

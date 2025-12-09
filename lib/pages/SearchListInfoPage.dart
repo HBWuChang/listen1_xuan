@@ -154,7 +154,6 @@ class _SearchlistinfoState extends State<Searchlistinfo> with SingleTickerProvid
               },
             ),
             onTap: () {
-              showInfoSnackbar('尝试播放：${track.title}', null);
               playsong(track, isByClick: true);
             },
           );

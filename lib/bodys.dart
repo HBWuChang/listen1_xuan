@@ -1359,7 +1359,6 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                             },
                           ),
                           onTap: () {
-                            showInfoSnackbar('尝试播放：${track.title}', null);
                             playsong(track, isByClick: true);
                           },
                         );
