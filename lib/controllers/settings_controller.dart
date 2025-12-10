@@ -89,10 +89,19 @@ class SettingsController extends GetxController {
     settings[windowsProxyKey] = value;
   }
 
+  static const String tryShowLyricInNotificationKey =
+      'tryShowLyricInNotification';
+  static const String tryShowLyricInNotificationUseTitleKey =
+      'tryShowLyricInNotificationUseTitle';
   bool get tryShowLyricInNotification =>
-      settings['tryShowLyricInNotification'] ?? true;
+      settings[tryShowLyricInNotificationKey] ?? true;
   set tryShowLyricInNotification(bool value) {
-    settings['tryShowLyricInNotification'] = value;
+    settings[tryShowLyricInNotificationKey] = value;
+  }
+  bool get tryShowLyricInNotificationInTitle =>
+      settings[tryShowLyricInNotificationUseTitleKey] ?? false;
+  set tryShowLyricInNotificationInTitle(bool value) {
+    settings[tryShowLyricInNotificationUseTitleKey] = value;
   }
 
   double get lyricBackgroundBlurRadius =>

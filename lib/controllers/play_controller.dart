@@ -382,7 +382,7 @@ class PlayController extends GetxController
     }
   }
 
-  Future<void> bootstrapTrackFail(Track track) async {
+  Future<void> bootstrapTrackFail(Track track, {bool start = true}) async {
     debugPrint('bootstrapTrackFail');
     debugPrint(track.toJson().toString());
     // {id: netrack_2084034562, title: Anytime Anywhere, artist: milet, artist_id: neartist_31464106, album: Anytime Anywhere, album_id: nealbum_175250775, source: netease, source_url: https://music.163.com/#/song?id=2084034562, img_url: https://p1.music.126.net/11p2mKi5CMKJvAS43ulraQ==/109951168930518368.jpg, sourceName: 网易, $$hashKey: object:2884, disabled: false, index: 365, playNow: true, bitrate: 320kbps, platform: netease, platformText: 网易}\
@@ -401,7 +401,7 @@ class PlayController extends GetxController
       // 等待三秒
       await Future.delayed(Duration(seconds: 3));
     }
-    onPlaybackCompleted(true);
+    onPlaybackCompleted(force_next: true, start: start);
   }
 
   // final RxMap<int, AndroidEQBand> _bands = RxMap<int, AndroidEQBand>();

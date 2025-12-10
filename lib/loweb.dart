@@ -372,13 +372,13 @@ class MediaService {
     }
     final provider = getProviderByName(track.source!);
     if (provider == null) {
-      _playController.bootstrapTrackFail(track);
+      _playController.bootstrapTrackFail(track, start: start);
       return;
     }
     provider.bootstrap_track(
       track,
       successCallback,
-      _playController.bootstrapTrackFail,
+      (track) => _playController.bootstrapTrackFail(track, start: start),
     );
   }
 

@@ -64,6 +64,7 @@ enum PlayVBtns {
   final String desc;
   const PlayVBtns(this.desc);
 }
+
 // Windows Taskbar API 调用的安全包装器
 // 用于处理窗口未初始化的情况
 bool _windowsTaskbarInitialized = false;
@@ -116,7 +117,10 @@ class FileLogOutput extends LogOutput {
 var playmode = 1.obs;
 List<Track> randommodetemplist = [];
 bool randomTrackInsertAtHead = false;
-Future<void> onPlaybackCompleted([bool force_next = false]) async {
+Future<void> onPlaybackCompleted({
+  bool force_next = false,
+  bool start = true,
+}) async {
   await fresh_playmode();
   final current_playing = await get_current_playing();
   final nowplaying_track = await getnowplayingsong();
@@ -126,7 +130,7 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
     return;
   }
   if (_playController.nextTrack != null) {
-    await playsong(_playController.nextTrack!);
+    await playsong(_playController.nextTrack!, start: start);
     _playController.nextTrack = null;
     return;
   }
@@ -135,8 +139,8 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
     switch (playmode.value) {
       case 0:
         index + 1 < current_playing.length
-            ? await playsong(current_playing[index + 1])
-            : await playsong(current_playing[0]);
+            ? await playsong(current_playing[index + 1], start: start)
+            : await playsong(current_playing[0], start: start);
         break;
       case 1:
         int t = randommodetemplist
@@ -146,7 +150,7 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
         if (t != randommodetemplist.length - 1 && t != -1) {
           Track tt = randommodetemplist[t + 1];
           if (current_playing.any((element) => element.id == tt.id)) {
-            await playsong(tt);
+            await playsong(tt, start: start);
             return;
           }
         }
@@ -154,17 +158,17 @@ Future<void> onPlaybackCompleted([bool force_next = false]) async {
         final randomIndex = random.nextInt(current_playing.length);
         Track track = current_playing[randomIndex];
         randommodetemplist.removeWhere((element) => element.id == track.id);
-        await playsong(track);
+        await playsong(track, start: start);
         break;
       case 2:
         if (force_next) {
           index + 1 < current_playing.length
-              ? await playsong(current_playing[index + 1])
-              : await playsong(current_playing[0]);
+              ? await playsong(current_playing[index + 1], start: start)
+              : await playsong(current_playing[0], start: start);
           break;
         }
         await _playController.music_player.seek(Duration.zero);
-        await _playController.music_player.play();
+        if (start) await _playController.music_player.play();
         break;
       default:
         break;
@@ -255,6 +259,25 @@ Future<void> change_playback_state(
 }) async {
   try {
     if (lyric != null) {
+      // if (_currentMediaItem == null || isEmpty(lyric.mainText)) return;
+      // bool useTitleInsteadOfDisplayTitle =
+      //     Get.find<SettingsController>().tryShowLyricInNotificationInTitle;
+      // bool showTranslation =
+      //     Get.find<SettingsController>().showLyricTranslation.value;
+      // MediaItem _item = _currentMediaItem!.copyWith(
+      //   displayTitle: useTitleInsteadOfDisplayTitle ? null : lyric.mainText,
+      //   title: useTitleInsteadOfDisplayTitle
+      //       ? '${lyric.mainText!}${showTranslation && lyric.hasExt ? '\n${lyric.extText}' : ''}'
+      //       : _currentMediaItem!.title,
+      //   artist: _currentMediaItem!.title,
+      //   album:
+      //       '${_currentMediaItem?.artist}${_currentMediaItem?.album != null ? ' - ${_currentMediaItem!.album}' : ''}',
+      // );
+      // if (showTranslation) {
+      //   _item = _item.copyWith(
+      //     displaySubtitle: (lyric.hasExt ? lyric.extText : null),
+      //   );
+      // }
       if (_currentMediaItem == null) return;
       MediaItem _item = _currentMediaItem!.copyWith(
         displayTitle: lyric.mainText,
@@ -611,7 +634,7 @@ Future<void> globalSkipToPrevious() async {
 }
 
 Future<void> globalSkipToNext() async {
-  await onPlaybackCompleted(true);
+  await onPlaybackCompleted(force_next: true);
 }
 
 Future<int> globalChangePlayMode() async {
