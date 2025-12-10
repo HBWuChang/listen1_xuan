@@ -2,7 +2,9 @@ import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
+import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 import '../const.dart';
 import '../funcs.dart';
@@ -44,8 +46,14 @@ class _SongReplacePageState extends State<SongReplacePage> {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.smart_button_rounded),
+            tooltip: '浮动按钮位置调整',
+            onPressed: _showFabLocationSettings
+          ),
+          IconButton(
             icon: const Icon(Icons.help_rounded),
-            onPressed: () => showInfoDialogFromMarkdown(HelpMarkdownFiles.songReplacePage),
+            onPressed: () =>
+                showInfoDialogFromMarkdown(HelpMarkdownFiles.songReplacePage),
           ),
         ],
       ),
@@ -545,5 +553,132 @@ class _SongReplacePageState extends State<SongReplacePage> {
     if (removedCount > 0) {
       _playController.songReplaceSettings.value = newSettings;
     }
+  }
+
+  /// 显示浮动按钮位置及大小设置
+  void _showFabLocationSettings() {
+    final settingsController = Get.find<SettingsController>();
+    
+    WoltModalSheet.show<void>(
+      pageIndexNotifier: ValueNotifier(0),
+      context: context,
+      pageListBuilder: (modalSheetContext) {
+        return [
+          WoltModalSheetPage(
+            hasTopBarLayer: false,
+            child: _FabLocationSettingsContent(
+              settingsController: settingsController,
+            ),
+          ),
+        ];
+      },
+    );
+  }
+}
+
+/// 浮动按钮位置及大小设置内容
+class _FabLocationSettingsContent extends StatelessWidget {
+  final SettingsController settingsController;
+
+  const _FabLocationSettingsContent({
+    required this.settingsController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 标题
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24.0),
+            child: Text(
+              '浮动按钮位置及大小设置',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          // 位置选择
+          Text(
+            '按钮位置',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12.0),
+          Obx(() {
+            final currentLocation = settingsController.songReplaceFabLocation;
+            return Wrap(
+              spacing: 8.0,
+              runSpacing: 8.0,
+              children: SongReplaceFabLocation.values.map((location) {
+                final isSelected = currentLocation == location;
+                return FilterChip(
+                  label: Text(location.desc),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      settingsController.songReplaceFabLocation = location;
+                    }
+                  },
+                  backgroundColor: Colors.transparent,
+                  selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  side: BorderSide(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.outline,
+                  ),
+                );
+              }).toList(),
+            );
+          }),
+          const SizedBox(height: 24.0),
+          // 大小选择
+          Text(
+            '按钮大小',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12.0),
+          Obx(() {
+            final isMini = settingsController.songReplaceFabMini;
+            return Row(
+              children: [
+                Expanded(
+                  child: SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment(
+                        value: false,
+                        label: Text('标准'),
+                      ),
+                      ButtonSegment(
+                        value: true,
+                        label: Text('迷你'),
+                      ),
+                    ],
+                    selected: {isMini},
+                    onSelectionChanged: (selected) {
+                      settingsController.songReplaceFabMini = selected.first;
+                    },
+                  ),
+                ),
+              ],
+            );
+          }),
+          const SizedBox(height: 24.0),
+          // 确定按钮
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('确定'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
