@@ -354,10 +354,22 @@ class MediaService {
 
   static PlayController get _playController => Get.find<PlayController>();
   static void bootstrapTrack(Track track, {bool start = true}) {
+    Track? sTrack;
     successCallback(dynamic res, Track track) {
-      _playController.bootstrapTrackSuccess(res, track, start: start);
+      _playController.bootstrapTrackSuccess(
+        res,
+        track,
+        start: start,
+        sTrack: sTrack,
+      );
     }
 
+    Track? repTrack = _playController.songReplaceSettings.value
+        .getReplacedTrack(track.id);
+    if (repTrack != null) {
+      sTrack = track;
+      track = repTrack;
+    }
     final provider = getProviderByName(track.source!);
     if (provider == null) {
       _playController.bootstrapTrackFail(track);

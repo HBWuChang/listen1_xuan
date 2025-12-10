@@ -62,11 +62,10 @@ class _SongReplacePageState extends State<SongReplacePage> {
                       );
                     }
 
-                    return ListView.separated(
+                    return ListView.builder(
                       padding: const EdgeInsets.all(8.0),
                       itemCount: mappings.length,
-                      separatorBuilder: (context, index) =>
-                          const Divider(height: 1),
+
                       itemBuilder: (context, index) {
                         final entry = mappings.entries.elementAt(index);
                         final originalId = entry.key;
@@ -336,10 +335,8 @@ class _SongReplacePageState extends State<SongReplacePage> {
               child: _buildTrackInfo(track: originalTrack, trackId: originalId),
             ),
             // 中间：分割和箭头
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: const Icon(Icons.arrow_forward, size: 24),
-            ),
+            const Icon(Icons.arrow_forward, size: 24),
+
             // 右侧：替换歌曲信息
             Expanded(
               child: _buildTrackInfo(
@@ -353,6 +350,23 @@ class _SongReplacePageState extends State<SongReplacePage> {
               tooltip: '删除此替换',
               onPressed: () => _removeReplacement(originalId),
             ),
+            IconButton(
+              icon: const Icon(Icons.edit),
+              tooltip: '编辑此替换',
+              onPressed: ()async {
+                if(_playController.songReplaceSourceTrack.value!=null||_playController.songReplaceTargetTrack.value!=null){
+                if showConfirmDialog(
+                }
+                // 预设选择的源和替换歌曲
+                final settings = _playController.songReplaceSettings.value;
+                final sourceTrack =
+                    settings.getTrackDetails(originalId);
+                final targetTrack =
+                    settings.getTrackDetails(replacementId);
+                _playController.songReplaceSourceTrack.value = sourceTrack;
+                _playController.songReplaceTargetTrack.value = targetTrack;
+              },
+            ),
           ],
         ),
       ),
@@ -363,7 +377,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
   Widget _buildTrackInfo({required Track? track, required String trackId}) {
     if (track == null) {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
@@ -386,7 +400,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
     }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(

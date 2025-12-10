@@ -196,6 +196,46 @@ Future<dynamic> song_dialog(
                     showSuccessSnackbar('专辑已复制到剪切板', null);
                   },
                 ),
+              ListTile(
+                title: Text('添加到歌单'),
+                onTap: () {
+                  if (nowplaylistinfo != null) {
+                    myplaylist.Add_to_my_playlist(
+                      context,
+                      [track],
+                      nowplaylistinfo.title,
+                      nowplaylistinfo.cover_img_url,
+                    );
+                  } else {
+                    myplaylist.Add_to_my_playlist(context, [track]);
+                  }
+                },
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: ListTile(
+                      title: Text('添加到当前播放列表'),
+                      onTap: () {
+                        add_current_playing([track]);
+                        showSuccessSnackbar('已添加到当前播放列表', null);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: ListTile(
+                      title: Text('下一首播放'),
+                      onTap: () {
+                        Get.find<PlayController>().nextTrack = track;
+                        showSuccessSnackbar('已添加到下一首播放', null);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
+                ],
+              ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -230,44 +270,60 @@ Future<dynamic> song_dialog(
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Flexible(
+                  Expanded(
                     child: ListTile(
-                      title: Text('添加到当前播放列表'),
+                      title: Text('作为替换源'),
                       onTap: () {
-                        add_current_playing([track]);
-                        showSuccessSnackbar('已添加到当前播放列表', null);
-                        Navigator.of(context).pop();
+                        try {
+                          Get.find<PlayController>()
+                                  .songReplaceSourceTrack
+                                  .value =
+                              track;
+                          Navigator.of(context).pop();
+                          showInfoSnackbar(
+                            '已选择 ${track.title} 作为歌曲信息及歌词来源',
+                            null,
+                          );
+                          Get.find<PlayController>().songReplaceAdding.value =
+                              false;
+                          if (!Get.find<RouteController>()
+                              .inSongReplacePage
+                              .value) {
+                            Get.toNamed(RouteName.songReplacePage, id: 1);
+                          }
+                        } catch (e) {
+                          showErrorSnackbar('操作失败', e.toString());
+                        }
                       },
                     ),
                   ),
                   Expanded(
                     child: ListTile(
-                      title: Text('下一首播放'),
+                      title: Text('作为音频源'),
                       onTap: () {
-                        Get.find<PlayController>().nextTrack = track;
-                        showSuccessSnackbar('已添加到下一首播放', null);
-                        Navigator.of(context).pop();
+                        try {
+                          Get.find<PlayController>()
+                                  .songReplaceTargetTrack
+                                  .value =
+                              track;
+                          Navigator.of(context).pop();
+                          showInfoSnackbar('已选择 ${track.title} 作为音频数据来源', null);
+                          Get.find<PlayController>().songReplaceAdding.value =
+                              false;
+                          if (!Get.find<RouteController>()
+                              .inSongReplacePage
+                              .value) {
+                            Get.toNamed(RouteName.songReplacePage, id: 1);
+                          }
+                        } catch (e) {
+                          showErrorSnackbar('操作失败', e.toString());
+                        }
                       },
                     ),
                   ),
                 ],
               ),
 
-              ListTile(
-                title: Text('添加到歌单'),
-                onTap: () {
-                  if (nowplaylistinfo != null) {
-                    myplaylist.Add_to_my_playlist(
-                      context,
-                      [track],
-                      nowplaylistinfo.title,
-                      nowplaylistinfo.cover_img_url,
-                    );
-                  } else {
-                    myplaylist.Add_to_my_playlist(context, [track]);
-                  }
-                },
-              ),
               // ListTile(
               //   title: Text('添加到下载队列'),
               //   onTap: () async {

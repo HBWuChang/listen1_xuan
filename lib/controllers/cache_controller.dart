@@ -70,19 +70,23 @@ class CacheController extends GetxController {
 
   /// 保存本地缓存列表
   Future<void> _saveLocalCacheList() async {
-    final prefs =  SharedPreferencesAsync();
+    final prefs = SharedPreferencesAsync();
     await prefs.setString(
       _localCacheListKey,
       jsonEncode(Map<String, String>.from(_localCacheList)),
     );
   }
 
-  Future<void> downloadAndCacheFile(dynamic res, Track track) async {
+  Future<void> downloadAndCacheFile(
+    dynamic res,
+    Track track, {
+    Track? sTrack,
+  }) async {
     final downDir = await xuanGetdownloadDirectory();
     String downPath = downDir.path;
     String fileName = getDownloadNamed(track, res['url']);
     final filePath = p.join(downPath, fileName);
-    _playController.bootStraping[track.id] = fileName;
+    _playController.bootStraping[sTrack?.id ?? track.id] = fileName;
     switch (res["platform"]) {
       case "bilibili":
         final dio = dioWithCookieManager;
@@ -170,7 +174,7 @@ class CacheController extends GetxController {
     Set<String> existingFileNames = _localCacheList.values.toSet().union(
       Get.find<PlayController>().bootStraping.values.toSet(),
     );
-    
+
     // 检查不带后缀的情况下是否有重名
     if (existingFileNames.contains(fileName + ext)) {
       if (dedupMethod == DedupMethod.number.index) {
@@ -217,6 +221,7 @@ class CacheController extends GetxController {
   /// 获取本地缓存文件路径
   Future<String> getLocalCache(String id) async {
     if (!_isDeleting) tryDelFiles(); // 尝试删除待删除的文件
+    id = _playController.songReplaceSettings.value.getReplacementId(id) ?? id;
     if (_localCacheList.containsKey(id)) {
       var downDir = await xuanGetdataDirectory();
 
@@ -250,11 +255,13 @@ class CacheController extends GetxController {
 
   /// 清理单个缓存文件
   Future<void> _cleanSingleCache(String id) async {
+    id = _playController.songReplaceSettings.value.getReplacementId(id) ?? id;
     final path = await getLocalCache(id);
     if (path.isNotEmpty) {
       try {
         await File(path).delete();
         _localCacheList.remove(id);
+
         showInfoSnackbar('已清理', null);
       } catch (e) {
         showErrorSnackbar('清理失败', e.toString());
@@ -292,6 +299,9 @@ class CacheController extends GetxController {
     Set<String> notToDelIds = {};
     notToDelIds.addAll(Get.find<MyPlayListController>().savedIds);
     notToDelIds.addAll(Get.find<PlayController>().playingIds);
+    notToDelIds.addAll(
+      Get.find<PlayController>().songReplaceSettings.value.idMappings.values,
+    );
     _localCacheList.removeWhere((key, value) {
       return !notToDelIds.contains(key);
     });

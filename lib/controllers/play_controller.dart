@@ -363,17 +363,22 @@ class PlayController extends GetxController
     dynamic res,
     Track track, {
     bool start = true,
+    Track? sTrack,
   }) async {
     try {
       if (isEmpty(await cacheController.getLocalCache(track.id))) {
-        await cacheController.downloadAndCacheFile(res, track);
+        await cacheController.downloadAndCacheFile(res, track, sTrack: sTrack);
       }
       // 理论上此时应歌曲文件准备完毕
-      bootStraping.remove(track.id);
-      playsong(track, start: start, onBootstrapTrackSuccessCallback: true);
+      bootStraping.remove(sTrack?.id ?? track.id);
+      playsong(
+        sTrack ?? track,
+        start: start,
+        onBootstrapTrackSuccessCallback: true,
+      );
     } catch (e) {
       debugPrint('Error downloading or playing audio: $e');
-      bootstrapTrackFail(track);
+      bootstrapTrackFail(sTrack ?? track);
     }
   }
 
