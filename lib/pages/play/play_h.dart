@@ -71,10 +71,9 @@ Widget playH() {
             );
           },
         ),
-        SizedBox(
-          width: (MediaQuery.of(Get.context!).size.width - 514),
-          height: 50,
+        Expanded(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
                 height: 20,
@@ -132,7 +131,7 @@ Widget playH() {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: StreamBuilder<MediaState>(
                   stream: _mediaStateStream,
                   builder: (context, snapshot) {
