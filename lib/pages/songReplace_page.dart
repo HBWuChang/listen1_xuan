@@ -1,3 +1,4 @@
+import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
@@ -177,33 +178,44 @@ class _SongReplacePageState extends State<SongReplacePage> {
                 final isEditing =
                     _playController.songReplaceAdding.value &&
                     _playController.isSongReplacingSource.value;
-
+                Widget t = sourceTrack == null
+                    ? _buildAddButtonContent(
+                        label: '选择源歌曲',
+                        isActive: isEditing,
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: _buildTrackInfo(
+                          track: sourceTrack,
+                          trackId: sourceTrack.id,
+                        ),
+                      );
                 return InkWell(
                   onTap: _selectSourceTrack,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     decoration: BoxDecoration(
                       border: isEditing
-                          ? Border.all(
-                              color: Get.theme.colorScheme.primary,
+                          ? null
+                          : Border.all(
+                              color: Theme.of(
+                                context,
+                              ).disabledColor.withOpacity(0.3),
                               width: 2,
-                              strokeAlign: BorderSide.strokeAlignInside,
-                            )
-                          : null,
+                            ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: sourceTrack == null
-                        ? _buildAddButtonContent(
-                            label: '选择源歌曲',
-                            isActive: isEditing,
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: _buildTrackInfo(
-                              track: sourceTrack,
-                              trackId: sourceTrack.id,
+                    child: isEditing
+                        ? DottedBorder(
+                            options: RoundedRectDottedBorderOptions(
+                              radius: Radius.circular(8),
+                              color: Get.theme.colorScheme.primary,
+                              strokeWidth: 2,
+                              dashPattern: [6, 4],
                             ),
-                          ),
+                            child: t,
+                          )
+                        : t,
                   ),
                 );
               }),
@@ -221,33 +233,44 @@ class _SongReplacePageState extends State<SongReplacePage> {
                 final isEditing =
                     _playController.songReplaceAdding.value &&
                     !_playController.isSongReplacingSource.value;
-
+                Widget t = targetTrack == null
+                    ? _buildAddButtonContent(
+                        label: '选择替换歌曲',
+                        isActive: isEditing,
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: _buildTrackInfo(
+                          track: targetTrack,
+                          trackId: targetTrack.id,
+                        ),
+                      );
                 return InkWell(
                   onTap: _selectTargetTrack,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     decoration: BoxDecoration(
                       border: isEditing
-                          ? Border.all(
-                              color: Get.theme.colorScheme.primary,
+                          ? null
+                          : Border.all(
+                              color: Theme.of(
+                                context,
+                              ).disabledColor.withOpacity(0.3),
                               width: 2,
-                              strokeAlign: BorderSide.strokeAlignInside,
-                            )
-                          : null,
+                            ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: targetTrack == null
-                        ? _buildAddButtonContent(
-                            label: '选择替换歌曲',
-                            isActive: isEditing,
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: _buildTrackInfo(
-                              track: targetTrack,
-                              trackId: targetTrack.id,
+                    child: isEditing
+                        ? DottedBorder(
+                            options: RoundedRectDottedBorderOptions(
+                              radius: Radius.circular(8),
+                              color: Get.theme.colorScheme.primary,
+                              strokeWidth: 2,
+                              dashPattern: [6, 4],
                             ),
-                          ),
+                            child: t,
+                          )
+                        : t,
                   ),
                 );
               }),
@@ -283,15 +306,6 @@ class _SongReplacePageState extends State<SongReplacePage> {
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-      decoration: BoxDecoration(
-        border: isActive
-            ? null
-            : Border.all(
-                color: Theme.of(context).disabledColor.withOpacity(0.3),
-                width: 2,
-              ),
-        borderRadius: BorderRadius.circular(8),
-      ),
       child: Center(
         child: Icon(
           Icons.add,
