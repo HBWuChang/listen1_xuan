@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
+import '../const.dart';
 import '../funcs.dart';
 
 /// 歌曲替换设置页面
@@ -28,10 +29,23 @@ class _SongReplacePageState extends State<SongReplacePage> {
       appBar: AppBar(
         title: const Text('歌曲替换设置'),
         actions: [
+          Card(
+            child: Padding(
+              padding: EdgeInsetsGeometry.symmetric(
+                horizontal: 8.0,
+                vertical: 4.0,
+              ),
+              child: Obx(
+                () => Text(
+                  '已使用歌曲数量:${_playController.songReplaceSettings.value.trackDetails.length}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+          ),
           IconButton(
-            icon: const Icon(Icons.cleaning_services),
-            tooltip: '清理未使用的歌曲数据',
-            onPressed: _cleanupUnusedTracks,
+            icon: const Icon(Icons.help_rounded),
+            onPressed: () => showInfoDialogFromMarkdown(HelpMarkdownFiles.songReplacePage),
           ),
         ],
       ),
@@ -353,16 +367,22 @@ class _SongReplacePageState extends State<SongReplacePage> {
             IconButton(
               icon: const Icon(Icons.edit),
               tooltip: '编辑此替换',
-              onPressed: ()async {
-                if(_playController.songReplaceSourceTrack.value!=null||_playController.songReplaceTargetTrack.value!=null){
-                if showConfirmDialog(
+              onPressed: () async {
+                if (_playController.songReplaceSourceTrack.value != null ||
+                    _playController.songReplaceTargetTrack.value != null) {
+                  if (!(await showConfirmDialog(
+                    '覆盖当前正在编辑的替换设置吗？',
+                    '当前修改不会被保存',
+                    confirmLevel: ConfirmLevel.warning,
+                    confirmText: '覆盖',
+                  ))) {
+                    return;
+                  }
                 }
                 // 预设选择的源和替换歌曲
                 final settings = _playController.songReplaceSettings.value;
-                final sourceTrack =
-                    settings.getTrackDetails(originalId);
-                final targetTrack =
-                    settings.getTrackDetails(replacementId);
+                final sourceTrack = settings.getTrackDetails(originalId);
+                final targetTrack = settings.getTrackDetails(replacementId);
                 _playController.songReplaceSourceTrack.value = sourceTrack;
                 _playController.songReplaceTargetTrack.value = targetTrack;
               },
@@ -382,6 +402,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
         children: [
           Text(
             '未找到歌曲信息',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[400],
@@ -391,6 +412,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
           const SizedBox(height: 2),
           Text(
             'ID: $trackId',
+            textAlign: TextAlign.center,
             style: TextStyle(fontSize: 11, color: Colors.grey[400]),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -407,6 +429,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
           track.title ?? '未知歌名',
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           maxLines: 1,
+          textAlign: TextAlign.center,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 2),
@@ -414,6 +437,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
           track.artist ?? '未知歌手',
           style: TextStyle(fontSize: 12, color: Colors.grey[700]),
           maxLines: 1,
+          textAlign: TextAlign.center,
           overflow: TextOverflow.ellipsis,
         ),
       ],
@@ -456,9 +480,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
     final targetTrack = _playController.songReplaceTargetTrack.value;
 
     if (sourceTrack == null || targetTrack == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请先选择源歌曲和替换歌曲')));
+      showInfoSnackbar('请先选择源歌曲和替换歌曲', null);
       return;
     }
 
@@ -478,9 +500,8 @@ class _SongReplacePageState extends State<SongReplacePage> {
     _playController.songReplaceSourceTrack.value = null;
     _playController.songReplaceTargetTrack.value = null;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已添加替换设置')));
+    showSuccessSnackbar('已添加替换设置', null);
+    _cleanupUnusedTracks();
   }
 
   /// 删除替换
@@ -506,9 +527,8 @@ class _SongReplacePageState extends State<SongReplacePage> {
               _playController.songReplaceSettings.value = newSettings;
 
               Navigator.pop(context);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('已删除替换设置')));
+              showSuccessSnackbar('已删除替换设置', null);
+              _cleanupUnusedTracks();
             },
             child: const Text('删除', style: TextStyle(color: Colors.red)),
           ),
@@ -524,13 +544,6 @@ class _SongReplacePageState extends State<SongReplacePage> {
 
     if (removedCount > 0) {
       _playController.songReplaceSettings.value = newSettings;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('已清理 $removedCount 条未使用的歌曲数据')));
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('没有需要清理的数据')));
     }
   }
 }

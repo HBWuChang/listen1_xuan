@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
@@ -266,7 +267,7 @@ Future<String?> showInputDialog({
   final errorMessage = RxnString();
   final isProcessing = false.obs;
   final focusNode = FocusNode();
-  
+
   // 定义焦点监听器
   void focusListener() {
     if (focusNode.hasFocus) {
@@ -275,9 +276,9 @@ Future<String?> showInputDialog({
       set_inapp_hotkey(true);
     }
   }
-  
+
   focusNode.addListener(focusListener);
-  
+
   try {
     String? result = await Get.dialog<String>(
       WillPopScope(
@@ -383,7 +384,7 @@ Future<String?> showInputDialog({
     // 先移除监听器，再 dispose，避免 "used after being disposed" 错误
     focusNode.removeListener(focusListener);
     set_inapp_hotkey(true);
-    
+
     // 延迟 dispose，确保对话框动画完成
     await Future.delayed(Duration(milliseconds: 100));
     controller.dispose();
@@ -446,4 +447,24 @@ bool isEmpty(dynamic str) {
   //   return str <= 0.0;
   // }
   return str == null;
+}
+
+/// 从assets读取markdown文件并使用Get的dialog展示
+Future<void> showInfoDialogFromMarkdown(String assetsPath) async {
+  try {
+    // 从assets读取markdown文本
+    final markdownContent = await rootBundle.loadString(assetsPath);
+
+    // 使用Get的dialog展示
+    Get.dialog(
+      Dialog(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: MarkdownBody(data: markdownContent, selectable: true),
+        ),
+      ),
+    );
+  } catch (e) {
+    showErrorSnackbar('无法加载文件', '加载 $assetsPath 失败: $e');
+  }
 }

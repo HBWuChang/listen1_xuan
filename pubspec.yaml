@@ -115,6 +115,7 @@ flutter:
   assets:
     # Add assets from the images directory to the application.
     - assets/images/
+    - assets/help/
 msix_config:
   display_name: listen1_xuan
   identity_name: com.xiebian.listen1_xuan
