@@ -13,6 +13,7 @@ import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
+import 'package:smtc_windows/smtc_windows.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:logger/logger.dart';
@@ -23,6 +24,7 @@ import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:rxdart/rxdart.dart' as rxdart;
 import '../global_settings_animations.dart';
 import '../loweb.dart';
+import '../models/MediaState.dart';
 import '../models/SongReplaceSettings.dart';
 import '../utils/curve_utils.dart';
 import 'lyric_controller.dart';
@@ -38,6 +40,8 @@ import '../play.dart'; // 导入 safeCallWindowsTaskbar
 class PlayController extends GetxController
     with GetSingleTickerProviderStateMixin {
   // late AndroidEqualizer equalizer;
+  static const String nowPlayingTrackIdKey = 'nowplaying_track_id';
+  static const String nowPlayingTrackKey = 'nowplaying_track';
   late Player music_player;
   CacheController cacheController = Get.find<CacheController>();
   final _player_settings = <String, dynamic>{}.obs;
@@ -71,11 +75,15 @@ class PlayController extends GetxController
     return sortedControls;
   }
 
-  RxString nowPlayingTrackIdRx = ''.obs;
-  String get nowPlayingTrackId => nowPlayingTrackIdRx.value;
-  set nowPlayingTrackId(String value) {
-    nowPlayingTrackIdRx.value = value;
+  bool get loading {
+    return bootStraping.containsKey(nowPlayingTrackId);
   }
+
+  Rx<Track?> nowPlayingTrackRx = Rx<Track?>(null);
+  String get nowPlayingTrackId =>
+      nowPlayingTrackRx.value?.id ??
+      _player_settings[nowPlayingTrackIdKey] ??
+      '';
 
   ///用于记录正在引导播放的曲目id及下载文件名
   final bootStraping = RxMap<String, String>();
@@ -99,6 +107,14 @@ class PlayController extends GetxController
       _next_tracks.add(track);
     }
   }
+
+  final mediaState = Rx<MediaState>(
+    MediaState(
+      position: Duration.zero,
+      duration: Duration.zero,
+      playing: false,
+    ),
+  );
 
   var isplaying = false.obs;
 
@@ -144,14 +160,11 @@ class PlayController extends GetxController
     //   );
     //   initAndroidEqualizer();
     // }
-    ever(_player_settings, (event) {
-      final t = event['nowplaying_track_id'];
-      if ((!isEmpty(t)) && t is String && t != nowPlayingTrackIdRx.value) {
-        nowPlayingTrackIdRx.value = event['nowplaying_track_id'];
-      }
-    });
-    ever(nowPlayingTrackIdRx, (callback) {
-      _player_settings['nowplaying_track_id'] = callback;
+
+    ever(nowPlayingTrackRx, (callback) {
+      _player_settings[nowPlayingTrackKey] = nowPlayingTrackRx.value?.toJson();
+      _player_settings[nowPlayingTrackIdKey] =
+          nowPlayingTrackRx.value?.id ?? '';
     });
     debounce(_player_settings, (event) {
       _saveSingleSetting('player-settings');
@@ -258,6 +271,49 @@ class PlayController extends GetxController
         await compute((SongReplaceSettings s) => jsonEncode(s.toJson()), value),
       );
     });
+
+    music_player.stream.position.listen((position) {
+      // 更新 mediaState 的 position
+      mediaState.update((state) {
+        state?.position = position;
+      });
+      if (isWindows) {
+        // 计算进度并更新到 PlayController 的响应式变量
+        final durationMs = mediaState.value.duration.inMilliseconds;
+        final progress =
+            (position.inMilliseconds / (durationMs == 0 ? 1 : durationMs) * 100)
+                .toInt();
+        taskbarProgress.value = progress;
+      }
+    });
+    music_player.stream.playing.listen((playing) {
+      // 更新 mediaState 的 playing 状态
+      mediaState.update((state) {
+        state?.playing = playing;
+      });
+    });
+    music_player.stream.duration.listen((duration) {
+      // 更新 mediaState 的 duration
+      mediaState.update((state) {
+        state?.duration = duration;
+      });
+    });
+    if (isWindows) {
+      interval(mediaState, (state) {
+        smtc.setPlaybackStatus(
+          state.playing ? PlaybackStatus.playing : PlaybackStatus.paused,
+        );
+        smtc.updateTimeline(
+          PlaybackTimeline(
+            startTimeMs: 0,
+            endTimeMs: state.duration.inMilliseconds,
+            positionMs: state.position.inMilliseconds,
+            minSeekTimeMs: 0,
+            maxSeekTimeMs: state.duration.inMilliseconds,
+          ),
+        );
+      }, time: Duration(milliseconds: 500));
+    }
   }
 
   @override
@@ -265,6 +321,17 @@ class PlayController extends GetxController
     playVPlayBtnProcessController.dispose();
     music_player.dispose();
     super.onClose();
+  }
+
+  void setNowPlayingTrack() {
+    final t = _player_settings[nowPlayingTrackKey];
+    if (t != null) {
+      nowPlayingTrackRx.value = Track.fromJson(t as Map<String, dynamic>);
+    } else {
+      nowPlayingTrackRx.value = getTrackById(
+        _player_settings[nowPlayingTrackIdKey] ?? '',
+      );
+    }
   }
 
   /// 是否跳过Supabase 同步
@@ -291,12 +358,11 @@ class PlayController extends GetxController
           bootStraping.containsKey(track.id)) {
         // 若已在引导，但为点击播放，则更新当前播放id
         if (isByClick) {
-          nowPlayingTrackId = track.id;
+          nowPlayingTrackRx.value = track;
         }
         return;
       }
-      nowPlayingTrackId = track.id;
-
+      nowPlayingTrackRx.value = track;
       add_current_playing([track]);
       Get.find<NowPlayingPageController>().scrollToCurrentTrack?.call();
       final tdir = await get_local_cache(track.id);
@@ -521,11 +587,13 @@ class PlayController extends GetxController
       }
     }
     _player_settings[key] = value;
+    if (key == nowPlayingTrackKey) setNowPlayingTrack();
   }
 
   void loadDatas() {
     _player_settings.value =
         Get.find<SettingsController>().PlayController_player_settings;
+    setNowPlayingTrack();
     currentPlayingRx.value =
         Get.find<SettingsController>().PlayController_current_playing;
     songReplaceSettingsSkipOnceSave = true;

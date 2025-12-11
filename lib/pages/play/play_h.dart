@@ -40,37 +40,32 @@ Widget playH() {
             }, h: true),
           ),
         ),
-        // Show media item title
-        StreamBuilder<MediaItem?>(
-          stream: Get.find<AudioHandlerController>().audioHandler.mediaItem,
-          builder: (context, snapshot) {
-            final mediaItem = snapshot.data;
-            // return Text(mediaItem?.title ?? '');
-            if (mediaItem == null) {
-              return Container(width: 50, height: 50);
-            }
-            return GestureDetector(
-              onTap: () {
-                // 点击封面打开歌词页面
-                _openLyricPage();
-              },
-              child: Container(
-                width: 50,
-                height: 50,
-                child: ExtendedImage.network(
-                  mediaItem.artUri.toString(),
-                  fit: BoxFit.cover,
-                  cache: true,
-                  loadStateChanged: (state) {
-                    if (state.extendedImageLoadState == LoadState.failed) {
-                      return Icon(Icons.music_note, size: 168.w);
-                    }
-                  },
-                ),
+        Obx(() {
+          Track? mediaItem = _playController.nowPlayingTrackRx.value;
+          if (mediaItem == null) {
+            return Container(width: 50, height: 50);
+          }
+          return GestureDetector(
+            onTap: () {
+              // 点击封面打开歌词页面
+              _openLyricPage();
+            },
+            child: Container(
+              width: 50,
+              height: 50,
+              child: ExtendedImage.network(
+                mediaItem.img_url ?? '',
+                fit: BoxFit.cover,
+                cache: true,
+                loadStateChanged: (state) {
+                  if (state.extendedImageLoadState == LoadState.failed) {
+                    return Icon(Icons.music_note, size: 168.w);
+                  }
+                },
               ),
-            );
-          },
-        ),
+            ),
+          );
+        }),
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -83,48 +78,42 @@ Widget playH() {
                   children: [
                     Expanded(
                       flex: 5,
-                      child: StreamBuilder<MediaItem?>(
-                        stream: Get.find<AudioHandlerController>()
-                            .audioHandler
-                            .mediaItem,
-                        builder: (context, snapshot) {
-                          final mediaItem = snapshot.data;
-                          return Text(
-                            '${mediaItem?.title ?? 'null'}  -  ${mediaItem?.artist ?? 'null'}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        },
-                      ),
+                      child: Obx(() {
+                        Track? mediaItem =
+                            _playController.nowPlayingTrackRx.value;
+                        return Text(
+                          '${mediaItem?.title ?? 'null'}  -  ${mediaItem?.artist ?? 'null'}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      }),
                     ),
-                    Container(
-                      width: 120,
-                      child: StreamBuilder<MediaState>(
-                        stream: _mediaStateStream,
-                        builder: (context, snapshot) {
-                          final mediaItem = snapshot.data;
-                          return Center(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                (formatDuration(
-                                      mediaItem?.position ?? Duration.zero,
-                                    ) +
-                                    ' / ' +
-                                    formatDuration(
-                                      mediaItem?.mediaItem?.duration ??
-                                          Duration.zero,
-                                    )),
-                                style: TextStyle(fontSize: 20.0),
-                              ),
-                            ),
-                          );
-                        },
+                    Obx(
+                      () => Skeletonizer(
+                        enabled: _playController.loading,
+                        child: Container(
+                          width: 120,
+                          child: StreamBuilder<MediaState>(
+                            stream: _mediaStateStream,
+                            builder: (context, snapshot) {
+                              MediaState? mediaState = snapshot.data;
+                              return Center(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    ('${formatDuration(mediaState?.position ?? Duration.zero)} / ${formatDuration(mediaState?.duration ?? Duration.zero)}'),
+                                    style: TextStyle(fontSize: 20.0),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -132,35 +121,61 @@ Widget playH() {
               ),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: StreamBuilder<MediaState>(
-                  stream: _mediaStateStream,
-                  builder: (context, snapshot) {
-                    final mediaState = snapshot.data;
-
-                    return MaterialWaveSlider(
-                      key: materialWaveSliderStateKeyH,
-                      height: 20,
-                      paused: !(mediaState?.playing ?? false),
-                      value:
-                          (mediaState?.position.inMilliseconds.toDouble() ??
-                                  0.0) >
-                              (mediaState?.mediaItem?.duration?.inMilliseconds
+                child: Obx(
+                  () => _playController.loading
+                      ? SizedBox(
+                          height: 20,
+                          child: Center(
+                            child: SizedBox(
+                              height: 3,
+                              child: LinearProgressIndicator(
+                                minHeight: 3,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AdaptiveTheme.of(
+                                    Get.context!,
+                                  ).theme.colorScheme.primary,
+                                ),
+                                backgroundColor: AdaptiveTheme.of(
+                                  Get.context!,
+                                ).theme.colorScheme.onSurface.withOpacity(0.3),
+                              ),
+                            ),
+                          ),
+                        )
+                      : StreamBuilder<MediaState>(
+                          stream: _mediaStateStream,
+                          builder: (context, snapshot) {
+                            final position = snapshot.data;
+                            MediaState? mediaState = snapshot.data;
+                            return MaterialWaveSlider(
+                              key: materialWaveSliderStateKeyH,
+                              height: 20,
+                              paused: !(mediaState?.playing ?? false),
+                              value:
+                                  (mediaState?.position.inMilliseconds
+                                              .toDouble() ??
+                                          0.0) >
+                                      (mediaState?.duration.inMilliseconds
+                                              .toDouble() ??
+                                          0.0)
+                                  ? (mediaState?.duration.inMilliseconds
+                                            .toDouble() ??
+                                        0.0)
+                                  : (mediaState?.position.inMilliseconds
+                                            .toDouble() ??
+                                        0.0),
+                              max:
+                                  mediaState?.duration.inMilliseconds
                                       .toDouble() ??
-                                  1.0)
-                          ? (mediaState?.mediaItem?.duration?.inMilliseconds
-                                    .toDouble() ??
-                                1.0)
-                          : (mediaState?.position.inMilliseconds.toDouble() ??
-                                0.0),
-                      max:
-                          mediaState?.mediaItem?.duration?.inMilliseconds
-                              .toDouble() ??
-                          1.0,
-                      onChanged: (value) {
-                        globalSeek(Duration(milliseconds: value.toInt()));
-                      },
-                    );
-                  },
+                                  0.0,
+                              onChanged: (value) {
+                                globalSeek(
+                                  Duration(milliseconds: value.toInt()),
+                                );
+                              },
+                            );
+                          },
+                        ),
                 ),
               ),
             ],

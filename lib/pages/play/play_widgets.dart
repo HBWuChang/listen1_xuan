@@ -10,25 +10,22 @@ Widget buildCoverImage(double size, {double? borderRadius}) {
       height: size,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
-        child: StreamBuilder<MediaItem?>(
-          stream: Get.find<AudioHandlerController>().audioHandler.mediaItem,
-          builder: (context, snapshot) {
-            final mediaItem = snapshot.data;
-            return mediaItem == null
-                ? Container(color: Get.theme.cardColor)
-                : ExtendedImage.network(
-                    mediaItem.artUri.toString(),
-                    fit: BoxFit.cover,
-                    cache: true,
-                    loadStateChanged: (state) {
-                      if (state.extendedImageLoadState == LoadState.failed) {
-                        return Icon(Icons.music_note, size: size);
-                      }
-                      return null;
-                    },
-                  );
-          },
-        ),
+        child: Obx(() {
+          Track? mediaItem = _playController.nowPlayingTrackRx.value;
+          return isEmpty(mediaItem?.img_url)
+              ? Container(color: Get.theme.cardColor)
+              : ExtendedImage.network(
+                  mediaItem!.img_url!,
+                  fit: BoxFit.cover,
+                  cache: true,
+                  loadStateChanged: (state) {
+                    if (state.extendedImageLoadState == LoadState.failed) {
+                      return Icon(Icons.music_note, size: size);
+                    }
+                    return null;
+                  },
+                );
+        }),
       ),
     ),
   );
@@ -101,10 +98,9 @@ Widget buildSongInfo({
   required double artistSize,
   required bool isCollapsed,
 }) {
-  return StreamBuilder<MediaItem?>(
-    stream: Get.find<AudioHandlerController>().audioHandler.mediaItem,
-    builder: (context, snapshot) {
-      final mediaItem = snapshot.data;
+  return Builder(
+    builder: (context) => Obx(() {
+      Track? mediaItem = _playController.nowPlayingTrackRx.value;
       return Container(
         color: Colors.transparent,
         padding: EdgeInsets.only(bottom: 20.w),
@@ -160,7 +156,7 @@ Widget buildSongInfo({
           ],
         ),
       );
-    },
+    }),
   );
 }
 
@@ -217,40 +213,47 @@ Widget buildPlayPauseButton(double expandProgress) {
         child: AnimatedOpacity(
           opacity: expandProgress < 0.5 ? 1.0 : 0.0,
           duration: Duration(milliseconds: 200),
-          child: StreamBuilder<MediaState>(
-            stream: _mediaStateStream,
-            builder: (context, snapshot) {
-              final mediaState = snapshot.data;
-              final duration = (mediaState?.mediaItem?.duration?.inMilliseconds
-                  .toDouble());
-              if (duration == null || duration <= 0) {
-                return CircularProgressIndicator();
-              }
-              final position =
-                  mediaState?.position.inMilliseconds.toDouble() ?? 0.0;
-              final progress = (position / duration).clamp(0.0, 1.0);
+          child: Obx(
+            () => _playController.loading
+                ? CircularProgressIndicator()
+                : StreamBuilder<MediaState>(
+                    stream: _mediaStateStream,
+                    builder: (context, snapshot) {
+                      final mediaState = snapshot.data;
+                      final duration =
+                          mediaState?.duration.inMilliseconds.toDouble() ?? 0.0;
+                      if (duration <= 0) {
+                        return CircularProgressIndicator();
+                      }
+                      final position =
+                          mediaState?.position.inMilliseconds.toDouble() ?? 0.0;
+                      final progress = (position / duration).clamp(0.0, 1.0);
 
-              // 使用 AnimatedBuilder 监听旋转动画控制器
-              return AnimatedBuilder(
-                animation: _playController.playVPlayBtnProcessController,
-                builder: (context, child) {
-                  // 应用选中的曲线
-                  final curvedValue = _playController
-                      .playButtonRotationCurveValue
-                      .transform(
-                        _playController.playVPlayBtnProcessController.value,
+                      // 使用 AnimatedBuilder 监听旋转动画控制器
+                      return AnimatedBuilder(
+                        animation:
+                            _playController.playVPlayBtnProcessController,
+                        builder: (context, child) {
+                          // 应用选中的曲线
+                          final curvedValue = _playController
+                              .playButtonRotationCurveValue
+                              .transform(
+                                _playController
+                                    .playVPlayBtnProcessController
+                                    .value,
+                              );
+
+                          return Transform.rotate(
+                            angle: curvedValue * 2 * pi,
+                            child: CircularProgressIndicator(
+                              value: progress,
+                              strokeWidth: 8.w,
+                            ),
+                          );
+                        },
                       );
-
-                  return Transform.rotate(
-                    angle: curvedValue * 2 * pi,
-                    child: CircularProgressIndicator(
-                      value: progress,
-                      strokeWidth: 8.w,
-                    ),
-                  );
-                },
-              );
-            },
+                    },
+                  ),
           ),
         ),
       ),
@@ -389,23 +392,16 @@ Widget get positionSlider => StreamBuilder<MediaState>(
                   thumbWidth: 8.w,
                   value:
                       (mediaState?.position.inMilliseconds.toDouble() ?? 0.0) >
-                          (mediaState?.mediaItem?.duration?.inMilliseconds
-                                  .toDouble() ??
-                              1.0)
-                      ? (mediaState?.mediaItem?.duration?.inMilliseconds
-                                .toDouble() ??
-                            1.0)
+                          (mediaState?.duration.inMilliseconds.toDouble() ??
+                              0.0)
+                      ? (mediaState?.duration.inMilliseconds.toDouble() ?? 0.0)
                       : (mediaState?.position.inMilliseconds.toDouble() ?? 0.0)
                             .clamp(
                               0.0,
-                              mediaState?.mediaItem?.duration?.inMilliseconds
-                                      .toDouble() ??
-                                  1.0,
+                              mediaState?.duration.inMilliseconds.toDouble() ??
+                                  0.0,
                             ),
-                  max:
-                      mediaState?.mediaItem?.duration?.inMilliseconds
-                          .toDouble() ??
-                      1.0,
+                  max: mediaState?.duration.inMilliseconds.toDouble() ?? 0.0,
                   onChanged: (value) {
                     globalSeek(Duration(milliseconds: value.toInt()));
                   },
@@ -419,9 +415,7 @@ Widget get positionSlider => StreamBuilder<MediaState>(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  formatDuration(
-                    mediaState?.mediaItem?.duration ?? Duration.zero,
-                  ),
+                  formatDuration(mediaState?.duration ?? Duration.zero),
                   style: TextStyle(fontSize: 48.0.w),
                 ),
               ),

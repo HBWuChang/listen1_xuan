@@ -72,6 +72,7 @@ class AudioHandlerController extends GetxController {
         );
       }
     }
+    bind_smtc();
     loading.value = false;
     update();
     debugPrint('AudioHandlerController setNotification completed');

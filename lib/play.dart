@@ -39,15 +39,15 @@ import 'package:windows_taskbar/windows_taskbar.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:listen1_xuan/models/MediaState.dart';
 import 'package:badges/badges.dart' as badges;
-import 'package:path/path.dart' as p;
-import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:material_wave_slider/material_wave_slider.dart';
-
+import 'package:skeletonizer/skeletonizer.dart';
 import 'widgets/container_with_outer_shadow.dart';
+import 'package:media_kit/media_kit.dart' hide Track;
 
 part 'pages/play/play_v.dart';
-part 'pages/play/play_v0.dart';
+// part 'pages/play/play_v0.dart';
 part 'pages/play/play_v2.dart';
 part 'pages/play/play_h.dart';
 part 'pages/play/play_widgets.dart';
@@ -214,7 +214,7 @@ Future<Map<String, dynamic>> getnowplayingsong() async {
 
 Future<void> bind_smtc() async {
   try {
-    if (isWindows)
+    if (isWindows) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
           smtc.buttonPressStream.listen((event) {
@@ -246,6 +246,7 @@ Future<void> bind_smtc() async {
           debugPrint("Error: $e");
         }
       });
+    }
   } catch (e) {
     debugPrint('绑定SMTC失败');
     debugPrint(e.toString());
@@ -323,16 +324,6 @@ Future<void> change_playback_state(
     _currentMediaItem = _item;
     (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
         .change_playbackstate(_item);
-    // smtc.updateMetadata(
-    //   const MusicMetadata(
-    //     title: 'Title',
-    //     album: 'Album',
-    //     albumArtist: 'Album Artist',
-    //     artist: 'Artist',
-    //     thumbnail:
-    //         'https://media.glamour.com/photos/5f4c44e20c71c58fc210d35f/master/w_2560%2Cc_limit/mgid_ao_image_mtv.jpg',
-    //   ),
-    // );
     if (isWindows) {
       safeCallWindowsTaskbar(
         () =>
@@ -342,36 +333,24 @@ Future<void> change_playback_state(
       try {
         smtc.updateMetadata(
           MusicMetadata(
-            title: track.title!,
-            album: track.album!,
-            albumArtist: track.artist!,
-            artist: track.artist!,
-            thumbnail: track.img_url == null
-                ? 'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0'
-                : track.img_url!,
+            title: track.title,
+            album: track.album,
+            albumArtist: track.artist,
+            artist: track.artist,
+            thumbnail: track.img_url,
           ),
         );
       } catch (e) {
         smtc = SMTCWindows(
           metadata: MusicMetadata(
-            title: track.title!,
-            album: track.album!,
-            albumArtist: track.artist!,
-            artist: track.artist!,
-            thumbnail: track.img_url == null
-                ? 'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0'
-                : track.img_url!,
-          ),
-          timeline: PlaybackTimeline(
-            startTimeMs: 0,
-            endTimeMs: 1000,
-            positionMs: 0,
-            minSeekTimeMs: 0,
-            maxSeekTimeMs: 1000,
+            title: track.title,
+            album: track.album,
+            albumArtist: track.artist,
+            artist: track.artist,
+            thumbnail: track.img_url,
           ),
         );
       }
-      await bind_smtc();
     }
     debugPrint('更新播放状态成功');
   } catch (e) {
@@ -476,27 +455,7 @@ class _PlayState extends State<Play> {
   }
 }
 
-Stream<MediaState> get _mediaStateStream =>
-    rxdart.Rx.combineLatest2<MediaItem?, Duration, MediaState>(
-      Get.find<AudioHandlerController>().audioHandler.mediaItem,
-      rxdart.Rx.merge([
-        _music_player.stream.position,
-        _music_player.stream.playing.map((_) => _music_player.state.position),
-      ]),
-      (mediaItem, position) {
-        final playing = _music_player.state.playing;
-        if (isWindows) {
-          // 计算进度并更新到 PlayController 的响应式变量
-          final progress =
-              (position.inMilliseconds /
-                      (mediaItem?.duration?.inMilliseconds ?? 1) *
-                      100)
-                  .toInt();
-          _playController.taskbarProgress.value = progress;
-        }
-        return MediaState(mediaItem, position, playing: playing);
-      },
-    );
+Stream<MediaState> get _mediaStateStream => _playController.mediaState.stream;
 
 IconButton _button(
   IconData iconData,
@@ -508,13 +467,6 @@ IconButton _button(
   alignment: Alignment.center,
   onPressed: onPressed,
 );
-
-class MediaState {
-  final MediaItem? mediaItem;
-  final Duration position;
-  final bool? playing;
-  MediaState(this.mediaItem, this.position, {this.playing});
-}
 
 Future<void> globalPlayOrPause() async {
   await _playController.music_player.playOrPause();

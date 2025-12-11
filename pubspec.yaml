@@ -97,6 +97,7 @@ dependencies:
   objective_c: 9.1.0
   json_annotation: ^4.9.0
   dotted_border: ^3.1.0
+  skeletonizer: ^2.1.1
   # auto_updater: ^1.0.0
 dev_dependencies:
   flutter_test:
