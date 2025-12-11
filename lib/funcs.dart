@@ -490,3 +490,113 @@ Future<void> showInfoDialogFromMarkdown(String assetsPath) async {
     showErrorSnackbar('无法加载文件', '加载 $assetsPath 失败: $e');
   }
 }
+
+/// 显示三态确认对话框
+/// 
+/// 如果 [currentValue] 非 null，直接返回该值
+/// 否则弹出对话框让用户选择，并支持"记住选择"功能
+/// 
+/// [title] 对话框标题
+/// [message] 提示消息
+/// [currentValue] 当前设置值，如果非 null 则直接返回
+/// [onRemember] 当用户勾选"记住选择"时的回调，接收用户选择的值
+/// [confirmText] 确认按钮文本，默认为"确定"
+/// [rejectText] 拒绝按钮文本，默认为"拒绝"
+/// [cancelText] 取消按钮文本，默认为"取消"
+/// [rememberText] "记住选择"复选框文本，默认为"记住我的选择"
+/// [confirmLevel] 确认按钮的级别样式
+/// 
+/// 返回 true/false/null，分别对应确定/拒绝/取消
+Future<bool?> showTriStateConfirmDialog({
+  required String title,
+  required String message,
+  bool? currentValue,
+  void Function(bool? value)? onRemember,
+  String confirmText = '确定',
+  String rejectText = '拒绝',
+  String cancelText = '取消',
+  String rememberText = '记住我的选择',
+  ConfirmLevel confirmLevel = ConfirmLevel.info,
+}) async {
+  // 如果当前值非 null，直接返回
+  if (currentValue != null) {
+    return currentValue;
+  }
+
+  final rememberChoice = false.obs;
+
+  ButtonStyle getButtonStyle(ConfirmLevel level) {
+    switch (level) {
+      case ConfirmLevel.info:
+        return ElevatedButton.styleFrom(
+          foregroundColor: Get.theme.colorScheme.primary,
+          backgroundColor: Get.theme.colorScheme.onPrimary,
+        );
+      case ConfirmLevel.warning:
+        return ElevatedButton.styleFrom(
+          foregroundColor: Get.theme.colorScheme.onSecondary,
+          backgroundColor: Get.theme.colorScheme.secondary,
+        );
+      case ConfirmLevel.danger:
+        return ElevatedButton.styleFrom(
+          foregroundColor: Get.theme.colorScheme.onError,
+          backgroundColor: Get.theme.colorScheme.error,
+        );
+    }
+  }
+
+  bool? result = await Get.dialog<bool?>(
+    AlertDialog(
+      title: Text(title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(message),
+          const SizedBox(height: 16),
+          Obx(
+            () => CheckboxListTile(
+              title: Text(rememberText),
+              value: rememberChoice.value,
+              onChanged: (value) {
+                rememberChoice.value = value ?? false;
+              },
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: null),
+          child: Text(cancelText),
+        ),
+        TextButton(
+          onPressed: () {
+            final choice = false;
+            if (rememberChoice.value && onRemember != null) {
+              onRemember(choice);
+            }
+            Get.back(result: choice);
+          },
+          child: Text(rejectText),
+        ),
+        ElevatedButton(
+          style: getButtonStyle(confirmLevel),
+          onPressed: () {
+            final choice = true;
+            if (rememberChoice.value && onRemember != null) {
+              onRemember(choice);
+            }
+            Get.back(result: choice);
+          },
+          child: Text(confirmText),
+        ),
+      ],
+    ),
+    barrierDismissible: true,
+  );
+
+  return result;
+}

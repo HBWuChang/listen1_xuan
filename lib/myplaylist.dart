@@ -8,6 +8,9 @@ import 'dart:math';
 import 'global_settings_animations.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
+import 'models/PlayListInfo.dart';
+import 'models/Playlist.dart';
+
 class MyPlaylist {
   final MyPlayListController _myPlayListController =
       Get.find<MyPlayListController>();

@@ -4,7 +4,7 @@ import 'package:listen1_xuan/controllers/play_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'package:listen1_xuan/models/UserProfile.dart';
-import 'package:listen1_xuan/models/Playlist.dart';
+import 'package:listen1_xuan/models/SupabasePlaylist.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/settings.dart' as settings;
@@ -418,7 +418,7 @@ class SupabaseAuthController extends GetxController {
   /// 创建播放列表
   /// 注意：isPro 验证在数据库层通过 RLS 策略完成
   /// 如果用户不是 Pro 用户，数据库会拒绝写入操作
-  Future<Playlist?> createPlaylist({
+  Future<SupabasePlaylist?> createPlaylist({
     required String name,
     required Map<String, dynamic> data,
     bool isShare = false,
@@ -444,7 +444,7 @@ class SupabaseAuthController extends GetxController {
           .single();
 
       isLoading.value = false;
-      return Playlist.fromJson(response);
+      return SupabasePlaylist.fromJson(response);
     } catch (e) {
       isLoading.value = false;
       errorMessage.value = '创建播放列表失败: ${e.toString()}';
@@ -518,7 +518,7 @@ class SupabaseAuthController extends GetxController {
 
   /// 获取用户的所有播放列表
   /// excludeData: 是否排除 data 字段(用于列表展示,减少数据传输)
-  Future<List<Playlist>> getUserPlaylists({bool excludeData = true}) async {
+  Future<List<SupabasePlaylist>> getUserPlaylists({bool excludeData = true}) async {
     try {
       if (currentUser.value == null) {
         return [];
@@ -536,7 +536,7 @@ class SupabaseAuthController extends GetxController {
           .order('created_at', ascending: false);
 
       return (response as List)
-          .map((json) => Playlist.fromJson(json as Map<String, dynamic>))
+          .map((json) => SupabasePlaylist.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       print('获取播放列表失败: $e');
@@ -566,7 +566,7 @@ class SupabaseAuthController extends GetxController {
   }
 
   /// 获取单个播放列表
-  Future<Playlist?> getPlaylist(String playlistId) async {
+  Future<SupabasePlaylist?> getPlaylist(String playlistId) async {
     try {
       final response = await _supabase
           .from('playlist')
@@ -574,7 +574,7 @@ class SupabaseAuthController extends GetxController {
           .eq('id', playlistId)
           .single();
 
-      return Playlist.fromJson(response);
+      return SupabasePlaylist.fromJson(response);
     } catch (e) {
       print('获取播放列表失败: $e');
       return null;
@@ -582,7 +582,7 @@ class SupabaseAuthController extends GetxController {
   }
 
   /// 获取公开分享的播放列表
-  Future<List<Playlist>> getSharedPlaylists() async {
+  Future<List<SupabasePlaylist>> getSharedPlaylists() async {
     try {
       final response = await _supabase
           .from('playlist')
@@ -591,7 +591,7 @@ class SupabaseAuthController extends GetxController {
           .order('created_at', ascending: false);
 
       return (response as List)
-          .map((json) => Playlist.fromJson(json as Map<String, dynamic>))
+          .map((json) => SupabasePlaylist.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       print('获取公开播放列表失败: $e');

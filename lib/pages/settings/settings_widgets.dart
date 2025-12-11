@@ -751,7 +751,7 @@ Widget get themeSettingsTiles => Column(
       closedBuilder: (context, _) => ListTile(
         leading: Icon(Icons.smart_button_rounded),
         title: Text('竖屏播放栏按钮'),
-        trailing: Icon(Icons.unfold_more_rounded)
+        trailing: Icon(Icons.unfold_more_rounded),
       ),
       openBuilder: (context, _) {
         return PlayButtonsSettingsPage();
@@ -1203,6 +1203,118 @@ class _SupabaseTokenManagementContent extends StatelessWidget {
         ),
         const SizedBox(height: 16),
       ],
+    );
+  }
+}
+
+/// 三态设置项组件
+///
+/// 用于显示和修改三态布尔值设置（true/false/null）
+class TriStateSettingTile extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final bool? value;
+  final ValueChanged<bool?>? onChanged;
+  final String? trueLabel;
+  final String? falseLabel;
+  final String? nullLabel;
+  final IconData? icon;
+
+  const TriStateSettingTile({
+    Key? key,
+    required this.title,
+    this.subtitle,
+    required this.value,
+    required this.onChanged,
+    this.trueLabel,
+    this.falseLabel,
+    this.nullLabel,
+    this.icon,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final effectiveTrueLabel = trueLabel ?? '是';
+    final effectiveFalseLabel = falseLabel ?? '否';
+    final effectiveNullLabel = nullLabel ?? '询问';
+
+    return ListTile(
+      leading: icon != null ? Icon(icon) : null,
+      title: Text(title),
+      subtitle: subtitle != null ? Text(subtitle!) : null,
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.dividerColor),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildSegment(
+              context: context,
+              label: effectiveTrueLabel,
+              isSelected: value == true,
+              onTap: () => onChanged?.call(true),
+              isFirst: true,
+            ),
+            _buildSegment(
+              context: context,
+              label: effectiveNullLabel,
+              isSelected: value == null,
+              onTap: () => onChanged?.call(null),
+            ),
+            _buildSegment(
+              context: context,
+              label: effectiveFalseLabel,
+              isSelected: value == false,
+              onTap: () => onChanged?.call(false),
+              isLast: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegment({
+    required BuildContext context,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return InkWell(
+      onTap: onChanged != null ? onTap : null,
+      borderRadius: BorderRadius.horizontal(
+        left: isFirst ? const Radius.circular(6) : Radius.zero,
+        right: isLast ? const Radius.circular(6) : Radius.zero,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
+          borderRadius: BorderRadius.horizontal(
+            left: isFirst ? const Radius.circular(6) : Radius.zero,
+            right: isLast ? const Radius.circular(6) : Radius.zero,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected
+                ? colorScheme.onPrimaryContainer
+                : theme.textTheme.bodyMedium?.color,
+          ),
+        ),
+      ),
     );
   }
 }

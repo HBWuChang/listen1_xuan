@@ -19,6 +19,7 @@ import '../bl.dart';
 import '../const.dart';
 import '../global_settings_animations.dart';
 import '../main.dart';
+import '../models/Playlist.dart';
 import '../models/SongReplaceSettings.dart';
 import '../netease.dart';
 import '../qq.dart';
@@ -98,6 +99,7 @@ class SettingsController extends GetxController {
   set tryShowLyricInNotification(bool value) {
     settings[tryShowLyricInNotificationKey] = value;
   }
+
   bool get tryShowLyricInNotificationInTitle =>
       settings[tryShowLyricInNotificationUseTitleKey] ?? false;
   set tryShowLyricInNotificationInTitle(bool value) {
@@ -233,6 +235,14 @@ class SettingsController extends GetxController {
   bool get songReplaceFabMini => settings[songReplaceFabMiniKey] ?? true;
   set songReplaceFabMini(bool value) {
     settings[songReplaceFabMiniKey] = value;
+  }
+
+  static const String songReplaceAutoRepTragetTrackInAllPlaylistKey =
+      'songReplaceAutoRepTragetTrackInAllPlaylist';
+  bool? get songReplaceAutoRepTragetTrackInAllPlaylist =>
+      settings[songReplaceAutoRepTragetTrackInAllPlaylistKey];
+  set songReplaceAutoRepTragetTrackInAllPlaylist(bool? value) {
+    settings[songReplaceAutoRepTragetTrackInAllPlaylistKey] = value;
   }
 
   final String CacheController_localCacheListKey = 'local-cache-list';

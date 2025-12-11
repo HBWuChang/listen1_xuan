@@ -292,7 +292,7 @@ Future<void> _showSupabasePlaylistManager(BuildContext context) async {
 /// Supabase 歌单管理内容
 class _SupabasePlaylistContent extends StatelessWidget {
   final authController = Get.find<SupabaseAuthController>();
-  final playlists = <PlaylistModel.Playlist>[].obs;
+  final playlists = <PlaylistModel.SupabasePlaylist>[].obs;
   final isLoading = true.obs;
 
   _SupabasePlaylistContent() {
@@ -365,7 +365,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
     }
   }
 
-  Future<void> _renamePlaylist(PlaylistModel.Playlist playlist) async {
+  Future<void> _renamePlaylist(PlaylistModel.SupabasePlaylist playlist) async {
     await showInputDialog(
       title: '重命名歌单',
       placeholder: '请输入新名称',
@@ -393,7 +393,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
     );
   }
 
-  Future<void> _deletePlaylist(PlaylistModel.Playlist playlist) async {
+  Future<void> _deletePlaylist(PlaylistModel.SupabasePlaylist playlist) async {
     final confirm = await showConfirmDialog(
       '确定要删除歌单 "${playlist.name}" 吗？',
       '删除歌单',
@@ -411,7 +411,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
     }
   }
 
-  Future<void> _downloadPlaylist(PlaylistModel.Playlist playlist) async {
+  Future<void> _downloadPlaylist(PlaylistModel.SupabasePlaylist playlist) async {
     try {
       final msg = '正在下载歌单 ${playlist.name}\n获取歌单数据'.obs;
       showLoadingDialog(msg);
@@ -436,7 +436,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
     }
   }
 
-  Future<void> _overwritePlaylist(PlaylistModel.Playlist playlist) async {
+  Future<void> _overwritePlaylist(PlaylistModel.SupabasePlaylist playlist) async {
     final confirm = await showConfirmDialog(
       '确定要用当前设置覆盖歌单 "${playlist.name}" 吗？',
       '覆盖歌单',

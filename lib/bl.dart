@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart' as getx;
@@ -17,6 +19,9 @@ import 'package:marquee/marquee.dart';
 import 'main.dart';
 import 'global_settings_animations.dart';
 import 'package:listen1_xuan/models/Track.dart';
+
+import 'models/PlayListInfo.dart';
+import 'models/Playlist.dart';
 
 final bilibili = Bilibili();
 
@@ -798,22 +803,21 @@ class Bilibili {
         final targetUrl =
             'https://api.bilibili.com/x/web-interface/search/type?__refresh__=true&_extra=&context=&page=$curpage&page_size=42&platform=pc&highlight=1&single_column=0&keyword=${Uri.encodeComponent(keyword!)}&category_id=&search_type=video&dynamic_offset=0&preload=true&com2co=true';
 
-        String cookie = '';
-        Map<String, dynamic> settings = await _getsettings();
-        if (settings.containsKey('bl') && settings['bl'] != '') {
-          cookie = settings['bl'];
-        } else {
-          cookie = 'buvid3=0';
-        }
-        Dio()
-            .get(targetUrl, options: Options(headers: {'cookie': cookie}))
-            .then((response) {
-              final result = response.data['data']['result'].map((song) {
-                return bi_convert_song2(song);
-              }).toList();
-              final total = response.data['data']['numResults'];
-              fn({'result': result, 'total': total});
-            });
+        dioWithCookieManager
+            .get(targetUrl)
+            .then(
+              (response) {
+                final result = response.data['data']['result'].map((song) {
+                  return bi_convert_song2(song);
+                }).toList();
+                final total = response.data['data']['numResults'];
+                fn({'result': result, 'total': total});
+              },
+              onError: (e) {
+                showErrorSnackbar('Bilibili搜索失败', e.toString());
+                fn({'result': [], 'total': 0});
+              },
+            );
       },
     };
   }

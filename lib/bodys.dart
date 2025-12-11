@@ -11,6 +11,8 @@ import 'examples/websocket_client_example.dart';
 import 'package:flutter/material.dart' hide SearchController;
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/qq.dart';
+import 'models/PlayListInfo.dart';
+import 'models/Playlist.dart';
 import 'netease.dart';
 import 'package:marquee/marquee.dart';
 import 'loweb.dart';

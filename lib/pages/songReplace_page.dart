@@ -1,13 +1,16 @@
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 import '../const.dart';
+import '../controllers/myPlaylist_controller.dart';
 import '../funcs.dart';
+import '../settings.dart';
 
 /// 歌曲替换设置页面
 class SongReplacePage extends StatefulWidget {
@@ -46,9 +49,8 @@ class _SongReplacePageState extends State<SongReplacePage> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.smart_button_rounded),
-            tooltip: '浮动按钮位置调整',
-            onPressed: _showFabLocationSettings
+            icon: const Icon(Icons.settings_rounded),
+            onPressed: _showFabLocationSettings,
           ),
           IconButton(
             icon: const Icon(Icons.help_rounded),
@@ -209,6 +211,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
                         child: _buildTrackInfo(
                           track: sourceTrack,
                           trackId: sourceTrack.id,
+                          allowTap: false,
                         ),
                       );
                 return InkWell(
@@ -264,6 +267,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
                         child: _buildTrackInfo(
                           track: targetTrack,
                           trackId: targetTrack.id,
+                          allowTap: false,
                         ),
                       );
                 return InkWell(
@@ -402,7 +406,11 @@ class _SongReplacePageState extends State<SongReplacePage> {
   }
 
   /// 构建歌曲信息展示
-  Widget _buildTrackInfo({required Track? track, required String trackId}) {
+  Widget _buildTrackInfo({
+    required Track? track,
+    required String trackId,
+    bool allowTap = true,
+  }) {
     if (track == null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -429,26 +437,29 @@ class _SongReplacePageState extends State<SongReplacePage> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          track.title ?? '未知歌名',
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          maxLines: 1,
-          textAlign: TextAlign.center,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 2),
-        Text(
-          track.artist ?? '未知歌手',
-          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-          maxLines: 1,
-          textAlign: TextAlign.center,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+    return InkWell(
+      onTap: allowTap ? () => song_dialog(context, track) : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            track.title ?? '未知歌名',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            track.artist ?? '未知歌手',
+            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 
@@ -510,6 +521,32 @@ class _SongReplacePageState extends State<SongReplacePage> {
 
     showSuccessSnackbar('已添加替换设置', null);
     _cleanupUnusedTracks();
+    showTriStateConfirmDialog(
+      title: '自动替换歌单中的歌曲？',
+      message: '是否将所有歌单机及正在播放列表中的“替换歌曲”都替换为“源歌曲”？\n\n（可在设置中修改此选项的默认值）',
+      currentValue: Get.find<SettingsController>()
+          .songReplaceAutoRepTragetTrackInAllPlaylist,
+      onRemember: (value) {
+        // 用户勾选"记住选择"时保存设置
+        Get.find<SettingsController>()
+                .songReplaceAutoRepTragetTrackInAllPlaylist =
+            value;
+      },
+    ).then((value) async {
+      if (value == true) {
+        try {
+          _playController.replaceTrack(sourceTrack, targetTrack.id);
+          await Get.find<MyPlayListController>().replaceTrack(
+            sourceTrack,
+            targetTrack.id,
+          );
+          showSuccessSnackbar('已替换所有歌单中的对应歌曲', null);
+        } catch (e) {
+          showErrorSnackbar('替换歌单中的歌曲时出错', e.toString());
+          return;
+        }
+      }
+    });
   }
 
   /// 删除替换
@@ -558,7 +595,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
   /// 显示浮动按钮位置及大小设置
   void _showFabLocationSettings() {
     final settingsController = Get.find<SettingsController>();
-    
+
     WoltModalSheet.show<void>(
       pageIndexNotifier: ValueNotifier(0),
       context: context,
@@ -580,9 +617,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
 class _FabLocationSettingsContent extends StatelessWidget {
   final SettingsController settingsController;
 
-  const _FabLocationSettingsContent({
-    required this.settingsController,
-  });
+  const _FabLocationSettingsContent({required this.settingsController});
 
   @override
   Widget build(BuildContext context) {
@@ -592,21 +627,9 @@ class _FabLocationSettingsContent extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 标题
-          Padding(
-            padding: const EdgeInsets.only(bottom: 24.0),
-            child: Text(
-              '浮动按钮位置及大小设置',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+        
           // 位置选择
-          Text(
-            '按钮位置',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('浮动按钮位置', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12.0),
           Obx(() {
             final currentLocation = settingsController.songReplaceFabLocation;
@@ -624,7 +647,9 @@ class _FabLocationSettingsContent extends StatelessWidget {
                     }
                   },
                   backgroundColor: Colors.transparent,
-                  selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  selectedColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.2),
                   side: BorderSide(
                     color: isSelected
                         ? Theme.of(context).colorScheme.primary
@@ -636,10 +661,7 @@ class _FabLocationSettingsContent extends StatelessWidget {
           }),
           const SizedBox(height: 24.0),
           // 大小选择
-          Text(
-            '按钮大小',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('浮动按钮大小', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12.0),
           Obx(() {
             final isMini = settingsController.songReplaceFabMini;
@@ -648,14 +670,8 @@ class _FabLocationSettingsContent extends StatelessWidget {
                 Expanded(
                   child: SegmentedButton<bool>(
                     segments: const [
-                      ButtonSegment(
-                        value: false,
-                        label: Text('标准'),
-                      ),
-                      ButtonSegment(
-                        value: true,
-                        label: Text('迷你'),
-                      ),
+                      ButtonSegment(value: false, label: Text('标准')),
+                      ButtonSegment(value: true, label: Text('迷你')),
                     ],
                     selected: {isMini},
                     onSelectionChanged: (selected) {
@@ -667,15 +683,17 @@ class _FabLocationSettingsContent extends StatelessWidget {
             );
           }),
           const SizedBox(height: 24.0),
-          // 确定按钮
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('确定'),
-              ),
-            ],
+          Obx(
+            () => TriStateSettingTile(
+              title: '自动替换歌单中的歌曲',
+              subtitle: '在添加新的歌曲替换后，自动将所有歌单及正在播放列表中的“替换歌曲”都替换为“源歌曲”',
+              value:
+                  settingsController.songReplaceAutoRepTragetTrackInAllPlaylist,
+              onChanged: (value) {
+                settingsController.songReplaceAutoRepTragetTrackInAllPlaylist =
+                    value;
+              },
+            ),
           ),
         ],
       ),

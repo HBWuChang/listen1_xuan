@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:listen1_xuan/play.dart';
+import '../models/Playlist.dart';
 import 'play_controller.dart';
 import 'myPlaylist_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';

@@ -1,87 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:listen1_xuan/models/Track.dart';
 
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/Playlist.dart';
+import '../models/Track.dart';
 import 'settings_controller.dart';
 
-class PlayListInfo {
-  String id;
-  String? cover_img_url;
-  String? title;
-  String? source_url;
-
-  PlayListInfo({
-    required this.id,
-    this.cover_img_url,
-    this.title,
-    this.source_url,
-  });
-  factory PlayListInfo.fromJson(Map<String, dynamic> json) {
-    return PlayListInfo(
-      id: json['id'] as String,
-      cover_img_url: json['cover_img_url'] as String?,
-      title: json['title'] as String?,
-      source_url: json['source_url'] as String?,
-    );
-  }
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'cover_img_url': cover_img_url,
-      'title': title,
-      'source_url': source_url,
-    };
-  }
-}
-
-class PlayList {
-  PlayListInfo info;
-  int is_mine;
-  int is_fav;
-  List<Track>? tracks;
-  PlayList({
-    required this.info,
-    this.is_mine = 0,
-    this.is_fav = 0,
-    this.tracks,
-  });
-  factory PlayList.fromJson(Map<String, dynamic> json) {
-    var tracks = json['tracks'];
-    if (tracks is List) {
-      if (tracks.isNotEmpty) {
-        if (tracks[0] is Map<String, dynamic>) {
-          tracks = tracks.map((track) => Track.fromJson(track)).toList();
-        } else if (tracks[0] is Track) {
-          // If already a list of Track objects, no conversion needed
-        } else {
-          throw Exception('Invalid track data format');
-        }
-      }
-    }
-    tracks = tracks != null ? List<Track>.from(tracks) : null;
-    return PlayList(
-      info: PlayListInfo.fromJson(json['info']),
-      is_mine: json['is_mine'] as int? ?? 0,
-      is_fav: json['is_fav'] as int? ?? 0,
-      tracks: tracks,
-    );
-  }
-  Map<String, dynamic> toJson() {
-    return {
-      'info': info.toJson(),
-      'is_mine': is_mine,
-      'is_fav': is_fav,
-      'tracks': tracks?.map((track) => track.toJson()).toList(),
-    };
-  }
-}
-
 class MyPlayListController extends GetxController {
-  var playerlists = <String, PlayList>{}.obs;
-  var favoriteplayerlists = <String, PlayList>{}.obs;
+  final playerlists = <String, PlayList>{}.obs;
+  final favoriteplayerlists = <String, PlayList>{}.obs;
   Set<String> get savedIds {
     Set<String> ids = {};
     for (var playlist in playerlists.values) {
@@ -127,4 +56,52 @@ class MyPlayListController extends GetxController {
         Get.find<SettingsController>().MyPlayListController_favoriteplayerlists;
     update();
   }
+
+  Future<void> replaceTrack(Track newTrack, String repTrackId) async {
+    // 使用 compute 在后台线程处理数据替换
+    final updatedPlaylists = await compute(
+      _replaceTrackInPlaylists,
+      _ReplacementArgs(
+        Map<String, PlayList>.from(playerlists),
+        newTrack,
+        repTrackId,
+      ),
+    );
+
+    // 将修改后的数据赋给 playerlists
+    playerlists.value = updatedPlaylists;
+  }
+
+  /// 后台线程中执行的歌曲替换逻辑
+  static Map<String, PlayList> _replaceTrackInPlaylists(_ReplacementArgs args) {
+    for (var playlist in args.playlists.values) {
+      if (playlist.tracks == null || playlist.tracks!.isEmpty) continue;
+      
+      // 检查歌单中是否已经包含了要替换成的新歌曲
+      bool hasNewTrack = playlist.tracks!.any((track) => track.id == args.newTrack.id);
+      
+      if (hasNewTrack) {
+        // 如果已经包含新歌曲，只删除旧歌曲，避免重复
+        playlist.tracks!.removeWhere((track) => track.id == args.repTrackId);
+      } else {
+        // 如果不包含新歌曲，将旧歌曲替换为新歌曲
+        for (int i = 0; i < playlist.tracks!.length; i++) {
+          if (playlist.tracks![i].id == args.repTrackId) {
+            playlist.tracks![i] = args.newTrack;
+          }
+        }
+      }
+    }
+
+    return args.playlists;
+  }
+}
+
+/// 用于传递给 compute 的参数类
+class _ReplacementArgs {
+  final Map<String, PlayList> playlists;
+  final Track newTrack;
+  final String repTrackId;
+
+  _ReplacementArgs(this.playlists, this.newTrack, this.repTrackId);
 }

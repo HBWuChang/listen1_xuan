@@ -618,6 +618,15 @@ class PlayController extends GetxController
     return currentPlayingRx.firstWhereOrNull((track) => track.id == id);
   }
 
+  void replaceTrack(Track newTrack, String repTrackId) {
+    currentPlayingRx.value = currentPlayingRx.map((track) {
+      if (track.id == repTrackId) {
+        return newTrack;
+      }
+      return track;
+    }).toList();
+  }
+
   /// 更新当前播放状态到 Supabase
   /// 将当前曲目、播放状态等信息同步到云端
   Future<void> updateContinuePlay({bool onlyPlaying = false}) async {
