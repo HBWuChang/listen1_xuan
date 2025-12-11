@@ -93,25 +93,35 @@ Widget playH() {
                         );
                       }),
                     ),
-                    Obx(
-                      () => Skeletonizer(
-                        enabled: _playController.loading,
-                        child: Container(
-                          width: 120,
-                          child: StreamBuilder<MediaState>(
-                            stream: _mediaStateStream,
-                            builder: (context, snapshot) {
-                              MediaState? mediaState = snapshot.data;
-                              return Center(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    ('${formatDuration(mediaState?.position ?? Duration.zero)} / ${formatDuration(mediaState?.duration ?? Duration.zero)}'),
-                                    style: TextStyle(fontSize: 20.0),
+                    Container(
+                      width: 120,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Obx(
+                            () => _playController.loading
+                                ? Obx(
+                                    () => Text(
+                                      (_playController
+                                                  .bootStraping[_playController
+                                                  .nowPlayingTrackRx
+                                                  .value
+                                                  ?.id] ??
+                                              '加载中...')
+                                          .toString(),
+                                      style: TextStyle(fontSize: 20.0),
+                                    ),
+                                  )
+                                : StreamBuilder<MediaState>(
+                                    stream: _mediaStateStream,
+                                    builder: (context, snapshot) {
+                                      MediaState? mediaState = snapshot.data;
+                                      return Text(
+                                        ('${formatDuration(mediaState?.position ?? Duration.zero)} / ${formatDuration(mediaState?.duration ?? Duration.zero)}'),
+                                        style: TextStyle(fontSize: 20.0),
+                                      );
+                                    },
                                   ),
-                                ),
-                              );
-                            },
                           ),
                         ),
                       ),

@@ -364,9 +364,20 @@ Widget get positionSlider => StreamBuilder<MediaState>(
             child: Center(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(
-                  formatDuration(mediaState?.position ?? Duration.zero),
-                  style: TextStyle(fontSize: 48.0.w),
+                child: Obx(
+                  () => Text(
+                    _playController.loading
+                        ? _playController
+                                  .bootStraping[_playController
+                                      .nowPlayingTrackRx
+                                      .value
+                                      ?.id]
+                                  ?.split('/')
+                                  .first ??
+                              ''
+                        : formatDuration(mediaState?.position ?? Duration.zero),
+                    style: TextStyle(fontSize: 48.0.w),
+                  ),
                 ),
               ),
             ),
@@ -382,29 +393,42 @@ Widget get positionSlider => StreamBuilder<MediaState>(
                     // overlayShape: RoundSliderOverlayShape(overlayRadius: 32.w),
                   ),
                 ),
-                child: MaterialWaveSlider(
-                  key: materialWaveSliderStateKeyV,
-                  height: 60.w,
-                  amplitude: 8.w,
-                  velocity: 1800.0,
-                  paused: mediaState?.playing == false,
-                  transitionOnChange: false,
-                  thumbWidth: 8.w,
-                  value:
-                      (mediaState?.position.inMilliseconds.toDouble() ?? 0.0) >
-                          (mediaState?.duration.inMilliseconds.toDouble() ??
-                              0.0)
-                      ? (mediaState?.duration.inMilliseconds.toDouble() ?? 0.0)
-                      : (mediaState?.position.inMilliseconds.toDouble() ?? 0.0)
-                            .clamp(
-                              0.0,
+                child: Obx(
+                  () => _playController.loading
+                      ? LinearProgressIndicator()
+                      : MaterialWaveSlider(
+                          key: materialWaveSliderStateKeyV,
+                          height: 60.w,
+                          amplitude: 8.w,
+                          velocity: 1800.0,
+                          paused: mediaState?.playing == false,
+                          transitionOnChange: false,
+                          thumbWidth: 8.w,
+                          value:
+                              (mediaState?.position.inMilliseconds.toDouble() ??
+                                      0.0) >
+                                  (mediaState?.duration.inMilliseconds
+                                          .toDouble() ??
+                                      0.0)
+                              ? (mediaState?.duration.inMilliseconds
+                                        .toDouble() ??
+                                    0.0)
+                              : (mediaState?.position.inMilliseconds
+                                            .toDouble() ??
+                                        0.0)
+                                    .clamp(
+                                      0.0,
+                                      mediaState?.duration.inMilliseconds
+                                              .toDouble() ??
+                                          0.0,
+                                    ),
+                          max:
                               mediaState?.duration.inMilliseconds.toDouble() ??
-                                  0.0,
-                            ),
-                  max: mediaState?.duration.inMilliseconds.toDouble() ?? 0.0,
-                  onChanged: (value) {
-                    globalSeek(Duration(milliseconds: value.toInt()));
-                  },
+                              0.0,
+                          onChanged: (value) {
+                            globalSeek(Duration(milliseconds: value.toInt()));
+                          },
+                        ),
                 ),
               ),
             ),
@@ -414,9 +438,20 @@ Widget get positionSlider => StreamBuilder<MediaState>(
             child: Center(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(
-                  formatDuration(mediaState?.duration ?? Duration.zero),
-                  style: TextStyle(fontSize: 48.0.w),
+                child: Obx(
+                  () => Text(
+                    _playController.loading
+                        ? _playController
+                                  .bootStraping[_playController
+                                      .nowPlayingTrackRx
+                                      .value
+                                      ?.id]
+                                  ?.split('/')
+                                  .last ??
+                              ''
+                        : formatDuration(mediaState?.duration ?? Duration.zero),
+                    style: TextStyle(fontSize: 48.0.w),
+                  ),
                 ),
               ),
             ),

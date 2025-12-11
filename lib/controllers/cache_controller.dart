@@ -87,10 +87,16 @@ class CacheController extends GetxController {
     String fileName = getDownloadNamed(track, res['url']);
     final filePath = p.join(downPath, fileName);
     _playController.bootStraping[sTrack?.id ?? track.id] = fileName;
+    void onReceiveProgress(int count, int total) {
+      if (_playController.bootStraping.containsKey(sTrack?.id ?? track.id)) {
+        _playController.bootStraping[sTrack?.id ?? track.id] =
+            '${formatBytes(count)}/${formatBytes(total)}';
+      }
+    }
+
     switch (res["platform"]) {
       case "bilibili":
-        final dio = dioWithCookieManager;
-        await dio.download(
+        await dioWithCookieManager.download(
           res['url'],
           filePath,
           options: Options(
@@ -107,12 +113,20 @@ class CacheController extends GetxController {
               "range": "bytes=0-",
             },
           ),
+          onReceiveProgress: onReceiveProgress,
         );
       case "netease":
-        final dio = dioWithCookieManager;
-        await dio.download(res['url'], filePath);
+        await dioWithCookieManager.download(
+          res['url'],
+          onReceiveProgress: onReceiveProgress,
+          filePath,
+        );
       default:
-        await dioWithCookieManager.download(res['url'], filePath);
+        await dioWithCookieManager.download(
+          res['url'],
+          onReceiveProgress: onReceiveProgress,
+          filePath,
+        );
     }
     setLocalCache(track.id, fileName);
   }

@@ -449,6 +449,28 @@ bool isEmpty(dynamic str) {
   return str == null;
 }
 
+/// 将字节数格式化为可读的字符串
+/// 
+/// [bytes] 字节数
+/// [decimals] 小数位数，默认为2
+/// 返回格式化后的字符串，如 "1.25 MB"
+String formatBytes(int bytes, {int decimals = 2}) {
+  if (bytes <= 0) return '0 B';
+
+  const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  int index = 0;
+  double size = bytes.toDouble();
+
+  while (size >= 1024 && index < suffixes.length - 1) {
+    size /= 1024;
+    index++;
+  }
+
+  if (decimals < 0) decimals = 0;
+  
+  return '${size.toStringAsFixed(decimals)} ${suffixes[index]}';
+}
+
 /// 从assets读取markdown文件并使用Get的dialog展示
 Future<void> showInfoDialogFromMarkdown(String assetsPath) async {
   try {
