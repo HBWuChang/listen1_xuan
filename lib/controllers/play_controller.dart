@@ -619,12 +619,16 @@ class PlayController extends GetxController
   }
 
   void replaceTrack(Track newTrack, String repTrackId) {
-    currentPlayingRx.value = currentPlayingRx.map((track) {
-      if (track.id == repTrackId) {
-        return newTrack;
-      }
-      return track;
-    }).toList();
+    if (!playingIds.contains(newTrack.id)) {
+      currentPlayingRx.value = currentPlayingRx.map((track) {
+        if (track.id == repTrackId) {
+          return newTrack;
+        }
+        return track;
+      }).toList();
+      return;
+    }
+    currentPlayingRx.removeWhere((track) => track.id == repTrackId);
   }
 
   /// 更新当前播放状态到 Supabase
