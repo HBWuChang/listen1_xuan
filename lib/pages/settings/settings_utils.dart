@@ -83,6 +83,19 @@ Future<void> importSettingsFromFile(
             break;
           case 'settings':
             break;
+          case 'player-settings':
+            try {
+              double nowVolume = Get.find<PlayController>().currentVolume;
+              final t = settings[key];
+              t['volume'] = nowVolume;
+              await prefs.setString(
+                key,
+                await compute((dynamic value) => jsonEncode(value), t),
+              );
+            } catch (e) {
+              logger.e('Error saving key $key: $e');
+            }
+            break;
           default:
             try {
               if (settings[key] is String) throw "String! :${settings[key]}";

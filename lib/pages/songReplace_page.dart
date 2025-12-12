@@ -309,6 +309,28 @@ class _SongReplacePageState extends State<SongReplacePage> {
                       _playController.songReplaceTargetTrack.value!.id;
               return IconButton(
                 icon: Icon(
+                  Icons.recycling_rounded,
+                  color: canConfirm
+                      ? Get.theme.colorScheme.secondary
+                      : Get.theme.disabledColor,
+                ),
+                tooltip: '快捷替换',
+                onPressed: canConfirm
+                    ? () => repTrack(
+                        _playController.songReplaceSourceTrack.value!,
+                        _playController.songReplaceTargetTrack.value!.id,
+                      )
+                    : null,
+              );
+            }),
+            Obx(() {
+              bool canConfirm =
+                  _playController.songReplaceSourceTrack.value != null &&
+                  _playController.songReplaceTargetTrack.value != null &&
+                  _playController.songReplaceSourceTrack.value!.id !=
+                      _playController.songReplaceTargetTrack.value!.id;
+              return IconButton(
+                icon: Icon(
                   Icons.check,
                   color: canConfirm
                       ? Get.theme.colorScheme.primary
@@ -523,7 +545,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
     _cleanupUnusedTracks();
     showTriStateConfirmDialog(
       title: '自动替换歌单中的歌曲？',
-      message: '是否将所有歌单机及正在播放列表中的“替换歌曲”都替换为“源歌曲”？\n\n（可在设置中修改此选项的默认值）',
+      message: '是否将所有歌单及正在播放列表中的“替换歌曲”都替换为“源歌曲”？\n\n（可在设置中修改此选项的默认值）',
       currentValue: Get.find<SettingsController>()
           .songReplaceAutoRepTragetTrackInAllPlaylist,
       onRemember: (value) {
@@ -534,19 +556,23 @@ class _SongReplacePageState extends State<SongReplacePage> {
       },
     ).then((value) async {
       if (value == true) {
-        try {
-          _playController.replaceTrack(sourceTrack, targetTrack.id);
-          await Get.find<MyPlayListController>().replaceTrack(
-            sourceTrack,
-            targetTrack.id,
-          );
-          showSuccessSnackbar('已替换所有歌单中的对应歌曲', null);
-        } catch (e) {
-          showErrorSnackbar('替换歌单中的歌曲时出错', e.toString());
-          return;
-        }
+        await repTrack(sourceTrack, targetTrack.id);
       }
     });
+  }
+
+  Future<void> repTrack(Track sourceTrack, String targetTrackId) async {
+    try {
+      _playController.replaceTrack(sourceTrack, targetTrackId);
+      await Get.find<MyPlayListController>().replaceTrack(
+        sourceTrack,
+        targetTrackId,
+      );
+      showSuccessSnackbar('已替换所有歌单中的对应歌曲', null);
+    } catch (e) {
+      showErrorSnackbar('替换歌单中的歌曲时出错', e.toString());
+      return;
+    }
   }
 
   /// 删除替换
@@ -627,7 +653,6 @@ class _FabLocationSettingsContent extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-        
           // 位置选择
           Text('浮动按钮位置', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12.0),
