@@ -41,6 +41,10 @@ flutter version 3.35.7
 - 托盘左键单击为显示应用，右键单击为显示菜单
 - windows下载最新测试版后可能会弹出cmd请求管理员权限的提示，请点击允许以更新版本。若程序关闭后无法打开，请手动运行windows默认下载地址/Listen1/scripts.bat以更新版本
 # TODO
+- [ ] 常驻/计时(倒计时边框)可互动通知
+- [ ] 自动下载supabase歌单
+- [ ] 歌词通知使用title字段
+- [ ] flutter_acrylic
 - [x] flutter_acrylic
   - [ ] 隐藏页面后再次打开效果消失且无法恢复
 - [x] material_wave_slider
