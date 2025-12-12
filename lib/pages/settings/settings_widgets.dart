@@ -618,7 +618,7 @@ Widget desktopSettingsTiles(
                   showInfoSnackbar('设置成功$value', '立即生效');
                 },
               ),
-              if (isWindows)
+              if (isDesktop)
                 Obx(
                   () => SwitchListTile(
                     title: const Text('在右侧页面中键时隐藏/最小化主页面'),

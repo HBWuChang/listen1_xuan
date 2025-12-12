@@ -607,10 +607,6 @@ class _MyHomePageState extends State<MyHomePage>
                         onPointerDown: (event) {
                           if (event.kind == PointerDeviceKind.mouse &&
                               event.buttons == kSecondaryMouseButton) {
-                            if (isMacOS) {
-                              closeApp();
-                              return;
-                            }
                             windowManager.hide();
                             windowManager.setSkipTaskbar(true);
                           }
@@ -620,7 +616,7 @@ class _MyHomePageState extends State<MyHomePage>
                           }
                         },
                         child: Tooltip(
-                          message: isWindows ? '右键以最小化,中键以关闭' : '右键以关闭',
+                          message: '右键以最小化,中键以关闭' ,
                           child: Text(
                             'Listen1',
                             style: TextStyle(fontSize: 24),

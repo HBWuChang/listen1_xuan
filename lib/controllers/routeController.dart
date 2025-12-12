@@ -73,7 +73,7 @@ void router_pop() {
   }
 
   if (DateTime.now().millisecondsSinceEpoch - last_pop_time < 1000) {
-    if (isWindows) {
+    if (isDesktop) {
       windowManager.minimize();
       windowManager.setSkipTaskbar(false);
       return;
@@ -84,7 +84,7 @@ void router_pop() {
       closeApp();
     }
   } else {
-    showInfoSnackbar(isWindows ? "再按一次以最小化" : "再按一次退出", null);
+    showInfoSnackbar(isDesktop ? "再按一次以最小化" : "再按一次退出", null);
     last_pop_time = DateTime.now().millisecondsSinceEpoch;
   }
 }
