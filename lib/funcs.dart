@@ -5,8 +5,10 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
 import 'global_settings_animations.dart';
+import 'widgets/smooth_sheet_toast.dart';
 
 late FToast fToast;
+late SmoothSheetToast smoothSheetToast;
 
 /// 创建统一的自定义 Toast 组件
 Widget _buildCustomToast({

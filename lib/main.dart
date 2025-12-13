@@ -27,6 +27,7 @@ import 'bodys.dart';
 import 'play.dart';
 import 'global_settings_animations.dart';
 import 'widgets.dart';
+import 'widgets/smooth_sheet_toast.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:cookie_jar/cookie_jar.dart';
@@ -287,7 +288,6 @@ class MyApp extends StatelessWidget {
           builder: (theme, darkTheme) => GetMaterialApp(
             title: 'Listen1',
             builder: (context, widget) {
-              // 先应用 BotToastInit（如果是 Windows）
               widget = FToastBuilder()(context, widget);
               // 处理 MediaQuery 异常问题，特别是小米澎湃系统
               MediaQueryData mediaQuery = MediaQuery.of(context);
@@ -395,6 +395,9 @@ class _MyHomePageState extends State<MyHomePage>
     fToast = FToast();
     // if you want to use context from globally instead of content we need to pass navigatorKey.currentContext!
     fToast.init(navigatorKey.currentContext!);
+    
+    smoothSheetToast = SmoothSheetToast();
+    smoothSheetToast.init(navigatorKey.currentContext!);
   }
 
   @override
@@ -1322,45 +1325,56 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
 
                 ///测试按钮
-                // Positioned.fill(
-                //   child: SafeArea(
-                //     top: false,
-                //     child: Align(
-                //       alignment: Alignment.bottomRight,
-                //       child: Padding(
-                //         padding: EdgeInsets.only(
-                //           bottom: globalHorizon ? 76 : 300.w,
-                //           right: globalHorizon ? 16 : 40.w,
-                //         ),
-                //         child: Row(
-                //           mainAxisSize: MainAxisSize.min,
-                //           children: [
-                //             FloatingActionButton(
-                //               onPressed: () async {
-                //                 // final securityTest = SecurityTestExample();
-                //                 // await securityTest.runAllTests();
-                //               },
-                //               child: Icon(Icons.bug_report),
-                //             ),
-                //             FloatingActionButton(
-                //               onPressed: () async {
-                //                 logger.i(
-                //                   Platform.executable
-                //                 );logger.i(
-                //                   Platform.resolvedExecutable
-                //                 );logger.i(
-                //                   Platform.script
-                //                 );
-                //                 showErrorSnackbar('', '${Platform.executable}\n${Platform.resolvedExecutable}\n${Platform.script}');
-                //               },
-                //               child: Icon(Icons.bug_report),
-                //             ),
-                //           ],
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                // ),
+                Positioned.fill(
+                  child: SafeArea(
+                    top: false,
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          bottom: globalHorizon ? 76 : 300.w,
+                          left: globalHorizon ? 16 : 40.w,
+                        ),
+                        child: FloatingActionButton(
+                          onPressed: () async {
+                            smoothSheetToast.showToast(
+                              child: Container(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.notifications_active,
+                                      size: 48,
+                                      color: Get.theme.colorScheme.primary,
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      '测试通知',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      '这是一个侧边滑入的通知示例\n可以左右滑动来控制显示',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              side: SheetToastSide.right,
+                              toastDuration: Duration(seconds: 5),
+                            );
+                          },
+                          child: Icon(Icons.notifications),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
 
                 ///WebSocketClientControlPanel悬浮按钮
                 Positioned.fill(

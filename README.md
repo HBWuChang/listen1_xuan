@@ -44,9 +44,8 @@ flutter version 3.35.7
 - [ ] 常驻/计时(倒计时边框)可互动通知
 - [ ] 自动下载supabase歌单
 - [ ] 歌词通知使用title字段
-- [ ] flutter_acrylic
 - [x] flutter_acrylic
-  - [ ] 隐藏页面后再次打开效果消失且无法恢复
+  - [ ] 隐藏页面后再次打开效果消失且无法恢复（win
 - [x] material_wave_slider
 - [x] 从WebSocket服务器下载缓存文件（连接服务器后在设置页面可进入
 - [x] [小米手势条适配](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=1629)
