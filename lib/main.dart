@@ -395,7 +395,7 @@ class _MyHomePageState extends State<MyHomePage>
     fToast = FToast();
     // if you want to use context from globally instead of content we need to pass navigatorKey.currentContext!
     fToast.init(navigatorKey.currentContext!);
-    
+
     smoothSheetToast = SmoothSheetToast();
     smoothSheetToast.init(navigatorKey.currentContext!);
   }
@@ -619,7 +619,7 @@ class _MyHomePageState extends State<MyHomePage>
                           }
                         },
                         child: Tooltip(
-                          message: '右键以最小化,中键以关闭' ,
+                          message: '右键以最小化,中键以关闭',
                           child: Text(
                             'Listen1',
                             style: TextStyle(fontSize: 24),
@@ -1341,14 +1341,13 @@ class _MyHomePageState extends State<MyHomePage>
                               child: Container(
                                 padding: EdgeInsets.all(16),
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       Icons.notifications_active,
                                       size: 48,
                                       color: Get.theme.colorScheme.primary,
                                     ),
-                                    SizedBox(height: 16),
                                     Text(
                                       '测试通知',
                                       style: TextStyle(
@@ -1356,9 +1355,8 @@ class _MyHomePageState extends State<MyHomePage>
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    SizedBox(height: 8),
                                     Text(
-                                      '这是一个侧边滑入的通知示例\n可以左右滑动来控制显示',
+                                      '这是一个侧边滑入的通sadasdasdasdasdadsadas知示例\n可以左右滑动来控制显示',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(fontSize: 14),
                                     ),

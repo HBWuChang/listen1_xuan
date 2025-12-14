@@ -1,11 +1,17 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:get/get.dart';
 
 /// 侧边通知弹出的方向
 enum SheetToastSide { left, right }
+
+double toasticonSize = 48.0;
+double maxToastHeight = 300.0;
+double get maxToastWidth => max(1.sw - 128, 0.6.sw);
 
 /// Sheet Toast 条目
 class _SheetToastEntry {
@@ -22,6 +28,22 @@ class _SheetToastEntry {
     required this.controller,
     required this.autoDismiss,
   });
+}
+
+class SmoothSheetToastOffset {
+  SheetOffset hiddenOffset;
+  SheetOffset peekOffset;
+  SheetOffset shownOffset;
+  SmoothSheetToastOffset({
+    required this.hiddenOffset,
+    required this.peekOffset,
+    required this.shownOffset,
+  });
+  SmoothSheetToastOffset.fromWidth({required double toastWidth})
+    : hiddenOffset = SheetOffset(0.0),
+      peekOffset = SheetOffset(toasticonSize / toastWidth),
+      shownOffset = SheetOffset((0.5 * 1.sw / toastWidth) + 0.5);
+  List<SheetOffset> get offsets => [hiddenOffset, peekOffset, shownOffset];
 }
 
 /// SmoothSheetToast - 使用 smooth_sheets 实现的侧边滑入通知
@@ -151,6 +173,8 @@ class SmoothSheetToast {
   /// [fadeDuration] 淡出时长，默认 350 毫秒
   /// [width] 通知宽度（旋转后的高度），默认 400
   /// [height] 通知高度（旋转后的宽度），默认占满屏幕
+  /// [maxToastHeight] 通知的最大高度，默认 300
+  /// [maxContentWidth] 内容的最大宽度，默认 350
   /// [iconSize] 保留在边缘的图标大小，默认 48
   /// [borderRadius] 圆角半径，默认 16
   /// [backgroundColor] 背景颜色，默认使用主题色
@@ -161,9 +185,6 @@ class SmoothSheetToast {
     bool autoDismiss = false,
     Duration toastDuration = const Duration(seconds: 3),
     Duration fadeDuration = const Duration(milliseconds: 350),
-    double? width,
-    double? height,
-    double iconSize = 48.0,
     double borderRadius = 16.0,
     Color? backgroundColor,
     bool isDismissible = true,
@@ -177,71 +198,166 @@ class SmoothSheetToast {
     }
 
     final sheetController = SheetController();
-    final screenSize = MediaQuery.of(context!).size;
 
-    // 默认宽度和高度
-    final toastWidth = width ?? 400.0;
-    final toastHeight = height ?? screenSize.height;
+    // 预渲染 child 以获取实际尺寸
+    _measureChild(
+      child: child,
+      maxContentWidth: maxToastWidth,
+      maxToastHeight: maxToastHeight,
+      onMeasured: (measuredSize) {
+        if (kDebugMode) {
+          print('SmoothSheetToast: Measured size: $measuredSize');
+          print('SmoothSheetToast: Measured width: ${measuredSize.width}');
+          print('SmoothSheetToast: Measured height: ${measuredSize.height}');
+        }
+        final showToastWidth = min(measuredSize.width, maxToastWidth);
+        final showToastHeight = min(measuredSize.height, maxToastHeight);
 
-    // 计算偏移量
-    // 完全隐藏时的偏移量（屏幕外）
-    final hiddenOffset = SheetOffset(0.0);
-    // 显示一个图标大小时的偏移量
-    final peekOffset = SheetOffset(iconSize / toastWidth);
-    // 完全显示时的偏移量
-    final shownOffset = SheetOffset(1.0);
+        OverlayEntry newEntry = OverlayEntry(
+          builder: (context) {
+            return _SheetToastWidget(
+              controller: sheetController,
+              side: side,
+              width: showToastWidth,
+              height: showToastHeight,
+              measuredSize: measuredSize,
+              borderRadius: borderRadius,
+              backgroundColor:
+                  backgroundColor ??
+                  Get.theme.colorScheme.surfaceContainerHighest,
+              isDismissible: isDismissible,
+              onDismiss: isDismissible ? () => removeToast() : null,
+              child: child,
+            );
+          },
+        );
 
-    OverlayEntry newEntry = OverlayEntry(
+        _overlayQueue.add(
+          _SheetToastEntry(
+            entry: newEntry,
+            duration: toastDuration,
+            fadeDuration: fadeDuration,
+            controller: sheetController,
+            autoDismiss: autoDismiss,
+          ),
+        );
+
+        if (_timer == null) {
+          if (kDebugMode) {
+            print('SmoothSheetToast: Calling _showOverlay');
+          }
+          _showOverlay();
+          // 等待 sheet 挂载后再执行动画
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (kDebugMode) {
+              print(
+                'SmoothSheetToast: PostFrameCallback - hasClient: ${sheetController.hasClient}',
+              );
+            }
+            if (sheetController.hasClient) {
+              if (kDebugMode) {
+                print('SmoothSheetToast: Animating to peek position');
+              }
+              sheetController.animateTo(
+                SmoothSheetToastOffset.fromWidth(
+                  toastWidth: showToastWidth,
+                ).shownOffset,
+                duration: fadeDuration,
+                curve: Curves.easeOutCubic,
+              );
+            }
+          });
+        }
+      },
+    );
+  }
+
+  /// 预渲染 child 以获取实际尺寸
+  void _measureChild({
+    required Widget child,
+    required double maxContentWidth,
+    required double maxToastHeight,
+    required Function(Size) onMeasured,
+  }) {
+    final measureKey = GlobalKey();
+    OverlayEntry? measureEntry;
+
+    measureEntry = OverlayEntry(
       builder: (context) {
-        return _SheetToastWidget(
-          controller: sheetController,
-          side: side,
-          width: toastWidth,
-          height: toastHeight,
-          iconSize: iconSize,
-          borderRadius: borderRadius,
-          backgroundColor:
-              backgroundColor ?? Get.theme.colorScheme.surfaceContainerHighest,
-          isDismissible: isDismissible,
-          onDismiss: isDismissible ? () => removeToast() : null,
-          child: child,
+        return Positioned(
+          left: -10000, // 移出屏幕外
+          top: -10000,
+          child: Material(
+            color: Colors.transparent,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: maxContentWidth,
+                // 不设置 maxHeight，让 child 自然展开
+              ),
+              child: IntrinsicWidth(
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Container(key: measureKey, child: child),
+                  ),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );
 
-    _overlayQueue.add(
-      _SheetToastEntry(
-        entry: newEntry,
-        duration: toastDuration,
-        fadeDuration: fadeDuration,
-        controller: sheetController,
-        autoDismiss: autoDismiss,
-      ),
-    );
+    try {
+      final overlay = Overlay.of(context!);
+      overlay.insert(measureEntry);
 
-    if (_timer == null) {
-      if (kDebugMode) {
-        print('SmoothSheetToast: Calling _showOverlay');
-      }
-      _showOverlay();
-      // 等待 sheet 挂载后再执行动画
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (kDebugMode) {
-          print(
-            'SmoothSheetToast: PostFrameCallback - hasClient: ${sheetController.hasClient}',
-          );
-        }
-        if (sheetController.hasClient) {
-          if (kDebugMode) {
-            print('SmoothSheetToast: Animating to peek position');
+        try {
+          final renderBox =
+              measureKey.currentContext?.findRenderObject() as RenderBox?;
+          if (renderBox != null) {
+            final size = renderBox.size;
+            if (kDebugMode) {
+              print('SmoothSheetToast: Raw measured size: $size');
+            }
+
+            // 检查是否为无限大小
+            if (size.height.isInfinite || size.height > 10000) {
+              if (kDebugMode) {
+                print(
+                  'SmoothSheetToast: Detected infinite height, using maxToastHeight',
+                );
+              }
+              onMeasured(
+                Size(
+                  size.width.isInfinite ? maxContentWidth : size.width,
+                  maxToastHeight,
+                ),
+              );
+            } else {
+              onMeasured(size);
+            }
+          } else {
+            if (kDebugMode) {
+              print('SmoothSheetToast: Failed to get RenderBox, using default');
+            }
+            onMeasured(Size(maxContentWidth, maxToastHeight));
           }
-          sheetController.animateTo(
-            peekOffset,
-            duration: fadeDuration,
-            curve: Curves.easeOutCubic,
-          );
+        } catch (e) {
+          if (kDebugMode) {
+            print('SmoothSheetToast: Error measuring child: $e');
+          }
+          onMeasured(Size(maxContentWidth, maxToastHeight));
+        } finally {
+          measureEntry?.remove();
         }
       });
+    } catch (e) {
+      if (kDebugMode) {
+        print('SmoothSheetToast: Error creating measure overlay: $e');
+      }
+      onMeasured(Size(maxContentWidth, maxToastHeight));
     }
   }
 }
@@ -252,7 +368,7 @@ class _SheetToastWidget extends StatefulWidget {
   final SheetToastSide side;
   final double width;
   final double height;
-  final double iconSize;
+  final Size measuredSize;
   final double borderRadius;
   final Color backgroundColor;
   final bool isDismissible;
@@ -265,7 +381,7 @@ class _SheetToastWidget extends StatefulWidget {
     required this.side,
     required this.width,
     required this.height,
-    required this.iconSize,
+    required this.measuredSize,
     required this.borderRadius,
     required this.backgroundColor,
     required this.isDismissible,
@@ -278,6 +394,7 @@ class _SheetToastWidget extends StatefulWidget {
 }
 
 class _SheetToastWidgetState extends State<_SheetToastWidget> {
+  bool _hadScrolled = false;
   @override
   void initState() {
     super.initState();
@@ -299,8 +416,11 @@ class _SheetToastWidgetState extends State<_SheetToastWidget> {
     final metrics = widget.controller.metrics;
     if (metrics != null) {
       final offset = metrics.offset;
+      if (_hadScrolled == false && offset > 0) {
+        _hadScrolled = true;
+      }
       // 当滑动到完全隐藏位置时，触发删除
-      if (offset <= 0.0) {
+      if (offset <= 0.0 && _hadScrolled) {
         widget.onDismiss?.call();
       }
     }
@@ -308,64 +428,56 @@ class _SheetToastWidgetState extends State<_SheetToastWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
+    double screenWidth = 1.sw;
+    double screenHeight = 1.sh;
+
+    bool needsScroll = widget.measuredSize.height > widget.height;
 
     // 计算偏移量
-    final hiddenOffset = SheetOffset(0.0);
-    final peekOffset = SheetOffset(widget.iconSize / widget.width);
-    final shownOffset = SheetOffset(1.0);
+    SmoothSheetToastOffset toastOffsets = SmoothSheetToastOffset.fromWidth(
+      toastWidth: widget.width,
+    );
 
     // 根据侧边确定旋转角度和位置
     final isLeftSide = widget.side == SheetToastSide.left;
     final rotationQuarters = isLeftSide ? 1 : 3; // 左侧顺时针90度，右侧逆时针90度
 
-    if (kDebugMode) {
-      print(
-        'SmoothSheetToast _SheetToastWidget: Building with width=${widget.width}, height=${widget.height}',
-      );
-      print(
-        'SmoothSheetToast _SheetToastWidget: Offsets - hidden=$hiddenOffset, peek=$peekOffset, shown=$shownOffset',
-      );
-    }
+    // 使用实际高度或最大高度中的较小值
+    final displayHeight = widget.height;
 
     return Stack(
       children: [
         Positioned(
-          top: isLeftSide ? 0 : null,
-          bottom: isLeftSide ? null : 0,
+          top: isLeftSide ? (screenHeight - displayHeight) / 2 : null,
+          bottom: isLeftSide ? null : (screenHeight - displayHeight) / 2,
           left: isLeftSide ? 0 : null,
           right: isLeftSide ? null : 0,
           child: RotatedBox(
             quarterTurns: rotationQuarters,
             child: SizedBox(
-              width: screenSize.height, // 旋转后的宽度是屏幕高度
-              height: widget.width, // 旋转后的高度是toast宽度
+              width: displayHeight,
+              height: screenWidth,
               child: SheetViewport(
                 child: Sheet(
                   controller: widget.controller,
-                  initialOffset: peekOffset, // 初始显示 peek 状态
-                  snapGrid: SheetSnapGrid(
-                    snaps: [hiddenOffset, peekOffset, shownOffset],
-                  ),
-                  child: NotificationListener<SheetNotification>(
-                    onNotification: (notification) {
-                      if (kDebugMode) {
-                        print(
-                          'SmoothSheetToast: Sheet notification: $notification',
-                        );
-                      }
-                      return false;
-                    },
-                    child: Container(
-                      width: screenSize.height, // Sheet内容宽度
-                      height: widget.width, // Sheet内容高度
-                      decoration: BoxDecoration(
-                        color: widget.backgroundColor,
-                        borderRadius: BorderRadius.circular(
-                          widget.borderRadius,
-                        ),
-                      ),
-                      child: widget.child,
+                  initialOffset: toastOffsets.hiddenOffset, // 初始显示 peek 状态
+                  snapGrid: SheetSnapGrid(snaps: toastOffsets.offsets),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: widget.backgroundColor,
+                      borderRadius: BorderRadius.circular(widget.borderRadius),
+                    ),
+                    child: RotatedBox(
+                      quarterTurns: isLeftSide ? 3 : 1,
+                      child: needsScroll
+                          ? ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: widget.height,
+                                maxWidth: widget.width,
+                              ),
+                              child: SingleChildScrollView(child: widget.child),
+                            )
+                          : widget.child, 
                     ),
                   ),
                 ),
