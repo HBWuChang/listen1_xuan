@@ -1343,23 +1343,27 @@ class _MyHomePageState extends State<MyHomePage>
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
-                                      Icons.notifications_active,
-                                      size: 48,
-                                      color: Get.theme.colorScheme.primary,
-                                    ),
+                                    
                                     Text(
                                       '测试通知',
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                       ),
+                                    ),Text(
+                                      '测试通知',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),Text(
+                                      '测试通知',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                    Text(
-                                      '这是一个侧边滑入的通sadasdasdasdasdadsadas知示例\n可以左右滑动来控制显示',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 14),
-                                    ),
+                                   
                                   ],
                                 ),
                               ),

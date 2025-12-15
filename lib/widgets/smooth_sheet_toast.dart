@@ -9,7 +9,7 @@ import 'package:get/get.dart';
 /// 侧边通知弹出的方向
 enum SheetToastSide { left, right }
 
-double toasticonSize = 48.0;
+double toasticonSize = 64.0;
 double maxToastHeight = 300.0;
 double get maxToastWidth => max(1.sw - 128, 0.6.sw);
 
@@ -188,6 +188,7 @@ class SmoothSheetToast {
     double borderRadius = 16.0,
     Color? backgroundColor,
     bool isDismissible = true,
+    Widget? icon,
   }) {
     if (context == null) {
       throw ("Error: Context is null, Please call init(context) before showing toast.");
@@ -228,6 +229,7 @@ class SmoothSheetToast {
               isDismissible: isDismissible,
               onDismiss: isDismissible ? () => removeToast() : null,
               child: child,
+              icon: icon ?? Icon(Icons.notifications, size: toasticonSize),
             );
           },
         );
@@ -374,6 +376,7 @@ class _SheetToastWidget extends StatefulWidget {
   final bool isDismissible;
   final VoidCallback? onDismiss;
   final Widget child;
+  final Widget icon;
 
   const _SheetToastWidget({
     Key? key,
@@ -387,6 +390,7 @@ class _SheetToastWidget extends StatefulWidget {
     required this.isDismissible,
     required this.onDismiss,
     required this.child,
+    this.icon = const Icon(Icons.notifications),
   }) : super(key: key);
 
   @override
@@ -437,47 +441,106 @@ class _SheetToastWidgetState extends State<_SheetToastWidget> {
     SmoothSheetToastOffset toastOffsets = SmoothSheetToastOffset.fromWidth(
       toastWidth: widget.width,
     );
-
+    final expandAnimation = SheetOffsetDrivenAnimation(
+      controller: widget.controller,
+      initialValue: 0,
+      startOffset: toastOffsets.peekOffset,
+      endOffset: toastOffsets.shownOffset,
+    );
     // 根据侧边确定旋转角度和位置
     final isLeftSide = widget.side == SheetToastSide.left;
     final rotationQuarters = isLeftSide ? 1 : 3; // 左侧顺时针90度，右侧逆时针90度
 
-    // 使用实际高度或最大高度中的较小值
-    final displayHeight = widget.height;
+    debugPrint('Widget width: ${widget.width}, height: ${widget.height}');
 
     return Stack(
       children: [
         Positioned(
-          top: isLeftSide ? (screenHeight - displayHeight) / 2 : null,
-          bottom: isLeftSide ? null : (screenHeight - displayHeight) / 2,
+          top: isLeftSide
+              ? screenHeight * (1 - 0.618) - widget.height / 2
+              : null,
+          bottom: isLeftSide ? null : screenHeight * 0.618 - widget.height / 2,
           left: isLeftSide ? 0 : null,
           right: isLeftSide ? null : 0,
           child: RotatedBox(
             quarterTurns: rotationQuarters,
             child: SizedBox(
-              width: displayHeight,
+              width: widget.height,
               height: screenWidth,
               child: SheetViewport(
                 child: Sheet(
                   controller: widget.controller,
                   initialOffset: toastOffsets.hiddenOffset, // 初始显示 peek 状态
                   snapGrid: SheetSnapGrid(snaps: toastOffsets.offsets),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: widget.backgroundColor,
-                      borderRadius: BorderRadius.circular(widget.borderRadius),
-                    ),
-                    child: RotatedBox(
-                      quarterTurns: isLeftSide ? 3 : 1,
-                      child: needsScroll
-                          ? ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxHeight: widget.height,
-                                maxWidth: widget.width,
+                  child: RotatedBox(
+                    quarterTurns: isLeftSide ? 3 : 1,
+                    child: SizedBox(
+                      width: widget.width,
+                      child: Align(
+                        alignment: AlignmentGeometry.topLeft,
+                        child: AnimatedBuilder(
+                          animation: expandAnimation,
+                          builder: (context, child) {
+                            debugPrint(
+                              'Expand animation value: ${expandAnimation.value}',
+                            );
+                            return Container(
+                              height:
+                                  widget.height * expandAnimation.value +
+                                  (toasticonSize * (1 - expandAnimation.value)),
+                              decoration: BoxDecoration(
+                                color: widget.backgroundColor,
+                                borderRadius: BorderRadius.circular(
+                                  widget.borderRadius,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 8.0,
+                                    offset: Offset(2, 2),
+                                  ),
+                                ],
                               ),
-                              child: SingleChildScrollView(child: widget.child),
-                            )
-                          : widget.child, 
+                              child: Stack(
+                                children: [
+                                  Positioned(
+                                    left: isLeftSide
+                                        ? null
+                                        : -expandAnimation.value *
+                                              toasticonSize,
+                                    right: isLeftSide
+                                        ? -expandAnimation.value * toasticonSize
+                                        : null,
+                                    width: toasticonSize,
+                                    height: toasticonSize,
+                                    child: widget.icon,
+                                  ),
+                                  Positioned(
+                                    left: widget.side == SheetToastSide.left
+                                        ? 0 -
+                                              (1 - expandAnimation.value) *
+                                                  toasticonSize
+                                        : null,
+                                    right: widget.side == SheetToastSide.right
+                                        ? 0 -
+                                              (1 - expandAnimation.value) *
+                                                  toasticonSize
+                                        : null,
+                                    top: 0,
+                                    width: widget.width,
+                                    child: needsScroll
+                                        ? SingleChildScrollView(
+                                            padding: EdgeInsets.zero,
+                                            child: widget.child,
+                                          )
+                                        : widget.child,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
