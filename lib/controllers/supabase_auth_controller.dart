@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
@@ -8,6 +9,7 @@ import 'package:listen1_xuan/models/SupabasePlaylist.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/settings.dart' as settings;
+import 'package:uuid/uuid.dart';
 
 import '../funcs.dart';
 
@@ -23,7 +25,7 @@ class SupabaseAuthController extends GetxController {
   // 当前用户状态
   final Rx<User?> currentUser = Rx<User?>(null);
 
-  // 登录状态
+  // 登录状态xiu
   final RxBool isLoggedIn = false.obs;
 
   // 加载状态
@@ -43,6 +45,10 @@ class SupabaseAuthController extends GetxController {
   RealtimeChannel? _continuePlayChannel;
   final isSubscribedToContinuePlay = false.obs;
 
+  // Playlist 实时订阅相关
+  RealtimeChannel? _playlistChannel;
+  final isSubscribedToPlaylist = false.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -60,6 +66,8 @@ class SupabaseAuthController extends GetxController {
           if (Get.find<SettingsController>().supabaseSubPlay) {
             subscribeToContinuePlay();
           }
+          // 认证成功后自动订阅 playlist
+          subscribeToPlaylist();
         }
         if (data.event.jsName == 'INITIAL_SESSION') {
           _tryReconnectWithSavedCredentials();
@@ -69,6 +77,7 @@ class SupabaseAuthController extends GetxController {
           userProfile.value = null;
           // 登出时自动取消订阅
           unsubscribeFromContinuePlay();
+          unsubscribeFromPlaylist();
         }
       },
       onError: (error) {
@@ -86,6 +95,7 @@ class SupabaseAuthController extends GetxController {
   void onClose() {
     _countdownTimer?.cancel();
     unsubscribeFromContinuePlay();
+    unsubscribeFromPlaylist();
     super.onClose();
   }
 
@@ -432,6 +442,9 @@ class SupabaseAuthController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
+      // 生成 UUID v4 作为 update_id
+      final updateId = _generateUuidV4();
+
       final response = await _supabase
           .from('playlist')
           .insert({
@@ -439,6 +452,7 @@ class SupabaseAuthController extends GetxController {
             'name': name,
             'data': data,
             'is_share': isShare,
+            'update_id': updateId,
           })
           .select()
           .single();
@@ -472,7 +486,18 @@ class SupabaseAuthController extends GetxController {
 
       final updateData = <String, dynamic>{};
       if (name != null) updateData['name'] = name;
-      if (data != null) updateData['data'] = data;
+      String updateId = _generateUuidV4();
+      if (data != null) {
+        updateData['data'] = data;
+        // 当更新 data 时，生成新的 update_id
+        updateData['update_id'] = updateId;
+        if (Get.find<SettingsController>().supabaseBackupPlayListUpdateIdMap
+            .containsKey(playlistId)) {
+          Get.find<SettingsController>()
+                  .supabaseBackupPlayListUpdateIdMap[playlistId] =
+              updateId;
+        }
+      }
       if (isShare != null) updateData['is_share'] = isShare;
 
       if (updateData.isEmpty) {
@@ -518,15 +543,17 @@ class SupabaseAuthController extends GetxController {
 
   /// 获取用户的所有播放列表
   /// excludeData: 是否排除 data 字段(用于列表展示,减少数据传输)
-  Future<List<SupabasePlaylist>> getUserPlaylists({bool excludeData = true}) async {
+  Future<List<SupabasePlaylist>> getUserPlaylists({
+    bool excludeData = true,
+  }) async {
     try {
       if (currentUser.value == null) {
         return [];
       }
 
-      // 列表查询时不包含 data 字段以提升性能
+      // 列表查询时不包含 data 字段以提升性能，但始终包含 update_id
       final selectFields = excludeData
-          ? 'id,user_id,name,is_share,created_at,updated_at'
+          ? 'id,user_id,name,is_share,created_at,updated_at,update_id'
           : '*';
 
       final response = await _supabase
@@ -536,7 +563,9 @@ class SupabaseAuthController extends GetxController {
           .order('created_at', ascending: false);
 
       return (response as List)
-          .map((json) => SupabasePlaylist.fromJson(json as Map<String, dynamic>))
+          .map(
+            (json) => SupabasePlaylist.fromJson(json as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       print('获取播放列表失败: $e');
@@ -591,7 +620,9 @@ class SupabaseAuthController extends GetxController {
           .order('created_at', ascending: false);
 
       return (response as List)
-          .map((json) => SupabasePlaylist.fromJson(json as Map<String, dynamic>))
+          .map(
+            (json) => SupabasePlaylist.fromJson(json as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       print('获取公开播放列表失败: $e');
@@ -1022,5 +1053,171 @@ class SupabaseAuthController extends GetxController {
       logger.e('一键下载失败: $e');
       return false;
     }
+  }
+
+  // ==================== Playlist 订阅相关方法 ====================
+
+  /// 订阅 playlist 流
+  /// 在用户登录后可手动调用
+  Future<void> subscribeToPlaylist() async {
+    try {
+      // 如果已经订阅，先取消订阅
+      if (_playlistChannel != null) {
+        await unsubscribeFromPlaylist();
+      }
+
+      final userId = currentUser.value?.id;
+      if (userId == null) {
+        logger.w('用户未登录，无法订阅 playlist');
+        return;
+      }
+
+      logger.i('开始订阅 playlist 流，用户ID: $userId');
+
+      // 创建 Realtime Channel
+      _playlistChannel = _supabase
+          .channel('playlist_changes')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: 'public',
+            table: 'playlist',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'user_id',
+              value: userId,
+            ),
+            callback: _handlePlaylistUpdate,
+          )
+          .subscribe();
+
+      isSubscribedToPlaylist.value = true;
+      logger.i('成功订阅 playlist 流');
+
+      // 订阅成功后，检查是否有需要更新的歌单
+      await _checkPlaylistUpdates();
+    } catch (e) {
+      logger.e('订阅 playlist 失败: $e');
+    }
+  }
+
+  /// 取消订阅 playlist 流
+  Future<void> unsubscribeFromPlaylist() async {
+    try {
+      if (_playlistChannel != null) {
+        await _supabase.removeChannel(_playlistChannel!);
+        _playlistChannel = null;
+        isSubscribedToPlaylist.value = false;
+        logger.i('已取消订阅 playlist 流');
+      }
+    } catch (e) {
+      logger.e('取消订阅 playlist 失败: $e');
+    }
+  }
+
+  /// 处理 playlist 更新事件
+  void _handlePlaylistUpdate(PostgresChangePayload payload) {
+    try {
+      logger.d('收到 playlist 更新事件: ${payload.newRecord}');
+      
+      final playlistId = payload.newRecord['id'] as String?;
+      final updateId = payload.newRecord['update_id'] as String?;
+
+      if (playlistId == null || updateId == null) {
+        logger.w('playlist 更新事件数据不完整: playlistId=$playlistId, updateId=$updateId');
+        return;
+      }
+
+      final settingsController = Get.find<SettingsController>();
+      final localUpdateIdMap =
+          settingsController.supabaseBackupPlayListUpdateIdMap;
+
+      logger.d('本地订阅的歌单: ${localUpdateIdMap.keys.toList()}');
+
+      // 检查本地是否订阅了此歌单
+      if (!localUpdateIdMap.containsKey(playlistId)) {
+        logger.d('未订阅歌单 $playlistId，忽略更新');
+        return;
+      }
+
+      final localUpdateId = localUpdateIdMap[playlistId];
+      logger.d('本地 updateId: $localUpdateId, 云端 updateId: $updateId');
+
+      // 如果 updateId 不同，说明有更新
+      if (localUpdateId != updateId) {
+        logger.i('检测到歌单 $playlistId 有更新: $localUpdateId -> $updateId');
+        _onPlaylistUpdated(playlistId, payload.newRecord);
+      } else {
+        logger.d('歌单 $playlistId 的 updateId 相同，无需更新');
+      }
+    } catch (e) {
+      logger.e('处理 playlist 更新失败: $e');
+    }
+  }
+
+  /// 歌单更新回调（暂为空，待实现）
+  void _onPlaylistUpdated(String playlistId, Map<String, dynamic> newData) {
+    logger.i('歌单 $playlistId 已更新，新的 data: $newData');
+    
+    
+    smoothSheetToast.showToast(child: Text('检测到歌单更新'));
+    // TODO: 实现具体的更新逻辑
+    // 例如：
+    // 1. 下载最新的歌单数据
+    // 2. 提示用户是否更新
+    // 3. 自动应用更新等
+  }
+
+  /// 检查所有订阅的歌单是否有更新
+  Future<void> _checkPlaylistUpdates() async {
+    try {
+      final userId = currentUser.value?.id;
+      if (userId == null) return;
+
+      final settingsController = Get.find<SettingsController>();
+      final localUpdateIdMap =
+          settingsController.supabaseBackupPlayListUpdateIdMap;
+
+      if (localUpdateIdMap.isEmpty) {
+        logger.d('没有订阅的歌单，跳过检查');
+        return;
+      }
+
+      // 获取所有订阅的歌单ID
+      final subscribedIds = localUpdateIdMap.keys.toList();
+
+      // 从 Supabase 查询这些歌单的最新 update_id
+      final response = await _supabase
+          .from('playlist')
+          .select('id,update_id')
+          .eq('user_id', userId)
+          .inFilter('id', subscribedIds);
+
+      for (var record in response as List) {
+        final playlistId = record['id'] as String;
+        final cloudUpdateId = record['update_id'] as String?;
+        final localUpdateId = localUpdateIdMap[playlistId];
+
+        if (cloudUpdateId != null && localUpdateId != cloudUpdateId) {
+          logger.i('检测到歌单 $playlistId 有更新: $localUpdateId -> $cloudUpdateId');
+          _onPlaylistUpdated(playlistId, record);
+        }
+      }
+    } catch (e) {
+      logger.e('检查歌单更新失败: $e');
+    }
+  }
+
+  /// 手动重新订阅 Playlist（用于调试或重连）
+  Future<void> resubscribeToPlaylist() async {
+    if (isLoggedIn.value) {
+      await subscribeToPlaylist();
+    } else {
+      logger.w('用户未登录，无法订阅');
+    }
+  }
+
+  /// 生成 UUID v4
+  String _generateUuidV4() {
+    return Uuid().v4();
   }
 }

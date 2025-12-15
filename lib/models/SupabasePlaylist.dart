@@ -34,6 +34,11 @@ class SupabasePlaylist {
   @JsonKey(name: 'updated_at')
   final DateTime? updatedAt;
 
+  /// 更新标识符(UUID v4)
+  /// 用于实时订阅时判断是否有更新
+  @JsonKey(name: 'update_id')
+  final String? updateId;
+
   SupabasePlaylist({
     required this.id,
     required this.userId,
@@ -42,6 +47,7 @@ class SupabasePlaylist {
     this.data = const <String, dynamic>{},
     this.createdAt,
     this.updatedAt,
+    this.updateId,
   });
 
   /// 从 JSON 创建实例
@@ -60,6 +66,7 @@ class SupabasePlaylist {
     Map<String, dynamic>? data,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? updateId,
   }) {
     return SupabasePlaylist(
       id: id ?? this.id,
@@ -69,6 +76,7 @@ class SupabasePlaylist {
       data: data ?? this.data,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      updateId: updateId ?? this.updateId,
     );
   }
 

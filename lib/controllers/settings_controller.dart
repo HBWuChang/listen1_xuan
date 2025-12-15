@@ -245,6 +245,19 @@ class SettingsController extends GetxController {
     settings[songReplaceAutoRepTragetTrackInAllPlaylistKey] = value;
   }
 
+  static const String supabaseBackupPlayListUpdateIdMapKey =
+      'supabaseBackupPlayListUpdateIdMap';
+  Map<String,String?> get supabaseBackupPlayListUpdateIdMap {
+    final value = settings[supabaseBackupPlayListUpdateIdMapKey];
+    if (value is Map) {
+      return Map<String, String?>.from(value);
+    }
+    return <String, String?>{};
+  }
+  set supabaseBackupPlayListUpdateIdMap(Map<String,String?> value) {
+    settings[supabaseBackupPlayListUpdateIdMapKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};

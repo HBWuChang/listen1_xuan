@@ -19,6 +19,7 @@ SupabasePlaylist _$SupabasePlaylistFromJson(Map<String, dynamic> json) =>
       updatedAt: json['updated_at'] == null
           ? null
           : DateTime.parse(json['updated_at'] as String),
+      updateId: json['update_id'] as String?,
     );
 
 Map<String, dynamic> _$SupabasePlaylistToJson(SupabasePlaylist instance) =>
@@ -30,4 +31,5 @@ Map<String, dynamic> _$SupabasePlaylistToJson(SupabasePlaylist instance) =>
       'data': instance.data,
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
+      'update_id': instance.updateId,
     };
