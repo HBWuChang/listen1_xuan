@@ -161,9 +161,10 @@ Future<bool> downloadSupabasePlaylist(
     await importSettingsFromFile(true, fullPlaylist.data);
     if (Get.find<SettingsController>().supabaseBackupPlayListUpdateIdMap
         .containsKey(playlist.id)) {
-      Get.find<SettingsController>().supabaseBackupPlayListUpdateIdMap[playlist
-              .id] =
-          fullPlaylist.updateId;
+      Map<String, String?> t =
+          Get.find<SettingsController>().supabaseBackupPlayListUpdateIdMap;
+      t[playlist.id] = fullPlaylist.updateId;
+      Get.find<SettingsController>().supabaseBackupPlayListUpdateIdMap = t;
     }
     Get.back();
     showSuccessSnackbar('下载成功', '歌单已应用到当前设置');

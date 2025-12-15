@@ -1325,34 +1325,41 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
 
                 ///测试按钮
-                // Positioned.fill(
-                //   child: SafeArea(
-                //     top: false,
-                //     child: Align(
-                //       alignment: Alignment.bottomLeft,
-                //       child: Padding(
-                //         padding: EdgeInsets.only(
-                //           bottom: globalHorizon ? 76 : 300.w,
-                //           left: globalHorizon ? 16 : 40.w,
-                //         ),
-                //         child: Column(
-                //           mainAxisSize: MainAxisSize.min,
-                //           children: [
-                //             FloatingActionButton(
-                //               heroTag: 'toast_count_btn',
-                //               onPressed: () {
-                //                 Get.find<SupabaseAuthController>()
-                //                     .checkPlaylistUpdates();
-                //               },
-                //               child: Icon(Icons.format_list_numbered),
-                //             ),
-                      
-                //           ],
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                // ),
+                Positioned.fill(
+                  child: SafeArea(
+                    top: false,
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          bottom: globalHorizon ? 76 : 300.w,
+                          left: globalHorizon ? 16 : 40.w,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FloatingActionButton(
+                              heroTag: 'toast_count_btn',
+                              onPressed: () {
+                                Get.find<SupabaseAuthController>()
+                                    .checkPlaylistUpdates();
+                              },
+                              child: Icon(Icons.format_list_numbered),
+                            ),
+                            FloatingActionButton(
+                              onPressed: () {
+                                Get.find<SupabaseAuthController>()
+                                    .inupdateProcess
+                                    .clear();
+                              },
+                              child: Icon(Icons.format_list_numbered),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
 
                 ///WebSocketClientControlPanel悬浮按钮
                 Positioned.fill(

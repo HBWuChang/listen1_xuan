@@ -20,6 +20,8 @@ class ToastController {
   final double _toastWidth;
   final SheetController _sheetController;
   final VoidCallback _onRemove;
+  VoidCallback? _listener;
+  bool _listenerAttached = false;
 
   ToastController({
     required String toastId,
@@ -33,6 +35,31 @@ class ToastController {
 
   /// 获取 Toast ID
   String get id => _toastId;
+
+  /// 添加监听器，监听offset变化，当小于0.01时自动dismiss
+  void attachDismissListener() {
+    if (_listenerAttached || !_sheetController.hasClient) return;
+
+    _listener = () {
+      final metrics = _sheetController.metrics;
+      if (metrics != null && metrics.offset < 0.01) {
+        _removeDismissListener();
+        dismiss();
+      }
+    };
+
+    _sheetController.addListener(_listener!);
+    _listenerAttached = true;
+  }
+
+  /// 移除监听器
+  void _removeDismissListener() {
+    if (_listener != null && _listenerAttached) {
+      _sheetController.removeListener(_listener!);
+      _listener = null;
+      _listenerAttached = false;
+    }
+  }
 
   /// 展开到完全显示状态
   void expand({
@@ -86,6 +113,7 @@ class _SheetToastEntry {
   final bool autoDismiss;
   final double toastWidth;
   final VoidCallback? onDismiss;
+  final ToastController? toastController;
 
   _SheetToastEntry({
     required this.id,
@@ -96,6 +124,7 @@ class _SheetToastEntry {
     required this.autoDismiss,
     required this.toastWidth,
     this.onDismiss,
+    this.toastController,
   });
 }
 
@@ -219,13 +248,18 @@ class SmoothSheetToast {
             'SmoothSheetToast: Starting animation for toast ID: ${_toastEntry.id}',
           );
         }
-        _toastEntry.controller.animateTo(
-          SmoothSheetToastOffset.fromWidth(
-            toastWidth: _toastEntry.toastWidth,
-          ).shownOffset,
-          duration: Duration(milliseconds: 350),
-          curve: Curves.easeOutCubic,
-        );
+        _toastEntry.controller
+            .animateTo(
+              SmoothSheetToastOffset.fromWidth(
+                toastWidth: _toastEntry.toastWidth,
+              ).shownOffset,
+              duration: Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+            )
+            .then((_) {
+              // 动画完成后，添加自动dismiss监听器
+              _toastEntry.toastController?.attachDismissListener();
+            });
       }
     });
 
@@ -490,7 +524,12 @@ class SmoothSheetToast {
                   backgroundColor ??
                   Get.theme.colorScheme.surfaceContainerHighest,
               isDismissible: isDismissible,
-              onDismiss: isDismissible ? () => removeToast(toastId) : null,
+              onDismiss: isDismissible
+                  ? () {
+                      onDismiss?.call();
+                      removeToast(toastId);
+                    }
+                  : null,
               child: actualChild,
               icon: icon ?? Icon(Icons.notifications_rounded),
             );
@@ -507,6 +546,7 @@ class SmoothSheetToast {
             autoDismiss: autoDismiss,
             toastWidth: showToastWidth,
             onDismiss: onDismiss,
+            toastController: actualController,
           ),
         );
 

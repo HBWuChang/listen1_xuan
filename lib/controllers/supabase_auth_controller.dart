@@ -495,9 +495,10 @@ class SupabaseAuthController extends GetxController {
         updateData['update_id'] = updateId;
         if (Get.find<SettingsController>().supabaseBackupPlayListUpdateIdMap
             .containsKey(playlistId)) {
-          Get.find<SettingsController>()
-                  .supabaseBackupPlayListUpdateIdMap[playlistId] =
-              updateId;
+          Map<String, String?> t =
+              Get.find<SettingsController>().supabaseBackupPlayListUpdateIdMap;
+          t[playlistId] = updateId;
+          Get.find<SettingsController>().supabaseBackupPlayListUpdateIdMap = t;
         }
       }
       if (isShare != null) updateData['is_share'] = isShare;
@@ -1186,7 +1187,9 @@ class SupabaseAuthController extends GetxController {
               )
             : Icon(Icons.playlist_play_rounded),
       ),
-      onDismiss: () => inupdateProcess.remove(playlistId),
+      onDismiss: () {
+        inupdateProcess.remove(playlistId);
+      },
       builder: (context, controller) {
         return Padding(
           padding: EdgeInsets.all(8),
@@ -1221,9 +1224,21 @@ class SupabaseAuthController extends GetxController {
                       onPressed: loading.value
                           ? null
                           : () {
+                              debugPrint(
+                                Get.find<SettingsController>()
+                                    .supabaseBackupPlayListUpdateIdMap[playlistId],
+                              );
+                              Map<String, String?> t =
+                                  Get.find<SettingsController>()
+                                      .supabaseBackupPlayListUpdateIdMap;
+                              t[playlistId] = newData['update_id'];
                               Get.find<SettingsController>()
-                                      .supabaseBackupPlayListUpdateIdMap[playlistId] =
-                                  newData['update_id'] ?? '';
+                                      .supabaseBackupPlayListUpdateIdMap =
+                                  t;
+                              debugPrint(
+                                Get.find<SettingsController>()
+                                    .supabaseBackupPlayListUpdateIdMap[playlistId],
+                              );
                               controller.hide();
                             },
                       child: Text(
