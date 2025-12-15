@@ -247,14 +247,15 @@ class SettingsController extends GetxController {
 
   static const String supabaseBackupPlayListUpdateIdMapKey =
       'supabaseBackupPlayListUpdateIdMap';
-  Map<String,String?> get supabaseBackupPlayListUpdateIdMap {
+  Map<String, String?> get supabaseBackupPlayListUpdateIdMap {
     final value = settings[supabaseBackupPlayListUpdateIdMapKey];
     if (value is Map) {
       return Map<String, String?>.from(value);
     }
     return <String, String?>{};
   }
-  set supabaseBackupPlayListUpdateIdMap(Map<String,String?> value) {
+
+  set supabaseBackupPlayListUpdateIdMap(Map<String, String?> value) {
     settings[supabaseBackupPlayListUpdateIdMapKey] = value;
   }
 
@@ -289,6 +290,106 @@ class SettingsController extends GetxController {
   }
 
   Future<void> loadSettings() async {
+    if (kDebugMode) {
+      await _loadSettingsDir();
+    } else {
+      await _loadSettingsAwait();
+    }
+  }
+
+  /// 直接顺序加载设置（不使用 compute，用于 debug 模式）
+  Future<void> _loadSettingsDir() async {
+    final prefs = SharedPreferencesAsync();
+
+    // 顺序获取所有字符串数据
+    final jsonString = await prefs.getString('settings');
+    final localCacheListJson = await prefs.getString(
+      CacheController_localCacheListKey,
+    );
+    final player_settings = await prefs.getString('player-settings');
+    final current_playing = await prefs.getString('current-playing');
+    final playlists = await prefs.getStringList('playerlists');
+    final favoritePlaylists = await prefs.getStringList('favoriteplayerlists');
+    final play_replace = await prefs.getString(PlayController_play_replaceKey);
+
+    // 直接解析 JSON 数据（不使用 compute）
+    if (jsonString != null) {
+      settings.value = jsonDecode(jsonString) as Map<String, dynamic>;
+    }
+    showLyricTranslation.value = settings['showLyricTranslation'] ?? true;
+
+    if (localCacheListJson != null) {
+      CacheController_localCacheList.assignAll(
+        Map<String, String>.from(
+          jsonDecode(localCacheListJson) as Map<String, dynamic>,
+        ),
+      );
+    } else {
+      CacheController_localCacheList.clear();
+    }
+
+    final expansionValue = settings['settingsPageExpansion'];
+    final expansionSet = expansionValue is List
+        ? expansionValue.map((e) => e as int).toSet()
+        : <int>{};
+    settingsPageExpansion.clear();
+    settingsPageExpansion.addAll(expansionSet);
+    _lastSettingsPageExpansion = Set<int>.from(settingsPageExpansion);
+
+    if (player_settings != null) {
+      try {
+        PlayController_player_settings =
+            jsonDecode(player_settings) as Map<String, dynamic>;
+      } catch (_) {
+        PlayController_player_settings = <String, dynamic>{};
+      }
+    }
+
+    if (current_playing != null) {
+      try {
+        PlayController_current_playing = (jsonDecode(current_playing) as List)
+            .map((track) => Track.fromJson(track))
+            .toList();
+      } catch (_) {
+        PlayController_current_playing = <Track>[];
+      }
+    }
+
+    if (play_replace != null) {
+      try {
+        PlayController_play_replace = SongReplaceSettings.fromJson(
+          jsonDecode(play_replace) as Map<String, dynamic>,
+        );
+      } catch (_) {
+        PlayController_play_replace = SongReplaceSettings();
+      }
+    }
+
+    // 顺序获取所有播放列表数据
+    MyPlayListController_playerlists.clear();
+    MyPlayListController_favoriteplayerlists.clear();
+
+    for (var playlist in playlists ?? []) {
+      final playlistJson = await prefs.getString(playlist);
+      if (playlistJson != null) {
+        final decoded = jsonDecode(playlistJson);
+        MyPlayListController_playerlists[playlist] = PlayList.fromJson(decoded);
+      }
+    }
+
+    for (var playlist in favoritePlaylists ?? []) {
+      final playlistJson = await prefs.getString(playlist);
+      if (playlistJson != null) {
+        final decoded = jsonDecode(playlistJson);
+        MyPlayListController_favoriteplayerlists[playlist] = PlayList.fromJson(
+          decoded,
+        );
+      }
+    }
+  }
+
+  /// 并行异步加载设置（使用 compute，用于 release 模式）
+  Future<void> _loadSettingsAwait() async {
     final prefs = SharedPreferencesAsync();
 
     // 第一批：并行获取所有字符串数据

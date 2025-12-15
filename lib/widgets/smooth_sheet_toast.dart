@@ -11,7 +11,70 @@ enum SheetToastSide { left, right }
 
 double toasticonSize = 48.0;
 double maxToastHeight = 300.0;
-double get maxToastWidth => max(1.sw - 128, 0.6.sw);
+double get maxToastWidth => max(1.sw - 64, 0.6.sw);
+
+/// Toast 控制器
+/// 用于控制单个 Toast 的行为（展开、收起、关闭等）
+class ToastController {
+  final String _toastId;
+  final double _toastWidth;
+  final SheetController _sheetController;
+  final VoidCallback _onRemove;
+
+  ToastController({
+    required String toastId,
+    required double toastWidth,
+    required SheetController sheetController,
+    required VoidCallback onRemove,
+  }) : _toastId = toastId,
+       _toastWidth = toastWidth,
+       _sheetController = sheetController,
+       _onRemove = onRemove;
+
+  /// 获取 Toast ID
+  String get id => _toastId;
+
+  /// 展开到完全显示状态
+  void expand({
+    Duration duration = const Duration(milliseconds: 600),
+    Curve curve = Curves.easeOutCubic,
+  }) {
+    if (!_sheetController.hasClient) return;
+    final shownOffset = SmoothSheetToastOffset.fromWidth(
+      toastWidth: _toastWidth,
+    ).shownOffset;
+    _sheetController.animateTo(shownOffset, duration: duration, curve: curve);
+  }
+
+  /// 收起到 peek 状态（只显示图标）
+  void peek({
+    Duration duration = const Duration(milliseconds: 600),
+    Curve curve = Curves.easeOutCubic,
+  }) {
+    if (!_sheetController.hasClient) return;
+    final peekOffset = SmoothSheetToastOffset.fromWidth(
+      toastWidth: _toastWidth,
+    ).peekOffset;
+    _sheetController.animateTo(peekOffset, duration: duration, curve: curve);
+  }
+
+  /// 隐藏（动画到完全隐藏状态）
+  void hide({
+    Duration duration = const Duration(milliseconds: 600),
+    Curve curve = Curves.easeOutCubic,
+  }) {
+    if (!_sheetController.hasClient) return;
+    final hiddenOffset = SmoothSheetToastOffset.fromWidth(
+      toastWidth: _toastWidth,
+    ).hiddenOffset;
+    _sheetController.animateTo(hiddenOffset, duration: duration, curve: curve);
+  }
+
+  /// 关闭并移除 Toast
+  void dismiss() {
+    _onRemove();
+  }
+}
 
 /// Sheet Toast 条目
 class _SheetToastEntry {
@@ -22,6 +85,7 @@ class _SheetToastEntry {
   final SheetController controller;
   final bool autoDismiss;
   final double toastWidth;
+  final VoidCallback? onDismiss;
 
   _SheetToastEntry({
     required this.id,
@@ -31,6 +95,7 @@ class _SheetToastEntry {
     required this.controller,
     required this.autoDismiss,
     required this.toastWidth,
+    this.onDismiss,
   });
 }
 
@@ -57,7 +122,11 @@ class SmoothSheetToastOffset {
 /// final toast = SmoothSheetToast();
 /// toast.init(context);
 /// toast.showToast(
-///   child: YourWidget(),
+///   builder: (context, controller) {
+///     return YourWidget(
+///       onDismiss: () => controller.dismiss(),
+///     );
+///   },
 ///   side: SheetToastSide.right,
 /// );
 /// ```
@@ -85,6 +154,7 @@ class SmoothSheetToast {
   Timer? _timer;
   Timer? _fadeTimer;
   SheetController? _currentController;
+  double? _currentToastWidth;
   int _toastIdCounter = 0;
 
   /// 显示 overlay
@@ -132,17 +202,22 @@ class SmoothSheetToast {
     _entry = _toastEntry.entry;
     _currentToastId = _toastEntry.id;
     _currentController = _toastEntry.controller;
+    _currentToastWidth = _toastEntry.toastWidth;
     _overlay.insert(_entry!);
 
     if (kDebugMode) {
-      print('SmoothSheetToast: Toast entry inserted into overlay, ID: ${_toastEntry.id}');
+      print(
+        'SmoothSheetToast: Toast entry inserted into overlay, ID: ${_toastEntry.id}',
+      );
     }
 
     // 等待 sheet 挂载后再执行动画
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_toastEntry.controller.hasClient) {
         if (kDebugMode) {
-          print('SmoothSheetToast: Starting animation for toast ID: ${_toastEntry.id}');
+          print(
+            'SmoothSheetToast: Starting animation for toast ID: ${_toastEntry.id}',
+          );
         }
         _toastEntry.controller.animateTo(
           SmoothSheetToastOffset.fromWidth(
@@ -163,22 +238,40 @@ class SmoothSheetToast {
       });
     }
   }
-  
+
   /// 移除指定 ID 的 toast
   removeToast([String? toastId]) {
     if (kDebugMode) {
-      print('SmoothSheetToast: removeToast called with ID: $toastId, current ID: $_currentToastId');
+      print(
+        'SmoothSheetToast: removeToast called with ID: $toastId, current ID: $_currentToastId',
+      );
     }
 
     // 如果指定了 ID，检查是否是当前显示的 toast
     if (toastId != null && toastId != _currentToastId) {
       // 不是当前显示的 toast，从队列中移除
+      final removedEntries = _overlayQueue
+          .where((entry) => entry.id == toastId)
+          .toList();
       _overlayQueue.removeWhere((entry) => entry.id == toastId);
+
+      // 调用队列中被移除的 toast 的 onDismiss 回调
+      for (var entry in removedEntries) {
+        entry.onDismiss?.call();
+      }
+
       if (kDebugMode) {
         print('SmoothSheetToast: Removed toast from queue, ID: $toastId');
       }
       return;
     }
+
+    // 保存当前 entry 的 onDismiss 回调
+    final currentOnDismiss = _overlayQueue.isNotEmpty
+        ? null
+        : _entry != null
+        ? _findEntryById(_currentToastId)?.onDismiss
+        : null;
 
     // 移除当前显示的 toast
     _timer?.cancel();
@@ -187,14 +280,29 @@ class SmoothSheetToast {
     _fadeTimer = null;
     _entry?.remove();
     _entry = null;
+    final dismissedId = _currentToastId;
     _currentToastId = null;
     _currentController = null;
-    
+    _currentToastWidth = null;
+
     if (kDebugMode) {
       print('SmoothSheetToast: Current toast removed, showing next');
     }
-    
+
+    // 在显示下一个 toast 之前调用 onDismiss
+    currentOnDismiss?.call();
+
     _showOverlay();
+  }
+
+  /// 根据 ID 查找 entry（用于获取 onDismiss 回调）
+  _SheetToastEntry? _findEntryById(String? id) {
+    if (id == null) return null;
+    try {
+      return _overlayQueue.firstWhere((entry) => entry.id == id);
+    } catch (e) {
+      return null;
+    }
   }
 
   /// 移除队列中的所有 toast
@@ -208,6 +316,7 @@ class SmoothSheetToast {
     _entry = null;
     _currentToastId = null;
     _currentController = null;
+    _currentToastWidth = null;
   }
 
   /// 获取当前 toast 数量（包括正在显示的和队列中的）
@@ -219,9 +328,73 @@ class SmoothSheetToast {
     return count;
   }
 
+  /// 将当前显示的 toast 动画到 peek 状态
+  void peekToast({
+    Duration duration = const Duration(milliseconds: 600),
+    Curve curve = Curves.easeOutCubic,
+  }) {
+    if (_currentController == null || !_currentController!.hasClient) {
+      if (kDebugMode) {
+        print('SmoothSheetToast: No active toast to peek');
+      }
+      return;
+    }
+
+    if (_currentToastWidth == null) {
+      if (kDebugMode) {
+        print('SmoothSheetToast: Current toast width is null');
+      }
+      return;
+    }
+
+    final peekOffset = SmoothSheetToastOffset.fromWidth(
+      toastWidth: _currentToastWidth!,
+    ).peekOffset;
+
+    _currentController!.animateTo(peekOffset, duration: duration, curve: curve);
+
+    if (kDebugMode) {
+      print('SmoothSheetToast: Animating toast to peek state');
+    }
+  }
+
+  /// 将当前显示的 toast 动画到 hidden 状态（完全隐藏）
+  void dismissToast({
+    Duration duration = const Duration(milliseconds: 600),
+    Curve curve = Curves.easeOutCubic,
+  }) {
+    if (_currentController == null || !_currentController!.hasClient) {
+      if (kDebugMode) {
+        print('SmoothSheetToast: No active toast to dismiss');
+      }
+      return;
+    }
+
+    if (_currentToastWidth == null) {
+      if (kDebugMode) {
+        print('SmoothSheetToast: Current toast width is null');
+      }
+      return;
+    }
+
+    final hiddenOffset = SmoothSheetToastOffset.fromWidth(
+      toastWidth: _currentToastWidth!,
+    ).hiddenOffset;
+
+    _currentController!.animateTo(
+      hiddenOffset,
+      duration: duration,
+      curve: curve,
+    );
+
+    if (kDebugMode) {
+      print('SmoothSheetToast: Animating toast to hidden state');
+    }
+  }
+
   /// 显示 toast
   ///
-  /// [child] 通知内容 widget
+  /// [builder] Toast 内容构建器，接收 BuildContext 和 ToastController
   /// [side] 弹出方向，默认右侧
   /// [autoDismiss] 是否自动消失，默认 false
   /// [toastDuration] 显示时长（仅在 autoDismiss 为 true 时有效），默认 3 秒
@@ -234,8 +407,10 @@ class SmoothSheetToast {
   /// [borderRadius] 圆角半径，默认 16
   /// [backgroundColor] 背景颜色，默认使用主题色
   /// [isDismissible] 是否可以滑动关闭，默认 true
+  /// [onDismiss] Toast 被删除时的回调
   void showToast({
-    required Widget child,
+    required Widget Function(BuildContext context, ToastController controller)
+    builder,
     SheetToastSide side = SheetToastSide.right,
     bool autoDismiss = false,
     Duration toastDuration = const Duration(seconds: 3),
@@ -244,6 +419,7 @@ class SmoothSheetToast {
     Color? backgroundColor,
     bool isDismissible = true,
     Widget? icon,
+    VoidCallback? onDismiss,
   }) {
     if (context == null) {
       throw ("Error: Context is null, Please call init(context) before showing toast.");
@@ -255,6 +431,20 @@ class SmoothSheetToast {
     final sheetController = SheetController();
     final toastId = 'toast_${_toastIdCounter++}';
 
+    // 预渲染前先创建临时的 ToastController（用于测量）
+    final tempController = ToastController(
+      toastId: toastId,
+      toastWidth: maxToastWidth,
+      sheetController: sheetController,
+      onRemove: () => removeToast(toastId),
+    );
+
+    // 使用 builder 创建child
+    Widget child = Material(
+      color: Colors.transparent,
+      child: builder(context!, tempController),
+    );
+
     // 预渲染 child 以获取实际尺寸
     _measureChild(
       child: child,
@@ -263,11 +453,29 @@ class SmoothSheetToast {
       onMeasured: (measuredSize) {
         if (kDebugMode) {
           print('SmoothSheetToast: Measured size: $measuredSize');
-          print('SmoothSheetToast: Measured width: ${measuredSize.width}');
-          print('SmoothSheetToast: Measured height: ${measuredSize.height}');
         }
-        final showToastWidth = min(measuredSize.width, maxToastWidth);
-        final showToastHeight = min(measuredSize.height, maxToastHeight);
+        final showToastWidth = max(
+          toasticonSize,
+          min(measuredSize.width, maxToastWidth),
+        );
+        final showToastHeight = max(
+          toasticonSize,
+          min(measuredSize.height, maxToastHeight),
+        );
+
+        // 创建实际的 ToastController（使用真实的 toastWidth）
+        final actualController = ToastController(
+          toastId: toastId,
+          toastWidth: showToastWidth,
+          sheetController: sheetController,
+          onRemove: () => removeToast(toastId),
+        );
+
+        // 使用实际的 controller 重新构建 child
+        final actualChild = Material(
+          color: Colors.transparent,
+          child: builder(context!, actualController),
+        );
 
         OverlayEntry newEntry = OverlayEntry(
           builder: (context) {
@@ -283,7 +491,7 @@ class SmoothSheetToast {
                   Get.theme.colorScheme.surfaceContainerHighest,
               isDismissible: isDismissible,
               onDismiss: isDismissible ? () => removeToast(toastId) : null,
-              child: child,
+              child: actualChild,
               icon: icon ?? Icon(Icons.notifications_rounded),
             );
           },
@@ -298,13 +506,16 @@ class SmoothSheetToast {
             controller: sheetController,
             autoDismiss: autoDismiss,
             toastWidth: showToastWidth,
-          ),    
+            onDismiss: onDismiss,
+          ),
         );
-        
+
         if (kDebugMode) {
-          print('SmoothSheetToast: Toast added to queue, ID: $toastId, queue size: ${_overlayQueue.length}');
+          print(
+            'SmoothSheetToast: Toast added to queue, ID: $toastId, queue size: ${_overlayQueue.length}',
+          );
         }
-        
+
         // 只有当前没有显示的 toast 时，才显示新的 toast
         if (_entry == null) {
           if (kDebugMode) {
@@ -446,7 +657,7 @@ class _SheetToastWidget extends StatefulWidget {
 class _SheetToastWidgetState extends State<_SheetToastWidget> {
   bool _hadScrolled = false;
   bool _hasBeenDismissed = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -466,7 +677,7 @@ class _SheetToastWidgetState extends State<_SheetToastWidget> {
   void _onSheetChange() {
     // 如果已经触发过 dismiss，不再重复触发
     if (_hasBeenDismissed) return;
-    
+
     // 监听 sheet 的滑动，当完全划出屏幕时删除
     final metrics = widget.controller.metrics;
     if (metrics != null) {
@@ -499,6 +710,12 @@ class _SheetToastWidgetState extends State<_SheetToastWidget> {
       initialValue: 0,
       startOffset: toastOffsets.peekOffset,
       endOffset: toastOffsets.shownOffset,
+    );
+    final hideAnimation = SheetOffsetDrivenAnimation(
+      controller: widget.controller,
+      initialValue: 0,
+      startOffset: toastOffsets.hiddenOffset,
+      endOffset: toastOffsets.peekOffset,
     );
     // 根据侧边确定旋转角度和位置
     final isLeftSide = widget.side == SheetToastSide.left;
@@ -537,8 +754,10 @@ class _SheetToastWidgetState extends State<_SheetToastWidget> {
                             double curveValue = Curves.easeOutCubic.transform(
                               expandAnimation.value,
                             );
+                            double hiddenCurveValue = Curves.easeOutCubic
+                                .transform(hideAnimation.value);
                             // debugPrint(
-                            //   'Expand animation value: ${expandAnimation.value}',
+                            //   ' ${hiddenCurveValue}',
                             // );
                             return Container(
                               height:
@@ -551,6 +770,10 @@ class _SheetToastWidgetState extends State<_SheetToastWidget> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
+                                    //混合主题色
+                                    color: Colors.black.withAlpha(
+                                      (51 * hiddenCurveValue).toInt(),
+                                    ),
                                     blurRadius: 6.0,
                                     offset: Offset(0, 2),
                                   ),

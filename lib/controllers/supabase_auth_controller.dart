@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -12,6 +13,7 @@ import 'package:listen1_xuan/settings.dart' as settings;
 import 'package:uuid/uuid.dart';
 
 import '../funcs.dart';
+import '../settings.dart';
 
 /// Supabase 认证控制器
 /// 管理用户登录、登出、会话状态等
@@ -1094,7 +1096,7 @@ class SupabaseAuthController extends GetxController {
       logger.i('成功订阅 playlist 流');
 
       // 订阅成功后，检查是否有需要更新的歌单
-      await _checkPlaylistUpdates();
+      await checkPlaylistUpdates();
     } catch (e) {
       logger.e('订阅 playlist 失败: $e');
     }
@@ -1118,12 +1120,14 @@ class SupabaseAuthController extends GetxController {
   void _handlePlaylistUpdate(PostgresChangePayload payload) {
     try {
       logger.d('收到 playlist 更新事件: ${payload.newRecord}');
-      
+
       final playlistId = payload.newRecord['id'] as String?;
       final updateId = payload.newRecord['update_id'] as String?;
 
       if (playlistId == null || updateId == null) {
-        logger.w('playlist 更新事件数据不完整: playlistId=$playlistId, updateId=$updateId');
+        logger.w(
+          'playlist 更新事件数据不完整: playlistId=$playlistId, updateId=$updateId',
+        );
         return;
       }
 
@@ -1154,21 +1158,126 @@ class SupabaseAuthController extends GetxController {
     }
   }
 
+  Set<String> inupdateProcess = {};
+
   /// 歌单更新回调（暂为空，待实现）
   void _onPlaylistUpdated(String playlistId, Map<String, dynamic> newData) {
+    if (inupdateProcess.contains(playlistId)) {
+      logger.w('歌单 $playlistId 正在更新中，跳过重复通知');
+      return;
+    }
+    inupdateProcess.add(playlistId);
     logger.i('歌单 $playlistId 已更新，新的 data: $newData');
-    
-    
-    smoothSheetToast.showToast(child: Text('检测到歌单更新'));
-    // TODO: 实现具体的更新逻辑
-    // 例如：
-    // 1. 下载最新的歌单数据
-    // 2. 提示用户是否更新
-    // 3. 自动应用更新等
+    RxBool loading = false.obs;
+    String dateStr = newData['updated_at'] ?? '';
+    dateStr = dateStr.replaceAll('T', ' ').split('.').first;
+    smoothSheetToast.showToast(
+      icon: Obx(
+        () => loading.value
+            ? Center(
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Get.theme.colorScheme.onPrimary,
+                  ),
+                ),
+              )
+            : Icon(Icons.playlist_play_rounded),
+      ),
+      onDismiss: () => inupdateProcess.remove(playlistId),
+      builder: (context, controller) {
+        return Padding(
+          padding: EdgeInsets.all(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.only(left: 16),
+                title: Text(
+                  'Supabase歌单更新',
+                  style: Get.theme.textTheme.titleMedium,
+                ),
+                subtitle: FittedBox(
+                  child: Text(
+                    '${newData['name']}更新于$dateStr',
+                    maxLines: 1,
+                    style: Get.theme.textTheme.bodyMedium,
+                  ),
+                ),
+                trailing: IconButton(
+                  onPressed: controller.peek,
+                  icon: Icon(Icons.minimize_rounded),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Obx(
+                    () => TextButton(
+                      onPressed: loading.value
+                          ? null
+                          : () {
+                              Get.find<SettingsController>()
+                                      .supabaseBackupPlayListUpdateIdMap[playlistId] =
+                                  newData['update_id'] ?? '';
+                              controller.hide();
+                            },
+                      child: Text(
+                        '忽略本次更新',
+                        style: TextStyle(color: Get.theme.colorScheme.primary),
+                      ),
+                    ),
+                  ),
+                  Obx(
+                    () => ElevatedButton.icon(
+                      onPressed: loading.value
+                          ? null
+                          : () async {
+                              loading.value = true;
+                              try {
+                                if (await downloadSupabasePlaylist(
+                                  SupabasePlaylist(
+                                    id: playlistId,
+                                    userId: newData['user_id'] ?? '',
+                                    name: newData['name'],
+                                  ),
+                                )) {
+                                  controller.hide();
+                                }
+                              } catch (e) {
+                                showErrorSnackbar('更新歌单失败', e.toString());
+                              } finally {
+                                loading.value = false;
+                              }
+                            },
+                      icon: loading.value
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Get.theme.colorScheme.onPrimary,
+                              ),
+                            )
+                          : Icon(Icons.download_rounded),
+                      label: Text('更新歌单'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   /// 检查所有订阅的歌单是否有更新
-  Future<void> _checkPlaylistUpdates() async {
+  Future<void> checkPlaylistUpdates() async {
     try {
       final userId = currentUser.value?.id;
       if (userId == null) return;
@@ -1188,20 +1297,22 @@ class SupabaseAuthController extends GetxController {
       // 从 Supabase 查询这些歌单的最新 update_id
       final response = await _supabase
           .from('playlist')
-          .select('id,update_id')
+          .select('id,update_id,name,updated_at')
           .eq('user_id', userId)
           .inFilter('id', subscribedIds);
-
+      Set<String> idInClouds = {};
       for (var record in response as List) {
         final playlistId = record['id'] as String;
         final cloudUpdateId = record['update_id'] as String?;
         final localUpdateId = localUpdateIdMap[playlistId];
-
+        idInClouds.add(playlistId);
         if (cloudUpdateId != null && localUpdateId != cloudUpdateId) {
           logger.i('检测到歌单 $playlistId 有更新: $localUpdateId -> $cloudUpdateId');
           _onPlaylistUpdated(playlistId, record);
         }
       }
+      Get.find<SettingsController>().supabaseBackupPlayListUpdateIdMap
+          .removeWhere((key, value) => !idInClouds.contains(key));
     } catch (e) {
       logger.e('检查歌单更新失败: $e');
     }

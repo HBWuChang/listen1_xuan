@@ -1325,72 +1325,34 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
 
                 ///测试按钮
-                Positioned.fill(
-                  child: SafeArea(
-                    top: false,
-                    child: Align(
-                      alignment: Alignment.bottomLeft,
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          bottom: globalHorizon ? 76 : 300.w,
-                          left: globalHorizon ? 16 : 40.w,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FloatingActionButton(
-                              heroTag: 'toast_count_btn',
-                              onPressed: () {
-                                int count = smoothSheetToast.getToastCount();
-                                debugPrint('当前存在的 SheetToast 数量: $count');
-                              },
-                              child: Icon(Icons.format_list_numbered),
-                            ),
-                            SizedBox(height: 8),
-                            FloatingActionButton(
-                              heroTag: 'show_toast_btn',
-                              onPressed: () async {
-                                smoothSheetToast.showToast(
-                                  child:Material(child: Container(
-                                    padding: EdgeInsets.all(16),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          '测试通知',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          '测试通知',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          '测试通知',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )),
-                                  side: SheetToastSide.right,
-                                );
-                              },
-                              child: Icon(Icons.notifications),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                // Positioned.fill(
+                //   child: SafeArea(
+                //     top: false,
+                //     child: Align(
+                //       alignment: Alignment.bottomLeft,
+                //       child: Padding(
+                //         padding: EdgeInsets.only(
+                //           bottom: globalHorizon ? 76 : 300.w,
+                //           left: globalHorizon ? 16 : 40.w,
+                //         ),
+                //         child: Column(
+                //           mainAxisSize: MainAxisSize.min,
+                //           children: [
+                //             FloatingActionButton(
+                //               heroTag: 'toast_count_btn',
+                //               onPressed: () {
+                //                 Get.find<SupabaseAuthController>()
+                //                     .checkPlaylistUpdates();
+                //               },
+                //               child: Icon(Icons.format_list_numbered),
+                //             ),
+                      
+                //           ],
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
 
                 ///WebSocketClientControlPanel悬浮按钮
                 Positioned.fill(

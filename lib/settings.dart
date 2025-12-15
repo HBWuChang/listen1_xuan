@@ -75,6 +75,7 @@ part 'pages/settings/settings_github.dart';
 part 'pages/settings/settings_widgets.dart';
 part 'pages/settings/settings_widgets_upd.dart';
 part 'pages/settings/settings_widgets_settings.dart';
+part 'pages/settings/supabase_playlist_utils.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

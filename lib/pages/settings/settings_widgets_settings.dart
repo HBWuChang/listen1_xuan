@@ -1,5 +1,6 @@
 part of '../../settings.dart';
 
+
 Widget settingsWidget(BuildContext context) {
   return Padding(
     padding: EdgeInsets.all(10),
@@ -301,174 +302,40 @@ class _SupabasePlaylistContent extends StatelessWidget {
 
   Future<void> _loadPlaylists() async {
     isLoading.value = true;
-    try {
-      final result = await authController.getUserPlaylists();
-      playlists.value = result;
-      isLoading.value = false;
-    } catch (e) {
-      isLoading.value = false;
-      showErrorSnackbar('加载失败', e.toString());
-    }
+    final result = await loadSupabasePlaylists();
+    playlists.value = result;
+    isLoading.value = false;
   }
 
   Future<void> _createNewPlaylist() async {
-    // 检查是否可以创建新歌单
-    final canCreate = await authController.canCreatePlaylist();
-    if (!canCreate) {
-      showWarningSnackbar(
-        '歌单数量已达上限',
-        '每个用户最多只能创建 ${SupabaseAuthController.maxPlaylistsPerUser} 个歌单',
-      );
-      return;
-    }
-
-    // 弹出输入框获取歌单名称
-    final name = await showInputDialog(
-      title: '新建歌单',
-      placeholder: '请输入歌单名称',
-      maxLength: 50,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return '歌单名称不能为空';
-        }
-        return null;
-      },
-    );
-
-    if (name == null) return;
-
-    try {
-      final msg = '正在保存歌单到 Supabase'.obs;
-      showLoadingDialog(msg);
-
-      // 获取当前歌单设置
-      final settings = await outputAllSettingsToFile(true);
-
-      // 保存到 Supabase
-      final playlist = await authController.createPlaylist(
-        name: name,
-        data: settings,
-        isShare: false,
-      );
-
-      Get.back(); // 关闭加载对话框
-
-      if (playlist != null) {
-        showSuccessSnackbar('保存成功', '歌单已保存到 Supabase');
-        _loadPlaylists(); // 刷新列表
-      } else {
-        showErrorSnackbar('保存失败', authController.errorMessage.value);
-      }
-    } catch (e) {
-      Get.back(); // 关闭加载对话框
-      showErrorSnackbar('保存失败', e.toString());
+    final playlist = await createSupabasePlaylist();
+    if (playlist != null) {
+      _loadPlaylists(); // 刷新列表
     }
   }
 
   Future<void> _renamePlaylist(PlaylistModel.SupabasePlaylist playlist) async {
-    await showInputDialog(
-      title: '重命名歌单',
-      placeholder: '请输入新名称',
-      initialValue: playlist.name,
-      maxLength: 50,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return '歌单名称不能为空';
-        }
-        return null;
-      },
-      onConfirm: (name) async {
-        final success = await authController.updatePlaylist(
-          playlistId: playlist.id,
-          name: name,
-        );
-        if (success) {
-          showSuccessSnackbar('重命名成功', null);
-          _loadPlaylists(); // 刷新列表
-          return true;
-        } else {
-          throw authController.errorMessage.value;
-        }
-      },
-    );
+    final success = await renameSupabasePlaylist(playlist);
+    if (success) {
+      _loadPlaylists(); // 刷新列表
+    }
   }
 
   Future<void> _deletePlaylist(PlaylistModel.SupabasePlaylist playlist) async {
-    final confirm = await showConfirmDialog(
-      '确定要删除歌单 "${playlist.name}" 吗？',
-      '删除歌单',
-      confirmLevel: ConfirmLevel.danger,
-    );
-
-    if (confirm) {
-      final success = await authController.deletePlaylist(playlist.id);
-      if (success) {
-        showSuccessSnackbar('删除成功', null);
-        _loadPlaylists(); // 刷新列表
-      } else {
-        showErrorSnackbar('删除失败', authController.errorMessage.value);
-      }
+    final success = await deleteSupabasePlaylist(playlist);
+    if (success) {
+      _loadPlaylists(); // 刷新列表
     }
   }
 
   Future<void> _downloadPlaylist(PlaylistModel.SupabasePlaylist playlist) async {
-    try {
-      final msg = '正在下载歌单 ${playlist.name}\n获取歌单数据'.obs;
-      showLoadingDialog(msg);
-
-      // 获取完整的歌单数据(包含 data 字段)
-      final fullPlaylist = await authController.getPlaylist(playlist.id);
-
-      if (fullPlaylist == null) {
-        Get.back();
-        showErrorSnackbar('下载失败', '无法获取歌单数据');
-        return;
-      }
-
-      msg.value = '正在下载歌单 ${playlist.name}\n应用配置文件';
-      await importSettingsFromFile(true, fullPlaylist.data);
-
-      Get.back();
-      showSuccessSnackbar('下载成功', '歌单已应用到当前设置');
-    } catch (e) {
-      Get.back();
-      showErrorSnackbar('下载失败', e.toString());
-    }
+    await downloadSupabasePlaylist(playlist);
   }
 
   Future<void> _overwritePlaylist(PlaylistModel.SupabasePlaylist playlist) async {
-    final confirm = await showConfirmDialog(
-      '确定要用当前设置覆盖歌单 "${playlist.name}" 吗？',
-      '覆盖歌单',
-      confirmLevel: ConfirmLevel.warning,
-    );
-
-    if (!confirm) return;
-
-    try {
-      final msg = '正在覆盖歌单 ${playlist.name}'.obs;
-      showLoadingDialog(msg);
-
-      // 获取当前歌单设置
-      final settings = await outputAllSettingsToFile(true);
-
-      // 更新到 Supabase
-      final success = await authController.updatePlaylist(
-        playlistId: playlist.id,
-        data: settings,
-      );
-
-      Get.back(); // 关闭加载对话框
-
-      if (success) {
-        showSuccessSnackbar('覆盖成功', '歌单已更新');
-        _loadPlaylists(); // 刷新列表
-      } else {
-        showErrorSnackbar('覆盖失败', authController.errorMessage.value);
-      }
-    } catch (e) {
-      Get.back(); // 关闭加载对话框
-      showErrorSnackbar('覆盖失败', e.toString());
+    final success = await overwriteSupabasePlaylist(playlist);
+    if (success) {
+      _loadPlaylists(); // 刷新列表
     }
   }
 
@@ -572,8 +439,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
                     SizedBox(height: 4),
                     // 订阅开关
                     Obx(() {
-                      final updateIdMap = settingsController.supabaseBackupPlayListUpdateIdMap;
-                      final isSubscribed = updateIdMap.containsKey(playlist.id);
+                      final isSubscribed = isPlaylistSubscribed(playlist.id);
                       
                       return Row(
                         mainAxisSize: MainAxisSize.min,
@@ -597,15 +463,11 @@ class _SupabasePlaylistContent extends StatelessWidget {
                             child: Switch(
                               value: isSubscribed,
                               onChanged: (value) {
-                                final newMap = Map<String, String?>.from(updateIdMap);
-                                if (value) {
-                                  // 订阅：添加到 map，初始值为空字符串
-                                  newMap[playlist.id] = playlist.updateId ?? '';
-                                } else {
-                                  // 取消订阅：从 map 中移除
-                                  newMap.remove(playlist.id);
-                                }
-                                settingsController.supabaseBackupPlayListUpdateIdMap = newMap;
+                                togglePlaylistSubscription(
+                                  playlistId: playlist.id,
+                                  updateId: playlist.updateId,
+                                  subscribe: value,
+                                );
                               },
                             ),
                           ),
