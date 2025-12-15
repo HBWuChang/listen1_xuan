@@ -1325,6 +1325,7 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
 
                 ///测试按钮
+                if(kDebugMode)
                 Positioned.fill(
                   child: SafeArea(
                     top: false,
