@@ -359,7 +359,47 @@ class UpdController extends GetxController {
   }
 
   /// 解压并安装 APK
-  Future<void> _extractAndInstallApk(String tempPath, String filePath) async {
+  Future<void> _extractAndInstallApk(
+    String tempPath,
+    String filePath, {
+    bool isRelease = false,
+  }) async {
+    if (isRelease) {
+      try {
+        InstallPlugin.installApk(filePath)
+            .then((result) {
+              debugPrint('install apk $result');
+            })
+            .catchError((error) {
+              debugPrint('install apk error: $error');
+            });
+      } catch (e) {
+        debugPrint('安装APK失败: $e');
+        try {
+          InstallPlugin.installApk(filePath)
+              .then((result) {
+                debugPrint('install apk $result');
+              })
+              .catchError((error) {
+                debugPrint('install apk error: $error');
+              });
+        } catch (e) {
+          debugPrint('安装APK失败: $e');
+          try {
+            InstallPlugin.installApk(filePath)
+                .then((result) {
+                  debugPrint('install apk $result');
+                })
+                .catchError((error) {
+                  debugPrint('install apk error: $error');
+                });
+          } catch (e) {
+            debugPrint('安装APK失败: $e');
+          }
+        }
+      }
+      return;
+    }
     final bytes = File(filePath).readAsBytesSync();
     final archive = ZipDecoder().decodeBytes(bytes);
     String apkfilePath = '';
@@ -584,32 +624,14 @@ class UpdController extends GetxController {
   ) async {
     try {
       showSuccessSnackbar('正在解压...', null);
-      // 解压 ZIP 文件
-      final bytes = File(filePath).readAsBytesSync();
-      final archive = ZipDecoder().decodeBytes(bytes);
-
       // 删除 canary 文件夹
       final canaryDir = Directory(p.join(tempPath, 'canary'));
       if (await canaryDir.exists()) {
         await canaryDir.delete(recursive: true);
         debugPrint('已删除旧的 canary 文件夹');
       }
-
-      // 解压文件
-      for (final file in archive) {
-        final filename = file.name;
-        if (file.isFile) {
-          final data = file.content as List<int>;
-          final extractPath = p.join(tempPath, 'canary', filename);
-          File(extractPath)
-            ..createSync(recursive: true)
-            ..writeAsBytesSync(data);
-        } else {
-          final dirPath = p.join(tempPath, 'canary', file.name);
-          Directory(dirPath).createSync(recursive: true);
-        }
-      }
-
+      // 解压 ZIP 文件
+      await extractFileToDisk(filePath, p.join(tempPath, 'canary'));
       debugPrint('解压完成，准备更新...');
 
       String executablePath = Platform.resolvedExecutable;
@@ -656,15 +678,57 @@ class UpdController extends GetxController {
 
   /// ===================== Releases 更新检查相关方法 =====================
 
+  /// 删除 releases 缓存文件
+  /// [releases] 需要删除缓存的 releases 列表
+  Future<void> delReleasesCache(List<GitHubRelease> releases) async {
+    try {
+      final tempPath = (await xuanGetdownloadDirectory()).path;
+      int deletedCount = 0;
+
+      // 遍历所有 releases
+      for (final release in releases) {
+        // 遍历每个 release 中的 assets
+        for (final asset in release.assets) {
+          final fileName = asset.name;
+          final filePath = p.join(tempPath, fileName);
+
+          // 检查文件是否存在并删除
+          if (await File(filePath).exists()) {
+            try {
+              await File(filePath).delete();
+              debugPrint('已删除 Release 缓存文件: $fileName');
+              deletedCount++;
+            } catch (e) {
+              debugPrint('删除 Release 缓存文件 $fileName 失败: $e');
+            }
+          }
+        }
+      }
+
+      if (deletedCount > 0) {
+        showSuccessSnackbar('Release 缓存清理完成 (删除了 $deletedCount 个文件)', null);
+      }
+    } catch (e) {
+      debugPrint('清理 Release 缓存失败: $e');
+      showErrorSnackbar('清理失败', e.toString());
+    }
+  }
+
   /// 检查 Releases 更新
-  /// 比较最新版本的 buildNumber 和本地应用的 buildNumber
-  /// 如果有新版本，弹出更新对话框
+  /// 获取所有 releases 列表，比较最新版本的 buildNumber 和本地应用的 buildNumber
+  /// 如果有新版本，弹出更新对话框，并删除除最新版本外的其他缓存文件
   Future<void> checkReleasesUpdate() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final localBuildNumber = int.parse(packageInfo.buildNumber);
 
-      final latestRelease = await Github.getLatestRelease();
+      final releases = await Github.getReleasesList();
+      if (releases.isEmpty) {
+        debugPrint('未找到任何 Release');
+        return;
+      }
+
+      final latestRelease = releases.first;
 
       final latestBuildNumber = int.parse(
         latestRelease.tagName.split('+').last,
@@ -672,6 +736,12 @@ class UpdController extends GetxController {
 
       debugPrint('本地版本 buildNumber: $localBuildNumber');
       debugPrint('最新版本 buildNumber: $latestBuildNumber');
+
+      // 删除除最新版本外的其他缓存文件
+      if (releases.length > 1) {
+        final oldReleases = releases.sublist(1);
+        await delReleasesCache(oldReleases);
+      }
 
       if (localBuildNumber < latestBuildNumber) {
         // 有新版本可用
@@ -718,15 +788,6 @@ class UpdController extends GetxController {
                   value: progress > 0 ? progress : null,
                   color: Get.theme.colorScheme.onPrimary,
                 ),
-                if (progress > 0)
-                  Text(
-                    '${(progress * 100).toStringAsFixed(0)}',
-                    style: TextStyle(
-                      fontSize: 6,
-                      color: Get.theme.colorScheme.onPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
               ],
             ),
           ),
@@ -1033,7 +1094,7 @@ class UpdController extends GetxController {
       } else if (isMacOS) {
         await _performMacosExtractAndUpdate(tempPath, filePath);
       } else if (isAndroid) {
-        await _extractAndInstallApk(tempPath, filePath);
+        await _extractAndInstallApk(tempPath, filePath, isRelease: true);
       } else {
         showWarningSnackbar('当前平台暂不支持自动更新', null);
       }
