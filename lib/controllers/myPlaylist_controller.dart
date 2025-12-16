@@ -26,10 +26,12 @@ class MyPlayListController extends GetxController {
       final prefs = SharedPreferencesAsync();
       await prefs.setStringList('playerlists', playerlists.keys.toList());
       for (var playlist in playerlists.entries) {
-        String jsonString = await compute(
-          (PlayList pl) => jsonEncode(pl.toJson()),
-          playlist.value,
-        );
+        String jsonString = kDebugMode
+            ? jsonEncode(playlist.value.toJson())
+            : await compute(
+                (PlayList pl) => jsonEncode(pl.toJson()),
+                playlist.value,
+              );
         await prefs.setString(playlist.key, jsonString);
       }
     });
@@ -40,10 +42,12 @@ class MyPlayListController extends GetxController {
         favoriteplayerlists.keys.toList(),
       );
       for (var playlist in favoriteplayerlists.entries) {
-        String jsonString = await compute(
-          (PlayList pl) => jsonEncode(pl.toJson()),
-          playlist.value,
-        );
+        String jsonString = kDebugMode
+            ? jsonEncode(playlist.value.toJson())
+            : await compute(
+                (PlayList pl) => jsonEncode(pl.toJson()),
+                playlist.value,
+              );
         await prefs.setString(playlist.key, jsonString);
       }
     });
@@ -76,10 +80,12 @@ class MyPlayListController extends GetxController {
   static Map<String, PlayList> _replaceTrackInPlaylists(_ReplacementArgs args) {
     for (var playlist in args.playlists.values) {
       if (playlist.tracks == null || playlist.tracks!.isEmpty) continue;
-      
+
       // 检查歌单中是否已经包含了要替换成的新歌曲
-      bool hasNewTrack = playlist.tracks!.any((track) => track.id == args.newTrack.id);
-      
+      bool hasNewTrack = playlist.tracks!.any(
+        (track) => track.id == args.newTrack.id,
+      );
+
       if (hasNewTrack) {
         // 如果已经包含新歌曲，只删除旧歌曲，避免重复
         playlist.tracks!.removeWhere((track) => track.id == args.repTrackId);

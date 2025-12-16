@@ -5,6 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hyper_thread_downloader/hyper_thread_downloader.dart';
 
+/// 下载进度信息
+class DownloadProgressInfo {
+  final double progress;
+  final double speed;
+  final double remainTime;
+  final int currentCount;
+  final int totalCount;
+
+  DownloadProgressInfo({
+    required this.progress,
+    required this.speed,
+    required this.remainTime,
+    required this.currentCount,
+    required this.totalCount,
+  });
+}
+
 class HyperDownloadController extends GetxController {
   final isDownloading = false.obs;
   final downloadProgress = 0.0.obs;
@@ -24,16 +41,21 @@ class HyperDownloadController extends GetxController {
   /// 开始下载文件
   /// [url] 下载链接
   /// [savePath] 保存路径
+  /// [context] BuildContext，仅在 [showDialog] 为 true 时需要
   /// [threadCount] 线程数
+  /// [showDialog] 是否显示下载进度对话框，默认为 true
   /// [onComplete] 下载完成回调
   /// [onFailed] 下载失败回调
+  /// [onProgress] 下载进度回调，返回进度信息
   Future<void> downloadFile({
     required String url,
     required String savePath,
-    required BuildContext context,
+    BuildContext? context,
     int threadCount = 8,
+    bool showDialog = true,
     VoidCallback? onComplete,
     Function(String)? onFailed,
+    Function(DownloadProgressInfo)? onProgress,
   }) async {
     try {
       // 重置下载状态
@@ -43,8 +65,10 @@ class HyperDownloadController extends GetxController {
       }
       isDownloading.value = true;
 
-      // 显示不可关闭的下载进度对话框
-      _showDownloadDialog();
+      // 如果需要显示对话框，则显示下载进度对话框
+      if (showDialog && context != null) {
+        _showDownloadDialog();
+      }
 
       // 首先尝试使用代理地址下载
       final proxyUrl = url.replaceAll(
@@ -74,6 +98,16 @@ class HyperDownloadController extends GetxController {
                 this.remainTime.value = remainTime;
                 currentCount.value = count;
                 totalCount.value = total;
+                // 调用进度回调
+                onProgress?.call(
+                  DownloadProgressInfo(
+                    progress: progress,
+                    speed: speed,
+                    remainTime: remainTime,
+                    currentCount: count,
+                    totalCount: total,
+                  ),
+                );
               },
           downloadComplete: () {
             debugPrint('Proxy download completed');
@@ -136,6 +170,16 @@ class HyperDownloadController extends GetxController {
                   this.remainTime.value = remainTime;
                   currentCount.value = count;
                   totalCount.value = total;
+                  // 调用进度回调
+                  onProgress?.call(
+                    DownloadProgressInfo(
+                      progress: progress,
+                      speed: speed,
+                      remainTime: remainTime,
+                      currentCount: count,
+                      totalCount: total,
+                    ),
+                  );
                 },
             downloadComplete: () {
               debugPrint('Regular download completed');

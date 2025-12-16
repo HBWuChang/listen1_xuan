@@ -12,6 +12,7 @@ import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:media_kit/media_kit.dart' show MediaKit;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'controllers/upd_controller.dart';
 import 'examples/websocket_server_example.dart';
 import 'examples/websocket_client_example.dart';
 import 'pages/download_page.dart';
@@ -49,14 +50,14 @@ import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+part 'main_testBtn.dart';
 
 String supabaseUrl = 'https://jtvxrwybwvgpqobyhaoy.supabase.co';
 
 String supabaseKey =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0dnhyd3lid3ZncHFvYnloYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NjE5ODUsImV4cCI6MjA3NzUzNzk4NX0.lb4YhPlsyTinmoK85jv_15KCEv1QDr0JsUa1oI5P0Ko';
 
-Dio get dioWithCookieManager => Get.find<DioController>().dioWithCookieManager;
-Dio get dioWithProxyAdapter => Get.find<DioController>().dioWithProxyAdapter;
 
 int last_dir = 0;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -157,6 +158,7 @@ void main() async {
   Get.put(Applinkscontroller(), permanent: true);
   Get.put(SupabaseAuthController(), permanent: true);
   Get.put(XSearchController(), permanent: true);
+  Get.put(UpdController(), permanent: true);
   init_apkfilepath();
   if (isWindows || isMacOS) {
     if (isWindows) {
@@ -1325,42 +1327,7 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
 
                 ///测试按钮
-                if(kDebugMode)
-                Positioned.fill(
-                  child: SafeArea(
-                    top: false,
-                    child: Align(
-                      alignment: Alignment.bottomLeft,
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          bottom: globalHorizon ? 76 : 300.w,
-                          left: globalHorizon ? 16 : 40.w,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FloatingActionButton(
-                              heroTag: 'toast_count_btn',
-                              onPressed: () {
-                                Get.find<SupabaseAuthController>()
-                                    .checkPlaylistUpdates();
-                              },
-                              child: Icon(Icons.format_list_numbered),
-                            ),
-                            FloatingActionButton(
-                              onPressed: () {
-                                Get.find<SupabaseAuthController>()
-                                    .inupdateProcess
-                                    .clear();
-                              },
-                              child: Icon(Icons.format_list_numbered),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                if (kDebugMode) testBtn,
 
                 ///WebSocketClientControlPanel悬浮按钮
                 Positioned.fill(

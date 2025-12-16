@@ -13,6 +13,8 @@ import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/play.dart';
 import 'package:logger/logger.dart';
 import 'controllers/search_controller.dart';
+import 'controllers/upd_controller.dart';
+import 'models/GitHubRelease.dart';
 import 'models/SupabasePlaylist.dart' as PlaylistModel;
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';

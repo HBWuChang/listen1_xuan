@@ -277,4 +277,36 @@ class Github {
     );
     return response.data['files'];
   }
+
+  static Future<String> getLatestReleaseVersionBuildNumber() async {
+    final latestRelease = await getLatestRelease();
+    final tagName = latestRelease.tagName;
+    return tagName.split('+').last;
+  }
+
+  static Future<GitHubRelease> getLatestRelease() async {
+    return (await getReleasesList()).first;
+  }
+
+  static Future<List<GitHubRelease>> getReleasesList() async {
+    //   curl -L \
+    // -H "Accept: application/vnd.github+json" \
+    // -H "Authorization: Bearer <YOUR-TOKEN>" \
+    // -H "X-GitHub-Api-Version: 2022-11-28" \
+    // https://api.github.com/repos/OWNER/REPO/releases
+    final response = await (usedefault ? Dio() : dioWithProxyAdapter).get(
+      '$API_URL/repos/HBWuChang/listen1_xuan/releases',
+      options: Options(
+        headers: {
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      ),
+    );
+    List<dynamic> releasesData = response.data;
+    List<GitHubRelease> releases = releasesData
+        .map((releaseJson) => GitHubRelease.fromJson(releaseJson))
+        .toList();
+    return releases;
+  }
 }

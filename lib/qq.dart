@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' show parse;
+import 'controllers/DioController.dart';
 import 'lowebutil.dart';
 import 'package:marquee/marquee.dart';
 import 'package:cookie_jar/cookie_jar.dart';

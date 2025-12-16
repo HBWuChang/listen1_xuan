@@ -14,6 +14,8 @@ import '../settings.dart';
 import 'settings_controller.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 
+Dio get dioWithCookieManager => Get.find<DioController>().dioWithCookieManager;
+Dio get dioWithProxyAdapter => Get.find<DioController>().dioWithProxyAdapter;
 class DioController extends GetxController {
   static const String _tag = 'DioController';
   Logger _logger = Logger();

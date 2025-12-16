@@ -90,7 +90,9 @@ Future<void> importSettingsFromFile(
               t['volume'] = nowVolume;
               await prefs.setString(
                 key,
-                await compute((dynamic value) => jsonEncode(value), t),
+                kDebugMode
+                    ? jsonEncode(t)
+                    : await compute((dynamic value) => jsonEncode(value), t),
               );
             } catch (e) {
               logger.e('Error saving key $key: $e');
@@ -101,10 +103,12 @@ Future<void> importSettingsFromFile(
               if (settings[key] is String) throw "String! :${settings[key]}";
               await prefs.setString(
                 key,
-                await compute(
-                  (dynamic value) => jsonEncode(value),
-                  settings[key],
-                ),
+                kDebugMode
+                    ? jsonEncode(settings[key])
+                    : await compute(
+                        (dynamic value) => jsonEncode(value),
+                        settings[key],
+                      ),
               );
             } catch (e) {
               try {

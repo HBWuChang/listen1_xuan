@@ -268,7 +268,12 @@ class PlayController extends GetxController
       }
       await SharedPreferencesAsync().setString(
         SettingsController.PlayController_play_replaceKey,
-        await compute((SongReplaceSettings s) => jsonEncode(s.toJson()), value),
+        kDebugMode
+            ? jsonEncode(value.toJson())
+            : await compute(
+                (SongReplaceSettings s) => jsonEncode(s.toJson()),
+                value,
+              ),
       );
     });
 

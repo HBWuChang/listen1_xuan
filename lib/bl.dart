@@ -1,23 +1,14 @@
-import 'dart:math';
-
 import 'package:dio/dio.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart' as getx;
-import 'package:listen1_xuan/loweb.dart';
 import 'package:listen1_xuan/settings.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' show parse;
-import 'controllers/myPlaylist_controller.dart';
-import 'controllers/play_controller.dart';
+import 'controllers/DioController.dart';
 import 'controllers/settings_controller.dart';
 import 'funcs.dart';
 import 'lowebutil.dart';
-import 'package:marquee/marquee.dart';
-import 'main.dart';
-import 'global_settings_animations.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 import 'models/PlayListInfo.dart';

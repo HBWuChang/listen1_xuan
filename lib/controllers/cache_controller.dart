@@ -11,6 +11,7 @@ import 'dart:convert';
 import '../const.dart';
 import '../global_settings_animations.dart';
 import '../main.dart';
+import 'DioController.dart';
 import 'myPlaylist_controller.dart';
 import 'play_controller.dart';
 import 'settings_controller.dart';

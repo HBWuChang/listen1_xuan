@@ -1173,6 +1173,7 @@ class SupabaseAuthController extends GetxController {
     String dateStr = newData['updated_at'] ?? '';
     dateStr = dateStr.replaceAll('T', ' ').split('.').first;
     smoothSheetToast.showToast(
+      inLockMode:true,
       icon: Obx(
         () => loading.value
             ? Center(
@@ -1224,6 +1225,7 @@ class SupabaseAuthController extends GetxController {
                       onPressed: loading.value
                           ? null
                           : () {
+                              controller.exitLockedMode();
                               debugPrint(
                                 Get.find<SettingsController>()
                                     .supabaseBackupPlayListUpdateIdMap[playlistId],
@@ -1261,6 +1263,7 @@ class SupabaseAuthController extends GetxController {
                                     name: newData['name'],
                                   ),
                                 )) {
+                                  controller.exitLockedMode();
                                   controller.hide();
                                 }
                               } catch (e) {

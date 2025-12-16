@@ -20,8 +20,15 @@ class ToastController {
   final double _toastWidth;
   final SheetController _sheetController;
   final VoidCallback _onRemove;
-  VoidCallback? _listener;
-  bool _listenerAttached = false;
+  VoidCallback? _dismissListener;
+  VoidCallback? _peekListener;
+  bool _dismissListenerAttached = false;
+  bool _peekListenerAttached = false;
+  
+  /// 标记当前是否处于"不可滑动关闭"状态
+  /// true: 不可被滑动关闭，滑到hidden位置自动返回peek位置
+  /// false: 可被滑动关闭，到hidden位置自动dismiss
+  bool _isLockedMode = false;
 
   ToastController({
     required String toastId,
@@ -36,29 +43,79 @@ class ToastController {
   /// 获取 Toast ID
   String get id => _toastId;
 
+  /// 获取当前是否处于锁定模式（不可被滑动关闭）
+  bool get isLockedMode => _isLockedMode;
+
   /// 添加监听器，监听offset变化，当小于0.01时自动dismiss
   void attachDismissListener() {
-    if (_listenerAttached || !_sheetController.hasClient) return;
+    if (_dismissListenerAttached || !_sheetController.hasClient) return;
 
-    _listener = () {
+    _dismissListener = () {
       final metrics = _sheetController.metrics;
       if (metrics != null && metrics.offset < 0.01) {
-        _removeDismissListener();
+        detachDismissListener();
         dismiss();
       }
     };
 
-    _sheetController.addListener(_listener!);
-    _listenerAttached = true;
+    _sheetController.addListener(_dismissListener!);
+    _dismissListenerAttached = true;
   }
 
-  /// 移除监听器
-  void _removeDismissListener() {
-    if (_listener != null && _listenerAttached) {
-      _sheetController.removeListener(_listener!);
-      _listener = null;
-      _listenerAttached = false;
+  /// 移除dismiss监听器
+  void detachDismissListener() {
+    if (_dismissListener != null && _dismissListenerAttached) {
+      _sheetController.removeListener(_dismissListener!);
+      _dismissListener = null;
+      _dismissListenerAttached = false;
     }
+  }
+
+  /// 添加监听器，监听offset变化，当滚动到hidden位置时自动返回到peek位置
+  void attachAutoReturnToPeekListener() {
+    if (_peekListenerAttached || !_sheetController.hasClient) return;
+
+    _peekListener = () {
+      final metrics = _sheetController.metrics;
+      if (metrics != null) {
+        // 当滚动到接近hidden位置（接近0）时，自动返回到peek位置
+        if (metrics.offset <= 0.01) {
+          peek();
+        }
+      }
+    };
+
+    _sheetController.addListener(_peekListener!);
+    _peekListenerAttached = true;
+  }
+
+  /// 移除自动返回peek位置的监听器
+  void detachAutoReturnToPeekListener() {
+    if (_peekListener != null && _peekListenerAttached) {
+      _sheetController.removeListener(_peekListener!);
+      _peekListener = null;
+      _peekListenerAttached = false;
+    }
+  }
+
+  /// 进入锁定模式：不可被滑动关闭，到hidden位置自动返回peek位置
+  /// 同时禁用自动dismiss监听器
+  void enterLockedMode() {
+    if (_isLockedMode) return;
+    
+    _isLockedMode = true;
+    detachDismissListener();
+    attachAutoReturnToPeekListener();
+  }
+
+  /// 进入正常模式：可被滑动关闭，不会自动返回peek位置
+  /// 同时启用自动dismiss监听器
+  void exitLockedMode() {
+    if (!_isLockedMode) return;
+    
+    _isLockedMode = false;
+    detachAutoReturnToPeekListener();
+    attachDismissListener();
   }
 
   /// 展开到完全显示状态
@@ -99,6 +156,8 @@ class ToastController {
 
   /// 关闭并移除 Toast
   void dismiss() {
+    detachDismissListener();
+    detachAutoReturnToPeekListener();
     _onRemove();
   }
 }
@@ -111,6 +170,7 @@ class _SheetToastEntry {
   final Duration fadeDuration;
   final SheetController controller;
   final bool autoDismiss;
+  final bool autoInLockMode;
   final double toastWidth;
   final VoidCallback? onDismiss;
   final ToastController? toastController;
@@ -122,6 +182,7 @@ class _SheetToastEntry {
     required this.fadeDuration,
     required this.controller,
     required this.autoDismiss,
+    required this.autoInLockMode,
     required this.toastWidth,
     this.onDismiss,
     this.toastController,
@@ -259,6 +320,9 @@ class SmoothSheetToast {
             .then((_) {
               // 动画完成后，添加自动dismiss监听器
               _toastEntry.toastController?.attachDismissListener();
+              if(_toastEntry.autoInLockMode){
+                _toastEntry.toastController?.enterLockedMode();
+              }
             });
       }
     });
@@ -447,6 +511,7 @@ class SmoothSheetToast {
     builder,
     SheetToastSide side = SheetToastSide.right,
     bool autoDismiss = false,
+    bool inLockMode=false,
     Duration toastDuration = const Duration(seconds: 3),
     Duration fadeDuration = const Duration(milliseconds: 350),
     double borderRadius = 16.0,
@@ -515,6 +580,7 @@ class SmoothSheetToast {
           builder: (context) {
             return _SheetToastWidget(
               controller: sheetController,
+              toastController: actualController,
               side: side,
               width: showToastWidth,
               height: showToastHeight,
@@ -544,6 +610,7 @@ class SmoothSheetToast {
             fadeDuration: fadeDuration,
             controller: sheetController,
             autoDismiss: autoDismiss,
+            autoInLockMode:inLockMode,
             toastWidth: showToastWidth,
             onDismiss: onDismiss,
             toastController: actualController,
@@ -664,6 +731,7 @@ class SmoothSheetToast {
 /// Sheet Toast Widget
 class _SheetToastWidget extends StatefulWidget {
   final SheetController controller;
+  final ToastController? toastController;
   final SheetToastSide side;
   final double width;
   final double height;
@@ -678,6 +746,7 @@ class _SheetToastWidget extends StatefulWidget {
   const _SheetToastWidget({
     Key? key,
     required this.controller,
+    this.toastController,
     required this.side,
     required this.width,
     required this.height,
@@ -717,6 +786,11 @@ class _SheetToastWidgetState extends State<_SheetToastWidget> {
   void _onSheetChange() {
     // 如果已经触发过 dismiss，不再重复触发
     if (_hasBeenDismissed) return;
+
+    // 如果处于锁定模式，不响应 dismiss 事件
+    if (widget.toastController?.isLockedMode ?? false) {
+      return;
+    }
 
     // 监听 sheet 的滑动，当完全划出屏幕时删除
     final metrics = widget.controller.metrics;
