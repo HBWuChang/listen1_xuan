@@ -294,15 +294,29 @@ class Github {
     // -H "Authorization: Bearer <YOUR-TOKEN>" \
     // -H "X-GitHub-Api-Version: 2022-11-28" \
     // https://api.github.com/repos/OWNER/REPO/releases
-    final response = await (usedefault ? Dio() : dioWithProxyAdapter).get(
-      '$API_URL/repos/HBWuChang/listen1_xuan/releases',
-      options: Options(
-        headers: {
-          'Accept': 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      ),
-    );
+
+    late Response response;
+    try {
+      response = await (usedefault ? Dio() : dioWithProxyAdapter).get(
+        '$API_URL/repos/HBWuChang/listen1_xuan/releases',
+        options: Options(
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+        ),
+      );
+    } catch (e) {
+      response = await Dio().get(
+        '$API_URL/repos/HBWuChang/listen1_xuan/releases',
+        options: Options(
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+        ),
+      );
+    }
     List<dynamic> releasesData = response.data;
     List<GitHubRelease> releases = releasesData
         .map((releaseJson) => GitHubRelease.fromJson(releaseJson))

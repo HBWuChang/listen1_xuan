@@ -24,9 +24,11 @@ class UpdController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      checkReleasesUpdate();
-    });
+    if (!isIos) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        checkReleasesUpdate();
+      });
+    }
   }
 
   Future<void> downloadArtifact() async {
@@ -748,7 +750,8 @@ class UpdController extends GetxController {
         _showReleaseUpdateDialog(latestRelease);
       }
     } catch (e) {
-      debugPrint('检查 Releases 更新失败: $e');
+      // debugPrint('检查 Releases 更新失败: $e');
+      showErrorSnackbar('检查 Releases 更新失败', e.toString());
     }
   }
 

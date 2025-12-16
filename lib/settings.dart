@@ -58,7 +58,7 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:charset_converter/charset_converter.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide Response;
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:extended_image/extended_image.dart';
 import 'controllers/theme.dart';
