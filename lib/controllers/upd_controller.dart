@@ -722,8 +722,8 @@ class UpdController extends GetxController {
   Future<void> checkReleasesUpdate() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
-      final localBuildNumber = int.parse(packageInfo.buildNumber);
-
+      int localBuildNumber = int.parse(packageInfo.buildNumber);
+      if (isAndroid) localBuildNumber = localBuildNumber % 100;
       final releases = await Github.getReleasesList();
       if (releases.isEmpty) {
         showDebugSnackbar('未能获取 Releases 列表', null);
@@ -740,14 +740,13 @@ class UpdController extends GetxController {
         '本地版本 buildNumber: $localBuildNumber, 最新版本 buildNumber: $latestBuildNumber',
         null,
       );
-
       // 删除除最新版本外的其他缓存文件
       if (releases.length > 1) {
         final oldReleases = releases.sublist(1);
         await delReleasesCache(oldReleases);
       }
 
-      if (localBuildNumber != latestBuildNumber) {
+      if (localBuildNumber < latestBuildNumber) {
         // 有新版本可用
         _showReleaseUpdateDialog(latestRelease);
       }
