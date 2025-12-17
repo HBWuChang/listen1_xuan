@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/settings.dart';
 
+import 'controllers/settings_controller.dart';
 import 'global_settings_animations.dart';
 import 'widgets/smooth_sheet_toast.dart';
 
@@ -162,6 +165,24 @@ void showSuccessSnackbar(
     backgroundColor: Get.theme.colorScheme.tertiaryContainer,
     textColor: Get.theme.colorScheme.onTertiaryContainer,
   );
+}
+
+void showDebugSnackbar(
+  String? title,
+  String? message, {
+  SnackPosition snackPosition = SnackPosition.TOP,
+}) {
+  logger.d("Debug Toast - $title: $message");
+  if (Get.find<SettingsController>().useDebugMode || kDebugMode) {
+    _showCustomToast(
+      icon: Icons.bug_report_rounded,
+      iconColor: Get.theme.colorScheme.tertiary,
+      title: title,
+      message: message,
+      backgroundColor: Get.theme.colorScheme.tertiaryContainer,
+      textColor: Get.theme.colorScheme.onTertiaryContainer,
+    );
+  }
 }
 
 void showLoadingDialog(RxString message) {
@@ -452,7 +473,7 @@ bool isEmpty(dynamic str) {
 }
 
 /// 将字节数格式化为可读的字符串
-/// 
+///
 /// [bytes] 字节数
 /// [decimals] 小数位数，默认为2
 /// 返回格式化后的字符串，如 "1.25 MB"
@@ -469,7 +490,7 @@ String formatBytes(int bytes, {int decimals = 2}) {
   }
 
   if (decimals < 0) decimals = 0;
-  
+
   return '${size.toStringAsFixed(decimals)} ${suffixes[index]}';
 }
 
@@ -494,10 +515,10 @@ Future<void> showInfoDialogFromMarkdown(String assetsPath) async {
 }
 
 /// 显示三态确认对话框
-/// 
+///
 /// 如果 [currentValue] 非 null，直接返回该值
 /// 否则弹出对话框让用户选择，并支持"记住选择"功能
-/// 
+///
 /// [title] 对话框标题
 /// [message] 提示消息
 /// [currentValue] 当前设置值，如果非 null 则直接返回
@@ -507,7 +528,7 @@ Future<void> showInfoDialogFromMarkdown(String assetsPath) async {
 /// [cancelText] 取消按钮文本，默认为"取消"
 /// [rememberText] "记住选择"复选框文本，默认为"记住我的选择"
 /// [confirmLevel] 确认按钮的级别样式
-/// 
+///
 /// 返回 true/false/null，分别对应确定/拒绝/取消
 Future<bool?> showTriStateConfirmDialog({
   required String title,

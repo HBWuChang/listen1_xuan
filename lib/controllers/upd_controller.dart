@@ -726,7 +726,7 @@ class UpdController extends GetxController {
 
       final releases = await Github.getReleasesList();
       if (releases.isEmpty) {
-        debugPrint('未找到任何 Release');
+        showDebugSnackbar('未能获取 Releases 列表', null);
         return;
       }
 
@@ -736,8 +736,10 @@ class UpdController extends GetxController {
         latestRelease.tagName.split('+').last,
       );
 
-      debugPrint('本地版本 buildNumber: $localBuildNumber');
-      debugPrint('最新版本 buildNumber: $latestBuildNumber');
+      showDebugSnackbar(
+        '本地版本 buildNumber: $localBuildNumber, 最新版本 buildNumber: $latestBuildNumber',
+        null,
+      );
 
       // 删除除最新版本外的其他缓存文件
       if (releases.length > 1) {
@@ -745,7 +747,7 @@ class UpdController extends GetxController {
         await delReleasesCache(oldReleases);
       }
 
-      if (localBuildNumber < latestBuildNumber) {
+      if (localBuildNumber != latestBuildNumber) {
         // 有新版本可用
         _showReleaseUpdateDialog(latestRelease);
       }

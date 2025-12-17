@@ -824,6 +824,17 @@ class _SettingsPageState extends State<SettingsPage> {
                                 },
                               ),
                             ),
+                            Obx(
+                              () => SwitchListTile(
+                                title: const Text('debugToast'),
+                                value:
+                                    Get.find<SettingsController>().useDebugMode,
+                                onChanged: (bool value) {
+                                  Get.find<SettingsController>().useDebugMode =
+                                      value;
+                                },
+                              ),
+                            ),
                           ],
                         ),
                       ),

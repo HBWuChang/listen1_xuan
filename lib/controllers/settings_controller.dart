@@ -259,6 +259,15 @@ class SettingsController extends GetxController {
     settings[supabaseBackupPlayListUpdateIdMapKey] = value;
   }
 
+  static const String useDebugModeKey = 'useDebugMode';
+  bool get useDebugMode {
+    return settings[useDebugModeKey] ?? false;
+  }
+
+  set useDebugMode(bool value) {
+    settings[useDebugModeKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
