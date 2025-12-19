@@ -285,14 +285,15 @@ Future<void> change_playback_state(
       //   );
       // }
       if (_currentMediaItem == null) return;
-      bool show = Get.find<SettingsController>().showLyricTranslation.value;
+      bool show = Get.find<SettingsController>().tryShowLyricInNotification;
       bool showInTitle =
           Get.find<SettingsController>().tryShowLyricInNotificationInTitle;
+      bool showTra = Get.find<SettingsController>().showLyricTranslation.value;
       if (!show && !showInTitle) return;
       if (((isAndroid && show) || !isAndroid) && showInTitle) {
         MediaItem _item = _currentMediaItem!.copyWith(
           title:
-              '${lyric.mainText!}${show && lyric.hasExt ? '\n${lyric.extText}' : ''}',
+              '${lyric.mainText!}${show && lyric.hasExt && showTra ? '\n${lyric.extText}' : ''}',
           artist: '${_currentMediaItem!.title} - ${_currentMediaItem!.artist}',
         );
         (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
@@ -301,7 +302,7 @@ Future<void> change_playback_state(
         MediaItem _item = _currentMediaItem!.copyWith(
           displayTitle: lyric.mainText,
         );
-        if (Get.find<SettingsController>().showLyricTranslation.value) {
+        if (showTra) {
           _item = _item.copyWith(
             displaySubtitle: lyric.hasExt ? lyric.extText : null,
           );
