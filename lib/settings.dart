@@ -703,7 +703,10 @@ class _SettingsPageState extends State<SettingsPage> {
                               )
                             : isAndroid
                             ? androidSettingsTiles
-                            : Container(),
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: notificationSettingsTiles,
+                              ),
                       ),
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {

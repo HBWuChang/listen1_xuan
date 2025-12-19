@@ -257,8 +257,13 @@ MediaItem? _currentMediaItem;
 Future<void> change_playback_state(
   Track? track, {
   LyricsLineModel? lyric,
+  bool onDisableLyricUpdate = false,
 }) async {
   try {
+    if (onDisableLyricUpdate && _currentMediaItem != null) {
+      (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
+          .change_playbackstate(_currentMediaItem!);
+    }
     if (lyric != null) {
       // if (_currentMediaItem == null || isEmpty(lyric.mainText)) return;
       // bool useTitleInsteadOfDisplayTitle =
@@ -280,17 +285,31 @@ Future<void> change_playback_state(
       //   );
       // }
       if (_currentMediaItem == null) return;
-      MediaItem _item = _currentMediaItem!.copyWith(
-        displayTitle: lyric.mainText,
-        // displaySubtitle: lyric.extText,
-      );
-      if (Get.find<SettingsController>().showLyricTranslation.value) {
-        _item = _item.copyWith(
-          displaySubtitle: lyric.hasExt ? lyric.extText : null,
+      bool show = Get.find<SettingsController>().showLyricTranslation.value;
+      bool showInTitle =
+          Get.find<SettingsController>().tryShowLyricInNotificationInTitle;
+      if (!show && !showInTitle) return;
+      if (((isAndroid && show) || !isAndroid) && showInTitle) {
+        MediaItem _item = _currentMediaItem!.copyWith(
+          title:
+              '${lyric.mainText!}${show && lyric.hasExt ? '\n${lyric.extText}' : ''}',
+          artist: '${_currentMediaItem!.title} - ${_currentMediaItem!.artist}',
         );
+        (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
+            .change_playbackstate(_item);
+      } else if (isAndroid && show) {
+        MediaItem _item = _currentMediaItem!.copyWith(
+          displayTitle: lyric.mainText,
+        );
+        if (Get.find<SettingsController>().showLyricTranslation.value) {
+          _item = _item.copyWith(
+            displaySubtitle: lyric.hasExt ? lyric.extText : null,
+          );
+        }
+        (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
+            .change_playbackstate(_item);
       }
-      (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
-          .change_playbackstate(_item);
+
       return;
     }
     if (track == null) return;

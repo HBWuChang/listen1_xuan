@@ -98,12 +98,18 @@ class SettingsController extends GetxController {
       settings[tryShowLyricInNotificationKey] ?? true;
   set tryShowLyricInNotification(bool value) {
     settings[tryShowLyricInNotificationKey] = value;
+    if (!value && isAndroid) {
+      change_playback_state(null, onDisableLyricUpdate: true);
+    }
   }
 
   bool get tryShowLyricInNotificationInTitle =>
       settings[tryShowLyricInNotificationUseTitleKey] ?? false;
   set tryShowLyricInNotificationInTitle(bool value) {
     settings[tryShowLyricInNotificationUseTitleKey] = value;
+    if (!value && !isAndroid) {
+      change_playback_state(null, onDisableLyricUpdate: true);
+    }
   }
 
   double get lyricBackgroundBlurRadius =>

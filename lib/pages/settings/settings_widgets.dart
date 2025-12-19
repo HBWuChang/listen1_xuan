@@ -644,6 +644,7 @@ Widget desktopSettingsTiles(
                   },
                 ),
               ),
+              ...notificationSettingsTiles,
             ]
             .map(
               (e) => Padding(
@@ -654,6 +655,33 @@ Widget desktopSettingsTiles(
             .toList(),
   );
 }
+
+List<Widget> get notificationSettingsTiles => [
+  if (isAndroid)
+    Obx(
+      () => SwitchListTile(
+        title: const Text('尝试在通知中显示歌词'),
+        value: Get.find<SettingsController>().tryShowLyricInNotification,
+        onChanged: (bool value) {
+          Get.find<SettingsController>().tryShowLyricInNotification = value;
+        },
+      ),
+    ),
+  Obx(
+    () => SwitchListTile(
+      title: const Text('使用Title字段显示歌词'),
+      value: Get.find<SettingsController>().tryShowLyricInNotificationInTitle,
+      onChanged:
+          isAndroid &&
+              !Get.find<SettingsController>().tryShowLyricInNotification
+          ? null
+          : (bool value) {
+              Get.find<SettingsController>().tryShowLyricInNotificationInTitle =
+                  value;
+            },
+    ),
+  ),
+];
 
 enum AudioServiceButtonActions {
   playPause(0, '播放/暂停'),
@@ -677,15 +705,7 @@ enum AudioServiceButtonActions {
 
 Widget get androidSettingsTiles => Column(
   children: [
-    Obx(
-      () => SwitchListTile(
-        title: const Text('尝试在通知中显示歌词'),
-        value: Get.find<SettingsController>().tryShowLyricInNotification,
-        onChanged: (bool value) {
-          Get.find<SettingsController>().tryShowLyricInNotification = value;
-        },
-      ),
-    ),
+    ...notificationSettingsTiles,
     OpenContainer(
       closedColor: AdaptiveTheme.of(Get.context!).theme.cardColor,
       openColor: AdaptiveTheme.of(Get.context!).theme.scaffoldBackgroundColor,
