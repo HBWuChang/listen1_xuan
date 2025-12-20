@@ -7,7 +7,7 @@
         {
             "name": "listen1_xuan",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
         },
         {
             "name": "windows",

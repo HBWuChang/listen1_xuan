@@ -43,7 +43,7 @@ flutter version 3.35.7
 # TODO
 - [ ] 常驻/计时(倒计时边框)可互动通知
 - [ ] 自动下载supabase歌单
-- [ ] 歌词通知使用title字段
+- [x] 歌词通知使用title字段
 - [x] flutter_acrylic
   - [ ] 隐藏页面后再次打开效果消失且无法恢复（win
 - [x] material_wave_slider

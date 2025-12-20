@@ -21,20 +21,7 @@ Widget get testBtn => Positioned.fill(
             FloatingActionButton(
               onPressed: () async {
                 try {
-                  int gitLatestVersionBuildNumber = int.parse(
-                    await Github.getLatestReleaseVersionBuildNumber(),
-                  );
-                  int localVersionBuildNumber = int.parse(
-                    (await PackageInfo.fromPlatform()).buildNumber,
-                  );
-                  if (localVersionBuildNumber < gitLatestVersionBuildNumber) {
-                    showInfoSnackbar(
-                      '有新版本可用，最新版本buildNumber：$gitLatestVersionBuildNumber',
-                      null,
-                    );
-                  }
-                  logger.i('最新版本buildNumber：$gitLatestVersionBuildNumber');
-                  logger.i('本地版本buildNumber：$localVersionBuildNumber');
+                  logger.i(' ${UpdController.buildGitHash}');
                 } catch (e) {
                   logger.e(e);
                 }
