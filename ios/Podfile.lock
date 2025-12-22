@@ -69,6 +69,8 @@ PODS:
     - FlutterMacOS
   - objective_c (0.0.1):
     - Flutter
+  - package_info_plus (0.4.5):
+    - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -112,6 +114,7 @@ DEPENDENCIES:
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
   - mobile_scanner (from `.symlinks/plugins/mobile_scanner/darwin`)
   - objective_c (from `.symlinks/plugins/objective_c/ios`)
+  - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -163,6 +166,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/mobile_scanner/darwin"
   objective_c:
     :path: ".symlinks/plugins/objective_c/ios"
+  package_info_plus:
+    :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
@@ -200,6 +205,7 @@ SPEC CHECKSUMS:
   media_kit_libs_ios_audio: 8f39d96a9c630685dfb844c289bd1d114c486fb3
   mobile_scanner: 77265f3dc8d580810e91849d4a0811a90467ed5e
   objective_c: 77e887b5ba1827970907e10e832eec1683f3431d
+  package_info_plus: c0502532a26c7662a62a356cebe2692ec5fe4ec4
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   SDWebImage: 16309af6d214ba3f77a7c6f6fdda888cb313a50a

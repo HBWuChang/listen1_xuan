@@ -156,7 +156,7 @@ class _LoginWebviewState extends State<LoginWebview> {
           }
           String cookies = "";
           for (var item in gotCookies) {
-            cookies += "${item.name}=${Uri.decodeComponent(item.value)};";
+            cookies += "${item.name}=${item.value};";
           }
           cookies = cookies.substring(0, cookies.length - 1);
           await savePlatformToken(widget.config_key, cookies);

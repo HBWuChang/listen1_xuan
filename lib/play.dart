@@ -4,7 +4,8 @@ import 'package:flutter/gestures.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_lyric/lyrics_reader_model.dart';
+import 'package:flutter_lyric/core/lyric_model.dart';
+// import 'package:flutter_lyric/lyrics_reader_model.dart';
 import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/nowplaying_controller.dart';
@@ -256,7 +257,7 @@ Future<void> bind_smtc() async {
 MediaItem? _currentMediaItem;
 Future<void> change_playback_state(
   Track? track, {
-  LyricsLineModel? lyric,
+  LyricLine? lyric,
   bool onDisableLyricUpdate = false,
 }) async {
   try {
@@ -293,18 +294,18 @@ Future<void> change_playback_state(
       if (((isAndroid && show) || !isAndroid) && showInTitle) {
         MediaItem _item = _currentMediaItem!.copyWith(
           title:
-              '${lyric.mainText!}${show && lyric.hasExt && showTra ? '\n${lyric.extText}' : ''}',
+              '${lyric.text}${!isEmpty(lyric.translation) && showTra ? '\n${lyric.translation}' : ''}',
           artist: '${_currentMediaItem!.title} - ${_currentMediaItem!.artist}',
         );
         (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
             .change_playbackstate(_item);
       } else if (isAndroid && show) {
-        MediaItem _item = _currentMediaItem!.copyWith(
-          displayTitle: lyric.mainText,
-        );
+        MediaItem _item = _currentMediaItem!.copyWith(displayTitle: lyric.text);
         if (showTra) {
           _item = _item.copyWith(
-            displaySubtitle: lyric.hasExt ? lyric.extText : null,
+            displaySubtitle: !isEmpty(lyric.translation)
+                ? lyric.translation
+                : null,
           );
         }
         (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)

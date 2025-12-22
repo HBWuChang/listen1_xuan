@@ -4,7 +4,7 @@ Widget get testBtn => Positioned.fill(
   child: SafeArea(
     top: false,
     child: Align(
-      alignment: Alignment.bottomRight,
+      alignment: Alignment.centerRight,
       child: Padding(
         padding: EdgeInsets.only(
           bottom: globalHorizon ? 76 : 300.w,

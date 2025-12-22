@@ -396,7 +396,7 @@ class PlayController extends GetxController
         randommodetemplist.add(track);
       }
 
-      Get.find<LyricController>().loadLyric();
+      Get.find<XLyricController>().loadLyric();
       double t_volume = 100;
       try {
         t_volume = getPlayerSettings("volume");

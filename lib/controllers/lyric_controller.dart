@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lyric/core/lyric_model.dart';
 import 'package:get/get.dart';
-import 'package:flutter_lyric/lyrics_reader_model.dart';
-import 'package:flutter_lyric/lyrics_model_builder.dart';
+import 'package:flutter_lyric/flutter_lyric.dart';
 import 'dart:io';
 import '../funcs.dart';
 import '../loweb.dart';
@@ -12,24 +12,19 @@ import '../global_settings_animations.dart';
 import '../play.dart';
 import 'package:path/path.dart' as p;
 
-class LyricController extends GetxController {
+class XLyricController extends GetxController {
   // 歌词显示相关
-  var currentLyric = ''.obs;
-  var translationLyric = ''.obs;
+  late LyricController lyricController;
   var isLyricLoading = false.obs;
   var hasLyric = false.obs;
-  final updFormatShowLyric = LyricsLineModel().obs;
+  Rx<LyricLine?> updFormatShowLyric = Rx<LyricLine?>(null);
   // showTranslation 已移至 SettingsController
 
   // 歌词解析相关
-  LyricsReaderModel? lyricModel;
+  // LyricsReaderModel? lyricModel;
 
   // 当前歌曲信息
   var currentTrackId = ''.obs;
-
-  // 存储原始歌词数据
-  String _originalLyric = '';
-  String _originalTranslation = '';
 
   /// 获取缓存控制器
   CacheController get _cacheController => Get.find<CacheController>();
@@ -109,18 +104,26 @@ class LyricController extends GetxController {
     }
   }
 
+  String? sLyric;
+  Rx<String?> sLyricTra = Rx<String?>(null);
+
   @override
   void onInit() {
     super.onInit();
+    lyricController = LyricController();
     // 监听播放位置变化，更新歌词显示
-    Get.find<PlayController>().music_player.stream.position.listen((position) {
-      if (lyricModel != null) {
-        _updateCurrentLyric(position);
-      }
+    Get.find<PlayController>().music_player.stream.position.listen(
+      lyricController.setProgress,
+    );
+    lyricController.activeIndexNotifiter.addListener(() {
+      _updateCurrentLyric(lyricController.activeIndexNotifiter.value);
     });
     ever(updFormatShowLyric, (value) {
-      if (!value.hasMain) return;
+      if (isEmpty(value)) return;
       change_playback_state(null, lyric: value);
+    });
+    lyricController.setOnTapLineCallback((Duration position) {
+      seekToTime(position);
     });
   }
 
@@ -130,9 +133,7 @@ class LyricController extends GetxController {
     if (trackId.isEmpty) return;
     isLyricLoading.value = true;
     hasLyric.value = false;
-    currentLyric.value = '';
-    translationLyric.value = '';
-    lyricModel = null;
+    // lyricModel = null;
 
     try {
       // 首先尝试从本地缓存加载歌词
@@ -190,43 +191,37 @@ class LyricController extends GetxController {
   }
 
   /// 处理歌词数据
-  void _processLyricData(String lyric, String tlyric) {
-    currentLyric.value = lyric;
-    _originalLyric = lyric;
-
-    if (tlyric.isNotEmpty) {
-      translationLyric.value = tlyric;
-      _originalTranslation = tlyric;
+  void _processLyricData([String? lyric, String? tlyric]) {
+    if (!isEmpty(lyric)) {
+      sLyric = lyric;
+      sLyricTra.value = tlyric;
     } else {
-      _originalTranslation = '';
+      lyric = sLyric ?? '';
+      tlyric = sLyricTra.value;
     }
-
+    if (!_settingsController.showLyricTranslation.value) {
+      tlyric = null;
+    }
+    lyricController.loadLyric(lyric!, translationLyric: tlyric);
     // 构建歌词模型
-    _rebuildLyricModel();
     hasLyric.value = true;
   }
 
-  String formatShowLyric(LyricsLineModel? line) {
-    if (line == null) return '';
-    String mainText = line.mainText ?? '';
-    String extText = line.extText ?? '';
+  // String formatShowLyric(LyricsLineModel? line) {
+  //   if (line == null) return '';
+  //   String mainText = line.mainText ?? '';
+  //   String extText = line.extText ?? '';
 
-    if (_settingsController.showLyricTranslation.value && !isEmpty(extText)) {
-      return '$mainText\n$extText';
-    } else {
-      return mainText;
-    }
-  }
+  //   if (_settingsController.showLyricTranslation.value && !isEmpty(extText)) {
+  //     return '$mainText\n$extText';
+  //   } else {
+  //     return mainText;
+  //   }
+  // }
 
   /// 更新当前显示的歌词
-  void _updateCurrentLyric(Duration position) {
-    if (lyricModel == null || lyricModel?.lyrics.isEmpty == true) return;
-    LyricsLineModel? line =
-        lyricModel?.lyrics[lyricModel!.getCurrentLine(position.inMilliseconds)];
-    // debugPrint('更新歌词: ${formatShowLyric(line)}');
-    // updFormatShowLyric.value = formatShowLyric(line);
-    updFormatShowLyric.value = line ?? LyricsLineModel();
-
+  void _updateCurrentLyric(int index) {
+    updFormatShowLyric.value = lyricController.lyricNotifier.value?.lines[index];
     // 这里可以添加更复杂的歌词高亮逻辑
     // 目前只是简单的存储，实际的歌词高亮由 flutter_lyric 组件处理
   }
@@ -253,22 +248,8 @@ class LyricController extends GetxController {
   void toggleTranslation() {
     _settingsController.showLyricTranslation.value =
         !_settingsController.showLyricTranslation.value;
-    _rebuildLyricModel();
-  }
 
-  /// 重新构建歌词模型
-  void _rebuildLyricModel() {
-    if (_originalLyric.isEmpty) return;
-
-    var builder = LyricsModelBuilder.create().bindLyricToMain(_originalLyric);
-
-    // 只有在开启翻译显示且有翻译内容时才绑定翻译歌词
-    if (_settingsController.showLyricTranslation.value &&
-        _originalTranslation.isNotEmpty) {
-      builder = builder.bindLyricToExt(_originalTranslation);
-    }
-
-    lyricModel = builder.getModel();
+    _processLyricData();
   }
 
   /// 清理特定歌曲的歌词缓存
@@ -290,5 +271,11 @@ class LyricController extends GetxController {
     final cachedLyrics = await _loadLyricFromCache(trackId);
     return cachedLyrics.containsKey('lyric') &&
         cachedLyrics['lyric']!.isNotEmpty;
+  }
+
+  @override
+  void onClose() {
+    lyricController.dispose();
+    super.onClose();
   }
 }

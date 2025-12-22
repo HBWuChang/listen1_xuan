@@ -4,7 +4,7 @@ description: "Rewrite From listen1"
 # Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 2.2.3+26
+version: 2.2.4+27
 
 environment:
   sdk: ^3.8.1
@@ -66,8 +66,7 @@ dependencies:
   shelf: ^1.4.2
   shelf_web_socket: ^3.0.0
   shelf_router: ^1.1.4
-  flutter_lyric:
-    path: packages/flutter_lyric-2.0.4+6
+  flutter_lyric: 3.0.2
   # metadata_god: ^1.0.0
   extended_image: ^10.0.1
   mime: ^2.0.0

@@ -7,19 +7,16 @@ class LyricVPage extends StatefulWidget {
 
 class _LyricVPageState extends State<LyricVPage>
     with TickerProviderStateMixin, LyricFormattingMixin {
-  late LyricController lyricController;
+  late XLyricController lyricController;
   late PlayController playController;
   late SettingsController settingsController;
-
-  // 歌词UI样式
-  var lyricUI = UINetease();
 
   @override
   void initState() {
     super.initState();
 
     // 初始化控制器
-    lyricController = Get.find<LyricController>();
+    lyricController = Get.find<XLyricController>();
     playController = Get.find<PlayController>();
     settingsController = Get.find<SettingsController>();
     WidgetsBinding.instance.addPostFrameCallback(
@@ -27,20 +24,66 @@ class _LyricVPageState extends State<LyricVPage>
     );
   }
 
+  // 创建主题化的歌词样式
+  LyricStyle _createThemedLyricStyle(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return LyricStyle(
+      textStyle: TextStyle(
+        fontSize: 16,
+        color:
+            theme.textTheme.bodyLarge?.color?.withOpacity(isDark ? 0.8 : 0.7) ??
+            (isDark ? Colors.white70 : Colors.black54),
+      ),
+      activeStyle: TextStyle(
+        fontSize: 18,
+        color: theme.colorScheme.primary,
+        fontWeight: FontWeight.w600,
+      ),
+      translationStyle: TextStyle(
+        fontSize: 14,
+        color:
+            theme.textTheme.bodyMedium?.color?.withOpacity(
+              isDark ? 0.6 : 0.5,
+            ) ??
+            (isDark ? Colors.white60 : Colors.black45),
+      ),
+      translationActiveColor: theme.colorScheme.primary.withOpacity(0.7),
+      lineTextAlign: TextAlign.center,
+      lineGap: 26,
+      translationLineGap: 10,
+      contentAlignment: CrossAxisAlignment.center,
+      contentPadding: EdgeInsets.only(
+        top: 500.w,
+        left: 20,
+        right: 20,
+        bottom: 20,
+      ),
+      selectionAnchorPosition: 0.48,
+      fadeRange: FadeRange(top: 80, bottom: 80),
+      selectedColor: theme.colorScheme.primary,
+      selectedTranslationColor: theme.colorScheme.primary.withOpacity(0.7),
+      scrollDuration: Duration(milliseconds: 240),
+      scrollDurations: {
+        500: Duration(milliseconds: 500),
+        1000: Duration(milliseconds: 1000),
+      },
+      enableSwitchAnimation: false,
+      selectionAutoResumeMode: SelectionAutoResumeMode.selecting,
+      selectionAutoResumeDuration: Duration(milliseconds: 320),
+      activeAutoResumeDuration: Duration(milliseconds: 3000),
+      activeHighlightColor: theme.colorScheme.primaryFixed.withAlpha(200),
+      switchEnterDuration: Duration(milliseconds: 300),
+      switchExitDuration: Duration(milliseconds: 500),
+      switchEnterCurve: Curves.easeOutBack,
+      switchExitCurve: Curves.easeOutQuint,
+      selectionAlignment: MainAxisAlignment.center,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 根据主题设置歌词UI样式
-    lyricUI = _ThemedUINetease(
-      defaultSize: 18,
-      defaultExtSize: 14,
-      otherMainSize: 16,
-      lineGap: 25,
-      inlineGap: 8,
-      lyricAlign: LyricAlign.CENTER,
-      highlightDirection: HighlightDirection.LTR,
-      context: context,
-    );
-
     return WillPopScope(
       onWillPop: () async {
         playController.sheetController.animateTo(
@@ -102,60 +145,9 @@ class _LyricVPageState extends State<LyricVPage>
 
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 20),
-        child: StreamBuilder<Duration>(
-          stream: Get.find<PlayController>().music_player.stream.position,
-          builder: (context, snapshot) {
-            final position =
-                snapshot.data ??
-                Get.find<PlayController>().music_player.state.position;
-            return LyricsReader(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              model: lyricController.lyricModel,
-              position: position.inMilliseconds,
-              lyricUi: lyricUI,
-              playing: playController.isplaying.value,
-              size: Size(double.infinity, MediaQuery.of(context).size.height),
-              emptyBuilder: () => Center(
-                child: Text('暂无歌词', style: lyricUI.getOtherMainTextStyle()),
-              ),
-              selectLineBuilder: (progress, confirm) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '跳转到: ${formatDuration(Duration(milliseconds: progress))}',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: () => Get.find<PlayController>()
-                                .music_player
-                                .seek(Duration(milliseconds: progress)),
-                            child: Text('确定'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-              onTap: () {
-                // 点击歌词区域的处理
-              },
-            );
-          },
+        child: LyricView(
+          controller: lyricController.lyricController,
+          style: _createThemedLyricStyle(context),
         ),
       );
     });
@@ -166,84 +158,104 @@ class _LyricVPageState extends State<LyricVPage>
       alignment: Alignment.bottomRight,
       child: Padding(
         padding: EdgeInsetsGeometry.all(16.w),
-        child: Obx(() {
-          // 只有当有翻译歌词时才显示开关
-          if (lyricController.translationLyric.value.isEmpty) {
-            return SizedBox.shrink();
-          }
-
-          return Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(25),
-              border: Border.all(
-                color: Theme.of(context).dividerColor.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(25),
-                onTap: () {
-                  lyricController.toggleTranslation();
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '译',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: settingsController.showLyricTranslation.value
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(
-                                  context,
-                                ).textTheme.bodyMedium?.color?.withOpacity(0.6),
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      AnimatedContainer(
-                        duration: Duration(milliseconds: 200),
-                        width: 36,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: settingsController.showLyricTranslation.value
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).disabledColor,
-                        ),
-                        child: AnimatedAlign(
-                          duration: Duration(milliseconds: 200),
-                          alignment:
-                              settingsController.showLyricTranslation.value
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            margin: EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
+        child: traBtn(context, settingsController, lyricController),
       ),
     );
   }
 }
+
+Widget traBtn(
+  BuildContext context,
+  SettingsController settingsController,
+  XLyricController lyricController,
+) => Material(
+  color: Colors.transparent,
+  child: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      // InkWell(
+      //   borderRadius: BorderRadius.circular(25),
+      //   onTap: () {
+      //     lyricController.toggleTranslation();
+      //   },
+      //   child: Container(
+      //     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      //     child: Row(
+      //       mainAxisSize: MainAxisSize.min,
+      //       children: [
+      //         Text(
+      //           '译',
+      //           style: TextStyle(
+      //             fontSize: 14,
+      //             fontWeight: FontWeight.w600,
+      //             color: settingsController.showLyricTranslation.value
+      //                 ? Theme.of(context).colorScheme.primary
+      //                 : Theme.of(
+      //                     context,
+      //                   ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+      //           ),
+      //         ),
+      //         SizedBox(width: 6),
+      //         AnimatedContainer(
+      //           duration: Duration(milliseconds: 200),
+      //           width: 36,
+      //           height: 20,
+      //           decoration: BoxDecoration(
+      //             borderRadius: BorderRadius.circular(10),
+      //             color: settingsController.showLyricTranslation.value
+      //                 ? Theme.of(context).colorScheme.primary
+      //                 : Theme.of(context).disabledColor,
+      //           ),
+      //           child: AnimatedAlign(
+      //             duration: Duration(milliseconds: 200),
+      //             alignment: settingsController.showLyricTranslation.value
+      //                 ? Alignment.centerRight
+      //                 : Alignment.centerLeft,
+      //             child: Container(
+      //               width: 16,
+      //               height: 16,
+      //               margin: EdgeInsets.all(2),
+      //               decoration: BoxDecoration(
+      //                 color: Colors.white,
+      //                 borderRadius: BorderRadius.circular(8),
+      //               ),
+      //             ),
+      //           ),
+      //         ),
+      //       ],
+      //     ),
+      //   ),
+      // ),
+      Obx(
+        () => isEmpty(lyricController.sLyricTra.value)
+            ? SizedBox.shrink()
+            : IconButton(
+                onPressed: lyricController.toggleTranslation,
+                padding: EdgeInsets.zero,
+                icon: Obx(
+                  () => Text(
+                    '译',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: settingsController.showLyricTranslation.value
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    ),
+                  ),
+                ),
+              ),
+      ),
+      // IconButton(
+      //   onPressed: null,
+      //   padding: EdgeInsets.zero,
+      //   icon: Icon(Icons.av_timer_rounded),
+      // ),
+    ],
+  ),
+);
 
 class LyricVBackPage extends StatefulWidget {
   @override
