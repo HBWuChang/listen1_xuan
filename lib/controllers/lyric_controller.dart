@@ -17,6 +17,9 @@ class XLyricController extends GetxController {
   late LyricController lyricController;
   var isLyricLoading = false.obs;
   var hasLyric = false.obs;
+  RxDouble globalLyricDelay = RxDouble(0.0);
+  RxDouble nowPlayingLyricDelay = RxDouble(0.0);
+  bool updNowPlayingLyricDelay = false;
   Rx<LyricLine?> updFormatShowLyric = Rx<LyricLine?>(null);
   // showTranslation 已移至 SettingsController
 
@@ -35,7 +38,7 @@ class XLyricController extends GetxController {
   /// 生成歌词缓存文件路径
   String _getLyricCacheFileName(String trackId, {bool isTranslation = false}) {
     final suffix = isTranslation ? '_tlyric' : '_lyric';
-    return '${trackId}${suffix}.lrc';
+    return '$trackId$suffix.lrc';
   }
 
   /// 从本地缓存读取歌词
@@ -111,10 +114,17 @@ class XLyricController extends GetxController {
   void onInit() {
     super.onInit();
     lyricController = LyricController();
-    // 监听播放位置变化，更新歌词显示
-    Get.find<PlayController>().music_player.stream.position.listen(
-      lyricController.setProgress,
-    );
+    // 监听播放位置变化，更新歌词显示（应用延迟）
+    Get.find<PlayController>().music_player.stream.position.listen((position) {
+      // 计算总延迟 = 全局延迟 + 当前歌曲延迟
+      final totalDelay = globalLyricDelay.value + nowPlayingLyricDelay.value;
+      Duration adjustedPosition =
+          position + Duration(milliseconds: (totalDelay * 1000).round());
+      if (adjustedPosition < Duration.zero) {
+        adjustedPosition = Duration.zero;
+      }
+      lyricController.setProgress(adjustedPosition);
+    });
     lyricController.activeIndexNotifiter.addListener(() {
       _updateCurrentLyric(lyricController.activeIndexNotifiter.value);
     });
@@ -123,8 +133,37 @@ class XLyricController extends GetxController {
       change_playback_state(null, lyric: value);
     });
     lyricController.setOnTapLineCallback((Duration position) {
-      seekToTime(position);
+      Duration adjustedPosition =
+          position -
+          Duration(
+            milliseconds:
+                ((globalLyricDelay.value + nowPlayingLyricDelay.value) * 1000)
+                    .round(),
+          );
+      if (adjustedPosition < Duration.zero) {
+        adjustedPosition = Duration.zero;
+      }
+      seekToTime(adjustedPosition);
     });
+    globalLyricDelay.value = _settingsController.globalLyricDelay;
+    interval(globalLyricDelay, (value) {
+      // 更新全局延迟设置
+      _settingsController.globalLyricDelay = value;
+    }, time: Duration(milliseconds: 100));
+    interval(nowPlayingLyricDelay, (value) {
+      if (updNowPlayingLyricDelay == false) {
+        updNowPlayingLyricDelay = true;
+        return;
+      }
+      if (nowPlayingLyricDelay.value.isNaN) {
+        nowPlayingLyricDelay.value = 0.0;
+      }
+      Get.find<PlayController>().songReplaceSettings.value.setSongDelay(
+        Get.find<PlayController>().nowPlayingTrackId,
+        value,
+      );
+      Get.find<PlayController>().songReplaceSettings.refresh();
+    }, time: Duration(milliseconds: 100));
   }
 
   /// 加载歌词
@@ -134,7 +173,11 @@ class XLyricController extends GetxController {
     isLyricLoading.value = true;
     hasLyric.value = false;
     // lyricModel = null;
-
+    nowPlayingLyricDelay.value =
+        Get.find<PlayController>().songReplaceSettings.value.getSongDelay(
+          trackId,
+        ) ??
+        0.0;
     try {
       // 首先尝试从本地缓存加载歌词
       final cachedLyrics = await _loadLyricFromCache(trackId);
@@ -184,8 +227,9 @@ class XLyricController extends GetxController {
 
         // 处理歌词数据
         _processLyricData(lyric, tlyric);
+      } else {
+        lyricController.loadLyricModel(LyricModel(lines: []));
       }
-
       isLyricLoading.value = false;
     });
   }
@@ -221,7 +265,9 @@ class XLyricController extends GetxController {
 
   /// 更新当前显示的歌词
   void _updateCurrentLyric(int index) {
-    updFormatShowLyric.value = lyricController.lyricNotifier.value?.lines[index];
+    if (hasLyric.value == false) return;
+    updFormatShowLyric.value =
+        lyricController.lyricNotifier.value?.lines[index];
     // 这里可以添加更复杂的歌词高亮逻辑
     // 目前只是简单的存储，实际的歌词高亮由 flutter_lyric 组件处理
   }

@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 
 import 'package:listen1_xuan/funcs.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import '../../controllers/lyric_controller.dart';
 import '../../controllers/play_controller.dart';
 import '../../controllers/settings_controller.dart';
@@ -42,9 +43,9 @@ class _LyricPageState extends State<LyricPage>
     lyricController = Get.find<XLyricController>();
     playController = Get.find<PlayController>();
     settingsController = Get.find<SettingsController>();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => lyricController.loadLyric(),
-    );
+    // WidgetsBinding.instance.addPostFrameCallback(
+    //   (_) => lyricController.loadLyric(),
+    // );
 
     _backgroundController = AnimationController(
       duration: Duration(milliseconds: 500),

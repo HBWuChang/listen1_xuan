@@ -17,6 +17,11 @@ class SongReplaceSettings {
   @JsonKey(name: 'track_details', defaultValue: <String, Track>{})
   final Map<String, Track> trackDetails;
 
+  /// trackId 到歌词延迟值的映射
+  /// 存储每首歌曲的歌词延迟设置（单位：秒）
+  @JsonKey(name: 'song_delays', defaultValue: <String, double>{})
+  final Map<String, double> songDelays;
+
   /// 反向索引：替换歌曲ID 到 原始歌曲ID列表的映射
   /// 用于O(1)时间快速查找某个歌曲是否被用作替换歌曲
   /// 注意：这个字段不序列化，在反序列化后重建
@@ -26,8 +31,10 @@ class SongReplaceSettings {
   SongReplaceSettings({
     Map<String, String>? idMappings,
     Map<String, Track>? trackDetails,
+    Map<String, double>? songDelays,
   }) : idMappings = idMappings ?? {},
-       trackDetails = trackDetails ?? {} {
+       trackDetails = trackDetails ?? {},
+       songDelays = songDelays ?? {} {
     _buildReverseIndex();
   }
   Track? getReplacedTrack(String originalId) {
@@ -129,16 +136,45 @@ class SongReplaceSettings {
     return trackDetails[trackId];
   }
 
+  /// 获取歌曲的歌词延迟值
+  /// [trackId] 歌曲ID
+  /// 返回延迟值（秒），如果不存在则返回 null
+  double? getSongDelay(String trackId) {
+    return songDelays[trackId];
+  }
+
+  /// 设置歌曲的歌词延迟值
+  /// [trackId] 歌曲ID
+  /// [delay] 延迟值（秒）
+  void setSongDelay(String trackId, double delay) {
+    if (delay.isNaN) {
+      delay = 0.0;
+    }
+    if (delay == 0.0) {
+      songDelays.remove(trackId);
+      return;
+    }
+    songDelays[trackId] = delay;
+  }
+
+  /// 移除歌曲的歌词延迟值
+  /// [trackId] 歌曲ID
+  /// 返回 true 表示成功移除
+  bool removeSongDelay(String trackId) {
+    return songDelays.remove(trackId) != null;
+  }
+
   /// 清空所有映射
   void clear() {
     idMappings.clear();
     trackDetails.clear();
+    songDelays.clear();
     _reverseIndex.clear();
   }
 
   /// 刷新 trackDetails，删除未被使用的 Track 数据
-  /// 自动删除在 idMappings 的 key 和 value 中均未出现的 trackDetails 条目
-  /// 返回删除的条目数量
+  /// 自动删除在 idMappings 的 key 和 value 中均未出现的 trackDetails 和 songDelays 条目
+  /// 返回删除的条目数量（trackDetails 和 songDelays 的总和）
   int refreshTrackDetails() {
     // 收集所有在 idMappings 中出现过的 trackId（包括 key 和 value）
     final usedTrackIds = <String>{};
@@ -150,16 +186,26 @@ class SongReplaceSettings {
     usedTrackIds.addAll(idMappings.values);
 
     // 找出 trackDetails 中未被使用的 key
-    final unusedKeys = trackDetails.keys
+    final unusedTrackKeys = trackDetails.keys
         .where((key) => !usedTrackIds.contains(key))
         .toList();
 
-    // 删除未使用的条目
-    for (var key in unusedKeys) {
+    // 找出 songDelays 中未被使用的 key
+    final unusedDelayKeys = songDelays.keys
+        .where((key) => !usedTrackIds.contains(key))
+        .toList();
+
+    // 删除未使用的 trackDetails 条目
+    for (var key in unusedTrackKeys) {
       trackDetails.remove(key);
     }
 
-    return unusedKeys.length;
+    // 删除未使用的 songDelays 条目
+    for (var key in unusedDelayKeys) {
+      songDelays.remove(key);
+    }
+
+    return unusedTrackKeys.length + unusedDelayKeys.length;
   }
 
   /// 从 JSON 创建实例
@@ -177,10 +223,12 @@ class SongReplaceSettings {
   SongReplaceSettings copyWith({
     Map<String, String>? idMappings,
     Map<String, Track>? trackDetails,
+    Map<String, double>? songDelays,
   }) {
     return SongReplaceSettings(
       idMappings: idMappings ?? Map.from(this.idMappings),
       trackDetails: trackDetails ?? Map.from(this.trackDetails),
+      songDelays: songDelays ?? Map.from(this.songDelays),
     );
   }
 }

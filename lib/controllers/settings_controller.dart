@@ -118,6 +118,12 @@ class SettingsController extends GetxController {
     settings['lyricBackgroundBlurRadius'] = value;
   }
 
+  static const String globalLyricDelayKey = 'globalLyricDelay';
+  double get globalLyricDelay => settings[globalLyricDelayKey] ?? 0.0;
+  set globalLyricDelay(double value) {
+    settings[globalLyricDelayKey] = value;
+  }
+
   var showLyricTranslation = true.obs; // 歌词翻译显示设置
   // var hideOrMinimize = false.obs;
   bool get hideOrMinimize => settings['hideOrMinimize'] ?? true;

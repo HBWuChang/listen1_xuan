@@ -84,6 +84,10 @@ class PlayController extends GetxController
       nowPlayingTrackRx.value?.id ??
       _player_settings[nowPlayingTrackIdKey] ??
       '';
+  Track? get nowPlayingTrackSReplaceTrack =>
+      songReplaceSettings.value.getReplacedTrack(nowPlayingTrackId);
+  bool get nowPlayingTrackHasReplaceTrack =>
+      nowPlayingTrackSReplaceTrack != null;
 
   ///用于记录正在引导播放的曲目id及下载文件名
   final bootStraping = RxMap<String, String>();

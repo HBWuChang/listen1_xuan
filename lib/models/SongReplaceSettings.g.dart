@@ -18,6 +18,11 @@ SongReplaceSettings _$SongReplaceSettingsFromJson(Map<String, dynamic> json) =>
             (k, e) => MapEntry(k, Track.fromJson(e as Map<String, dynamic>)),
           ) ??
           {},
+      songDelays:
+          (json['song_delays'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, (e as num).toDouble()),
+          ) ??
+          {},
     );
 
 Map<String, dynamic> _$SongReplaceSettingsToJson(
@@ -25,4 +30,5 @@ Map<String, dynamic> _$SongReplaceSettingsToJson(
 ) => <String, dynamic>{
   'id_mappings': instance.idMappings,
   'track_details': instance.trackDetails.map((k, e) => MapEntry(k, e.toJson())),
+  'song_delays': instance.songDelays,
 };

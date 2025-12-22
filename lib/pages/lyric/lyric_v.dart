@@ -19,9 +19,9 @@ class _LyricVPageState extends State<LyricVPage>
     lyricController = Get.find<XLyricController>();
     playController = Get.find<PlayController>();
     settingsController = Get.find<SettingsController>();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => lyricController.loadLyric(),
-    );
+    // WidgetsBinding.instance.addPostFrameCallback(
+    //   (_) => lyricController.loadLyric(),
+    // );
   }
 
   // 创建主题化的歌词样式
@@ -248,11 +248,29 @@ Widget traBtn(
                 ),
               ),
       ),
-      // IconButton(
-      //   onPressed: null,
-      //   padding: EdgeInsets.zero,
-      //   icon: Icon(Icons.av_timer_rounded),
-      // ),
+      IconButton(
+        onPressed: () {
+          WoltModalSheet.show(
+            context: Get.context!,
+            modalBarrierColor: Colors.transparent,
+            modalTypeBuilder: (modalSheetContext) =>
+                WoltModalType.bottomSheet(),
+            pageListBuilder: (modalSheetContext) {
+              return [
+                WoltModalSheetPage(
+                  hasTopBarLayer: false,
+                  isTopBarLayerAlwaysVisible: false,
+                  enableDrag: true,
+                  child: LyricDelayAdjuster(lyricController: lyricController),
+                ),
+              ];
+            },
+            useRootNavigator: true,
+          );
+        },
+        padding: EdgeInsets.zero,
+        icon: Icon(Icons.av_timer_rounded),
+      ),
     ],
   ),
 );
@@ -486,5 +504,230 @@ class MyClipper2 extends CustomClipper<Path> {
       return oldClipper.height != height || oldClipper.radius != radius;
     }
     return true; // 如果类型不同，总是重新裁剪
+  }
+}
+
+/// 歌词延迟调整器
+class LyricDelayAdjuster extends StatelessWidget {
+  final XLyricController lyricController;
+
+  const LyricDelayAdjuster({Key? key, required this.lyricController})
+    : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 当前歌曲延迟调整
+          Obx(
+            () => _DelaySliderItem(
+              label: Text.rich(
+                TextSpan(
+                  text: '当前歌曲延迟',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: '\n仅"歌曲替换列表"中的"源歌曲"可用',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 12,
+                        color: theme.textTheme.bodyMedium?.color?.withOpacity(
+                          0.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              delayValue: lyricController.nowPlayingLyricDelay,
+              theme: theme,
+              enabled:
+                  lyricController.hasLyric.value &&
+                  Get.find<PlayController>().nowPlayingTrackHasReplaceTrack,
+            ),
+          ),
+
+          SizedBox(height: 12),
+          // 全局延迟调整
+          _DelaySliderItem(
+            label: Text(
+              '全局歌词延迟',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            delayValue: lyricController.globalLyricDelay,
+            theme: theme,
+            enabled: true,
+          ),
+          SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
+
+/// 延迟滑块项
+class _DelaySliderItem extends StatefulWidget {
+  final Widget label;
+  final RxDouble delayValue;
+  final ThemeData theme;
+  final bool enabled;
+
+  const _DelaySliderItem({
+    Key? key,
+    required this.label,
+    required this.delayValue,
+    required this.theme,
+    required this.enabled,
+  }) : super(key: key);
+
+  @override
+  State<_DelaySliderItem> createState() => _DelaySliderItemState();
+}
+
+class _DelaySliderItemState extends State<_DelaySliderItem> {
+  // 滑块的临时偏移值（范围 -2.5 到 2.5）
+  double _tempOffset = 0.0;
+  // 拖动开始时的原始值
+  double _startValue = 0.0;
+
+  void _onChangeStart(double value) {
+    _startValue = widget.delayValue.value;
+    _tempOffset = 0.0;
+  }
+
+  void _onChanged(double value) {
+    // 实时更新控制器的值
+    widget.delayValue.value = _startValue + value;
+    setState(() {
+      _tempOffset = value;
+    });
+  }
+
+  void _onChangeEnd(double value) {
+    // 调整结束，滑块归中
+    setState(() {
+      _tempOffset = 0.0;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final actualValue = widget.delayValue.value;
+      final totalDelay = actualValue;
+
+      return Opacity(
+        opacity: widget.enabled ? 1.0 : 0.5,
+        child: AbsorbPointer(
+          absorbing: !widget.enabled,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 标签和当前值显示
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  widget.label,
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: widget.theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${totalDelay >= 0 ? '+' : ''}${totalDelay.toStringAsFixed(2)}s',
+                      style: widget.theme.textTheme.bodyMedium?.copyWith(
+                        color: widget.theme.colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              // 滑块
+              Row(
+                children: [
+                  // 左侧标签（-2.5s）
+                  Text(
+                    '-2.5s',
+                    style: widget.theme.textTheme.bodySmall?.copyWith(
+                      color: widget.theme.textTheme.bodySmall?.color
+                          ?.withOpacity(0.6),
+                    ),
+                  ),
+                  // 滑块
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 4,
+                        thumbShape: RoundSliderThumbShape(
+                          enabledThumbRadius: 8,
+                        ),
+                        overlayShape: RoundSliderOverlayShape(
+                          overlayRadius: 16,
+                        ),
+                        activeTrackColor: widget.theme.colorScheme.primary,
+                        inactiveTrackColor: widget.theme.colorScheme.primary
+                            .withOpacity(0.3),
+                        thumbColor: widget.theme.colorScheme.primary,
+                        overlayColor: widget.theme.colorScheme.primary
+                            .withOpacity(0.2),
+                        disabledThumbColor: widget.theme.disabledColor,
+                        disabledActiveTrackColor: widget.theme.disabledColor
+                            .withOpacity(0.3),
+                        disabledInactiveTrackColor: widget.theme.disabledColor
+                            .withOpacity(0.1),
+                      ),
+                      child: Slider(
+                        value: _tempOffset,
+                        min: -2.5,
+                        max: 2.5,
+                        divisions: 500, // 0.01秒精度
+                        onChangeStart: _onChangeStart,
+                        onChanged: widget.enabled ? _onChanged : null,
+                        onChangeEnd: _onChangeEnd,
+                      ),
+                    ),
+                  ),
+                  // 右侧标签（+2.5s）
+                  Text(
+                    '+2.5s',
+                    style: widget.theme.textTheme.bodySmall?.copyWith(
+                      color: widget.theme.textTheme.bodySmall?.color
+                          ?.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+              // 中心指示器
+              Center(
+                child: Container(
+                  width: 2,
+                  height: 8,
+                  margin: EdgeInsets.only(top: 4),
+                  decoration: BoxDecoration(
+                    color: _tempOffset.abs() < 0.05
+                        ? widget.theme.colorScheme.primary
+                        : widget.theme.dividerColor,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 }
