@@ -123,6 +123,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
         child: ListView.builder(
           key: const PageStorageKey<String>('songList'),
           controller: controller.songScrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           itemCount:
               controller.tracks.length + (controller.loadingMore.value ? 1 : 0),
           itemBuilder: (context, index) {
@@ -176,6 +177,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
         child: ListView.builder(
           key: const PageStorageKey<String>('playlistList'),
           controller: controller.playlistScrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           itemCount:
               controller.playlists.length +
               (controller.playlistLoadingMore.value ? 1 : 0),
