@@ -7,7 +7,8 @@ class Searchlistinfo extends StatefulWidget {
   State<Searchlistinfo> createState() => _SearchlistinfoState();
 }
 
-class _SearchlistinfoState extends State<Searchlistinfo> with SingleTickerProviderStateMixin {
+class _SearchlistinfoState extends State<Searchlistinfo>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   XSearchController? controller;
 
@@ -15,24 +16,23 @@ class _SearchlistinfoState extends State<Searchlistinfo> with SingleTickerProvid
   void initState() {
     super.initState();
     controller = Get.find<XSearchController>();
-    
+
     // 使用保存的 tab 索引初始化 TabController
     _tabController = TabController(
       length: 2,
       vsync: this,
       initialIndex: controller!.currentTabIndex.value,
     );
-    
+
     // 监听 TabController 的变化
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         controller?.switchTab(_tabController.index);
       }
     });
-    
+
     // 每次进入页面时刷新平台设置
     controller?.refreshFromSettings();
-    
   }
 
   @override
@@ -118,46 +118,49 @@ class _SearchlistinfoState extends State<Searchlistinfo> with SingleTickerProvid
         return Center(child: globalLoadingAnime);
       }
 
-      return ListView.builder(
-        key: const PageStorageKey<String>('songList'),
-        controller: controller.songScrollController,
-        itemCount:
-            controller.tracks.length + (controller.loadingMore.value ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= controller.tracks.length) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Center(child: globalLoadingAnime),
-            );
-          }
+      return RefreshIndicator(
+        onRefresh: () => controller.refreshSongSearch(),
+        child: ListView.builder(
+          key: const PageStorageKey<String>('songList'),
+          controller: controller.songScrollController,
+          itemCount:
+              controller.tracks.length + (controller.loadingMore.value ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index >= controller.tracks.length) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(child: globalLoadingAnime),
+              );
+            }
 
-          final key = GlobalKey();
-          final track = controller.tracks[index];
+            final key = GlobalKey();
+            final track = controller.tracks[index];
 
-          return ListTile(
-            title: Text(track.title ?? ''),
-            subtitle: Text('${track.artist} - ${track.album}'),
-            trailing: IconButton(
-              key: key,
-              icon: const Icon(Icons.more_vert),
-              onPressed: () {
-                song_dialog(
-                  context,
-                  track,
-                  position: Offset(
-                    MediaQuery.of(context).size.width,
-                    (key.currentContext!.findRenderObject() as RenderBox)
-                        .localToGlobal(Offset.zero)
-                        .dy,
-                  ),
-                );
+            return ListTile(
+              title: Text(track.title ?? ''),
+              subtitle: Text('${track.artist} - ${track.album}'),
+              trailing: IconButton(
+                key: key,
+                icon: const Icon(Icons.more_vert),
+                onPressed: () {
+                  song_dialog(
+                    context,
+                    track,
+                    position: Offset(
+                      MediaQuery.of(context).size.width,
+                      (key.currentContext!.findRenderObject() as RenderBox)
+                          .localToGlobal(Offset.zero)
+                          .dy,
+                    ),
+                  );
+                },
+              ),
+              onTap: () {
+                playsong(track, isByClick: true);
               },
-            ),
-            onTap: () {
-              playsong(track, isByClick: true);
-            },
-          );
-        },
+            );
+          },
+        ),
       );
     });
   }
@@ -168,76 +171,80 @@ class _SearchlistinfoState extends State<Searchlistinfo> with SingleTickerProvid
         return Center(child: globalLoadingAnime);
       }
 
-      return ListView.builder(
-        key: const PageStorageKey<String>('playlistList'),
-        controller: controller.playlistScrollController,
-        itemCount:
-            controller.playlists.length +
-            (controller.playlistLoadingMore.value ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= controller.playlists.length) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Center(child: globalLoadingAnime),
-            );
-          }
+      return RefreshIndicator(
+        onRefresh: () => controller.refreshPlaylistSearch(),
+        child: ListView.builder(
+          key: const PageStorageKey<String>('playlistList'),
+          controller: controller.playlistScrollController,
+          itemCount:
+              controller.playlists.length +
+              (controller.playlistLoadingMore.value ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index >= controller.playlists.length) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(child: globalLoadingAnime),
+              );
+            }
 
-          final playlist = controller.playlists[index];
+            final playlist = controller.playlists[index];
 
-          return ListTile(
-            leading: playlist.imgUrl != null && playlist.imgUrl!.isNotEmpty
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: ExtendedImage.network(
-                      playlist.imgUrl!,
+            return ListTile(
+              leading: playlist.imgUrl != null && playlist.imgUrl!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: ExtendedImage.network(
+                        playlist.imgUrl!,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        cache: true,
+                        loadStateChanged: (state) {
+                          if (state.extendedImageLoadState ==
+                              LoadState.failed) {
+                            return const Icon(Icons.image_not_supported);
+                          }
+                          return null;
+                        },
+                      ),
+                    )
+                  : Container(
                       width: 56,
                       height: 56,
-                      fit: BoxFit.cover,
-                      cache: true,
-                      loadStateChanged: (state) {
-                        if (state.extendedImageLoadState == LoadState.failed) {
-                          return const Icon(Icons.image_not_supported);
-                        }
-                        return null;
-                      },
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(Icons.music_note),
                     ),
-                  )
-                : Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Icon(Icons.music_note),
-                  ),
-            title: Text(
-              playlist.title ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: playlist.author != null && playlist.author!.isNotEmpty
-                ? Text(
-                    playlist.author!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  )
-                : null,
-            trailing: playlist.count != null
-                ? Text(
-                    '${playlist.count} 首歌曲',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  )
-                : null,
+              title: Text(
+                playlist.title ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: playlist.author != null && playlist.author!.isNotEmpty
+                  ? Text(
+                      playlist.author!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    )
+                  : null,
+              trailing: playlist.count != null
+                  ? Text(
+                      '${playlist.count} 首歌曲',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    )
+                  : null,
 
-            onTap: () {
-              if (playlist.id != null) {
-                controller.toListByIDOrSearch(playlist.id!);
-              }
-            },
-          );
-        },
+              onTap: () {
+                if (playlist.id != null) {
+                  controller.toListByIDOrSearch(playlist.id!);
+                }
+              },
+            );
+          },
+        ),
       );
     });
   }

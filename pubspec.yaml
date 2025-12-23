@@ -4,7 +4,7 @@ description: "Rewrite From listen1"
 # Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 2.2.4+28
+version: 2.2.4+29
 
 environment:
   sdk: ^3.8.1

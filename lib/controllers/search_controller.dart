@@ -27,7 +27,7 @@ class XSearchController extends GetxController {
   final RxInt currentPage = 1.obs;
   final RxString lastQuery = ''.obs;
   final RxString searchQuery = ''.obs;
-  
+
   // 歌单搜索相关变量
   final RxBool playlistLoading = true.obs;
   final RxBool playlistLoadingMore = false.obs;
@@ -36,7 +36,7 @@ class XSearchController extends GetxController {
   final RxInt playlistCurrentPage = 1.obs;
   final RxString playlistLastQuery = ''.obs;
   final RxString playlistLastSource = 'netease'.obs;
-  
+
   // Tab 控制
   final RxInt currentTabIndex = 0.obs;
   final RxBool showTabBar = true.obs;
@@ -77,17 +77,17 @@ class XSearchController extends GetxController {
     // Setup listeners
     _setupListeners();
   }
-  
+
   void switchTab(int index) {
     currentTabIndex.value = index;
     // 切换 tab 时重置滚动状态
     _lastScrollOffset = 0.0;
     showTabBar.value = true;
-    
+
     // 检查切换到的 tab 是否需要更新搜索结果
     final query = searchQuery.value.trim();
     if (query.isEmpty) return;
-    
+
     if (index == 0) {
       // 切换到歌曲 tab，检查是否需要重新搜索
       if (lastQuery.value != query || lastSource.value != source.value) {
@@ -95,7 +95,8 @@ class XSearchController extends GetxController {
       }
     } else {
       // 切换到歌单 tab，检查是否需要重新搜索
-      if (playlistLastQuery.value != query || playlistLastSource.value != source.value) {
+      if (playlistLastQuery.value != query ||
+          playlistLastSource.value != source.value) {
         _performPlaylistSearch();
       }
     }
@@ -138,7 +139,7 @@ class XSearchController extends GetxController {
 
   void _onSongScroll() {
     final currentOffset = songScrollController.position.pixels;
-    
+
     // 控制 TabBar 显示/隐藏
     if (currentOffset > _lastScrollOffset && currentOffset > 50) {
       // 向下滚动，隐藏 TabBar
@@ -151,9 +152,9 @@ class XSearchController extends GetxController {
         showTabBar.value = true;
       }
     }
-    
+
     _lastScrollOffset = currentOffset;
-    
+
     // 分页加载
     if (songScrollController.position.pixels >=
         songScrollController.position.maxScrollExtent) {
@@ -163,7 +164,7 @@ class XSearchController extends GetxController {
 
   void _onPlaylistScroll() {
     final currentOffset = playlistScrollController.position.pixels;
-    
+
     // 控制 TabBar 显示/隐藏
     if (currentOffset > _lastScrollOffset && currentOffset > 50) {
       // 向下滚动，隐藏 TabBar
@@ -176,9 +177,9 @@ class XSearchController extends GetxController {
         showTabBar.value = true;
       }
     }
-    
+
     _lastScrollOffset = currentOffset;
-    
+
     // 分页加载
     if (playlistScrollController.position.pixels >=
         playlistScrollController.position.maxScrollExtent) {
@@ -236,13 +237,37 @@ class XSearchController extends GetxController {
       _performPlaylistSearch();
     }
   }
-  
+
+  // 下拉刷新歌曲搜索
+  Future<void> refreshSongSearch() async {
+    final query = searchQuery.value.trim();
+    if (query.isEmpty) return;
+
+    // 强制重新搜索，不检查缓存
+    lastQuery.value = '';
+    currentPage.value = 1;
+    await _performSongSearch();
+  }
+
+  // 下拉刷新歌单搜索
+  Future<void> refreshPlaylistSearch() async {
+    final query = searchQuery.value.trim();
+    if (query.isEmpty) return;
+
+    // 强制重新搜索，不检查缓存
+    playlistLastQuery.value = '';
+    playlistCurrentPage.value = 1;
+    await _performPlaylistSearch();
+  }
+
   Future<void> _performSongSearch() async {
     final query = searchQuery.value.trim();
 
     // Skip if query is empty or unchanged
     if (query.isEmpty ||
-        (query == lastQuery.value && source.value == lastSource.value)) {
+        (query == lastQuery.value &&
+            source.value == lastSource.value &&
+            tracks.isNotEmpty)) {
       return;
     }
 
@@ -284,13 +309,14 @@ class XSearchController extends GetxController {
       showErrorSnackbar('搜索请求失败', e.toString());
     }
   }
-  
+
   Future<void> _performPlaylistSearch() async {
     final query = searchQuery.value.trim();
 
     // Skip if query is empty or unchanged
     if (query.isEmpty ||
-        (query == playlistLastQuery.value && source.value == playlistLastSource.value)) {
+        (query == playlistLastQuery.value &&
+            source.value == playlistLastSource.value)) {
       return;
     }
 
@@ -378,7 +404,7 @@ class XSearchController extends GetxController {
       showErrorSnackbar('加载更多数据失败', e.toString());
     }
   }
-  
+
   Future<void> loadMorePlaylistData() async {
     if (playlistLoading.value || playlistLoadingMore.value) return;
 
@@ -390,7 +416,8 @@ class XSearchController extends GetxController {
       // Check if we've reached the end
       if (playlistResult.isNotEmpty &&
           playlistCurrentPage.value >=
-              playlistResult['total'] / (playlists.length / (playlistCurrentPage.value - 1))) {
+              playlistResult['total'] /
+                  (playlists.length / (playlistCurrentPage.value - 1))) {
         playlistCurrentPage.value = previousPage;
         return;
       }
@@ -430,8 +457,12 @@ class XSearchController extends GetxController {
     lastSource.value = prevSource;
     currentPage.value = prevPage;
   }
-  
-  void _rollbackPlaylistSearch(String prevQuery, String prevSource, int prevPage) {
+
+  void _rollbackPlaylistSearch(
+    String prevQuery,
+    String prevSource,
+    int prevPage,
+  ) {
     playlistLastQuery.value = prevQuery;
     playlistLastSource.value = prevSource;
     playlistCurrentPage.value = prevPage;

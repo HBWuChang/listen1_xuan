@@ -805,7 +805,7 @@ class Bilibili {
                 fn({'result': result, 'total': total});
               },
               onError: (e) {
-                showErrorSnackbar('Bilibili搜索失败', e.toString());
+                showDebugSnackbar('Bilibili搜索失败', e.toString());
                 fn({'result': [], 'total': 0});
               },
             );
