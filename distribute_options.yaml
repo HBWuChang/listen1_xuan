@@ -9,3 +9,5 @@ releases:
           build_args:
             dart-define:
               APP_ENV: dev
+              # --dart-define=gitHash=${{ env.GITHASH }}
+              gitHash: ${GITHASH}

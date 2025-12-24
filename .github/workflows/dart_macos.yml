@@ -41,7 +41,7 @@ jobs:
       - name: Build macOS app
         run: |
           dart pub global activate fastforge
-          fastforge release --name prod --dart-define=gitHash=${{ env.GITHASH }}
+          fastforge release --name prod
         
       # 从 pubspec.yaml 提取版本号
       - name: Extract Version from pubspec.yaml
