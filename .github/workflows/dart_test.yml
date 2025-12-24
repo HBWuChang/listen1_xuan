@@ -1,0 +1,21 @@
+name: apk
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "**/*.dart"
+      - "pubspec.yaml"
+      - "**/dart.yml"
+
+jobs:
+  build:
+    if: "contains(github.event.head_commit.message, 'test')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Output Commit Information
+        run: |
+          echo "触发此次action的提交ID: ${{ github.sha }}"
+          echo "提交信息: ${{ github.event.head_commit.message }}"
+          echo "提交作者: ${{ github.event.head_commit.author.name }}"
+      
