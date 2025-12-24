@@ -1,4 +1,4 @@
-name: apk
+name: test
 
 on:
   push:
@@ -18,4 +18,7 @@ jobs:
           echo "触发此次action的提交ID: ${{ github.sha }}"
           echo "提交信息: ${{ github.event.head_commit.message }}"
           echo "提交作者: ${{ github.event.head_commit.author.name }}"
+          GITHASH=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "GITHASH=$GITHASH" >> $GITHUB_ENV
+          echo "GITHASH (前7位): $GITHASH"
       

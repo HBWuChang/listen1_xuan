@@ -13,6 +13,14 @@ jobs:
     if: "contains(github.event.head_commit.message, 'macos')"
     runs-on: macos-latest
     steps:
+      - name: Output Commit Information
+        run: |
+          echo "触发此次action的提交ID: ${{ github.sha }}"
+          echo "提交信息: ${{ github.event.head_commit.message }}"
+          echo "提交作者: ${{ github.event.head_commit.author.name }}"
+          GITHASH=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "GITHASH=$GITHASH" >> $GITHUB_ENV
+          echo "GITHASH (前7位): $GITHASH"
       - uses: actions/checkout@v3
       
       - uses: subosito/flutter-action@v2
@@ -33,7 +41,7 @@ jobs:
       - name: Build macOS app
         run: |
           dart pub global activate fastforge
-          fastforge release --name prod
+          fastforge release --name prod --dart-define=gitHash=${{ env.GITHASH }}
         
       # 从 pubspec.yaml 提取版本号
       - name: Extract Version from pubspec.yaml
@@ -45,19 +53,26 @@ jobs:
         
       - name: Debug Version
         run: echo "${{ env.VERSION }}"
+      
+      # 重命名文件以包含 GITHASH
+      - name: Rename macOS artifact
+        run: |
+          mv "dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos.zip" "dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-${GITHASH}.zip"
+        shell: bash
+          
           # 上传 .app 文件
       - name: Upload .app artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-app-artifact
-          path: dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos.zip
+          path: dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-${{ env.GITHASH }}.zip
           
       # 上传到 Release
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ env.VERSION }}
-          files: dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos.zip
+          files: dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-${{ env.GITHASH }}.zip
           prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

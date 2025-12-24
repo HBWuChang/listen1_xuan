@@ -13,6 +13,15 @@ jobs:
     if: "contains(github.event.head_commit.message, 'win')"
     runs-on: windows-latest
     steps:
+      - name: Output Commit Information
+        run: |
+          echo "触发此次action的提交ID: ${{ github.sha }}"
+          echo "提交信息: ${{ github.event.head_commit.message }}"
+          echo "提交作者: ${{ github.event.head_commit.author.name }}"
+          $GITHASH = "${{ github.sha }}".Substring(0,7)
+          echo "GITHASH=$GITHASH" >> $env:GITHUB_ENV
+          echo "GITHASH (前7位): $GITHASH"
+        shell: pwsh
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2
         with:
@@ -21,7 +30,7 @@ jobs:
       - run: flutter --version
       - run: flutter pub get
       
-      - run: flutter build windows
+      - run: flutter build windows --dart-define=gitHash=${{ env.GITHASH }}
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -30,7 +39,7 @@ jobs:
          # 打包构建产物为 ZIP 文件
       - name: Compress Build Artifacts
         run: |
-          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact.zip
+          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact-${{ env.GITHASH }}.zip
       # 从 pubspec.yaml 提取版本号
       - name: Extract Version from pubspec.yaml
         id: extract_version
@@ -45,7 +54,7 @@ jobs:
         uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ env.VERSION }}
-          files: build/windows-build-artifact.zip
+          files: build/windows-build-artifact-${{ env.GITHASH }}.zip
           prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
