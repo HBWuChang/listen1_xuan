@@ -136,6 +136,18 @@ jobs:
         shell: pwsh
       - name: Debug Version
         run: echo "${{ env.VERSION }}"
+      
+      # 删除该 Release 下所有旧的 APK 文件
+      - name: Delete Old APK Assets from Release
+        run: |
+          gh release view "${{ env.VERSION }}" --json assets --jq '.assets[].name' | grep -E '\.apk$' | while read asset; do
+            echo "Deleting old asset: $asset"
+            gh release delete-asset "${{ env.VERSION }}" "$asset" --yes || true
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+        
       # 上传新的资产到最新 Release
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2.3.2

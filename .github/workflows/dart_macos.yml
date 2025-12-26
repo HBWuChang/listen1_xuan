@@ -54,6 +54,17 @@ jobs:
       - name: Debug Version
         run: echo "${{ env.VERSION }}"
       
+      # 删除该 Release 下所有旧的 macOS 构建文件
+      - name: Delete Old macOS Assets from Release
+        run: |
+          gh release view "${{ env.VERSION }}" --json assets --jq '.assets[].name' | grep -E 'listen1_xuan-.+-macos-.+\.zip$' | while read asset; do
+            echo "Deleting old asset: $asset"
+            gh release delete-asset "${{ env.VERSION }}" "$asset" --yes || true
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+      
       # 重命名文件以包含 GITHASH
       - name: Rename macOS artifact
         run: |

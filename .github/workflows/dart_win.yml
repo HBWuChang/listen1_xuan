@@ -49,6 +49,20 @@ jobs:
         shell: pwsh
       - name: Debug Version
         run: echo "${{ env.VERSION }}"
+      
+      # 删除该 Release 下所有旧的 Windows 构建文件
+      - name: Delete Old Windows Assets from Release
+        run: |
+          gh release view "${{ env.VERSION }}" --json assets --jq '.assets[].name' | Select-String -Pattern 'windows-build-artifact-.+\.zip$' | ForEach-Object {
+            $asset = $_.Line.Trim()
+            Write-Host "Deleting old asset: $asset"
+            gh release delete-asset "${{ env.VERSION }}" "$asset" --yes 2>$null
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+        shell: pwsh
+        
       # 上传新的资产到最新 Release
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2.3.2
