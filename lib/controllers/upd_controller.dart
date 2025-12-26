@@ -20,6 +20,8 @@ import 'hyper_download_controller.dart';
 import 'routeController.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'settings_controller.dart';
+
 class UpdController extends GetxController {
   static const String buildGitHash = String.fromEnvironment('gitHash');
   @override
@@ -723,16 +725,18 @@ class UpdController extends GetxController {
   Future<void> checkReleasesUpdate() async {
     try {
       String localBuildNumber = buildGitHash;
-      final releases = await Github.getReleasesList();
+      List<GitHubRelease> releases = await Github.getReleasesList();
       if (releases.isEmpty) {
         showDebugSnackbar('未能获取 Releases 列表', null);
         return;
       }
-
-      final latestRelease = releases.firstWhere(
-        (release) => !release.prerelease,
-        orElse: () => releases.first,
-      );
+      // releases.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+      final latestRelease = Get.find<SettingsController>().getPreRelease
+          ? releases.first
+          : releases.firstWhere(
+              (release) => !release.prerelease,
+              orElse: () => releases.first,
+            );
       final latestBuild = _selectReleaseAsset(latestRelease);
       if (latestBuild == null) {
         showDebugSnackbar('未能获取最新版本的安装包信息', null);
@@ -740,7 +744,7 @@ class UpdController extends GetxController {
       }
       final latestBuildNumber = p
           .basenameWithoutExtension(latestBuild.name)
-          .split('_')
+          .split('-')
           .last;
 
       showDebugSnackbar(
@@ -833,19 +837,18 @@ class UpdController extends GetxController {
                         style: Get.theme.textTheme.bodyMedium,
                       ),
                     ),
-                    if (!isEmpty(release.bodyText))
-                      FittedBox(
-                        child: Text(
-                          '${release.bodyText}',
-                          maxLines: 1,
-                          style: Get.theme.textTheme.bodySmall,
-                        ),
-                      ),
                   ],
                 ),
                 trailing: IconButton(
                   onPressed: controller.peek,
                   icon: Icon(Icons.minimize_rounded),
+                ),
+              ),
+              FittedBox(
+                child: Text(
+                  '构建hash:${p.basenameWithoutExtension(latestBuild.name).split('-').last}',
+                  maxLines: 1,
+                  style: Get.theme.textTheme.bodySmall,
                 ),
               ),
               Row(
@@ -877,7 +880,7 @@ class UpdController extends GetxController {
                               isUpdating.value = true;
                               progressText.value = '准备下载';
                               await _downloadAndUpdateRelease(
-                                release,
+                                latestBuild,
                                 isUpdating,
                                 progressText,
                               );
@@ -905,7 +908,7 @@ class UpdController extends GetxController {
 
   /// 下载并更新 Release
   Future<void> _downloadAndUpdateRelease(
-    GitHubRelease release,
+    ReleaseAsset latestBuild,
     RxBool isUpdating,
     RxString progressText,
   ) async {
@@ -913,20 +916,7 @@ class UpdController extends GetxController {
       progressText.value = '获取链接';
 
       // 根据平台选择下载链接和对应的 asset
-      String? downloadUrl = _selectReleaseAssetUrl(release);
-      if (downloadUrl == null) {
-        showWarningSnackbar('暂未支持当前平台', null);
-        isUpdating.value = false;
-        return;
-      }
-
-      // 获取对应的 asset 对象，用于获取 digest（哈希值）
-      ReleaseAsset? selectedAsset = _selectReleaseAsset(release);
-      if (selectedAsset == null) {
-        showWarningSnackbar('未找到对应的安装包信息', null);
-        isUpdating.value = false;
-        return;
-      }
+      String downloadUrl = latestBuild.browserDownloadUrl;
 
       final tempPath = (await xuanGetdownloadDirectory()).path;
       final fileName = downloadUrl.split('/').last;
@@ -936,7 +926,7 @@ class UpdController extends GetxController {
       progressText.value = '检查本地';
       final needDownload = await _checkReleaseFileHash(
         filePath,
-        selectedAsset.digest,
+        latestBuild.digest,
       );
 
       if (!needDownload) {
@@ -1057,12 +1047,6 @@ class UpdController extends GetxController {
     }
 
     return null;
-  }
-
-  /// 选择对应平台的 Release Asset 下载链接
-  String? _selectReleaseAssetUrl(GitHubRelease release) {
-    final asset = _selectReleaseAsset(release);
-    return asset?.browserDownloadUrl;
   }
 
   /// 处理 Release 更新

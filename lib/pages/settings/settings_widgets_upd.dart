@@ -68,6 +68,15 @@ Widget updSettingsTile(BuildContext context) {
             },
             child: const Text('清除安装包缓存'),
           ),
+        Obx(
+          () => SwitchListTile(
+            title: const Text('获取PreRelease更新'),
+            value: Get.find<SettingsController>().getPreRelease,
+            onChanged: (value) {
+              Get.find<SettingsController>().getPreRelease = value;
+            },
+          ),
+        ),
       ].map((e) => Padding(padding: EdgeInsets.all(8.0), child: e)),
     ],
   );

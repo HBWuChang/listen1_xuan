@@ -280,6 +280,15 @@ class SettingsController extends GetxController {
     settings[useDebugModeKey] = value;
   }
 
+  static const String getPreReleaseKey = 'getPreRelease';
+  bool get getPreRelease {
+    return settings[getPreReleaseKey] ?? false;
+  }
+
+  set getPreRelease(bool value) {
+    settings[getPreReleaseKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
