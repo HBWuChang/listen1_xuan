@@ -18,12 +18,12 @@ import '../models/ReleaseAsset.dart';
 import 'DioController.dart';
 import 'hyper_download_controller.dart';
 import 'routeController.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 import 'settings_controller.dart';
 
 class UpdController extends GetxController {
   static const String buildGitHash = String.fromEnvironment('gitHash');
+  static const bool cronetHttpNoPlay = bool.fromEnvironment('cronetHttpNoPlay');
   @override
   void onInit() {
     super.onInit();
@@ -1094,10 +1094,40 @@ class UpdController extends GetxController {
         }
       }
     } else if (isAndroid) {
-      for (var asset in assets) {
-        if (asset.name.toLowerCase().endsWith('.apk')) {
-          return asset;
+      List<ReleaseAsset> apkAssets = assets
+          .where((asset) => asset.name.toLowerCase().endsWith('.apk'))
+          .toList();
+      if (apkAssets.isNotEmpty) {
+        switch (SysInfo.kernelArchitecture.name) {
+          case "ARM64":
+            apkAssets = apkAssets
+                .where((i) => i.name.toString().contains("arm64"))
+                .toList();
+            break;
+          case "ARM":
+            apkAssets = apkAssets
+                .where((i) => i.name.toString().contains("armeabi"))
+                .toList();
+            break;
+          case "X86_64":
+            apkAssets = apkAssets
+                .where((i) => i.name.toString().contains("x86_64"))
+                .toList();
+            break;
+          default:
+            apkAssets = apkAssets;
         }
+        apkAssets.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        if (cronetHttpNoPlay) {
+          apkAssets.removeWhere(
+            (asset) => asset.name.contains("without.embedded.Cronet"),
+          );
+        } else {
+          apkAssets.removeWhere(
+            (asset) => !asset.name.contains("without.embedded.Cronet"),
+          );
+        }
+        return apkAssets.isNotEmpty ? apkAssets.first : null;
       }
     }
 
