@@ -1,7 +1,7 @@
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:listen1_xuan/const.dart';
 import 'package:listen1_xuan/funcs.dart';
-
+import 'package:share_plus/share_plus.dart';
 import 'controllers/controllers.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
@@ -43,8 +43,6 @@ Future<dynamic> song_dialog(
   final dialogWidth = screenSize.width * 0.5;
   final dialogHeight = screenSize.height * 1;
   bool horizon = screenSize.height > screenSize.width ? false : true;
-  debugPrint("horizon:$horizon");
-  debugPrint("position:$position");
   XSearchController xSearchController = Get.find<XSearchController>();
   return await showDialog(
     context: context,
@@ -248,10 +246,9 @@ Future<dynamic> song_dialog(
                         launchUrl(Uri.parse(track.source_url ?? ''));
                       },
                       onLongPress: () {
-                        Clipboard.setData(
-                          ClipboardData(text: track.source_url ?? ''),
+                        SharePlus.instance.share(
+                          ShareParams(text: '${track.source_url ?? ''}'),
                         );
-                        showSuccessSnackbar('歌曲链接已复制到剪切板', null);
                       },
                     ),
                   ),
@@ -261,8 +258,7 @@ Future<dynamic> song_dialog(
                       onTap: () {
                         String appLink = Get.find<Applinkscontroller>()
                             .getShareAppLink(track);
-                        Clipboard.setData(ClipboardData(text: appLink));
-                        showSuccessSnackbar('已复制分享链接到剪切板', null);
+                        SharePlus.instance.share(ShareParams(text: appLink));
                       },
                       onLongPress: null,
                     ),

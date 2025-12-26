@@ -21,7 +21,7 @@ import 'routeController.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class UpdController extends GetxController {
-  static const String buildGitHash=String.fromEnvironment('gitHash');
+  static const String buildGitHash = String.fromEnvironment('gitHash');
   @override
   void onInit() {
     super.onInit();
@@ -722,20 +722,26 @@ class UpdController extends GetxController {
   /// 如果有新版本，弹出更新对话框，并删除除最新版本外的其他缓存文件
   Future<void> checkReleasesUpdate() async {
     try {
-      final packageInfo = await PackageInfo.fromPlatform();
-      int localBuildNumber = int.parse(packageInfo.buildNumber);
-      if (isAndroid) localBuildNumber = localBuildNumber % 100;
+      String localBuildNumber = buildGitHash;
       final releases = await Github.getReleasesList();
       if (releases.isEmpty) {
         showDebugSnackbar('未能获取 Releases 列表', null);
         return;
       }
 
-      final latestRelease = releases.first;
-
-      final latestBuildNumber = int.parse(
-        latestRelease.tagName.split('+').last,
+      final latestRelease = releases.firstWhere(
+        (release) => !release.prerelease,
+        orElse: () => releases.first,
       );
+      final latestBuild = _selectReleaseAsset(latestRelease);
+      if (latestBuild == null) {
+        showDebugSnackbar('未能获取最新版本的安装包信息', null);
+        return;
+      }
+      final latestBuildNumber = p
+          .basenameWithoutExtension(latestBuild.name)
+          .split('_')
+          .last;
 
       showDebugSnackbar(
         '本地版本 buildNumber: $localBuildNumber, 最新版本 buildNumber: $latestBuildNumber',
@@ -747,9 +753,9 @@ class UpdController extends GetxController {
         await delReleasesCache(oldReleases);
       }
 
-      if (localBuildNumber < latestBuildNumber) {
+      if (localBuildNumber != latestBuildNumber) {
         // 有新版本可用
-        _showReleaseUpdateDialog(latestRelease);
+        _showReleaseUpdateDialog(latestRelease, latestBuild);
       }
     } catch (e) {
       // debugPrint('检查 Releases 更新失败: $e');
@@ -758,7 +764,10 @@ class UpdController extends GetxController {
   }
 
   /// 显示 Release 更新对话框
-  void _showReleaseUpdateDialog(GitHubRelease release) {
+  void _showReleaseUpdateDialog(
+    GitHubRelease release,
+    ReleaseAsset latestBuild,
+  ) {
     // 用于控制下载进度和加载状态
     RxBool isUpdating = false.obs;
     RxString progressText = '准备下载'.obs;
@@ -1023,8 +1032,8 @@ class UpdController extends GetxController {
       return null;
     }
 
-    final assets = release.assets;
-
+    List<ReleaseAsset> assets = release.assets;
+    assets.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     if (isWindows) {
       for (var asset in assets) {
         if (asset.name.toLowerCase().contains('windows') &&
@@ -1052,41 +1061,8 @@ class UpdController extends GetxController {
 
   /// 选择对应平台的 Release Asset 下载链接
   String? _selectReleaseAssetUrl(GitHubRelease release) {
-    if (release.assets.isEmpty) {
-      return null;
-    }
-
-    final assets = release.assets;
-
-    if (isWindows) {
-      // 查找 Windows 版本的 exe 或 zip
-      for (var asset in assets) {
-        if (asset.name.toLowerCase().contains('windows') &&
-            (asset.name.endsWith('.exe') || asset.name.endsWith('.zip'))) {
-          return asset.browserDownloadUrl;
-        }
-      }
-    } else if (isMacOS) {
-      // 查找 macOS 版本的 dmg 或 zip
-      for (var asset in assets) {
-        if (asset.name.toLowerCase().contains('macos') &&
-            asset.name.endsWith('.zip')) {
-          return asset.browserDownloadUrl;
-        }
-      }
-    } else if (isAndroid) {
-      // 查找 Android 版本的 apk
-      for (var asset in assets) {
-        if (asset.name.toLowerCase().endsWith('.apk')) {
-          return asset.browserDownloadUrl;
-        }
-      }
-    } else if (isIos) {
-      // iOS 版本通常需要从 App Store 更新
-      return null;
-    }
-
-    return null;
+    final asset = _selectReleaseAsset(release);
+    return asset?.browserDownloadUrl;
   }
 
   /// 处理 Release 更新
