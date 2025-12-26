@@ -685,11 +685,66 @@ class UpdController extends GetxController {
 
   /// 删除 releases 缓存文件
   /// [releases] 需要删除缓存的 releases 列表
-  Future<void> delReleasesCache(List<GitHubRelease> releases) async {
+  Future<void> delReleasesCache(
+    List<GitHubRelease> releases,
+    String latestBuildNumber,
+  ) async {
     try {
       final tempPath = (await xuanGetdownloadDirectory()).path;
       int deletedCount = 0;
-
+      late List<File> toDelFiles;
+      if (isWindows) {
+        toDelFiles = await Directory(tempPath)
+            .list()
+            .where(
+              (entity) =>
+                  entity is File &&
+                  p
+                      .basenameWithoutExtension(entity.path)
+                      .contains('windows-build-artifact') &&
+                  !p
+                      .basenameWithoutExtension(entity.path)
+                      .contains(latestBuildNumber),
+            )
+            .cast<File>()
+            .toList();
+      } else if (isMacOS) {
+        toDelFiles = await Directory(tempPath)
+            .list()
+            .where(
+              (entity) =>
+                  entity is File &&
+                  p.basenameWithoutExtension(entity.path).contains('macos') &&
+                  !p
+                      .basenameWithoutExtension(entity.path)
+                      .contains(latestBuildNumber),
+            )
+            .cast<File>()
+            .toList();
+      } else if (isAndroid) {
+        toDelFiles = await Directory(tempPath)
+            .list()
+            .where(
+              (entity) =>
+                  entity is File &&
+                  p.basename(entity.path).contains('.apk') &&
+                  !p
+                      .basenameWithoutExtension(entity.path)
+                      .contains(latestBuildNumber),
+            )
+            .cast<File>()
+            .toList();
+      } else {
+        toDelFiles = [];
+      }
+      for (var file in toDelFiles) {
+        try {
+          await file.delete();
+          deletedCount++;
+        } catch (e) {
+          logger.e('删除 Release 缓存文件 ${file.path} 失败: $e');
+        }
+      }
       // 遍历所有 releases
       for (final release in releases) {
         // 遍历每个 release 中的 assets
@@ -754,7 +809,7 @@ class UpdController extends GetxController {
       // 删除除最新版本外的其他缓存文件
       if (releases.length > 1) {
         final oldReleases = releases.sublist(1);
-        await delReleasesCache(oldReleases);
+        await delReleasesCache(oldReleases, latestBuildNumber);
       }
 
       if (localBuildNumber != latestBuildNumber) {
