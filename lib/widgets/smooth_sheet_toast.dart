@@ -24,7 +24,7 @@ class ToastController {
   VoidCallback? _peekListener;
   bool _dismissListenerAttached = false;
   bool _peekListenerAttached = false;
-  
+
   /// 标记当前是否处于"不可滑动关闭"状态
   /// true: 不可被滑动关闭，滑到hidden位置自动返回peek位置
   /// false: 可被滑动关闭，到hidden位置自动dismiss
@@ -102,7 +102,7 @@ class ToastController {
   /// 同时禁用自动dismiss监听器
   void enterLockedMode() {
     if (_isLockedMode) return;
-    
+
     _isLockedMode = true;
     detachDismissListener();
     attachAutoReturnToPeekListener();
@@ -112,7 +112,7 @@ class ToastController {
   /// 同时启用自动dismiss监听器
   void exitLockedMode() {
     if (!_isLockedMode) return;
-    
+
     _isLockedMode = false;
     detachAutoReturnToPeekListener();
     attachDismissListener();
@@ -320,7 +320,7 @@ class SmoothSheetToast {
             .then((_) {
               // 动画完成后，添加自动dismiss监听器
               _toastEntry.toastController?.attachDismissListener();
-              if(_toastEntry.autoInLockMode){
+              if (_toastEntry.autoInLockMode) {
                 _toastEntry.toastController?.enterLockedMode();
               }
             });
@@ -333,6 +333,10 @@ class SmoothSheetToast {
         _fadeTimer = Timer(_toastEntry.fadeDuration, () {
           removeToast(_toastEntry.id);
         });
+      });
+    } else {
+      _timer = Timer(_toastEntry.duration, () {
+        _toastEntry.toastController?.peek();
       });
     }
   }
@@ -511,7 +515,7 @@ class SmoothSheetToast {
     builder,
     SheetToastSide side = SheetToastSide.right,
     bool autoDismiss = false,
-    bool inLockMode=false,
+    bool inLockMode = false,
     Duration toastDuration = const Duration(seconds: 3),
     Duration fadeDuration = const Duration(milliseconds: 350),
     double borderRadius = 16.0,
@@ -610,7 +614,7 @@ class SmoothSheetToast {
             fadeDuration: fadeDuration,
             controller: sheetController,
             autoDismiss: autoDismiss,
-            autoInLockMode:inLockMode,
+            autoInLockMode: inLockMode,
             toastWidth: showToastWidth,
             onDismiss: onDismiss,
             toastController: actualController,

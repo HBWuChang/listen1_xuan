@@ -599,7 +599,7 @@ class PlayController extends GetxController
     if (key == nowPlayingTrackKey) setNowPlayingTrack();
   }
 
-  void loadDatas() {
+  void loadDatas({bool fromSettings = false}) {
     _player_settings.value =
         Get.find<SettingsController>().PlayController_player_settings;
     setNowPlayingTrack();
@@ -608,6 +608,11 @@ class PlayController extends GetxController
     songReplaceSettingsSkipOnceSave = true;
     songReplaceSettings.value =
         Get.find<SettingsController>().PlayController_play_replace;
+    if (fromSettings) {
+      if (nowPlayingTrackRx.value != null) {
+        playsong(nowPlayingTrackRx.value!, start: music_player.state.playing);
+      }
+    }
   }
 
   List<Track> get current_playing => currentPlayingRx.toList();

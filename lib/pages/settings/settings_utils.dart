@@ -124,7 +124,7 @@ Future<void> importSettingsFromFile(
     // logger.d('3');
     await Get.find<SettingsController>().loadSettings();
     // logger.d('4');
-    Get.find<PlayController>().loadDatas();
+    Get.find<PlayController>().loadDatas(fromSettings: true);
     // logger.d('5');
     Get.find<MyPlayListController>().loadDatas();
     // logger.d('6');

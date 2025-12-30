@@ -932,6 +932,9 @@ class UpdController extends GetxController {
                           : () async {
                               // 进入锁定模式，防止用户滑动时关闭Toast
                               controller.enterLockedMode();
+                              Future.delayed(Duration(milliseconds: 2000), () {
+                                controller.peek();
+                              });
                               isUpdating.value = true;
                               progressText.value = '准备下载';
                               await _downloadAndUpdateRelease(
