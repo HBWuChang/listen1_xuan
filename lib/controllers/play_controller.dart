@@ -270,7 +270,7 @@ class PlayController extends GetxController
         songReplaceSettingsSkipOnceSave = false;
         return;
       }
-      await SharedPreferencesAsync().setString(
+      await Get.find<SettingsController>().setString(
         SettingsController.PlayController_play_replaceKey,
         kDebugMode
             ? jsonEncode(value.toJson())
@@ -560,15 +560,16 @@ class PlayController extends GetxController
   // }
 
   Future<void> _saveSingleSetting(String key) async {
-    final prefs = SharedPreferencesAsync();
+    final s = Get.find<SettingsController>();
+
     switch (key) {
       case 'player-settings':
         String jsonString = jsonEncode(_player_settings);
-        await prefs.setString(key, jsonString);
+        await s.setString(key, jsonString);
         break;
       case 'current-playing':
         String jsonString = jsonEncode(currentPlayingRx);
-        await prefs.setString(key, jsonString);
+        await s.setString(key, jsonString);
         break;
       default:
         throw Exception('Unknown key: $key');

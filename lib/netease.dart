@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'package:get/get.dart' hide FormData;
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
@@ -11,6 +12,7 @@ import 'package:html/parser.dart' show parse;
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'controllers/DioController.dart';
 import 'controllers/play_controller.dart';
+import 'controllers/settings_controller.dart';
 import 'lowebutil.dart';
 import 'settings.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -319,16 +321,16 @@ class Netease {
     const nuidName = '_ntes_nuid';
     const nnidName = '_ntes_nnid';
 
-    final prefs = SharedPreferencesAsync();
-    if (!await prefs.containsKey(nuidName)) {
+    final s = Get.find<SettingsController>();
+    if (!await s.containsKey(nuidName)) {
       final nuidValue = _createSecretKey(32);
       final nnidValue = '$nuidValue,${DateTime.now().millisecondsSinceEpoch}';
-      final expire =
-          DateTime.now().add(Duration(days: 365 * 100)).millisecondsSinceEpoch /
-          1000;
+      // final expire =
+      //     DateTime.now().add(Duration(days: 365 * 100)).millisecondsSinceEpoch /
+      //     1000;
 
-      await prefs.setString(nuidName, nuidValue);
-      await prefs.setString(nnidName, nnidValue);
+      await s.setString(nuidName, nuidValue);
+      await s.setString(nnidName, nnidValue);
       callback(null);
     } else {
       callback(null);

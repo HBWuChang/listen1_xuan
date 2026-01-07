@@ -4,19 +4,20 @@ part of '../../settings.dart';
 Future<Map<String, dynamic>> outputAllSettingsToFile([
   bool toJsonString = false,
 ]) async {
-  final prefs = SharedPreferencesAsync();
+  final s = Get.find<SettingsController>();
+
   Map<String, dynamic> settings = {};
-  final allkeys = await prefs.getKeys();
+  final allkeys = await s.getKeys();
   for (var key in allkeys) {
     switch (key) {
       case 'playerlists':
-        settings[key] = await prefs.getStringList(key);
+        settings[key] = await s.getStringList(key);
         break;
       case 'auto_choose_source_list':
-        settings[key] = await prefs.getStringList(key);
+        settings[key] = await s.getStringList(key);
         break;
       case 'favoriteplayerlists':
-        settings[key] = await prefs.getStringList(key);
+        settings[key] = await s.getStringList(key);
         break;
       case 'settings':
         if (toJsonString) continue;
@@ -28,10 +29,10 @@ Future<Map<String, dynamic>> outputAllSettingsToFile([
             key.contains('token'))
           continue;
         try {
-          settings[key] = jsonDecode(await prefs.getString(key) ?? '{}');
+          settings[key] = jsonDecode(await s.getString(key) ?? '{}');
         } catch (e) {
           try {
-            settings[key] = await prefs.getString(key);
+            settings[key] = await s.getString(key);
           } catch (e) {
             logger.e('Error getting key $key: $e');
           }
@@ -66,20 +67,21 @@ Future<void> importSettingsFromFile(
 [bool fromjson = false, Map<String, dynamic> jsonString = const {}]) async {
   // logger.d('1');
   Future<void> _sets(Map<String, dynamic> settings) async {
-    final prefs = SharedPreferencesAsync();
+    final s = Get.find<SettingsController>();
+
     // logger.d('2');
 
     await Future.wait(
       settings.keys.map((key) async {
         switch (key) {
           case 'playerlists':
-            await prefs.setStringList(key, settings[key].cast<String>());
+            await s.setStringList(key, settings[key].cast<String>());
             break;
           case 'auto_choose_source_list':
-            await prefs.setStringList(key, settings[key].cast<String>());
+            await s.setStringList(key, settings[key].cast<String>());
             break;
           case 'favoriteplayerlists':
-            await prefs.setStringList(key, settings[key].cast<String>());
+            await s.setStringList(key, settings[key].cast<String>());
             break;
           case 'settings':
             break;
@@ -88,7 +90,7 @@ Future<void> importSettingsFromFile(
               double nowVolume = Get.find<PlayController>().currentVolume;
               final t = settings[key];
               t['volume'] = nowVolume;
-              await prefs.setString(
+              await s.setString(
                 key,
                 kDebugMode
                     ? jsonEncode(t)
@@ -101,7 +103,7 @@ Future<void> importSettingsFromFile(
           default:
             try {
               if (settings[key] is String) throw "String! :${settings[key]}";
-              await prefs.setString(
+              await s.setString(
                 key,
                 kDebugMode
                     ? jsonEncode(settings[key])
@@ -112,7 +114,7 @@ Future<void> importSettingsFromFile(
               );
             } catch (e) {
               try {
-                await prefs.setString(key, settings[key].toString());
+                await s.setString(key, settings[key].toString());
               } catch (e) {
                 logger.e('Error saving key $key: $e');
               }
@@ -208,8 +210,8 @@ Map<String, dynamic> settings_getsettings() {
 
 Future<String?> outputPlatformToken(String platform) async {
   if (platform == PlantformCodes.github) {
-    final prefs = SharedPreferencesAsync();
-    return await prefs.getString('githubOauthAccessKey');
+    final s = Get.find<SettingsController>();
+    return await s.getString('githubOauthAccessKey');
   }
   return Get.find<SettingsController>().settings[platform];
 }
@@ -221,8 +223,8 @@ Future<void> savePlatformToken(
 }) async {
   try {
     if (platform == 'github') {
-      final prefs = SharedPreferencesAsync();
-      await prefs.setString('githubOauthAccessKey', token);
+      final s = Get.find<SettingsController>();
+      await s.setString('githubOauthAccessKey', token);
       return;
     }
     final settings = Get.find<SettingsController>().settings;

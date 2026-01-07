@@ -42,8 +42,9 @@ class Github {
         res = response.data.toString();
       }
       final accessToken = response.data['access_token'];
-      final prefs = SharedPreferencesAsync();
-      await prefs.setString('githubOauthAccessKey', accessToken);
+      final s = Get.find<SettingsController>();
+
+      await s.setString('githubOauthAccessKey', accessToken);
 
       showInfoSnackbar('设置成功', null);
     } catch (e) {
@@ -106,8 +107,9 @@ class Github {
   static Future<int> updateStatus() async {
     // final accessToken = localStorage.getItem('githubOauthAccessKey');
     // final accessToken = null; // Replace with actual access token retrieval
-    final prefs = SharedPreferencesAsync();
-    final accessToken = await prefs.getString('githubOauthAccessKey');
+    final s = Get.find<SettingsController>();
+
+    final accessToken = await s.getString('githubOauthAccessKey');
     if (accessToken == null) {
       status = 0;
     } else {
@@ -193,8 +195,8 @@ class Github {
       return json.decode(jsonString);
     } else {
       final url = gistFiles['listen1_backup.json']['raw_url'];
-      final prefs = SharedPreferencesAsync();
-      final accessToken = await prefs.getString('githubOauthAccessKey');
+      final s = Get.find<SettingsController>();
+      final accessToken = await s.getString('githubOauthAccessKey');
       final response = await (usedefault ? Dio() : dioWithProxyAdapter).get(
         url.replaceAll('https://', 'https://h3.040905.xyz/default/https/'),
         options: Options(
@@ -209,8 +211,8 @@ class Github {
   }
 
   static Future<List<dynamic>> listExistBackup() async {
-    final prefs = SharedPreferencesAsync();
-    final accessToken = await prefs.getString('githubOauthAccessKey');
+    final s = Get.find<SettingsController>();
+    final accessToken = await s.getString('githubOauthAccessKey');
     final response = await (usedefault ? Dio() : dioWithProxyAdapter).get(
       '$API_URL/gists',
       options: Options(
@@ -241,8 +243,8 @@ class Github {
       method = 'post';
       url = '$API_URL/gists';
     }
-    final prefs = SharedPreferencesAsync();
-    final accessToken = await prefs.getString('githubOauthAccessKey');
+    final s = Get.find<SettingsController>();
+    final accessToken = await s.getString('githubOauthAccessKey');
     await (usedefault ? Dio() : dioWithProxyAdapter).request(
       url,
       options: Options(
@@ -264,8 +266,8 @@ class Github {
   static Future<Map<String, dynamic>> importMySettingsFromGist(
     String gistId,
   ) async {
-    final prefs = SharedPreferencesAsync();
-    final accessToken = await prefs.getString('githubOauthAccessKey');
+    final s = Get.find<SettingsController>();
+    final accessToken = await s.getString('githubOauthAccessKey');
     final response = await (usedefault ? Dio() : dioWithProxyAdapter).get(
       '$API_URL/gists/$gistId',
       options: Options(

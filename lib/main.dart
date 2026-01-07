@@ -49,6 +49,7 @@ import 'controllers/theme.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:hive/hive.dart';
 import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 part 'main_testBtn.dart';
@@ -140,7 +141,7 @@ void main() async {
     SettingsController(),
     permanent: true,
   );
-  await settingsController.loadSettings();
+  await settingsController.init();
   Get.put(RouteController(), permanent: true);
   Get.put(DioController(), permanent: true);
   CacheController cacheController = Get.put(CacheController(), permanent: true);

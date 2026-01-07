@@ -23,8 +23,8 @@ class MyPlayListController extends GetxController {
   void onInit() {
     super.onInit();
     debounce(playerlists, (callback) async {
-      final prefs = SharedPreferencesAsync();
-      await prefs.setStringList('playerlists', playerlists.keys.toList());
+      final s = Get.find<SettingsController>();
+      await s.setStringList('playerlists', playerlists.keys.toList());
       for (var playlist in playerlists.entries) {
         String jsonString = kDebugMode
             ? jsonEncode(playlist.value.toJson())
@@ -32,12 +32,12 @@ class MyPlayListController extends GetxController {
                 (PlayList pl) => jsonEncode(pl.toJson()),
                 playlist.value,
               );
-        await prefs.setString(playlist.key, jsonString);
+        await s.setString(playlist.key, jsonString);
       }
     });
     debounce(favoriteplayerlists, (callback) async {
-      final prefs = SharedPreferencesAsync();
-      await prefs.setStringList(
+      final s = Get.find<SettingsController>();
+      await s.setStringList(
         'favoriteplayerlists',
         favoriteplayerlists.keys.toList(),
       );
@@ -48,7 +48,7 @@ class MyPlayListController extends GetxController {
                 (PlayList pl) => jsonEncode(pl.toJson()),
                 playlist.value,
               );
-        await prefs.setString(playlist.key, jsonString);
+        await s.setString(playlist.key, jsonString);
       }
     });
   }

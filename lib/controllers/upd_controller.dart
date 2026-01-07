@@ -50,8 +50,8 @@ class UpdController extends GetxController {
 
   /// 获取 GitHub OAuth Token
   Future<String?> _getGithubToken() async {
-    final prefs = SharedPreferencesAsync();
-    return await prefs.getString('githubOauthAccessKey');
+    final s = Get.find<SettingsController>();
+    return await s.getString('githubOauthAccessKey');
   }
 
   /// 获取 GitHub API 请求头

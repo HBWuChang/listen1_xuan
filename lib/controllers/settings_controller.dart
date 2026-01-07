@@ -2,8 +2,12 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
+import 'package:hive/hive.dart';
+
+import 'package:path/path.dart' as p;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -11,6 +15,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/models/websocket_message.dart';
 import 'package:listen1_xuan/play.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:window_manager/window_manager.dart';
@@ -27,6 +32,10 @@ import '../settings.dart';
 import 'myPlaylist_controller.dart';
 
 class SettingsController extends GetxController {
+  static const String hiveStoreKey = 'hive_store';
+  bool useHive = false;
+  Box<dynamic>? box;
+  final prefs = SharedPreferencesAsync();
   final settings = <String, dynamic>{}.obs;
   static const String lyricBorderRadiusHKey = 'lyric_border_radius_h';
   static const String lyricBorderRadiusVKey = 'lyric_border_radius_v';
@@ -319,6 +328,31 @@ class SettingsController extends GetxController {
     });
   }
 
+  Future<void> init() async {
+    await initFlutterHive();
+    await loadSettings();
+  }
+
+  Future<void> initFlutterHive() async {
+    try {
+      if (isWindows) {
+        final path = p.join(
+          ((await getApplicationSupportDirectory()).path),
+          'hive_data',
+        );
+        if (!(await Directory(path).exists())) {
+          await Directory(path).create(recursive: true);
+        }
+        logger.i(path);
+        Hive.init(path);
+        box = await Hive.openBox(SettingsController.hiveStoreKey);
+        useHive = true;
+      }
+    } catch (e) {
+      logger.e('Init Hive failed:$e');
+    }
+  }
+
   Future<void> loadSettings() async {
     if (kDebugMode) {
       await _loadSettingsDir();
@@ -329,8 +363,6 @@ class SettingsController extends GetxController {
 
   /// 直接顺序加载设置（不使用 compute，用于 debug 模式）
   Future<void> _loadSettingsDir() async {
-    final prefs = SharedPreferencesAsync();
-
     // 顺序获取所有字符串数据
     final jsonString = await prefs.getString('settings');
     final localCacheListJson = await prefs.getString(
@@ -420,17 +452,15 @@ class SettingsController extends GetxController {
 
   /// 并行异步加载设置（使用 compute，用于 release 模式）
   Future<void> _loadSettingsAwait() async {
-    final prefs = SharedPreferencesAsync();
-
     // 第一批：并行获取所有字符串数据
     final results = await Future.wait([
-      prefs.getString('settings'),
-      prefs.getString(CacheController_localCacheListKey),
-      prefs.getString('player-settings'),
-      prefs.getString('current-playing'),
-      prefs.getStringList('playerlists'),
-      prefs.getStringList('favoriteplayerlists'),
-      prefs.getString(PlayController_play_replaceKey),
+      getString('settings'),
+      getString(CacheController_localCacheListKey),
+      getString('player-settings'),
+      getString('current-playing'),
+      getStringList('playerlists'),
+      getStringList('favoriteplayerlists'),
+      getString(PlayController_play_replaceKey),
     ]);
 
     final jsonString = results[0] as String?;
@@ -591,9 +621,8 @@ class SettingsController extends GetxController {
   }
 
   Future<void> saveSettings() async {
-    final prefs = SharedPreferencesAsync();
     String jsonString = jsonEncode(settings);
-    await prefs.setString('settings', jsonString);
+    await setString('settings', jsonString);
   }
 
   setSettings(Map<String, dynamic> settings) {
@@ -734,6 +763,87 @@ class SettingsController extends GetxController {
 
   set playVPlayBtnProcessControllerDuration(int value) {
     settings[playVPlayBtnProcessControllerDurationKey] = value;
+  }
+
+  bool get use => useHive && box != null;
+
+  // === HiveBox Or SharedPreferences ===
+  Future<String?> getString(String key) async {
+    if (use && box!.containsKey(key)) {
+      return box!.get(key) as String?;
+    } else {
+      String? ret = await prefs.getString(key);
+      if (use) {
+        await box!.put(key, ret);
+        await prefs.remove(key);
+      }
+      return ret;
+    }
+  }
+
+  Future<bool> containsKey(String key) async {
+    if (use && box!.containsKey(key)) {
+      return box!.containsKey(key);
+    } else {
+      bool ret = await prefs.containsKey(key);
+      if (use) {
+        var value = await prefs.getString(key);
+        await box!.put(key, value);
+        await prefs.remove(key);
+      }
+      return ret;
+    }
+  }
+
+  Future<void> setString(String key, String value) async {
+    if (use) {
+      await box!.put(key, value);
+    } else {
+      await prefs.setString(key, value);
+    }
+  }
+
+  Future<void> setStringList(String key, List<String> value) async {
+    if (use) {
+      await box!.put(key, value);
+    } else {
+      await prefs.setStringList(key, value);
+    }
+  }
+
+  Future<List<String>?> getStringList(String key) async {
+    if (use && box!.containsKey(key)) {
+      return List<String>.from(box!.get(key) as List);
+    } else {
+      List<String>? ret = await prefs.getStringList(key);
+      if (use) {
+        await box!.put(key, ret);
+        await prefs.remove(key);
+      }
+      return ret;
+    }
+  }
+
+  Future<Set<String>> getKeys({Set<String>? allowList}) async {
+    if (use) {
+      Set<String> perfsRes = await prefs.getKeys();
+      if (allowList != null) {
+        return box!.keys
+            .where((key) => allowList.contains(key))
+            .map((e) => e.toString())
+            .toSet()
+            .union(perfsRes);
+      } else {
+        return box!.keys.map((e) => e.toString()).toSet().union(perfsRes);
+      }
+    } else {
+      if (allowList != null) {
+        final allKeys = await prefs.getKeys();
+        return allKeys.where((key) => allowList.contains(key)).toSet();
+      } else {
+        return await prefs.getKeys();
+      }
+    }
   }
 }
 

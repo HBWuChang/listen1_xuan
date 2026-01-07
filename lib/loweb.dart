@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:async/async.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bl.dart';
 import 'controllers/play_controller.dart';
@@ -342,9 +343,14 @@ class MediaService {
     //   'success': (Function fn) => fn(),
     // };
     // shared_preferences
-    final prefs = SharedPreferencesAsync();
-    final tarData = jsonDecode((await prefs.getString(target))!)['tracks'];
-    final srcData = jsonDecode((await prefs.getString(source))!)['tracks'];
+    final SettingsController settingsController =
+        Get.find<SettingsController>();
+    final tarData = jsonDecode(
+      (await settingsController.getString(target))!,
+    )['tracks'];
+    final srcData = jsonDecode(
+      (await settingsController.getString(source))!,
+    )['tracks'];
     for (var tarTrack in tarData) {
       if (!srcData.any((srcTrack) => srcTrack['id'] == tarTrack['id'])) {
         myplaylist.addTrackToMyPlaylist(source, tarTrack);

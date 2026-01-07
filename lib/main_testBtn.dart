@@ -21,7 +21,22 @@ Widget get testBtn => Positioned.fill(
             FloatingActionButton(
               onPressed: () async {
                 try {
-                  logger.i(' ${UpdController.buildGitHash}');
+                  var box = await Hive.openBox(SettingsController.hiveStoreKey);
+                  await box.put('testKey', 'testValue');
+                  var value = box.get('testKey');
+                  logger.i('Hive test value: $value');
+                } catch (e) {
+                  logger.e(e);
+                }
+              },
+              child: Icon(Icons.system_update_alt),
+            ),
+            FloatingActionButton(
+              onPressed: () async {
+                try {
+                  var box = await Hive.openBox('testBox');
+                  await box.delete('testKey');
+                  logger.i('Hive test key deleted');
                 } catch (e) {
                   logger.e(e);
                 }

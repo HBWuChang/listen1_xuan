@@ -4,7 +4,7 @@ description: "Rewrite From listen1"
 # Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 2.2.5+30
+version: 2.3.0+32
 
 environment:
   sdk: ^3.8.1
@@ -99,6 +99,7 @@ dependencies:
   skeletonizer: ^2.1.1
   package_info_plus: ^9.0.0
   share_plus: ^12.0.1
+  hive: ^2.2.3
   # auto_updater: ^1.0.0
 dev_dependencies:
   flutter_test:

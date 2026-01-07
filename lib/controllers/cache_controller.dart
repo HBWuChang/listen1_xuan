@@ -71,8 +71,8 @@ class CacheController extends GetxController {
 
   /// 保存本地缓存列表
   Future<void> _saveLocalCacheList() async {
-    final prefs = SharedPreferencesAsync();
-    await prefs.setString(
+    final s = Get.find<SettingsController>();
+    await s.setString(
       _localCacheListKey,
       jsonEncode(Map<String, String>.from(_localCacheList)),
     );
