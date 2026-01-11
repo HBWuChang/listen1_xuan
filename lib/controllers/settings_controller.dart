@@ -364,15 +364,15 @@ class SettingsController extends GetxController {
   /// 直接顺序加载设置（不使用 compute，用于 debug 模式）
   Future<void> _loadSettingsDir() async {
     // 顺序获取所有字符串数据
-    final jsonString = await prefs.getString('settings');
-    final localCacheListJson = await prefs.getString(
+    final jsonString = await getString('settings');
+    final localCacheListJson = await getString(
       CacheController_localCacheListKey,
     );
-    final player_settings = await prefs.getString('player-settings');
-    final current_playing = await prefs.getString('current-playing');
-    final playlists = await prefs.getStringList('playerlists');
-    final favoritePlaylists = await prefs.getStringList('favoriteplayerlists');
-    final play_replace = await prefs.getString(PlayController_play_replaceKey);
+    final player_settings = await getString('player-settings');
+    final current_playing = await getString('current-playing');
+    final playlists = await getStringList('playerlists');
+    final favoritePlaylists = await getStringList('favoriteplayerlists');
+    final play_replace = await getString(PlayController_play_replaceKey);
 
     // 直接解析 JSON 数据（不使用 compute）
     if (jsonString != null) {
@@ -432,7 +432,7 @@ class SettingsController extends GetxController {
     MyPlayListController_favoriteplayerlists.clear();
 
     for (var playlist in playlists ?? []) {
-      final playlistJson = await prefs.getString(playlist);
+      final playlistJson = await getString(playlist);
       if (playlistJson != null) {
         final decoded = jsonDecode(playlistJson);
         MyPlayListController_playerlists[playlist] = PlayList.fromJson(decoded);
@@ -440,7 +440,7 @@ class SettingsController extends GetxController {
     }
 
     for (var playlist in favoritePlaylists ?? []) {
-      final playlistJson = await prefs.getString(playlist);
+      final playlistJson = await getString(playlist);
       if (playlistJson != null) {
         final decoded = jsonDecode(playlistJson);
         MyPlayListController_favoriteplayerlists[playlist] = PlayList.fromJson(
@@ -576,7 +576,7 @@ class SettingsController extends GetxController {
 
     for (var playlist in playlists ?? []) {
       playlistFutures.add(
-        prefs.getString(playlist).then((playlistJson) async {
+        getString(playlist).then((playlistJson) async {
           if (playlistJson != null) {
             final decoded = await compute(
               (String jsonStr) => jsonDecode(jsonStr),
@@ -591,7 +591,7 @@ class SettingsController extends GetxController {
 
     for (var playlist in favoritePlaylists ?? []) {
       playlistFutures.add(
-        prefs.getString(playlist).then((playlistJson) async {
+        getString(playlist).then((playlistJson) async {
           if (playlistJson != null) {
             final decoded = await compute(
               (String jsonStr) => jsonDecode(jsonStr),
