@@ -765,6 +765,26 @@ class SettingsController extends GetxController {
     settings[playVPlayBtnProcessControllerDurationKey] = value;
   }
 
+  static const String horPartPercentagesKey = 'hor_part_percentages';
+  List<double> get horPartPercentages {
+    if (settings[horPartPercentagesKey] == null ||
+        (settings[horPartPercentagesKey] is! List) ||
+        (settings[horPartPercentagesKey] as List).length != 2) {
+      return [0.2, 0.8];
+    }
+    return settings[horPartPercentagesKey]
+        .map<double>((e) => e as double)
+        .toList();
+  }
+
+  set horPartPercentages(List<double> value) {
+    if (value.reduce((v, e) => v + e) == 1.0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        settings[horPartPercentagesKey] = value;
+      });
+    }
+  }
+
   bool get use => useHive && box != null;
 
   // === HiveBox Or SharedPreferences ===

@@ -100,6 +100,10 @@ dependencies:
   package_info_plus: ^9.0.0
   share_plus: ^12.0.1
   hive: ^2.2.3
+  resizable_widget:
+    git:
+      url: https://github.com/HBWuChang/resizable_widget.git
+      # 替换为 HTTPS URL 而不是 SSH
   # auto_updater: ^1.0.0
 dev_dependencies:
   flutter_test:

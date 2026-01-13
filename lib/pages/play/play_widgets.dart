@@ -215,7 +215,7 @@ Widget buildPlayPauseButton(double expandProgress) {
           duration: Duration(milliseconds: 200),
           child: Obx(
             () => _playController.loading
-                ? CircularProgressIndicator()
+                ? CircularProgressIndicator(strokeWidth: 4.w)
                 : StreamBuilder<MediaState>(
                     stream: _mediaStateStream,
                     builder: (context, snapshot) {
@@ -223,7 +223,7 @@ Widget buildPlayPauseButton(double expandProgress) {
                       final duration =
                           mediaState?.duration.inMilliseconds.toDouble() ?? 0.0;
                       if (duration <= 0) {
-                        return CircularProgressIndicator();
+                        return CircularProgressIndicator(strokeWidth: 4.w);
                       }
                       final position =
                           mediaState?.position.inMilliseconds.toDouble() ?? 0.0;
@@ -247,7 +247,7 @@ Widget buildPlayPauseButton(double expandProgress) {
                             angle: curvedValue * 2 * pi,
                             child: CircularProgressIndicator(
                               value: progress,
-                              strokeWidth: 8.w,
+                              strokeWidth: 4.w,
                             ),
                           );
                         },
