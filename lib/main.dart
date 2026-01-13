@@ -51,7 +51,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:hive/hive.dart';
 import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 part 'main_testBtn.dart';
 part 'pages/main/main_widgets.dart';
 part 'pages/main/main_utils.dart';
