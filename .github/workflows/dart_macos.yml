@@ -36,6 +36,12 @@ jobs:
         run: |
           cd macos
           pod install
+      
+      # 替换distribute_options.yaml中的$GITHASH
+      - name: Replace GITHASH in distribute_options.yaml
+        run: |
+          sed -i "s/\$GITHASH/${{ env.GITHASH }}/g" distribute_options.yaml
+        shell: bash
         
       # 构建 macOS app
       - name: Build macOS app
