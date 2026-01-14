@@ -539,6 +539,7 @@ Future<bool?> showTriStateConfirmDialog({
   String rejectText = '拒绝',
   String cancelText = '取消',
   String rememberText = '记住我的选择',
+  bool autoRem=false,
   ConfirmLevel confirmLevel = ConfirmLevel.info,
 }) async {
   // 如果当前值非 null，直接返回
@@ -546,7 +547,7 @@ Future<bool?> showTriStateConfirmDialog({
     return currentValue;
   }
 
-  final rememberChoice = false.obs;
+  final rememberChoice =autoRem ? true.obs : false.obs;
 
   ButtonStyle getButtonStyle(ConfirmLevel level) {
     switch (level) {

@@ -103,34 +103,74 @@ Listener _mainContent() => Listener(
                   },
                   icon: Icon(Icons.arrow_back_ios_new, size: 13),
                 ),
-                Container(
-                  width: 120,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        tooltip: "隐藏到托盘",
-                        icon: Icon(Icons.close_fullscreen_rounded, size: 13),
-                        onPressed: () {
-                          windowManager.hide();
-                          windowManager.setSkipTaskbar(true);
-                        },
-                      ),
-                      IconButton(
-                        tooltip: "最小化",
-                        icon: Icon(Icons.minimize, size: 13),
-                        onPressed: () {
-                          windowManager.minimize();
-                          windowManager.setSkipTaskbar(false);
-                        },
-                      ),
-                      IconButton(
-                        tooltip: "关闭",
-                        icon: Icon(Icons.close, size: 13),
-                        onPressed: () {
-                          closeApp();
-                        },
-                      ),
-                    ],
+                Obx(
+                  () => Container(
+                    width:
+                        Get.find<SettingsController>()
+                                .windowsCloseBtnCloseOrHideApp ==
+                            false
+                        ? 80
+                        : 120,
+                    child: Row(
+                      children: [
+                        if (Get.find<SettingsController>()
+                                .windowsCloseBtnCloseOrHideApp !=
+                            false)
+                          IconButton(
+                            tooltip: "隐藏到托盘",
+                            icon: Icon(
+                              Icons.close_fullscreen_rounded,
+                              size: 13,
+                            ),
+                            onPressed: () {
+                              windowManager.hide();
+                              windowManager.setSkipTaskbar(true);
+                            },
+                          ),
+                        IconButton(
+                          tooltip: "最小化",
+                          icon: Icon(Icons.minimize, size: 13),
+                          onPressed: () {
+                            windowManager.minimize();
+                            windowManager.setSkipTaskbar(false);
+                          },
+                        ),
+                        IconButton(
+                          tooltip:
+                              (Get.find<SettingsController>()
+                                      .windowsCloseBtnCloseOrHideApp !=
+                                  false)
+                              ? "关闭"
+                              : "隐藏到托盘",
+                          icon: Icon(Icons.close, size: 13),
+                          onPressed: () {
+                            showTriStateConfirmDialog(
+                              title: '请选择默认操作',
+                              message: '关闭应用还是隐藏到托盘？',
+                              currentValue: Get.find<SettingsController>()
+                                  .windowsCloseBtnCloseOrHideApp,
+                              confirmText: '关闭应用',
+                              rejectText: '隐藏到托盘',
+                              autoRem: true,
+                              onRemember: (value) {
+                                // 用户勾选"记住选择"时保存设置
+                                Get.find<SettingsController>()
+                                        .windowsCloseBtnCloseOrHideApp =
+                                    value;
+                              },
+                            ).then((value) async {
+                              if (value == null) return;
+                              if (value == true) {
+                                closeApp();
+                              } else {
+                                windowManager.hide();
+                                windowManager.setSkipTaskbar(true);
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

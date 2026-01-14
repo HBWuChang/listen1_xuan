@@ -630,6 +630,21 @@ Widget desktopSettingsTiles(
                     },
                   ),
                 ),
+              if (isWindows)
+                Obx(
+                  () => TriStateSettingTile(
+                    title: '设置关闭按钮的默认行为',
+                    value: Get.find<SettingsController>()
+                        .windowsCloseBtnCloseOrHideApp,
+                    onChanged: (value) {
+                      Get.find<SettingsController>()
+                              .windowsCloseBtnCloseOrHideApp =
+                          value;
+                    },
+                    trueLabel: '关闭应用',
+                    falseLabel: '隐藏到托盘',
+                  ),
+                ),
               Obx(
                 () => SwitchListTile(
                   title: const Text('记住窗口大小'),

@@ -266,6 +266,14 @@ class SettingsController extends GetxController {
     settings[songReplaceAutoRepTragetTrackInAllPlaylistKey] = value;
   }
 
+  static const String windowsCloseBtnCloseOrHideAppKey =
+      'windowsCloseBtnCloseOrHideApp';
+  bool? get windowsCloseBtnCloseOrHideApp =>
+      settings[windowsCloseBtnCloseOrHideAppKey];
+  set windowsCloseBtnCloseOrHideApp(bool? value) {
+    settings[windowsCloseBtnCloseOrHideAppKey] = value;
+  }
+
   static const String supabaseBackupPlayListUpdateIdMapKey =
       'supabaseBackupPlayListUpdateIdMap';
   Map<String, String?> get supabaseBackupPlayListUpdateIdMap {
