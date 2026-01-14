@@ -488,13 +488,12 @@ class _MyHomePageState extends State<MyHomePage>
     super.dispose();
   }
 
-  late BuildContext _main_context;
   bool left_to_right_reverse = true;
   List<double> horPartPercentages =
       Get.find<SettingsController>().horPartPercentages;
   @override
   Widget build(BuildContext main_context) {
-    _main_context = main_context;
+    homeController.main_context = main_context;
     // appLinks
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.find<Applinkscontroller>().processAppLink();
@@ -553,7 +552,6 @@ class _MyHomePageState extends State<MyHomePage>
             Get.offAllNamed('/', id: 1);
             homeController.updatePageControllers();
           }
-          Widget leftBar = _leftBar(input_text_Controller);
           Widget _play = Play(horizon: globalHorizon);
           Scaffold con() => Scaffold(
             extendBody: true,
@@ -583,8 +581,8 @@ class _MyHomePageState extends State<MyHomePage>
                                 children: [
                                   // required
                                   isWindows || isMacOS
-                                      ? DragToMoveArea(child: leftBar)
-                                      : leftBar,
+                                      ? DragToMoveArea(child: _leftBar)
+                                      : _leftBar,
 
                                   _mainContent(),
                                 ],
@@ -693,7 +691,7 @@ class _MyHomePageState extends State<MyHomePage>
     _overlayEntry?.remove();
     _overlayEntry = null;
     _overlayEntry = _createOverlayEntry();
-    Overlay.of(_main_context).insert(_overlayEntry!);
+    Overlay.of(homeController.main_context).insert(_overlayEntry!);
     _startAutoCloseTimer();
   }
 

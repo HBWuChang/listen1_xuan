@@ -20,6 +20,7 @@ class HomeController extends GetxController {
   final source = 'myplaylist'.obs;
   final selectedIndex = 0.obs;
   List<int> offsets = List.generate(sources.length, (i) => 0);
+  late BuildContext main_context;
 
   // bool show_more = false;
   List<Map<String, dynamic>> filter_details = List.generate(
