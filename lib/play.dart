@@ -2,13 +2,12 @@ import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'dart:async';
-import 'package:dio/dio.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_lyric/core/lyric_model.dart';
 // import 'package:flutter_lyric/lyrics_reader_model.dart';
 import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
-import 'package:listen1_xuan/controllers/nowplaying_controller.dart';
+import 'package:listen1_xuan/controllers/upd_controller.dart';
 import 'package:listen1_xuan/main.dart';
 import 'dart:io';
 import 'package:extended_image/extended_image.dart';
@@ -17,22 +16,10 @@ import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:media_kit/media_kit.dart' show Player;
 import 'package:rxdart/rxdart.dart' as rxdart;
 import 'package:flutter/foundation.dart';
-import 'package:marquee/marquee.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
-import 'package:window_manager/window_manager.dart';
-import 'const.dart';
-import 'controllers/audioHandler_controller.dart';
-import 'controllers/play_controller.dart';
-import 'controllers/lyric_controller.dart';
-import 'controllers/cache_controller.dart';
-import 'controllers/theme.dart';
-import 'controllers/websocket_card_controller.dart';
 import 'funcs.dart';
-import 'loweb.dart';
 import 'package:vibration/vibration.dart';
 import 'package:logger/logger.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:math';
 import 'global_settings_animations.dart';
 import 'package:smtc_windows/smtc_windows.dart';
@@ -115,6 +102,7 @@ class FileLogOutput extends LogOutput {
   }
 }
 
+final random = Random(UpdController.buildGitHash.hashCode);
 var playmode = 1.obs;
 List<Track> randommodetemplist = [];
 bool randomTrackInsertAtHead = false;
@@ -155,7 +143,6 @@ Future<void> onPlaybackCompleted({
             return;
           }
         }
-        final random = Random();
         final randomIndex = random.nextInt(current_playing.length);
         Track track = current_playing[randomIndex];
         randommodetemplist.removeWhere((element) => element.id == track.id);
@@ -591,7 +578,7 @@ Future<void> globalSkipToPrevious() async {
         } catch (e) {
           print(e);
         }
-        final randomIndex = Random().nextInt(current_playing.length);
+        final randomIndex = random.nextInt(current_playing.length);
         Track track = current_playing[randomIndex];
         randommodetemplist.removeWhere((element) => element.id == track.id);
         randomTrackInsertAtHead = true; // 下次插入到头部
