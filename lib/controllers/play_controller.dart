@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
@@ -43,6 +44,7 @@ class PlayController extends GetxController
   static const String nowPlayingTrackIdKey = 'nowplaying_track_id';
   static const String nowPlayingTrackKey = 'nowplaying_track';
   late Player music_player;
+  late Random random;
   CacheController cacheController = Get.find<CacheController>();
   final _player_settings = <String, dynamic>{}.obs;
   final currentPlayingRx = <Track>[].obs;
@@ -143,6 +145,7 @@ class PlayController extends GetxController
   void onInit() {
     super.onInit();
     music_player = Player();
+    random = Random(DateTime.now().hashCode);
     // music_player.setAudioDevice()
     logger.d('PlayController initialized');
     logger.d(music_player.state.audioDevices);

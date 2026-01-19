@@ -187,8 +187,7 @@ class MyPlaylist {
 
   String guid() {
     String s4() {
-      final random = Random();
-      return (random.nextInt(9000) + 1000).toString(); // 生成 1000 到 9999 之间的随机数
+      return (Get.find<PlayController>().random.nextInt(9000) + 1000).toString(); // 生成 1000 到 9999 之间的随机数
     }
 
     return '${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}';

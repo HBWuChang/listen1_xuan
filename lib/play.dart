@@ -102,7 +102,6 @@ class FileLogOutput extends LogOutput {
   }
 }
 
-final random = Random(UpdController.buildGitHash.hashCode);
 var playmode = 1.obs;
 List<Track> randommodetemplist = [];
 bool randomTrackInsertAtHead = false;
@@ -143,7 +142,9 @@ Future<void> onPlaybackCompleted({
             return;
           }
         }
-        final randomIndex = random.nextInt(current_playing.length);
+        final randomIndex = Get.find<PlayController>().random.nextInt(
+          current_playing.length,
+        );
         Track track = current_playing[randomIndex];
         randommodetemplist.removeWhere((element) => element.id == track.id);
         await playsong(track, start: start);
@@ -578,7 +579,9 @@ Future<void> globalSkipToPrevious() async {
         } catch (e) {
           print(e);
         }
-        final randomIndex = random.nextInt(current_playing.length);
+        final randomIndex = Get.find<PlayController>().random.nextInt(
+          current_playing.length,
+        );
         Track track = current_playing[randomIndex];
         randommodetemplist.removeWhere((element) => element.id == track.id);
         randomTrackInsertAtHead = true; // 下次插入到头部

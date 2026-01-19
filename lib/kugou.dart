@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:get/get.dart' hide Response;
 import 'package:listen1_xuan/controllers/play_controller.dart';
 import 'dart:convert';
 import 'dart:async';
@@ -674,7 +675,7 @@ class Kugou {
   //   return (Math.random() * 100).toString().replaceAll(/\D/g, '');
   // }
   String getRandomIntString() {
-    return (Random().nextDouble() * 100)
+    return (Get.find<PlayController>().random.nextDouble() * 100)
         .toString()
         .replaceAll(RegExp(r'\D'), '');
   }
