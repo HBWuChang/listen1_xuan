@@ -343,19 +343,19 @@ class SettingsController extends GetxController {
 
   Future<void> initFlutterHive() async {
     try {
-      if (isWindows) {
-        final path = p.join(
-          ((await getApplicationSupportDirectory()).path),
-          'hive_data',
-        );
-        if (!(await Directory(path).exists())) {
-          await Directory(path).create(recursive: true);
-        }
-        logger.i(path);
-        Hive.init(path);
-        box = await Hive.openBox(SettingsController.hiveStoreKey);
-        useHive = true;
+      // if (isWindows) {
+      final path = p.join(
+        ((await getApplicationSupportDirectory()).path),
+        'hive_data',
+      );
+      if (!(await Directory(path).exists())) {
+        await Directory(path).create(recursive: true);
       }
+      logger.i(path);
+      Hive.init(path);
+      box = await Hive.openBox(SettingsController.hiveStoreKey);
+      useHive = true;
+      // }
     } catch (e) {
       logger.e('Init Hive failed:$e');
     }
