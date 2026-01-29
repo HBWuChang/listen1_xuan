@@ -306,6 +306,15 @@ class SettingsController extends GetxController {
     settings[getPreReleaseKey] = value;
   }
 
+  static const String stopOnPlayListEndKey = 'stopOnPlayListEnd';
+  bool get stopOnPlayListEnd {
+    return settings[stopOnPlayListEndKey] ?? false;
+  }
+
+  set stopOnPlayListEnd(bool value) {
+    settings[stopOnPlayListEndKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};

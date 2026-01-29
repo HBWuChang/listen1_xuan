@@ -819,6 +819,19 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             Obx(
                               () => SwitchListTile(
+                                title: const Text('在“循环播放”模式下列表播放完成时停止播放'),
+
+                                value: Get.find<SettingsController>()
+                                    .stopOnPlayListEnd,
+                                onChanged: (bool value) {
+                                  Get.find<SettingsController>()
+                                          .stopOnPlayListEnd =
+                                      value;
+                                },
+                              ),
+                            ),
+                            Obx(
+                              () => SwitchListTile(
                                 title: const Text('禁用ssl证书验证'),
                                 value: useHttpOverrides.value,
                                 onChanged: (bool value) {

@@ -126,9 +126,16 @@ Future<void> onPlaybackCompleted({
     final index = nowplaying_track['index'];
     switch (playmode.value) {
       case 0:
-        index + 1 < current_playing.length
-            ? await playsong(current_playing[index + 1], start: start)
-            : await playsong(current_playing[0], start: start);
+        if (index + 1 < current_playing.length) {
+          await playsong(current_playing[index + 1], start: start);
+        } else {
+          if (Get.find<SettingsController>().stopOnPlayListEnd) {
+            await globalPause();
+            await globalSeek(Duration.zero);
+          } else {
+            await playsong(current_playing[0], start: start);
+          }
+        }
         break;
       case 1:
         int t = randommodetemplist
