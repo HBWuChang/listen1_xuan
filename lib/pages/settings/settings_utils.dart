@@ -368,12 +368,13 @@ open "$appPath"
 
 Future<void> outputPlaylistToGithubGist() async {
   if (Github.status != 2) {
-    // _msg('请先登录Github', 1.0);
-    showInfoSnackbar('请先登录Github', '');
-    return;
+    await Github.updateStatus();
+    if (Github.status != 2) {
+      showInfoSnackbar('请先登录Github', '');
+      return;
+    }
   }
   var playlists = await Github.listExistBackup();
-  print(playlists);
 
   try {
     showDialog(

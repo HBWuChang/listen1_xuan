@@ -1,6 +1,5 @@
 part of '../../settings.dart';
 
-
 Widget settingsWidget(BuildContext context) {
   return Padding(
     padding: EdgeInsets.all(10),
@@ -9,16 +8,16 @@ Widget settingsWidget(BuildContext context) {
         Row(
           children: [
             Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => outputAllSettingsToFile(false),
+              child: ElevatedButtonIcon(
+                onPressed: () async => outputAllSettingsToFile(false),
                 icon: Icon(Icons.save),
                 label: Text('保存配置到文件'),
               ),
             ),
             SizedBox(width: 10),
             Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => importSettingsFromFile(),
+              child: ElevatedButtonIcon(
+                onPressed: importSettingsFromFile,
                 icon: Icon(Icons.upload),
                 label: Text('导入配置文件'),
               ),
@@ -29,7 +28,7 @@ Widget settingsWidget(BuildContext context) {
         Row(
           children: [
             Expanded(
-              child: ElevatedButton.icon(
+              child: ElevatedButtonIcon(
                 onPressed: outputPlaylistToGithubGist,
                 icon: Icon(Icons.playlist_play),
                 label: Text('导出歌单到Github Gist'),
@@ -37,12 +36,14 @@ Widget settingsWidget(BuildContext context) {
             ),
             SizedBox(width: 10),
             Expanded(
-              child: ElevatedButton.icon(
+              child: ElevatedButtonIcon(
                 onPressed: () async {
                   if (Github.status != 2) {
-                    // _msg('请先登录Github', 1.0);
-                    showWarningSnackbar('请先登录Github Gist', null);
-                    return;
+                    await Github.updateStatus();
+                    if (Github.status != 2) {
+                      showInfoSnackbar('请先登录Github', '');
+                      return;
+                    }
                   }
                   var playlists = await Github.listExistBackup();
                   print(playlists);
@@ -328,11 +329,15 @@ class _SupabasePlaylistContent extends StatelessWidget {
     }
   }
 
-  Future<void> _downloadPlaylist(PlaylistModel.SupabasePlaylist playlist) async {
+  Future<void> _downloadPlaylist(
+    PlaylistModel.SupabasePlaylist playlist,
+  ) async {
     await downloadSupabasePlaylist(playlist);
   }
 
-  Future<void> _overwritePlaylist(PlaylistModel.SupabasePlaylist playlist) async {
+  Future<void> _overwritePlaylist(
+    PlaylistModel.SupabasePlaylist playlist,
+  ) async {
     final success = await overwriteSupabasePlaylist(playlist);
     if (success) {
       _loadPlaylists(); // 刷新列表
@@ -357,11 +362,13 @@ class _SupabasePlaylistContent extends StatelessWidget {
           ),
         ),
         // 内容区域 - 使用 AnimatedSize 实现平滑高度变化
-        Obx(() => AnimatedSize(
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: _buildContent(),
-            )),
+        Obx(
+          () => AnimatedSize(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: _buildContent(),
+          ),
+        ),
         // 新建按钮
         Padding(
           padding: EdgeInsets.all(16),
@@ -384,7 +391,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
   Widget _buildContent() {
     if (isLoading.value)
       return Container(height: 300, child: Center(child: globalLoadingAnime));
-    
+
     if (playlists.isEmpty)
       return Container(
         height: 300,
@@ -394,10 +401,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
             children: [
               Icon(Icons.cloud_off, size: 64, color: Colors.grey),
               SizedBox(height: 16),
-              Text(
-                '暂无歌单',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
+              Text('暂无歌单', style: TextStyle(fontSize: 16, color: Colors.grey)),
               SizedBox(height: 8),
               Text(
                 '点击下方按钮新建歌单',
@@ -407,7 +411,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
           ),
         ),
       );
-    
+
     return ListView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
@@ -416,7 +420,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
       itemBuilder: (context, index) {
         final playlist = playlists[index];
         final settingsController = Get.find<SettingsController>();
-        
+
         return Card(
           margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
           child: Column(
@@ -440,21 +444,27 @@ class _SupabasePlaylistContent extends StatelessWidget {
                     // 订阅开关
                     Obx(() {
                       final isSubscribed = isPlaylistSubscribed(playlist.id);
-                      
+
                       return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            isSubscribed ? Icons.notifications_active : Icons.notifications_off,
+                            isSubscribed
+                                ? Icons.notifications_active
+                                : Icons.notifications_off,
                             size: 16,
-                            color: isSubscribed ? Get.theme.colorScheme.primary : Colors.grey,
+                            color: isSubscribed
+                                ? Get.theme.colorScheme.primary
+                                : Colors.grey,
                           ),
                           SizedBox(width: 4),
                           Text(
                             isSubscribed ? '已订阅' : '未订阅',
                             style: TextStyle(
                               fontSize: 12,
-                              color: isSubscribed ? Get.theme.colorScheme.primary : Colors.grey,
+                              color: isSubscribed
+                                  ? Get.theme.colorScheme.primary
+                                  : Colors.grey,
                             ),
                           ),
                           SizedBox(width: 8),

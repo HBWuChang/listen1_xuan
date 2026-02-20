@@ -72,6 +72,7 @@ import 'utils/curve_utils.dart';
 import 'widgets/curve_selector_dialog.dart';
 import 'package:flutter/material.dart' hide SearchController;
 import 'pages/settings/cache_naming_page.dart';
+import 'widgets/elevated_button_icon.dart';
 part 'pages/settings/settings_utils.dart';
 part 'pages/settings/settings_github.dart';
 part 'pages/settings/settings_widgets.dart';

@@ -1,30 +1,19 @@
-import 'dart:ffi';
 import 'package:get/get.dart' hide FormData;
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 import 'package:dio/dio.dart';
 import 'package:listen1_xuan/models/websocket_message.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' show parse;
-import 'package:encrypt/encrypt.dart' as encrypt;
 import 'controllers/DioController.dart';
-import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
 import 'lowebutil.dart';
 import 'settings.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'package:cookie_jar/cookie_jar.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
-import 'dart:math';
 import 'dart:typed_data';
-import 'package:crypto/crypto.dart';
 import 'package:pointycastle/export.dart';
 import 'package:convert/convert.dart';
-import 'main.dart';
 
 final netease = Netease();
 
@@ -93,11 +82,13 @@ class Netease {
     try {
       final _cookies = tokens['ne'];
 
-      final _csrf = _cookies
-          .split(';')
-          .firstWhere((String element) => element.contains('__csrf'))
-          .split('=')
-          .last;
+      final _csrf = isEmpty(_cookies)
+          ? '1234567890123456'
+          : _cookies
+                .split(';')
+                .firstWhere((String element) => element.contains('__csrf'))
+                .split('=')
+                .last;
       if (url.contains('?')) {
         url = url + '&csrf_token=$_csrf';
       } else {

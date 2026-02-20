@@ -37,6 +37,8 @@ class SettingsController extends GetxController {
   Box<dynamic>? box;
   final prefs = SharedPreferencesAsync();
   final settings = <String, dynamic>{}.obs;
+  final Completer<void> _dioInitCompleter = Completer<void>();
+  Future<void> get dioInitFuture => _dioInitCompleter.future;
   static const String lyricBorderRadiusHKey = 'lyric_border_radius_h';
   static const String lyricBorderRadiusVKey = 'lyric_border_radius_v';
   double get lyricBorderRadiusH => settings[lyricBorderRadiusHKey] ?? 20.0;
@@ -272,6 +274,12 @@ class SettingsController extends GetxController {
       settings[windowsCloseBtnCloseOrHideAppKey];
   set windowsCloseBtnCloseOrHideApp(bool? value) {
     settings[windowsCloseBtnCloseOrHideAppKey] = value;
+  }
+
+  void completeDioInit() {
+    if (!_dioInitCompleter.isCompleted) {
+      _dioInitCompleter.complete();
+    }
   }
 
   static const String supabaseBackupPlayListUpdateIdMapKey =
@@ -681,6 +689,8 @@ class SettingsController extends GetxController {
   final loginData = <String, dynamic>{}.obs;
   final loginDataLoading = Set().obs;
   Future<void> refreshLoginData() async {
+    await dioInitFuture;
+
     final tasks = Future.wait([
       Future.microtask(() async {
         loginDataLoading.add(PlantformCodes.bl);

@@ -141,7 +141,9 @@ void main() async {
   );
   await settingsController.init();
   Get.put(RouteController(), permanent: true);
-  Get.put(DioController(), permanent: true);
+  DioController dioController = Get.put(DioController(), permanent: true);
+  await dioController.loadConfig();
+  settingsController.completeDioInit();
   CacheController cacheController = Get.put(CacheController(), permanent: true);
   Get.put(PlayController(), permanent: true);
   cacheController.loadLocalCacheList();
