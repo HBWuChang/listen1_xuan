@@ -678,9 +678,6 @@ class SettingsController extends GetxController {
       );
       // });
     } catch (e) {
-      // _readmeContent_setstate(() {
-      //   _readmeContent = '加载失败';
-      // });
       readmeContent.value = '加载失败';
     }
   }
