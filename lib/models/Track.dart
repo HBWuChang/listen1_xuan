@@ -84,6 +84,7 @@ class Track {
     // return base64Url.encode(utf8.encode(jsonString));
     return gzipJsonString(jsonString);
   }
+
   // 转换为 JSON
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{'id': id};

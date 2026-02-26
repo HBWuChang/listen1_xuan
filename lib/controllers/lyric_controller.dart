@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lyric/core/lyric_model.dart';
 import 'package:get/get.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
+import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'dart:io';
 import '../funcs.dart';
 import '../loweb.dart';
@@ -238,35 +240,6 @@ class XLyricController extends GetxController {
     });
   }
 
-  Future<void> fetchDanmu() async {
-    final url =
-        "https://api.bilibili.com/x/v2/dm/wbi/web/seg.so?type=1&oid=31825857879&pid=115060697470544&segment_index=1&pull_mode=1&ps=120000&pe=360000&web_location=1315873&w_rid=deb11704e0c4b28cff30ef0c2dedf050&wts=1772077522";
-
-    // try {
-      final response = await dioWithCookieManager.get(
-        url,
-        options: Options(
-          responseType: ResponseType.bytes,
-          headers: {
-            "Accept-Encoding": "identity", // 明确要求不进行任何
-          },
-        ),
-      );
-      debugPrint('前20${(response.data as Uint8List).take(20).toList().toString()}');
-      debugPrint(' ${String.fromCharCodes(response.data)}');
-      DmSegMobileReply dmSegMobileReply = DmSegMobileReply.fromBuffer(
-        (response.data as Uint8List),
-      );
-      if (response.statusCode == 200) {
-        final bytes = response.data as Uint8List;
-      } else {
-        print('请求失败，状态码: ${response.statusCode}');
-      }
-    // } catch (e) {
-    //   print("解析错误: $e");
-    // }
-  }
-
   /// 处理歌词数据
   void _processLyricData([String? lyric, String? tlyric]) {
     if (!isEmpty(lyric)) {
@@ -329,6 +302,509 @@ class XLyricController extends GetxController {
         !_settingsController.showLyricTranslation.value;
 
     _processLyricData();
+  }
+
+  /// 查找哔哩哔哩歌词
+  Future<void> findBilibiliLyric() async {
+    try {
+      final playController = Get.find<PlayController>();
+      final trackId = playController.nowPlayingTrackId;
+      final duration = playController.music_player.state.duration;
+
+      if (trackId.isEmpty) {
+        showErrorSnackbar('获取弹幕失败', '当前没有正在播放的歌曲');
+        return;
+      }
+      if (duration <= Duration.zero) {
+        showErrorSnackbar('获取弹幕失败', '当前歌曲时长无效');
+        return;
+      }
+
+      final context = Get.context;
+      if (context == null) {
+        showErrorSnackbar('打开窗口失败', '当前页面上下文不可用');
+        return;
+      }
+
+      final isLoading = true.obs;
+      final loadError = RxnString();
+      final groupEntries = <MapEntry<String, List<DanmuElem>>>[].obs;
+      final selectedGroupIndex = 0.obs;
+      final selectedIndexes = <int>{}.obs;
+
+      List<DanmuElem> currentDanmuList() {
+        if (groupEntries.isEmpty ||
+            selectedGroupIndex.value < 0 ||
+            selectedGroupIndex.value >= groupEntries.length) {
+          return [];
+        }
+        final sorted = List<DanmuElem>.from(
+          groupEntries[selectedGroupIndex.value].value,
+        )..sort((a, b) => a.progress.compareTo(b.progress));
+        return sorted;
+      }
+
+      void selectAllCurrent() {
+        final list = currentDanmuList();
+        selectedIndexes
+          ..clear()
+          ..addAll(List<int>.generate(list.length, (i) => i));
+        selectedIndexes.refresh();
+      }
+
+      Future<void> loadDanmuGroups() async {
+        isLoading.value = true;
+        loadError.value = null;
+        try {
+          final danmuList = await findBilibiliLyricDanmu(trackId, duration);
+          if (danmuList.isEmpty) {
+            throw '没有可用弹幕';
+          }
+
+          final groupedDanmu = <String, List<DanmuElem>>{};
+          for (final danmu in danmuList) {
+            final key = isEmpty(danmu.uhash) ? '_empty_uhash' : danmu.uhash;
+            groupedDanmu.putIfAbsent(key, () => <DanmuElem>[]).add(danmu);
+          }
+
+          final entries = groupedDanmu.entries.toList()
+            ..sort((a, b) => b.value.length.compareTo(a.value.length));
+
+          if (entries.isEmpty) {
+            throw '未能构建弹幕分组';
+          }
+
+          groupEntries.assignAll(entries);
+          selectedGroupIndex.value = 0;
+          selectAllCurrent();
+        } catch (e) {
+          groupEntries.clear();
+          selectedIndexes.clear();
+          loadError.value = e.toString();
+        } finally {
+          isLoading.value = false;
+        }
+      }
+
+      WoltModalSheet.show(
+        context: context,
+        modalBarrierColor: Colors.transparent,
+        modalTypeBuilder: (modalSheetContext) => WoltModalType.bottomSheet(),
+        pageListBuilder: (modalSheetContext) {
+          final isSaving = false.obs;
+
+          Future<void> saveAsLyric({required bool isTranslation}) async {
+            final currentList = currentDanmuList();
+            if (selectedIndexes.isEmpty || currentList.isEmpty) {
+              showErrorSnackbar('生成歌词失败', '请至少选择一条弹幕');
+              return;
+            }
+
+            try {
+              isSaving.value = true;
+
+              final selectedDanmu =
+                  selectedIndexes
+                      .where(
+                        (index) => index >= 0 && index < currentList.length,
+                      )
+                      .map((index) => currentList[index])
+                      .where((e) => !isEmpty(e.text))
+                      .toList()
+                    ..sort((a, b) => a.progress.compareTo(b.progress));
+
+              final lrcContent = _buildLrcFromDanmu(selectedDanmu);
+              if (isEmpty(lrcContent)) {
+                showErrorSnackbar('生成歌词失败', '所选弹幕文本为空');
+                return;
+              }
+
+              await _saveLyricToCache(
+                trackId,
+                lrcContent,
+                isTranslation: isTranslation,
+              );
+              await loadLyric();
+
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+            } catch (e) {
+              showErrorSnackbar('生成歌词失败', e.toString());
+            } finally {
+              isSaving.value = false;
+            }
+          }
+
+          return [
+            WoltModalSheetPage(
+              hasTopBarLayer: false,
+              isTopBarLayerAlwaysVisible: false,
+              enableDrag: true,
+              child: Obx(() {
+                final currentList = currentDanmuList();
+                final hasMainLyric = !isEmpty(sLyric);
+
+                return ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.8,
+                    minHeight: 300,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          '从弹幕生成歌词',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 12),
+                        if (isLoading.value)
+                          const Expanded(
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else if (loadError.value != null)
+                          Expanded(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: loadDanmuGroups,
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '弹幕获取失败',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleSmall,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      loadError.value ?? '',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      '点击空白区域重试',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        else ...[
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: List<Widget>.generate(
+                                groupEntries.length,
+                                (groupIndex) {
+                                  final count =
+                                      groupEntries[groupIndex].value.length;
+                                  final isSelected =
+                                      selectedGroupIndex.value == groupIndex;
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      right:
+                                          groupIndex == groupEntries.length - 1
+                                          ? 0
+                                          : 8,
+                                    ),
+                                    child: ChoiceChip(
+                                      label: Text(
+                                        '#${groupIndex + 1} ($count)',
+                                      ),
+                                      selected: isSelected,
+                                      onSelected: (_) {
+                                        selectedGroupIndex.value = groupIndex;
+                                        selectAllCurrent();
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              TextButton(
+                                onPressed: selectAllCurrent,
+                                child: const Text('全选'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  final allIndexes = Set<int>.from(
+                                    List<int>.generate(
+                                      currentList.length,
+                                      (i) => i,
+                                    ),
+                                  );
+                                  final inverted = allIndexes.difference(
+                                    selectedIndexes,
+                                  );
+                                  selectedIndexes
+                                    ..clear()
+                                    ..addAll(inverted);
+                                  selectedIndexes.refresh();
+                                },
+                                child: const Text('反选'),
+                              ),
+                              const Spacer(),
+                              Text('已选 ${selectedIndexes.length} 条'),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Expanded(
+                            child: currentList.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      '当前分组没有可用弹幕',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    itemCount: currentList.length,
+                                    itemBuilder: (context, index) {
+                                      final danmu = currentList[index];
+                                      final isChecked = selectedIndexes
+                                          .contains(index);
+                                      final text = isEmpty(danmu.text)
+                                          ? '(空文本)'
+                                          : danmu.text;
+
+                                      return CheckboxListTile(
+                                        dense: true,
+                                        controlAffinity:
+                                            ListTileControlAffinity.leading,
+                                        value: isChecked,
+                                        onChanged: (value) {
+                                          if (value == true) {
+                                            selectedIndexes.add(index);
+                                          } else {
+                                            selectedIndexes.remove(index);
+                                          }
+                                          selectedIndexes.refresh();
+                                        },
+                                        title: Text(
+                                          text,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        subtitle: Text(
+                                          _formatLrcTimestamp(
+                                            Duration(
+                                              milliseconds: danmu.progress < 0
+                                                  ? 0
+                                                  : danmu.progress,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: isSaving.value
+                                      ? null
+                                      : () => saveAsLyric(isTranslation: false),
+                                  child: isSaving.value
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text('作为歌词'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: isSaving.value || !hasMainLyric
+                                      ? null
+                                      : () => saveAsLyric(isTranslation: true),
+                                  child: const Text('作为翻译'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ];
+        },
+        useRootNavigator: true,
+      );
+
+      loadDanmuGroups();
+    } catch (e) {
+      showErrorSnackbar('获取弹幕失败', e.toString());
+    }
+  }
+
+  String _buildLrcFromDanmu(List<DanmuElem> danmuList) {
+    if (danmuList.isEmpty) return '';
+
+    final sorted = List<DanmuElem>.from(danmuList)
+      ..sort((a, b) => a.progress.compareTo(b.progress));
+
+    final buffer = StringBuffer();
+    for (final danmu in sorted) {
+      if (isEmpty(danmu.text)) {
+        continue;
+      }
+      final progress = danmu.progress < 0 ? 0 : danmu.progress;
+      final timestamp = _formatLrcTimestamp(Duration(milliseconds: progress));
+      buffer.writeln('[$timestamp]${danmu.text.trim()}');
+    }
+
+    return buffer.toString().trim();
+  }
+
+  String _formatLrcTimestamp(Duration duration) {
+    final totalMilliseconds = duration.inMilliseconds;
+    final minutes = (totalMilliseconds ~/ 60000).toString().padLeft(2, '0');
+    final seconds = ((totalMilliseconds % 60000) ~/ 1000).toString().padLeft(
+      2,
+      '0',
+    );
+    final centiseconds = ((totalMilliseconds % 1000) ~/ 10).toString().padLeft(
+      2,
+      '0',
+    );
+    return '$minutes:$seconds.$centiseconds';
+  }
+
+  Future<List<DanmuElem>> findBilibiliLyricDanmu(
+    String trackId,
+    Duration duration,
+  ) async {
+    // Duration dur = Get.find<PlayController>().music_player.state.duration;
+
+    int segmentTotal = (duration.inMilliseconds / (6 * 60 * 1000)).ceil();
+    segmentTotal = segmentTotal > 0 ? segmentTotal : 1;
+    // String id = Get.find<PlayController>().nowPlayingTrackId;
+    if (!trackId.startsWith('bi')) {
+      throw '当前歌曲不是哔哩哔哩歌曲，无法获取弹幕';
+    }
+    Map<String, dynamic> param = {
+      "type": 1,
+      // "oid": 31825857879,
+      // "segment_index": 1,
+      "pull_mode": 1,
+    };
+    if (trackId.split('-').length > 1) {
+      param['oid'] = trackId.split('-')[1];
+    } else {
+      final aOrBvId = trackId.substring('bitrack_v_'.length);
+      if (aOrBvId.startsWith('BV')) {
+        //         curl -G 'https://api.bilibili.com/x/player/pagelist' \
+        // --data-urlencode 'bvid=BV1ex411J7GE'
+        final response = await dioWithCookieManager.get(
+          'https://api.bilibili.com/x/player/pagelist',
+          queryParameters: {'bvid': aOrBvId},
+        );
+        final cid = response.data['data'][0]['cid'];
+        param['oid'] = cid;
+      } else {
+        //         curl -G 'https://api.bilibili.com/x/player/pagelist' \
+        // --data-urlencode 'aid=13502509'
+        final response = await dioWithCookieManager.get(
+          'https://api.bilibili.com/x/player/pagelist',
+          queryParameters: {'aid': aOrBvId},
+        );
+        final cid = response.data['data'][0]['cid'];
+        param['oid'] = cid;
+      }
+    }
+    int segmentIndex = 1;
+    List<DanmuElem> allDanmuElems = [];
+    do {
+      param['segment_index'] = segmentIndex;
+      final response = await Bilibili.wrap_wbi_request(
+        'https://api.bilibili.com/x/v2/dm/wbi/web/seg.so',
+        segmentIndex != 1 ? param : Map.from(param)
+          ..addAll({'ps': 0, 'pe': 120000}),
+        responseType: ResponseType.bytes,
+      );
+      if (response.statusCode == 200) {
+        final bytes = response.data as Uint8List;
+        DmSegMobileReply dmSegMobileReply = DmSegMobileReply.fromBuffer(bytes);
+        allDanmuElems.addAll(dmSegMobileReply.elems);
+      } else {
+        throw '请求弹幕第$segmentIndex段失败，状态码: ${response.statusCode}';
+      }
+      if (segmentIndex == 1) {
+        final response = await Bilibili.wrap_wbi_request(
+          'https://api.bilibili.com/x/v2/dm/wbi/web/seg.so',
+          segmentIndex != 1 ? param : Map.from(param)
+            ..addAll({'ps': 120000, 'pe': 360000}),
+          responseType: ResponseType.bytes,
+        );
+        if (response.statusCode == 200) {
+          final bytes = response.data as Uint8List;
+          DmSegMobileReply dmSegMobileReply = DmSegMobileReply.fromBuffer(
+            bytes,
+          );
+          allDanmuElems.addAll(dmSegMobileReply.elems);
+        } else {
+          throw '请求弹幕第$segmentIndex段失败，状态码: ${response.statusCode}';
+        }
+      }
+    } while (++segmentIndex <= segmentTotal);
+
+    // debugPrint('总弹幕数量: ${allDanmuElems.length}');
+    return allDanmuElems;
+  }
+
+  Future<void> fetchDanmu() async {
+    final url =
+        "https://api.bilibili.com/x/v2/dm/wbi/web/seg.so?type=1&oid=31825857879&pid=115060697470544&segment_index=1&pull_mode=1&ps=120000&pe=360000&web_location=1315873&w_rid=deb11704e0c4b28cff30ef0c2dedf050&wts=1772077522";
+
+    // try {
+    final response = await dioWithCookieManager.get(
+      url,
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {
+          "Accept-Encoding": "identity", // 明确要求不进行任何
+        },
+      ),
+    );
+    debugPrint(
+      '前20${(response.data as Uint8List).take(20).toList().toString()}',
+    );
+    debugPrint(' ${String.fromCharCodes(response.data)}');
+    DmSegMobileReply dmSegMobileReply = DmSegMobileReply.fromBuffer(
+      (response.data as Uint8List),
+    );
+    if (response.statusCode == 200) {
+      final bytes = response.data as Uint8List;
+    } else {
+      print('请求失败，状态码: ${response.statusCode}');
+    }
+    // } catch (e) {
+    //   print("解析错误: $e");
+    // }
   }
 
   /// 清理特定歌曲的歌词缓存

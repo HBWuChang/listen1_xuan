@@ -138,6 +138,9 @@ String? getProviderNameByItemId(String itemId) {
 }
 
 dynamic getProviderByItemId(String itemId) {
+  if (itemId.length < 2) {
+    return null;
+  }
   String prefix = itemId.substring(0, 2);
   return providers.firstWhere((i) => i.id == prefix).instance;
 }

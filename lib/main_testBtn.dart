@@ -15,7 +15,7 @@ Widget get testBtn => Positioned.fill(
           children: [
             FloatingActionButton(
               heroTag: 'toast_count_btn',
-              onPressed: Get.find<XLyricController>().fetchDanmu,
+              onPressed: Get.find<XLyricController>().findBilibiliLyric,
               child: Icon(Icons.format_list_numbered),
             ),
             FloatingActionButton(
@@ -25,18 +25,6 @@ Widget get testBtn => Positioned.fill(
                   await box.put('testKey', 'testValue');
                   var value = box.get('testKey');
                   logger.i('Hive test value: $value');
-                } catch (e) {
-                  logger.e(e);
-                }
-              },
-              child: Icon(Icons.system_update_alt),
-            ),
-            FloatingActionButton(
-              onPressed: () async {
-                try {
-                  var box = await Hive.openBox('testBox');
-                  await box.delete('testKey');
-                  logger.i('Hive test key deleted');
                 } catch (e) {
                   logger.e(e);
                 }

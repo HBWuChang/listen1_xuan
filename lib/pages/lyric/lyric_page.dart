@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'dart:ui' as ui;
 
 import 'package:listen1_xuan/funcs.dart';
@@ -14,6 +15,7 @@ import '../../controllers/settings_controller.dart';
 import 'package:extended_image/extended_image.dart';
 
 import '../../global_settings_animations.dart';
+import '../../loweb.dart';
 part 'lyric_v.dart';
 part 'lyric_shared.dart';
 

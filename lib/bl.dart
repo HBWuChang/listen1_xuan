@@ -440,8 +440,9 @@ class Bilibili {
 
   static Future<dynamic> wrap_wbi_request(
     String url,
-    Map<String, dynamic> params,
-  ) async {
+    Map<String, dynamic> params, {
+    ResponseType? responseType,
+  }) async {
     final queryString = await encWbi(params);
     final targetUrl = '$url?$queryString';
     String cookie = '';
@@ -471,6 +472,7 @@ class Bilibili {
           // 允许 412 状态码不抛出异常
           return status != null && status < 500;
         },
+        responseType: responseType,
       ),
     );
     return t;

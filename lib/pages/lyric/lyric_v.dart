@@ -227,7 +227,9 @@ Widget traBtn(
       //   ),
       // ),
       Obx(
-        () => isEmpty(lyricController.sLyricTra.value)
+        () =>
+            isEmpty(lyricController.sLyricTra.value) ||
+                !lyricController.hasLyric.value
             ? SizedBox.shrink()
             : IconButton(
                 onPressed: lyricController.toggleTranslation,
@@ -270,6 +272,15 @@ Widget traBtn(
         },
         padding: EdgeInsets.zero,
         icon: Icon(Icons.av_timer_rounded),
+      ),
+      Obx(
+        () => !Get.find<PlayController>().currentTrack.id.startsWith('bi')
+            ? SizedBox.shrink()
+            : IconButton(
+                onPressed: lyricController.findBilibiliLyric,
+                padding: EdgeInsets.zero,
+                icon: Icon(Icons.manage_search_rounded),
+              ),
       ),
     ],
   ),
