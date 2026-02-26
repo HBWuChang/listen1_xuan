@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package bilibili.community.service.dm.v1;
+
+// 弹幕分段拉取返回结果
+message DmSegMobileReply {
+    repeated DanmuElem elems = 1; // 弹幕列表
+    // repeated ColorfulSrc colorfulSrc = 2; // 特殊彩色弹幕资源说明
+}
+
+// 单条弹幕详情
+message DanmuElem {
+    int64 id = 1; // 视频内相对时间 (单位: ms)
+    int32 progress = 2; // 视频内相对时间 (单位: ms)
+    int32 mode = 3; // 弹幕模式 (1: 滚动, 4: 底端, 5: 顶端, 6: 逆向, 7: 特殊, 9: 代码)
+    int32 size = 4; // 字体大小
+    uint32 color = 5; // 颜色 (十进制 RGB 值)
+    string uhash = 6; // 发送者 mid 的哈希值
+    string text = 7; // 弹幕文本内容
+    int64 date = 8; // 发送时间戳 (单位: 秒)
+    int32 weight = 9; // 权重/优先级 (用于精简弹幕)
+    string action = 10; // 动作参数 (用于跳转等)
+    int32 pool = 11; // 弹幕池 (0: 普通, 1: 字幕, 2: 特殊)
+    string dmid = 12; // 弹幕唯一 ID (注意: 必须是 int64)
+    int32 attr = 13; // 弹幕属性位 (按位存储，如是否保护等)
+    string animation = 14; // 动画配置 (JSON 字符串)
+}
+
+// // 彩色弹幕资源定义
+// message ColorfulSrc {
+//     uint32 type = 1; // 彩色类型
+//     string src = 2; // 资源配置内容 (通常为 JSON 字符串)
+// }

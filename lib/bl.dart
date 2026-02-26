@@ -30,12 +30,10 @@ class Bilibili {
         url,
         options: Options(headers: headers),
       );
-      print(response.statusCode);
-      print(response.data);
       bilibiliData = response.data;
       url = 'https://api.bilibili.com/x/v3/fav/folder/collected/list';
       String upMid = cookie.split('DedeUserID=')[1].split(';')[0];
-      String turl = url + '?pn=1&ps=20&up_mid=' + upMid + '&platform=web';
+      String turl = '$url?pn=1&ps=20&up_mid=$upMid&platform=web';
       var response2 = await dioWithCookieManager.get(
         turl,
         options: Options(headers: headers),
@@ -48,7 +46,7 @@ class Bilibili {
       if (res2['data']['has_more']) {
         var pn = 2;
         do {
-          turl = url + '?pn=$pn&ps=20&up_mid=' + upMid + '&platform=web';
+          turl = '$url?pn=$pn&ps=20&up_mid=$upMid&platform=web';
           response2 = await dioWithCookieManager.get(
             turl,
             options: Options(headers: headers),

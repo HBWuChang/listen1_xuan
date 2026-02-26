@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/core/lyric_model.dart';
 import 'package:get/get.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
+import 'package:listen1_xuan/controllers/controllers.dart';
 import 'dart:io';
 import '../funcs.dart';
 import '../loweb.dart';
@@ -11,6 +13,8 @@ import '../controllers/settings_controller.dart';
 import '../global_settings_animations.dart';
 import '../play.dart';
 import 'package:path/path.dart' as p;
+import 'dart:typed_data';
+import '../generated/dm.pb.dart'; // 引入生成的类
 
 class XLyricController extends GetxController {
   // 歌词显示相关
@@ -232,6 +236,35 @@ class XLyricController extends GetxController {
       }
       isLyricLoading.value = false;
     });
+  }
+
+  Future<void> fetchDanmu() async {
+    final url =
+        "https://api.bilibili.com/x/v2/dm/wbi/web/seg.so?type=1&oid=31825857879&pid=115060697470544&segment_index=1&pull_mode=1&ps=120000&pe=360000&web_location=1315873&w_rid=deb11704e0c4b28cff30ef0c2dedf050&wts=1772077522";
+
+    // try {
+      final response = await dioWithCookieManager.get(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {
+            "Accept-Encoding": "identity", // 明确要求不进行任何
+          },
+        ),
+      );
+      debugPrint('前20${(response.data as Uint8List).take(20).toList().toString()}');
+      debugPrint(' ${String.fromCharCodes(response.data)}');
+      DmSegMobileReply dmSegMobileReply = DmSegMobileReply.fromBuffer(
+        (response.data as Uint8List),
+      );
+      if (response.statusCode == 200) {
+        final bytes = response.data as Uint8List;
+      } else {
+        print('请求失败，状态码: ${response.statusCode}');
+      }
+    // } catch (e) {
+    //   print("解析错误: $e");
+    // }
   }
 
   /// 处理歌词数据

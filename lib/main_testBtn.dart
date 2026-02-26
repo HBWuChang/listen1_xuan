@@ -15,7 +15,7 @@ Widget get testBtn => Positioned.fill(
           children: [
             FloatingActionButton(
               heroTag: 'toast_count_btn',
-              onPressed: Get.find<UpdController>().checkReleasesUpdate,
+              onPressed: Get.find<XLyricController>().fetchDanmu,
               child: Icon(Icons.format_list_numbered),
             ),
             FloatingActionButton(

@@ -104,6 +104,9 @@ dependencies:
     git:
       url: https://github.com/HBWuChang/resizable_widget.git
       # 替换为 HTTPS URL 而不是 SSH
+  protobuf: ^6.0.0
+  fixnum: ^1.1.1
+  
   # auto_updater: ^1.0.0
 dev_dependencies:
   flutter_test:
