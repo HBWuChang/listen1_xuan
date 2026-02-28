@@ -203,9 +203,6 @@ class MediaService {
     return provider.search(url);
   }
 
-  static dynamic showMyPlaylist() {
-    return myplaylist.show_myplaylist('my');
-  }
 
   static Future<dynamic> showPlaylistArray(
     String source,
@@ -235,9 +232,7 @@ class MediaService {
     return provider.lyric(url);
   }
 
-  static dynamic showFavPlaylist() {
-    return myplaylist.show_myplaylist('favorite');
-  }
+ 
 
   static dynamic queryPlaylist(String listId, String type) {
     final result = myplaylist.myPlaylistContainers(type, listId);

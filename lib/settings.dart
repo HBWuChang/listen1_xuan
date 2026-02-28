@@ -121,7 +121,6 @@ class _LoginWebviewState extends State<LoginWebview> {
           showErrorSnackbar('获取cookie失败', null);
           return;
         }
-        print(url);
         if (!url.contains('code=')) {
           // _msg('获取code失败', 3.0);
           showErrorSnackbar('获取code失败', '请确认已跳转到Github授权成功页面再点击按钮');

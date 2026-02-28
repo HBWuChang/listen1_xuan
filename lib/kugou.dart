@@ -11,6 +11,15 @@ import 'package:listen1_xuan/models/Track.dart';
 
 final kugou = Kugou();
 
+enum KgPlaylistType {
+  playlist('kgplaylist'),
+  album('kgalbum'),
+  artist('kgartist');
+
+  final String prefix;
+  const KgPlaylistType(this.prefix);
+}
+
 class Kugou {
   // static kg_convert_song(song) {
   //   const track = {
@@ -149,27 +158,33 @@ class Kugou {
   //   });
   // }
   Future<void> kg_render_search_result_item(
-      int index, item, List params, Function callback) async {
+    int index,
+    item,
+    List params,
+    Function callback,
+  ) async {
     final track = kg_convert_song(item);
     // Add singer img
     final url =
         'https://www.kugou.com/yy/index.php?r=play/getdata&hash=${track.lyric_url}';
-    final response = await dioWithCookieManager.get(url,
-        options: Options(
-          headers: {
-            "User-Agent":
-                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30",
-            "Connection": "keep-alive",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Encoding": "gzip, deflate, br",
-            "accept-language": "zh-CN",
-            "origin": "https://www.kugou.com/",
-            "referer": "https://www.kugou.com/",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "cross-site"
-          },
-        ));
+    final response = await dioWithCookieManager.get(
+      url,
+      options: Options(
+        headers: {
+          "User-Agent":
+              "Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30",
+          "Connection": "keep-alive",
+          "Accept": "application/json, text/plain, */*",
+          "Accept-Encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN",
+          "origin": "https://www.kugou.com/",
+          "referer": "https://www.kugou.com/",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "cross-site",
+        },
+      ),
+    );
     final data = response.data;
     try {
       track.img_url = data['data']['img'];
@@ -263,26 +278,24 @@ class Kugou {
               'http://mobilecdnbj.kugou.com/api/v3/search/special?keyword=$keyword&pagesize=20&filter=0&page=$curpage';
           final response = await dioWithCookieManager.get(target_url);
           final result = jsonDecode(response.data)['data']['info']
-              .map((item) => ({
-                    'id': 'kgplaylist_${item['specialid']}',
-                    'title': item['specialname'],
-                    'source': 'kugou',
-                    'source_url':
-                        'https://www.kugou.com/yy/special/single/${item['specialid']}.html',
-                    'img_url': item['imgurl'] != null
-                        ? item['imgurl'].replaceAll('{size}', '400')
-                        : '',
-                    'url': 'kgplaylist_${item['specialid']}',
-                    'author': item['nickname'],
-                    'count': item['songcount'],
-                  }))
+              .map(
+                (item) => ({
+                  'id': 'kgplaylist_${item['specialid']}',
+                  'title': item['specialname'],
+                  'source': 'kugou',
+                  'source_url':
+                      'https://www.kugou.com/yy/special/single/${item['specialid']}.html',
+                  'img_url': item['imgurl'] != null
+                      ? item['imgurl'].replaceAll('{size}', '400')
+                      : '',
+                  'url': 'kgplaylist_${item['specialid']}',
+                  'author': item['nickname'],
+                  'count': item['songcount'],
+                }),
+              )
               .toList();
           final total = jsonDecode(response.data)['data']['total'];
-          return fn({
-            'result': result,
-            'total': total,
-            'type': searchType,
-          });
+          return fn({'result': result, 'total': total, 'type': searchType});
         },
       };
     }
@@ -350,7 +363,11 @@ class Kugou {
   //   });
   // }
   Future<void> kg_render_playlist_result_item(
-      int index, item, List params, Function callback) async {
+    int index,
+    item,
+    List params,
+    Function callback,
+  ) async {
     final hash = item['hash'];
     var target_url =
         'https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=$hash';
@@ -492,10 +509,7 @@ class Kugou {
           data['list']['list']['info'],
           kg_render_playlist_result_item,
           [],
-          (err, tracks) => fn({
-            'tracks': tracks,
-            'info': info,
-          }),
+          (err, tracks) => fn({'tracks': tracks, 'info': info}),
         );
       },
     };
@@ -541,7 +555,11 @@ class Kugou {
   //     });
   // }
   Future<void> kg_render_artist_result_item(
-      int index, item, List params, Function callback) async {
+    int index,
+    item,
+    List params,
+    Function callback,
+  ) async {
     final info = params[0];
     final track = Track.fromJson({
       'id': 'kgtrack_${item['hash']}',
@@ -564,39 +582,42 @@ class Kugou {
     var target_url =
         'https://www.kugou.com/yy/index.php?r=play/getdata&hash=${item['hash']}';
     final response = await dioWithCookieManager.get(
-        'http://mobilecdnbj.kugou.com/api/v3/album/info?albumid=${item['album_id']}');
+      'http://mobilecdnbj.kugou.com/api/v3/album/info?albumid=${item['album_id']}',
+    );
     final data = jsonDecode(response.data);
     if (data['status'] != 0 && data['data'] != null) {
       track.album = data['data']['albumname'];
     } else {
       track.album = '';
     }
-//     {
-//   "Reqable-Id": "",
-//   "Host": "",
-//   "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30",
-//   "Connection": "keep-alive",
-//   "Accept": "application/json, text/plain, */*",
-//   "Accept-Encoding": "gzip, deflate, br",
-//   "accept-language": "zh-CN",
-//   "cookie": "kg_mid=484ec51a91806ddadb5ca9612490b9ae",
-//   "origin": "https://www.kugou.com/",
-//   "referer": "https://www.kugou.com/",
-//   "sec-fetch-dest": "empty",
-//   "sec-fetch-mode": "cors",
-//   "sec-fetch-site": "cross-site"
-// }
-    final response1 = await dioWithCookieManager.get(target_url,
-        options: Options(
-          headers: {
-            'User-Agent':
-                'Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30',
-            'Accept': 'application/json, text/plain, */*',
-            'accept-language': 'zh-CN',
-            'origin': 'https://www.kugou.com/',
-            'referer': 'https://www.kugou.com/',
-          },
-        ));
+    //     {
+    //   "Reqable-Id": "",
+    //   "Host": "",
+    //   "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30",
+    //   "Connection": "keep-alive",
+    //   "Accept": "application/json, text/plain, */*",
+    //   "Accept-Encoding": "gzip, deflate, br",
+    //   "accept-language": "zh-CN",
+    //   "cookie": "kg_mid=484ec51a91806ddadb5ca9612490b9ae",
+    //   "origin": "https://www.kugou.com/",
+    //   "referer": "https://www.kugou.com/",
+    //   "sec-fetch-dest": "empty",
+    //   "sec-fetch-mode": "cors",
+    //   "sec-fetch-site": "cross-site"
+    // }
+    final response1 = await dioWithCookieManager.get(
+      target_url,
+      options: Options(
+        headers: {
+          'User-Agent':
+              'Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30',
+          'Accept': 'application/json, text/plain, */*',
+          'accept-language': 'zh-CN',
+          'origin': 'https://www.kugou.com/',
+          'referer': 'https://www.kugou.com/',
+        },
+      ),
+    );
     track.img_url = response1.data['data']['img'];
     callback(null, track);
   }
@@ -655,10 +676,7 @@ class Kugou {
           jsonDecode(res.data)['data']['info'],
           kg_render_artist_result_item,
           [info],
-          (err, tracks) => fn({
-            'tracks': tracks,
-            'info': info,
-          }),
+          (err, tracks) => fn({'tracks': tracks, 'info': info}),
         );
       },
     };
@@ -714,7 +732,10 @@ class Kugou {
   //   });
   // }
   Future<void> bootstrap_track(
-      Track track, Function success, Function failure) async {
+    Track track,
+    Function success,
+    Function failure,
+  ) async {
     final track_id = track.id.substring('kgtrack_'.length);
     final target_url =
         'https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=$track_id';
@@ -762,16 +783,14 @@ class Kugou {
         try {
           final response = await dioWithCookieManager.get(lyric_url);
           final data = response.data;
-          final jsonString =
-              data.substring('jQuery('.length, data.length - 1 - 1);
+          final jsonString = data.substring(
+            'jQuery('.length,
+            data.length - 1 - 1,
+          );
           final info = json.decode(jsonString);
-          fn({
-            'lyric': info['data']['lyrics'],
-          });
+          fn({'lyric': info['data']['lyrics']});
         } catch (e) {
-          fn({
-            'lyric': '',
-          });
+          fn({'lyric': ''});
         }
       },
     };
@@ -807,7 +826,11 @@ class Kugou {
   //   });
   // }
   Future<void> kg_render_album_result_item(
-      int index, item, List params, Function callback) async {
+    int index,
+    item,
+    List params,
+    Function callback,
+  ) async {
     final info = params[0];
     final album_id = params[1];
     final track = Track.fromJson({
@@ -897,10 +920,7 @@ class Kugou {
           jsonDecode(res.data)['data']['info'],
           kg_render_album_result_item,
           [info, album_id],
-          (err, tracks) => fn({
-            'tracks': tracks,
-            'info': info,
-          }),
+          (err, tracks) => fn({'tracks': tracks, 'info': info}),
         );
       },
     };
@@ -951,20 +971,22 @@ class Kugou {
           final data = jsonDecode(response.data);
           // const total = data.plist.total;
           final result = data['plist']['list']['info']
-              .map((item) => ({
-                    'cover_img_url': item['imgurl'] != null
-                        ? item['imgurl']
-                            .replaceAll('{size}', '400') // 使用 replaceAll
-                        : '',
-                    'title': item['specialname'],
-                    'id': 'kgplaylist_${item['specialid']}',
-                    'source_url':
-                        'https://www.kugou.com/yy/special/single/${item['specialid']}.html',
-                  }))
+              .map(
+                (item) => ({
+                  'cover_img_url': item['imgurl'] != null
+                      ? item['imgurl'].replaceAll(
+                          '{size}',
+                          '400',
+                        ) // 使用 replaceAll
+                      : '',
+                  'title': item['specialname'],
+                  'id': 'kgplaylist_${item['specialid']}',
+                  'source_url':
+                      'https://www.kugou.com/yy/special/single/${item['specialid']}.html',
+                }),
+              )
               .toList();
-          return fn(
-            result,
-          );
+          return fn(result);
         } catch (e) {
           print('Error fetching playlist: $e');
           return fn([]); // 返回空列表或处理错误
@@ -993,18 +1015,14 @@ class Kugou {
   // }
   Future<Map<String, Function>> parse_url(String url) async {
     Map<String, dynamic> result = {};
-    final match = RegExp(r'//www.kugou.com/yy/special/single/([0-9]+).html')
-        .firstMatch(url);
+    final match = RegExp(
+      r'//www.kugou.com/yy/special/single/([0-9]+).html',
+    ).firstMatch(url);
     if (match != null) {
       final playlist_id = match.group(1);
-      result = {
-        'type': 'playlist',
-        'id': 'kgplaylist_$playlist_id',
-      };
+      result = {'type': 'playlist', 'id': 'kgplaylist_$playlist_id'};
     }
-    return {
-      'success': (fn) => fn(result),
-    };
+    return {'success': (fn) => fn(result)};
   }
 
   // static get_playlist(url) {
@@ -1024,16 +1042,19 @@ class Kugou {
   Future<Map<String, Function>> get_playlist(String url) async {
     // eslint-disable-line no-unused-vars
     final list_id = getParameterByName('list_id', url).split('_')[0];
-    switch (list_id) {
-      case 'kgplaylist':
-        return kg_get_playlist(url);
-      case 'kgalbum':
-        return kg_album(url);
-      case 'kgartist':
-        return kg_artist(url);
-      default:
-        return {};
-    }
+    // switch (list_id) {
+    // case 'kgplaylist':
+    if (list_id == KgPlaylistType.playlist.prefix)
+      return kg_get_playlist(url);
+    // case 'kgalbum':
+    else if (list_id == KgPlaylistType.album.prefix)
+      return kg_album(url);
+    // case 'kgartist':
+    else if (list_id == KgPlaylistType.artist.prefix)
+      return kg_artist(url);
+    // default:
+    return {};
+    // }
   }
 
   // static get_playlist_filters() {

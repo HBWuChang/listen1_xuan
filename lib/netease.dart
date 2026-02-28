@@ -17,6 +17,15 @@ import 'package:convert/convert.dart';
 
 final netease = Netease();
 
+enum NePlaylistType {
+  playlist('neplaylist'),
+  album('nealbum'),
+  artist('neartist');
+
+  final String prefix;
+  const NePlaylistType(this.prefix);
+}
+
 Future<String> get_csrf() async {
   final tokens = settings_getsettings();
   try {
@@ -724,19 +733,21 @@ class Netease {
   // static Future<void> getPlaylist(String url, Function fn) async {
   Future<Map<String, dynamic>> get_playlist(String url) async {
     final listId = Uri.parse(url).queryParameters['list_id']!.split('_')[0];
-    switch (listId) {
-      case 'neplaylist':
-        // await neGetPlaylist(url, fn);
-        return ne_get_playlist(url);
-      case 'nealbum':
-        // await neAlbum(url, fn);
-        return ne_album(url);
-      case 'neartist':
-        // await neArtist(url, fn);
-        return ne_artist(url);
-      default:
-        return {};
-    }
+    // switch (listId) {
+    //   case 'neplaylist':
+    if (listId == NePlaylistType.playlist.prefix)
+      // await neGetPlaylist(url, fn);
+      return ne_get_playlist(url);
+    if (listId == NePlaylistType.album.prefix)
+      // case 'nealbum':
+      // await neAlbum(url, fn);
+      return ne_album(url);
+    // case 'neartist':
+    if (listId == NePlaylistType.artist.prefix)
+      // await neArtist(url, fn);
+      return ne_artist(url);
+    // default:
+    return {};
   }
 
   Future<Map<String, dynamic>> get_playlist_filters() {

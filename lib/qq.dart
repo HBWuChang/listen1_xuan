@@ -22,6 +22,16 @@ import 'package:listen1_xuan/models/Track.dart';
 
 final qq = QQ();
 
+enum QQPlaylistType {
+  playlist('qqplaylist'),
+  album('qqalbum'),
+  artist('qqartist'),
+  toplist('qqtoplist');
+
+  final String prefix;
+  const QQPlaylistType(this.prefix);
+}
+
 class QQ {
   static String htmlDecode(String value) {
     var document = parse(value);
@@ -720,19 +730,18 @@ class QQ {
   // }
   Future<Map<String, dynamic>?> get_playlist(String url) async {
     var list_id = getParameterByName('list_id', url).split('_').first;
-    switch (list_id) {
-      case 'qqplaylist':
-        return qq_get_playlist(url);
-      case 'qqalbum':
-        return qq_album(url);
-      case 'qqartist':
-        return qq_artist(url);
-      case 'qqtoplist':
-        return qq_toplist(url);
-      default:
-        return null;
-    }
+    // switch (list_id) {
+    if (list_id == QQPlaylistType.playlist.prefix) return qq_get_playlist(url);
+    // case 'qqalbum':
+    if (list_id == QQPlaylistType.album.prefix) return qq_album(url);
+    // case 'qqartist':
+    if (list_id == QQPlaylistType.artist.prefix) return qq_artist(url);
+    // case 'qqtoplist':
+    if (list_id == QQPlaylistType.toplist.prefix) return qq_toplist(url);
+    // default:
+    return null;
   }
+
   // static get_playlist_filters() {
   //   const target_url =
   //     'https://c.y.qq.com/splcloud/fcgi-bin/fcg_get_diss_tag_conf.fcg' +

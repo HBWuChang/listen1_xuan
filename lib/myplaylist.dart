@@ -1,12 +1,10 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'controllers/myPlaylist_controller.dart';
-import 'controllers/play_controller.dart';
 import 'funcs.dart';
 import 'lowebutil.dart';
-import 'dart:math';
-import 'global_settings_animations.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:uuid/uuid.dart';
 
 import 'models/PlayListInfo.dart';
 import 'models/Playlist.dart';
@@ -34,8 +32,12 @@ class MyPlaylist {
     return '';
   }
 
-  Future<void> Add_to_my_playlist(dynamic context, List<Track> tracks,
-      [String? title = "", String? cover_img_url = ""]) async {
+  Future<void> Add_to_my_playlist(
+    dynamic context,
+    List<Track> tracks, [
+    String? title = "",
+    String? cover_img_url = "",
+  ]) async {
     try {
       final playlists = show_myplaylist('my')['result'];
       await Get.dialog(
@@ -66,36 +68,43 @@ class MyPlaylist {
                 await Get.dialog(
                   AlertDialog(
                     title: Text('请输入歌单信息'),
-                    content: Column(children: [
-                      TextField(
-                        controller: TextEditingController(text: title),
-                        onChanged: (text) {
-                          title = text;
-                        },
-                        decoration: InputDecoration(
-                          labelText: '歌单标题',
-                          // border: InputBorder.none,
+                    content: Column(
+                      children: [
+                        TextField(
+                          controller: TextEditingController(text: title),
+                          onChanged: (text) {
+                            title = text;
+                          },
+                          decoration: InputDecoration(
+                            labelText: '歌单标题',
+                            // border: InputBorder.none,
+                          ),
                         ),
-                      ),
-                      TextField(
-                          controller:
-                              TextEditingController(text: cover_img_url),
+                        TextField(
+                          controller: TextEditingController(
+                            text: cover_img_url,
+                          ),
                           onChanged: (text) {
                             cover_img_url = text;
                           },
                           decoration: InputDecoration(
                             labelText: '封面图片链接',
                             // border: InputBorder.none,
-                          )),
-                    ]),
+                          ),
+                        ),
+                      ],
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () async {
                           if (title == '') {
                             return;
                           }
-                          await createMyPlaylist(title!, tracks,
-                              cover_img_url ?? "images/mycover.jpg");
+                          await createMyPlaylist(
+                            title!,
+                            tracks,
+                            cover_img_url ?? "images/mycover.jpg",
+                          );
                           Get.back();
                           Get.back();
                           showSuccessSnackbar('添加成功', null);
@@ -162,7 +171,7 @@ class MyPlaylist {
         return {'result': _myPlayListController.playerlists.values.toList()};
       case 'favoriteplayerlists':
         return {
-          'result': _myPlayListController.favoriteplayerlists.values.toList()
+          'result': _myPlayListController.favoriteplayerlists.values.toList(),
         };
       default:
         return {'result': []};
@@ -181,16 +190,12 @@ class MyPlaylist {
           fn(null);
           // return null;
         }
-      })
+      }),
     };
   }
 
   String guid() {
-    String s4() {
-      return (Get.find<PlayController>().random.nextInt(9000) + 1000).toString(); // 生成 1000 到 9999 之间的随机数
-    }
-
-    return '${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}';
+    return Uuid().v4();
   }
 
   void saveMyPlaylist(String playlistType, PlayList playlistObj) {
@@ -263,7 +268,11 @@ class MyPlaylist {
   }
 
   PlayList? insertTrackToMyPlaylist(
-      String playlistId, Track track, Track toTrack, String direction) {
+    String playlistId,
+    Track track,
+    Track toTrack,
+    String direction,
+  ) {
     final playlist = _myPlayListController.playerlists[playlistId];
     if (playlist == null || playlist.tracks == null) {
       return null;
@@ -293,8 +302,11 @@ class MyPlaylist {
     return playlist.tracks!.length < initialLength;
   }
 
-  Future<void> createMyPlaylist(String playlistTitle, List<Track> tracks,
-      [String cover_img_url = "images/mycover.jpg"]) async {
+  Future<void> createMyPlaylist(
+    String playlistTitle,
+    List<Track> tracks, [
+    String cover_img_url = "images/mycover.jpg",
+  ]) async {
     // final playlist = {
     //   'is_mine': 1,
     //   'info': {

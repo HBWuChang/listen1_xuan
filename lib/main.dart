@@ -13,6 +13,7 @@ import 'controllers/HomeController.dart';
 import 'controllers/upd_controller.dart';
 import 'examples/websocket_server_example.dart';
 import 'examples/websocket_client_example.dart';
+import 'models/PlayList.dart';
 import 'pages/download_page.dart';
 import 'pages/nowPlaying_page.dart';
 import 'pages/settings/settings_readme.dart';

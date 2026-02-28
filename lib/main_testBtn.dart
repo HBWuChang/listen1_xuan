@@ -20,14 +20,32 @@ Widget get testBtn => Positioned.fill(
             ),
             FloatingActionButton(
               onPressed: () async {
-                try {
-                  var box = await Hive.openBox(SettingsController.hiveStoreKey);
-                  await box.put('testKey', 'testValue');
-                  var value = box.get('testKey');
-                  logger.i('Hive test value: $value');
-                } catch (e) {
-                  logger.e(e);
-                }
+                Get.find<SettingsController>().getPlayLists().then((
+                  playlists,
+                ) async {
+                  Set<String> keysToRemove = playlists.difference(
+                    Get.find<MyPlayListController>().favoriteplayerlists.keys
+                        .toSet(),
+                  );
+                  debugPrint(
+                    Get.find<MyPlayListController>().favoriteplayerlists.keys
+                        .toSet()
+                        .toString(),
+                  );
+                  debugPrint(
+                    Get.find<MyPlayListController>().favoriteplayerlists.keys
+                        .toSet()
+                        .length
+                        .toString(),
+                  );
+                  debugPrint(playlists.toString());
+                  debugPrint(playlists.length.toString());
+                  debugPrint('keysToRemove: $keysToRemove');
+                  debugPrint('keysToRemove length: ${keysToRemove.length}');
+                  for (var key in keysToRemove) {
+                    await Get.find<SettingsController>().remove(key: key);
+                  }
+                });
               },
               child: Icon(Icons.system_update_alt),
             ),

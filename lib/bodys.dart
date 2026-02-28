@@ -412,7 +412,6 @@ class MyPlaylist extends StatefulWidget {
 }
 
 class _MyPlaylistState extends State<MyPlaylist> {
-  List<PlayList> _playlists_fav = [];
   List<PlayList> _playlists_bl = [];
   List<PlayList> _playlists_ne = [];
   List<PlayList> _playlists_qq = [];
@@ -421,25 +420,12 @@ class _MyPlaylistState extends State<MyPlaylist> {
   bool _isExpandedBl = false;
   bool _isExpandedNe = false;
   bool _isExpandedQq = false;
-  bool _isFavDataLoaded = false;
   bool _isBlDataLoaded = false;
   bool _isNeDataLoaded = false;
   bool _isQqDataLoaded = false;
   @override
   void initState() {
     super.initState();
-  }
-
-  void _loadFavData() async {
-    Map<String, dynamic> result_fav = myplaylist.show_myplaylist('favorite');
-    try {
-      setState(() {
-        _playlists_fav = result_fav['result'];
-        _isFavDataLoaded = true;
-      });
-    } catch (e) {
-      showErrorSnackbar('收藏歌单加载失败', e.toString());
-    }
   }
 
   void _loadBlData() async {
@@ -606,11 +592,6 @@ class _MyPlaylistState extends State<MyPlaylist> {
                   setState(() {
                     if (index == 0) {
                       _isExpandedMy = !_isExpandedMy;
-                    } else if (index == 1) {
-                      _isExpandedFav = !_isExpandedFav;
-                      if (_isExpandedFav && !_isFavDataLoaded) {
-                        _loadFavData();
-                      }
                     } else if (index == 2) {
                       _isExpandedBl = !_isExpandedBl;
                       if (_isExpandedBl && !_isBlDataLoaded) {
@@ -703,16 +684,16 @@ class _MyPlaylistState extends State<MyPlaylist> {
                         onTap: () {
                           setState(() {
                             _isExpandedFav = !_isExpandedFav;
-                            if (_isExpandedFav && !_isFavDataLoaded) {
-                              _loadFavData();
-                            }
                           });
                         },
                       );
                     },
-                    body: _isFavDataLoaded
-                        ? Column(
-                            children: _playlists_fav.map((playlist) {
+                    body: Obx(
+                      () => Column(
+                        children: Get.find<MyPlayListController>()
+                            .favoriteplayerlists
+                            .values
+                            .map((playlist) {
                               return ListTile(
                                 leading: ExtendedImage.network(
                                   playlist.info.cover_img_url!,
@@ -734,9 +715,10 @@ class _MyPlaylistState extends State<MyPlaylist> {
                                   );
                                 },
                               );
-                            }).toList(),
-                          )
-                        : Center(child: globalLoadingAnime),
+                            })
+                            .toList(),
+                      ),
+                    ),
                     isExpanded: _isExpandedFav,
                   ),
                   ExpansionPanel(

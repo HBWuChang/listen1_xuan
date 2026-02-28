@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/Playlist.dart';
 import '../models/Track.dart';
@@ -34,6 +33,14 @@ class MyPlayListController extends GetxController {
               );
         await s.setString(playlist.key, jsonString);
       }
+      Get.find<SettingsController>().getMyPlayLists().then((playlists) async {
+        Set<String> keysToRemove = playlists.difference(
+          playerlists.keys.toSet(),
+        );
+        for (var key in keysToRemove) {
+          await s.remove(key: key);
+        }
+      });
     });
     debounce(favoriteplayerlists, (callback) async {
       final s = Get.find<SettingsController>();
@@ -50,6 +57,14 @@ class MyPlayListController extends GetxController {
               );
         await s.setString(playlist.key, jsonString);
       }
+      Get.find<SettingsController>().getPlayLists().then((playlists) async {
+        Set<String> keysToRemove = playlists.difference(
+          favoriteplayerlists.keys.toSet(),
+        );
+        for (var key in keysToRemove) {
+          await s.remove(key: key);
+        }
+      });
     });
   }
 

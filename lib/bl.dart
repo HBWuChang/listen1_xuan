@@ -16,6 +16,17 @@ import 'models/Playlist.dart';
 
 final bilibili = Bilibili();
 
+enum BLPlaylistType {
+  playlist('biplaylist'),
+  album('bialbum'),
+  artist('biartist'),
+  track('bitrack'),
+  playlistxuan('biplaylistxuan');
+
+  final String prefix;
+  const BLPlaylistType(this.prefix);
+}
+
 class Bilibili {
   Future<List<PlayList>> Xuan_get_bl_playlist() async {
     var bilibiliData = {};
@@ -823,20 +834,21 @@ class Bilibili {
 
   Future<Map<String, dynamic>> get_playlist(String url) async {
     final listId = getParameterByName('list_id', url)?.split('_')[0];
-    switch (listId) {
-      case 'biplaylist':
-        return bi_get_playlist(url);
-      case 'biplaylistxuan':
-        return biGetPlaylistxuan(url);
-      case 'bialbum':
-        return bi_album(url);
-      case 'biartist':
-        return bi_artist(url);
-      case 'bitrack':
-        return bi_track(url);
-      default:
-        return Future.value(null);
-    }
+    // switch (listId) {
+    //   case 'biplaylist':
+    if (listId == BLPlaylistType.playlist.prefix) return bi_get_playlist(url);
+    // case 'biplaylistxuan':
+    if (listId == BLPlaylistType.playlistxuan.prefix)
+      return biGetPlaylistxuan(url);
+    // case 'bialbum':
+    if (listId == BLPlaylistType.album.prefix) return bi_album(url);
+    // case 'biartist':
+    if (listId == BLPlaylistType.artist.prefix) return bi_artist(url);
+    // case 'bitrack':
+    if (listId == BLPlaylistType.track.prefix) return bi_track(url);
+    // default:
+    return Future.value(null);
+    // }
   }
 
   Future<Map<String, dynamic>> get_playlist_filters() async {

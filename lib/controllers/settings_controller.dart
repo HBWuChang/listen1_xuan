@@ -23,13 +23,13 @@ import 'package:window_manager/window_manager.dart';
 import '../bl.dart';
 import '../const.dart';
 import '../global_settings_animations.dart';
+import '../kugou.dart';
 import '../main.dart';
 import '../models/Playlist.dart';
 import '../models/SongReplaceSettings.dart';
 import '../netease.dart';
 import '../qq.dart';
 import '../settings.dart';
-import 'myPlaylist_controller.dart';
 
 class SettingsController extends GetxController {
   static const String hiveStoreKey = 'hive_store';
@@ -384,6 +384,44 @@ class SettingsController extends GetxController {
     } else {
       await _loadSettingsAwait();
     }
+  }
+
+  Future<Set<String>> getMayUseFulKeys() async {
+    Set<String> playlists = {};
+    Set<String> k = await getKeys();
+    for (var key in k) {
+      switch (key) {
+        case 'local-cache-list':
+          continue;
+        default:
+          if (key.startsWith('flutter.') ||
+              key.startsWith('supabase.') ||
+              key.contains('token')) {
+            continue;
+          }
+          playlists.add(key);
+      }
+    }
+    return playlists;
+  }
+
+  Future<Set<String>> getMyPlayLists() async {
+    Set<String> keys = await getMayUseFulKeys();
+
+    return keys.where((key) => key.startsWith('myplaylist_')).toSet();
+  }
+
+  Future<Set<String>> getPlayLists() async {
+    Set<String> keys = await getMayUseFulKeys();
+    Set<String> allPlantformPlaylistKeys = {
+      ...BLPlaylistType.values.map((e) => e.prefix),
+      ...NePlaylistType.values.map((e) => e.prefix),
+      ...KgPlaylistType.values.map((e) => e.prefix),
+      ...QQPlaylistType.values.map((e) => e.prefix),
+    };
+    return keys
+        .where((key) => allPlantformPlaylistKeys.contains(key.split('_')[0]))
+        .toSet();
   }
 
   /// 直接顺序加载设置（不使用 compute，用于 debug 模式）
@@ -886,6 +924,27 @@ class SettingsController extends GetxController {
         return allKeys.where((key) => allowList.contains(key)).toSet();
       } else {
         return await prefs.getKeys();
+      }
+    }
+  }
+
+  Future<void> remove({String? key, Iterable<String>? keys}) async {
+    if (use) {
+      if (key != null) {
+        await box!.delete(key);
+      }
+      if (keys != null) {
+        for (var k in keys) {
+          await box!.delete(k);
+        }
+      }
+    }
+    if (key != null) {
+      await prefs.remove(key);
+    }
+    if (keys != null) {
+      for (var k in keys) {
+        await prefs.remove(k);
       }
     }
   }
