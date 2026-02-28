@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/lyric_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
@@ -270,6 +271,7 @@ class CacheController extends GetxController {
 
   /// 清理单个缓存文件
   Future<void> _cleanSingleCache(String id) async {
+    Get.find<XLyricController>().clearLyricCache(id);
     id = _playController.songReplaceSettings.value.getReplacementId(id) ?? id;
     final path = await getLocalCache(id);
     if (path.isNotEmpty) {
@@ -345,7 +347,7 @@ class CacheController extends GetxController {
         }
       }
     }
-
+    Get.find<XLyricController>().clearLyricBoxExceptIds(notToDelIds);
     // 清理无效的缓存记录（文件已不存在）
     await _cleanInvalidCacheRecords();
 

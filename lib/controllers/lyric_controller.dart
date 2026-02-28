@@ -47,11 +47,35 @@ class XLyricController extends GetxController {
     return '$trackId$suffix.lrc';
   }
 
+  String _getLyricCacheKey(String trackId, {bool isTranslation = false}) {
+    return isTranslation ? '${trackId}_tlyric' : '${trackId}_lyric';
+  }
+
   /// 从本地缓存读取歌词
   Future<Map<String, String>> _loadLyricFromCache(String trackId) async {
     final result = <String, String>{};
 
     try {
+      // 1) 优先从 lyricBox 读取“特殊歌词”（如弹幕生成）
+      final lyricKey = _getLyricCacheKey(trackId);
+      final tlyricKey = _getLyricCacheKey(trackId, isTranslation: true);
+
+      final boxLyric = _settingsController.getLyricBoxString(lyricKey);
+      if (boxLyric != null && boxLyric.isNotEmpty) {
+        result['lyric'] = boxLyric;
+      }
+      final boxTLyric = _settingsController.getLyricBoxString(tlyricKey);
+      if (boxTLyric != null && boxTLyric.isNotEmpty) {
+        result['tlyric'] = boxTLyric;
+      }
+
+      final needsFileLyric = !(result['lyric']?.isNotEmpty ?? false);
+      final needsFileTLyric = !(result['tlyric']?.isNotEmpty ?? false);
+      if (!needsFileLyric && !needsFileTLyric) {
+        return result;
+      }
+
+      // 2) lyricBox 没有时，再从本地文件缓存读取
       // 获取音乐文件的缓存路径作为基础路径
       final musicCachePath = await _cacheController.getLocalCache(trackId);
       if (musicCachePath.isEmpty) return result;
@@ -64,7 +88,7 @@ class XLyricController extends GetxController {
       final lyricFileName = _getLyricCacheFileName(trackId);
       final lyricFilePath = p.join(tempPath, lyricFileName);
 
-      if (await File(lyricFilePath).exists()) {
+      if (needsFileLyric && await File(lyricFilePath).exists()) {
         result['lyric'] = await File(lyricFilePath).readAsString();
       }
 
@@ -75,7 +99,7 @@ class XLyricController extends GetxController {
       );
       final tlyricFilePath = p.join(tempPath, tlyricFileName);
 
-      if (await File(tlyricFilePath).exists()) {
+      if (needsFileTLyric && await File(tlyricFilePath).exists()) {
         result['tlyric'] = await File(tlyricFilePath).readAsString();
       }
     } catch (e) {
@@ -90,8 +114,15 @@ class XLyricController extends GetxController {
     String trackId,
     String lyric, {
     bool isTranslation = false,
+    bool toLyricBox = false,
   }) async {
     try {
+      if (toLyricBox && _settingsController.useLyricBox) {
+        final key = _getLyricCacheKey(trackId, isTranslation: isTranslation);
+        await _settingsController.setLyricBoxString(key, lyric);
+        return;
+      }
+
       final tempDir = await xuanGetdataDirectory();
       final tempPath = tempDir.path;
 
@@ -105,7 +136,7 @@ class XLyricController extends GetxController {
 
       // 将歌词文件添加到缓存管理
       _cacheController.setLocalCache(
-        isTranslation ? '${trackId}_tlyric' : '${trackId}_lyric',
+        _getLyricCacheKey(trackId, isTranslation: isTranslation),
         fileName,
       );
     } catch (e) {
@@ -423,6 +454,7 @@ class XLyricController extends GetxController {
                 trackId,
                 lrcContent,
                 isTranslation: isTranslation,
+                toLyricBox: true,
               );
               await loadLyric();
 
@@ -742,8 +774,7 @@ class XLyricController extends GetxController {
       param['segment_index'] = segmentIndex;
       final response = await Bilibili.wrap_wbi_request(
         'https://api.bilibili.com/x/v2/dm/wbi/web/seg.so',
-        segmentIndex != 1 ? param : Map.from(param)
-          ..addAll({'ps': 0, 'pe': 120000}),
+        segmentIndex != 1 ? param : {...param, 'ps': 0, 'pe': 120000},
         responseType: ResponseType.bytes,
       );
       if (response.statusCode == 200) {
@@ -756,8 +787,7 @@ class XLyricController extends GetxController {
       if (segmentIndex == 1) {
         final response = await Bilibili.wrap_wbi_request(
           'https://api.bilibili.com/x/v2/dm/wbi/web/seg.so',
-          segmentIndex != 1 ? param : Map.from(param)
-            ..addAll({'ps': 120000, 'pe': 360000}),
+          {...param, 'ps': 120000, 'pe': 360000},
           responseType: ResponseType.bytes,
         );
         if (response.statusCode == 200) {
@@ -807,15 +837,71 @@ class XLyricController extends GetxController {
     // }
   }
 
+  String? _extractTrackIdFromLyricBoxKey(Object key) {
+    if (key is! String) return null;
+
+    const tSuffix = '_tlyric';
+    const suffix = '_lyric';
+
+    if (key.endsWith(tSuffix)) {
+      return key.substring(0, key.length - tSuffix.length);
+    }
+    if (key.endsWith(suffix)) {
+      return key.substring(0, key.length - suffix.length);
+    }
+    return null;
+  }
+
+  /// 删除 lyricBox 中除 keepIds 之外的所有歌词记录（仅处理 *_lyric / *_tlyric）
+  Future<void> clearLyricBoxExceptIds(Iterable<String> keepIds) async {
+    try {
+      if (!_settingsController.useLyricBox) return;
+      final box = _settingsController.lyricBox;
+      if (box == null) return;
+
+      final keepSet = keepIds.toSet();
+      final keysToDelete = <dynamic>[];
+
+      for (final key in box.keys) {
+        final trackId = _extractTrackIdFromLyricBoxKey(key);
+        if (trackId == null) continue;
+        if (!keepSet.contains(trackId)) {
+          keysToDelete.add(key);
+        }
+      }
+
+      if (keysToDelete.isEmpty) return;
+      await box.deleteAll(keysToDelete);
+    } catch (e) {
+      debugPrint('清理 lyricBox 失败: $e');
+    }
+  }
+
   /// 清理特定歌曲的歌词缓存
   Future<void> clearLyricCache(String trackId) async {
     try {
-      // 清理主歌词缓存
-      final lyricCacheKey = '${trackId}_lyric';
-      final tlyricCacheKey = '${trackId}_tlyric';
+      // 直接删除歌词文件与 lyricBox 字段（不走 CacheController，它面向音频缓存）
+      final tempDir = await xuanGetdataDirectory();
+      final tempPath = tempDir.path;
 
-      await _cacheController.cleanLocalCache(false, lyricCacheKey);
-      await _cacheController.cleanLocalCache(false, tlyricCacheKey);
+      Future<void> deleteFileIfExists(String fileName) async {
+        final filePath = p.join(tempPath, fileName);
+        final file = File(filePath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      }
+
+      await deleteFileIfExists(_getLyricCacheFileName(trackId));
+      await deleteFileIfExists(
+        _getLyricCacheFileName(trackId, isTranslation: true),
+      );
+
+      if (_settingsController.useLyricBox) {
+        final box = _settingsController.lyricBox;
+        await box?.delete(_getLyricCacheKey(trackId));
+        await box?.delete(_getLyricCacheKey(trackId, isTranslation: true));
+      }
     } catch (e) {
       print('清理歌词缓存失败: $e');
     }

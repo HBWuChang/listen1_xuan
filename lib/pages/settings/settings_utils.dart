@@ -39,6 +39,8 @@ Future<Map<String, dynamic>> outputAllSettingsToFile([
         }
     }
   }
+  settings[SettingsController.lyricHiveStoreKey] = await s
+      .exportLyricBoxToString();
   if (toJsonString) {
     settings.remove('githubOauthAccessKey');
     return settings;
@@ -99,6 +101,12 @@ Future<void> importSettingsFromFile(
             } catch (e) {
               logger.e('Error saving key $key: $e');
             }
+            break;
+
+          case SettingsController.lyricHiveStoreKey:
+            await s.importLyricBoxFromString(
+              settings[key],
+            );
             break;
           default:
             try {

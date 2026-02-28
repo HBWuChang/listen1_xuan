@@ -102,11 +102,11 @@ Future<void> closeApp() async {
 
   void performExit() {
     Get.back();
-    if (kDebugMode) {
-      print("exit(0)");
-    } else {
-      exit(0);
-    }
+    // if (kDebugMode) {
+    // print("exit(0)");
+    // } else {
+    exit(0);
+    // }
   }
 
   Get.dialog(
@@ -184,7 +184,8 @@ Future<void> closeApp() async {
       Get.find<PlayController>().positionInMilliseconds.value;
   // 并行执行两个任务
   Future.wait([
-    Get.find<SettingsController>().saveSettings().then((_) {
+    Get.find<SettingsController>().saveSettings().then((_) async {
+      await Get.find<SettingsController>().box?.close();
       settingsSaved.value = true;
     }),
     Get.find<PlayController>().updateContinuePlay(onlyPlaying: true).then((

@@ -33,8 +33,10 @@ import '../settings.dart';
 
 class SettingsController extends GetxController {
   static const String hiveStoreKey = 'hive_store';
+  static const String lyricHiveStoreKey = 'lyric_store';
   bool useHive = false;
   Box<dynamic>? box;
+  Box<dynamic>? lyricBox;
   final prefs = SharedPreferencesAsync();
   final settings = <String, dynamic>{}.obs;
   final Completer<void> _dioInitCompleter = Completer<void>();
@@ -372,10 +374,82 @@ class SettingsController extends GetxController {
       Hive.init(path);
       box = await Hive.openBox(SettingsController.hiveStoreKey);
       useHive = true;
+
+      try {
+        lyricBox = await Hive.openBox(SettingsController.lyricHiveStoreKey);
+      } catch (e) {
+        logger.e('Init Hive lyricBox failed:$e');
+      }
       // }
     } catch (e) {
       logger.e('Init Hive failed:$e');
     }
+  }
+
+  bool get useLyricBox => useHive && lyricBox != null;
+
+  String? getLyricBoxString(String key) {
+    if (!useLyricBox) return null;
+    if (!lyricBox!.containsKey(key)) return null;
+    final value = lyricBox!.get(key);
+    return value is String ? value : null;
+  }
+
+  Future<void> setLyricBoxString(String key, String value) async {
+    if (!useLyricBox) return;
+    await lyricBox!.put(key, value);
+  }
+
+  /// 导出 lyricBox 的所有数据到字符串（JSON）
+  ///
+  /// 仅导出 JSON 可编码的数据；遇到不可编码的值会跳过，以避免导出失败。
+  Future<String> exportLyricBoxToString() async {
+    if (!useLyricBox) return '{}';
+
+    final exportData = <String, dynamic>{};
+    for (final key in lyricBox!.keys) {
+      final stringKey = key.toString();
+      final value = lyricBox!.get(key);
+      try {
+        jsonEncode(value);
+        exportData[stringKey] = value;
+      } catch (e) {
+        logger.w('Skip non-JSON-encodable lyricBox entry: $stringKey ($e)');
+      }
+    }
+
+    return jsonEncode({'version': 1, 'data': exportData});
+  }
+
+  /// 从字符串（JSON）导入 lyricBox 的所有数据
+  ///
+  /// 默认会先清空现有 lyricBox 数据再导入。
+  Future<void> importLyricBoxFromString(
+    String content, {
+    bool clearExisting = true,
+  }) async {
+    if (!useLyricBox) return;
+
+    final decoded = jsonDecode(content);
+    Map<String, dynamic>? data;
+
+    if (decoded is Map) {
+      if (decoded['data'] is Map) {
+        data = Map<String, dynamic>.from(decoded['data'] as Map);
+      } else {
+        data = Map<String, dynamic>.from(decoded as Map);
+      }
+    }
+
+    if (data == null) {
+      throw 'lyricBox 导入失败：内容不是有效的 JSON 对象';
+    }
+
+    if (clearExisting) {
+      await lyricBox!.clear();
+    }
+
+    await lyricBox!.putAll(data);
   }
 
   Future<void> loadSettings() async {
@@ -686,6 +760,13 @@ class SettingsController extends GetxController {
   Future<void> saveSettings() async {
     String jsonString = jsonEncode(settings);
     await setString('settings', jsonString);
+  }
+
+  @override
+  void onClose() {
+    box?.close();
+    lyricBox?.close();
+    super.onClose();
   }
 
   setSettings(Map<String, dynamic> settings) {
