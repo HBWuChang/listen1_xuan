@@ -26,6 +26,7 @@ import shared_preferences_foundation
 import sqflite_darwin
 import tray_manager
 import url_launcher_macos
+import webview_cookie_manager
 import webview_flutter_wkwebview
 import window_manager
 
@@ -51,6 +52,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   SqflitePlugin.register(with: registry.registrar(forPlugin: "SqflitePlugin"))
   TrayManagerPlugin.register(with: registry.registrar(forPlugin: "TrayManagerPlugin"))
   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
+  WebviewCookieManagerPlugin.register(with: registry.registrar(forPlugin: "WebviewCookieManagerPlugin"))
   WebViewFlutterPlugin.register(with: registry.registrar(forPlugin: "WebViewFlutterPlugin"))
   WindowManagerPlugin.register(with: registry.registrar(forPlugin: "WindowManagerPlugin"))
 }

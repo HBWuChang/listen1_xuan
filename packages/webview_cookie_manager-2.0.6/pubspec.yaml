@@ -25,3 +25,5 @@ flutter:
         pluginClass: WebviewCookieManagerPlugin
       ios:
         pluginClass: WebviewCookieManagerPlugin
+      macos:
+        pluginClass: WebviewCookieManagerPlugin

@@ -1,7 +1,7 @@
 # Webview Cookie Manager
 [![pub package](https://img.shields.io/pub/v/webview_cookie_manager.svg)](https://pub.dartlang.org/packages/webview_cookie_manager)
 
-A flutter library to manager your web cookies for Android (API level 9+) and iOS (11+).
+A flutter library to manager your web cookies for Android (API level 9+), iOS (11+), and macOS (10.13+).
 
 The cookies stores and retrieves using the [httpCookieStore](https://developer.apple.com/documentation/webkit/wkwebsitedatastore/2881956-httpcookiestore) for iOS and [CookieManager](https://developer.android.com/reference/android/webkit/CookieManager) for Android.
 

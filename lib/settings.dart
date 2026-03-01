@@ -144,17 +144,17 @@ class _LoginWebviewState extends State<LoginWebview> {
           // _msg('设置成功$cookies', 3.0);
           showSuccessSnackbar('设置成功', null);
         } else {
-          if (isMacOS) {
-            // TODO: MacOS 支持
-            showErrorSnackbar('MacOS暂不支持此功能', null);
-            return;
-          }
+          // if (isMacOS) {
+          //   // DONE: MacOS 支持
+          //   showErrorSnackbar('MacOS暂不支持此功能', null);
+          //   return;
+          // }
           final cookieManager = WebviewCookieManager();
 
           final gotCookies = await cookieManager.getCookies(widget.open_url);
-          for (var item in gotCookies) {
-            print(item);
-          }
+          // for (var item in gotCookies) {
+          //   print(item);
+          // }
           String cookies = "";
           for (var item in gotCookies) {
             cookies += "${item.name}=${item.value};";
