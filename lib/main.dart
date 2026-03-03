@@ -573,6 +573,7 @@ class _MyHomePageState extends State<MyHomePage>
                                 separatorSize: 2,
                                 percentages: horPartPercentages,
                                 minWidths: [180, 500],
+                                keepWidthWhenExtended: {0},
                                 onResized: (infoList) {
                                   Get.find<SettingsController>()
                                       .horPartPercentages = infoList
