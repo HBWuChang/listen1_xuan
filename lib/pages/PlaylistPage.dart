@@ -53,7 +53,7 @@ class PlaylistController extends GetxController {
       );
 
       result['success']((data) {
-        print(data); // 打印实际的数据
+        logger.t('加载歌单数据成功: $data');
         try {
           playlists.value = data.toList();
           perPage.value = data.length;
@@ -61,11 +61,12 @@ class PlaylistController extends GetxController {
           loading.value = false;
         } catch (e) {
           showErrorSnackbar('加载歌单数据失败', e.toString());
+          logger.e('加载歌单数据失败', error: e);
           loading.value = false;
         }
       });
     } catch (e) {
-      print(e);
+      logger.e('加载歌单数据失败', error: e);
       loading.value = false;
     }
   }
@@ -84,7 +85,7 @@ class PlaylistController extends GetxController {
       );
 
       result['success']((data) {
-        print(data); // 打印实际的数据
+        logger.t('加载更多歌单数据成功: $data');
         if (data.length == 0) {
           hasMore.value = false;
         } else {
@@ -93,7 +94,7 @@ class PlaylistController extends GetxController {
         loadingMore.value = false;
       });
     } catch (e) {
-      print(e);
+      logger.e('加载更多歌单数据失败', error: e);
       loadingMore.value = false;
     }
   }
@@ -105,7 +106,7 @@ class PlaylistController extends GetxController {
       hasMore.value = true;
       await loadData();
     } catch (e) {
-      print(e);
+      logger.e('刷新歌单数据失败', error: e);
     }
   }
 

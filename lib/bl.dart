@@ -310,7 +310,8 @@ class Bilibili {
         return response.data['data']['uname'];
       }
     } catch (e) {
-      print(e);
+      // print(e);
+      logger.e('Bilibili cookie 无效', error: e);
     }
     return '';
   }
@@ -706,7 +707,8 @@ class Bilibili {
             fn({'tracks': tracks, 'info': info});
           }
         } catch (e) {
-          print(e);
+          // print(e);
+          logger.e('Bilibili获取歌手信息失败', error: e);
           fn({'tracks': [], 'info': {}});
         }
       },

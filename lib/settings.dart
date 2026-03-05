@@ -94,6 +94,7 @@ Logger logger = Logger(
     printEmojis: true,
     dateTimeFormat: DateTimeFormat.dateAndTime,
   ),
+  level: Level.debug,
 );
 
 class LoginWebview extends StatefulWidget {

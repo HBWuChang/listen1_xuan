@@ -436,7 +436,8 @@ class _MyPlaylistState extends State<MyPlaylist> {
         _isBlDataLoaded = true;
       });
     } catch (e) {
-      print(e);
+      // print(e);
+      logger.e('哔哩哔哩歌单加载失败', error: e);
     }
   }
 
@@ -970,7 +971,8 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
       try {
         result = PlayList.fromJson(data);
       } catch (e) {
-        print(e);
+        // print(e);
+        logger.e('歌单数据解析失败', error: e);
         result = PlayList.fromJson({
           'info': {'id': widget.listId},
         });

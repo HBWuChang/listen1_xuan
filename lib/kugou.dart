@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide Response;
 import 'package:listen1_xuan/controllers/play_controller.dart';
+import 'package:listen1_xuan/settings.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'controllers/DioController.dart';
@@ -988,7 +989,8 @@ class Kugou {
               .toList();
           return fn(result);
         } catch (e) {
-          print('Error fetching playlist: $e');
+          // print('Error fetching playlist: $e');
+          logger.e('Error fetching playlist', error: e);
           return fn([]); // 返回空列表或处理错误
         }
       },

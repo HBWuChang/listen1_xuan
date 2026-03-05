@@ -458,8 +458,7 @@ class _MyHomePageState extends State<MyHomePage>
     for (var i = 1; i < HomeController.sources.length; i++) {
       var t = await MediaService.getPlaylistFilters(HomeController.sources[i]);
       t["success"]((data) {
-        debugPrint(HomeController.sources[i]);
-        debugPrint(data.toString());
+        logger.t('获取歌单过滤器成功: ${HomeController.sources[i]}$data');
         homeController.filter_details[i] = data;
       });
     }
@@ -483,9 +482,7 @@ class _MyHomePageState extends State<MyHomePage>
     _focusNode2.dispose();
     homeController.pageControllerHorizon.dispose(); // 销毁 PageController
     homeController.pageControllerPortrait.dispose();
-    try {} catch (e) {
-      // print(e);
-    }
+
     super.dispose();
   }
 
