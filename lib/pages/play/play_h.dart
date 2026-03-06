@@ -59,7 +59,10 @@ Widget playH() {
                 cache: true,
                 loadStateChanged: (state) {
                   if (state.extendedImageLoadState == LoadState.failed) {
-                    return Icon(Icons.music_note, size: 168.w);
+                    return Icon(
+                      Icons.music_note,
+                      size: globalHorizon ? 50 : 168.w,
+                    );
                   }
                 },
               ),

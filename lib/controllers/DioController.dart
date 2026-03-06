@@ -10,6 +10,7 @@ import 'package:native_dio_adapter/native_dio_adapter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import '../global_settings_animations.dart';
+import '../constants/network_defaults.dart';
 import '../settings.dart';
 import 'settings_controller.dart';
 import 'package:cookie_jar/cookie_jar.dart';
@@ -25,8 +26,14 @@ class DioController extends GetxController {
   final dioWithProxyAdapter = Dio();
 
   Future<void> loadConfig() async {
+    _applyDefaultHeaders();
     await reloadCookie();
     loadProxy();
+  }
+
+  void _applyDefaultHeaders() {
+    dioWithCookieManager.options.headers['user-agent'] = kGlobalDefaultUserAgent;
+    dioWithProxyAdapter.options.headers['user-agent'] = kGlobalDefaultUserAgent;
   }
 
   void loadProxy() {

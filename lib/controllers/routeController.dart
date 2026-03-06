@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
@@ -105,7 +106,25 @@ Future<void> closeApp() async {
     // if (kDebugMode) {
     // print("exit(0)");
     // } else {
-    exit(0);
+    if (isDesktop) {
+      windowManager
+          .hide()
+          .then((_) {
+            exit(0);
+          })
+          .catchError((e) {
+            exit(0);
+          });
+    } else {
+      SystemChannels.platform
+          .invokeMethod('SystemNavigator.pop')
+          .then((_) {
+            exit(0);
+          })
+          .catchError((e) {
+            exit(0);
+          });
+    }
     // }
   }
 

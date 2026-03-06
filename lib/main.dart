@@ -48,6 +48,7 @@ import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
+import 'package:listen1_xuan/constants/network_defaults.dart';
 part 'main_testBtn.dart';
 part 'pages/main/main_widgets.dart';
 part 'pages/main/main_utils.dart';
@@ -61,11 +62,20 @@ int last_dir = 0;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class MyHttpOverrides extends HttpOverrides {
+  MyHttpOverrides({required this.trustBadCertificates, this.userAgent});
+
+  final bool trustBadCertificates;
+  final String? userAgent;
+
   @override
   HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)
-      ..badCertificateCallback =
+    final client = super.createHttpClient(context);
+    client.userAgent = userAgent;
+    if (trustBadCertificates) {
+      client.badCertificateCallback =
           (X509Certificate cert, String host, int port) => true;
+    }
+    return client;
   }
 }
 
@@ -161,7 +171,7 @@ void main() async {
   Get.put(UpdController(), permanent: true);
   Get.put(HomeController(), permanent: true);
   init_apkfilepath();
-  if (isWindows || isMacOS) {
+  if (isDesktop) {
     if (isWindows) {
       SMTCWindows.initialize();
     }
@@ -227,10 +237,11 @@ void main() async {
   } else {
     useHttpOverrides = settings["useHttpOverrides"];
   }
-  // 根据设置的值决定是否运行 HttpOverrides.global = MyHttpOverrides();
-  if (useHttpOverrides) {
-    HttpOverrides.global = MyHttpOverrides();
-  }
+  // Always set global UA; certificate bypass remains controlled by settings.
+  HttpOverrides.global = MyHttpOverrides(
+    trustBadCertificates: useHttpOverrides,
+    userAgent: kGlobalDefaultUserAgent,
+  );
 
   final appDocDir = await getApplicationDocumentsDirectory();
   final _cookiePath = cookiePath(appDocDir);
@@ -385,7 +396,7 @@ class _MyHomePageState extends State<MyHomePage>
     trayManager.addListener(this);
     homeController.updatePageControllers();
     main_showVolumeSlider = showVolumeSlider;
-    if (isWindows || isMacOS) {
+    if (isDesktop) {
       _initTrayManager();
       init_hotkeys();
       windowManager.addListener(this);
@@ -401,10 +412,6 @@ class _MyHomePageState extends State<MyHomePage>
     smoothSheetToast.init(navigatorKey.currentContext!);
   }
 
-  @override
-  void onWindowClose() {
-    closeApp();
-  }
 
   void _initTrayManager() async {
     await trayManager.setIcon('assets/images/app_icon.ico');
