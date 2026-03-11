@@ -1,9 +1,11 @@
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'dart:async';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_lyric/core/lyric_model.dart';
-import 'package:flutter/material.dart' hide CircularProgressIndicator, LinearProgressIndicator;
+import 'package:flutter/material.dart'
+    hide CircularProgressIndicator, LinearProgressIndicator;
 // import 'package:flutter_lyric/lyrics_reader_model.dart';
 import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
@@ -34,7 +36,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'widgets/container_with_outer_shadow.dart';
 import 'package:media_kit/media_kit.dart' hide Track;
 
-import 'widgets/progress_indicator.dart';
+import 'widgets/progress_indicator_xuan.dart';
 
 part 'pages/play/play_v.dart';
 // part 'pages/play/play_v0.dart';
