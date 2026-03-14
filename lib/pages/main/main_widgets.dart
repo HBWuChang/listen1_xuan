@@ -19,30 +19,62 @@ Widget get _leftBar => Scaffold(
               },
               child: Tooltip(
                 message: '右键以最小化,中键以关闭',
-                child: Text('Listen1', style: TextStyle(fontSize: 24)),
+                child: SizedBox(
+                  height: 34,
+                  width: double.infinity,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Listen1', style: TextStyle(fontSize: 24)),
+                      );
+                    },
+                  ),
+                ),
               ),
             )
-          : Text('Listen1', style: TextStyle(fontSize: 24)),
-      TextField(
-        decoration: InputDecoration(
-          labelText: '请输入歌曲名，歌手或专辑',
-          border: InputBorder.none,
+          : SizedBox(
+              height: 34,
+              width: double.infinity,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Listen1', style: TextStyle(fontSize: 24)),
+                  );
+                },
+              ),
+            ),
+      SizedBox(
+        height: 56,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final inputFontSize = (constraints.maxWidth / 6)
+                .clamp(12.0, 16.0)
+                .toDouble();
+            return TextField(
+              decoration: InputDecoration(
+                labelText: '请输入歌曲名，歌手或专辑',
+                labelStyle: TextStyle(fontSize: inputFontSize),
+                border: InputBorder.none,
+              ),
+              style: TextStyle(fontSize: inputFontSize),
+              controller: input_text_Controller,
+              readOnly: true,
+              onTap: () async {
+                Get.toNamed(RouteName.searchPage, id: 1);
+              },
+            );
+          },
         ),
-        controller: input_text_Controller,
-        readOnly: true,
-        onTap: () async {
-          Get.toNamed(RouteName.searchPage, id: 1);
-        },
       ),
       Expanded(child: MyPlaylist()),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        mainAxisSize: MainAxisSize.min,
+
+      // SizedBox(),
+      PriorityResponsiveActionRow(
+        hidePriority: const [2, 1, 0, 3],
         children: [
-          ThemeToggleButton(
-            iconSize: 24.0, // 可选：自定义图标大小
-            padding: EdgeInsets.all(0), // 可选：自定义内边距
-          ),
+          ThemeToggleButton(iconSize: 24.0, padding: EdgeInsets.all(0)),
           WebSocketHelper.buildReactiveButton(
             tooltip: "WebSocket服务器",
             inMainPage: true,

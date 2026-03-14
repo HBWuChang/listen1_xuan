@@ -26,6 +26,7 @@ import 'bodys.dart';
 import 'play.dart';
 import 'global_settings_animations.dart';
 import 'widgets.dart';
+import 'widgets/priority_responsive_action_row.dart';
 import 'widgets/smooth_sheet_toast.dart';
 import 'dart:async';
 import 'dart:io';
@@ -412,7 +413,6 @@ class _MyHomePageState extends State<MyHomePage>
     smoothSheetToast.init(navigatorKey.currentContext!);
   }
 
-
   void _initTrayManager() async {
     await trayManager.setIcon('assets/images/app_icon.ico');
     await trayManager.setToolTip('Listen1_xuan');
@@ -576,7 +576,7 @@ class _MyHomePageState extends State<MyHomePage>
                                 ).theme.colorScheme.secondaryContainer,
                                 separatorSize: 2,
                                 percentages: horPartPercentages,
-                                minWidths: [180, 500],
+                                minWidths: [60, 500],
                                 keepWidthWhenExtended: {0},
                                 onResized: (infoList) {
                                   Get.find<SettingsController>()
