@@ -720,7 +720,7 @@ class _WebSocketClientControlContentState
                                   min: 0.0,
                                   max: 100,
                                   divisions: 100,
-                                  label: '${(ctrl.volume * 100).round()}%',
+                                  label: '${(ctrl.volume).round()}%',
                                   onChangeStart: (value) {
                                     ctrl.startDraggingVolume();
                                   },
@@ -737,7 +737,7 @@ class _WebSocketClientControlContentState
                               SizedBox(
                                 width: 48,
                                 child: Text(
-                                  '${(ctrl.volume * 100).round()}%',
+                                  '${(ctrl.volume).round()}%',
                                   style: const TextStyle(fontSize: 12),
                                   textAlign: TextAlign.center,
                                 ),
