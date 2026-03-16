@@ -460,7 +460,11 @@ class ThemeToggleButton extends StatelessWidget {
 }
 
 void showThemeDialog() {
-  Get.dialog(ThemeSettingsDialog(), barrierDismissible: true);
+  Get.dialog(
+    ThemeSettingsDialog(),
+    barrierColor: Colors.transparent,
+    barrierDismissible: true,
+  );
 }
 
 class ThemeSettingsDialog extends StatefulWidget {

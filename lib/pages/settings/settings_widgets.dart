@@ -530,7 +530,7 @@ void _showOpacityDialog() {
           actions: [TextButton(onPressed: () => Get.back(), child: Text('关闭'))],
         );
       },
-    ),
+    ),barrierColor:Colors.transparent
   );
 }
 
