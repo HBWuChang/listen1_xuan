@@ -459,11 +459,14 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
 
   void _loadData() async {
     var res = await MediaService.getPlaylist(widget.listId);
-    res['success']((data) {
+    res['success']?.call((data) {
       try {
-        result = PlayList.fromJson(data);
+        if (data is PlayList) {
+          result = data;
+        } else {
+          result = PlayList.fromJson(data);
+        }
       } catch (e) {
-        // print(e);
         logger.e('歌单数据解析失败', error: e);
         result = PlayList.fromJson({
           'info': {'id': widget.listId},

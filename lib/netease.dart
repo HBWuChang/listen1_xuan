@@ -20,10 +20,19 @@ final netease = Netease();
 enum NePlaylistType {
   playlist('neplaylist'),
   album('nealbum'),
-  artist('neartist');
+  artist('neartist'),
+  dj('nedj');
 
   final String prefix;
   const NePlaylistType(this.prefix);
+}
+
+enum NeTrackType {
+  track('netrack'),
+  program('neprogram');
+
+  final String prefix;
+  const NeTrackType(this.prefix);
 }
 
 Future<String> get_csrf() async {
@@ -373,7 +382,7 @@ class Netease {
     final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
     final trackJson = response.data['songs'][0];
     final track = {
-      'id': 'netrack_${trackJson['id']}',
+      'id': '${NeTrackType.track.prefix}_${trackJson['id']}',
       'title': trackJson['name'],
       'artist': trackJson['ar'][0]['name'],
       'artist_id': 'neartist_${trackJson['ar'][0]['id']}',
@@ -382,7 +391,6 @@ class Netease {
       'source': 'netease',
       'source_url': 'https://music.163.com/#/song?id=${trackJson['id']}',
       'img_url': trackJson['al']['picUrl'],
-      // 'url': 'netrack_${trackJson['id']}',
     };
     callback(null, track);
   }
@@ -430,6 +438,90 @@ class Netease {
     };
   }
 
+  Future<Map<String, dynamic>> ne_get_djradio(String url) async {
+    return {
+      'success': (fn) async {
+        try {
+          final listId = Uri.parse(
+            url,
+          ).queryParameters['list_id']!.split('_').last;
+          const pageSize = 1000;
+          var offset = 0;
+          var hasMore = true;
+
+          final tracks = <Map<String, dynamic>>[];
+          var info = <String, dynamic>{
+            'id': '${NePlaylistType.dj.prefix}_$listId',
+            'source_url': 'https://music.163.com/#/djradio?id=$listId',
+          };
+
+          while (hasMore) {
+            final targetUrl =
+                'https://music.163.com/api/dj/program/byradio?asc=false&limit=$pageSize&radioId=$listId&offset=$offset';
+            final response = await dio_get_with_cookie_and_csrf(targetUrl);
+            final resData = jsonDecode(response.data);
+            final programs = (resData['programs'] ?? []) as List;
+
+            if (programs.isNotEmpty && info['title'] == null) {
+              final radio = programs.first['radio'] ?? {};
+              info = {
+                ...info,
+                'cover_img_url':
+                    radio['picUrl'] ?? radio['coverUrl'] ?? radio['imgUrl'],
+                'title': radio['name'] ?? '',
+              };
+            }
+
+            for (final program in programs) {
+              final mainSong = program['mainSong'];
+              if (mainSong == null || mainSong['id'] == null) {
+                continue;
+              }
+
+              final artists = (mainSong['artists'] ?? []) as List;
+              final firstArtist = artists.isNotEmpty ? artists.first : null;
+              final album = mainSong['album'] ?? {};
+              final programId = program['id'];
+              final songId = mainSong['id'];
+
+              tracks.add({
+                'id': '${NeTrackType.track.prefix}_$songId',
+                'title': mainSong['name'] ?? program['name'] ?? '',
+                'artist':
+                    firstArtist?['name'] ??
+                    program['dj']?['nickname'] ??
+                    '未知艺术家',
+                'artist_id': firstArtist?['id'] != null
+                    ? 'neartist_${firstArtist['id']}'
+                    : null,
+                'album': album['name'] ?? info['title'] ?? '',
+                'album_id': '${NePlaylistType.dj.prefix}_$listId',
+                'source': 'netease',
+                'source_url': programId != null
+                    ? 'https://music.163.com/#/program?id=$programId'
+                    : 'https://music.163.com/#/song?id=$songId',
+                'img_url':
+                    program['coverUrl'] ??
+                    album['picUrl'] ??
+                    info['cover_img_url'],
+              });
+            }
+
+            hasMore = resData['more'] == true;
+            if (programs.isEmpty) {
+              break;
+            }
+            offset += pageSize;
+          }
+
+          fn({'tracks': tracks, 'info': info});
+        } catch (e) {
+          fn({'tracks': [], 'info': {}});
+        }
+      },
+    };
+  }
+
   static List<List<dynamic>> _splitArray(List<dynamic> array, int size) {
     final count = (array.length / size).ceil();
     final result = <List<dynamic>>[];
@@ -463,7 +555,7 @@ class Netease {
       trackJson,
     ) {
       return {
-        'id': 'netrack_${trackJson['id']}',
+        'id': '${NeTrackType.track.prefix}_${trackJson['id']}',
         'title': trackJson['name'],
         'artist': trackJson['ar'][0]['name'],
         'artist_id': 'neartist_${trackJson['ar'][0]['id']}',
@@ -486,7 +578,10 @@ class Netease {
       final sound = <String, dynamic>{};
       const targetUrl =
           'https://interface3.music.163.com/eapi/song/enhance/player/url';
-      var songId = track.id.toString().replaceFirst('netrack_', '');
+      var songId = track.id.toString().replaceFirst(
+        '${NeTrackType.track.prefix}_',
+        '',
+      );
       const eapiUrl = '/api/song/enhance/player/url';
 
       final data = eapi(eapiUrl, {'ids': '[$songId]', 'br': 999000});
@@ -524,6 +619,9 @@ class Netease {
     var neSearchType = '1';
     if (searchType == '1') {
       neSearchType = '1000';
+    } else if (searchType == '2') {
+      // 电台
+      neSearchType = '1009';
     }
     final reqData = {
       's': keyword,
@@ -548,7 +646,7 @@ class Netease {
           if (searchType == '0') {
             result = (data['result']['songs'] as List).map((songInfo) {
               return {
-                'id': 'netrack_${songInfo['id']}',
+                'id': '${NeTrackType.track.prefix}_${songInfo['id']}',
                 'title': songInfo['name'],
                 'artist': songInfo['artists'][0]['name'],
                 'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
@@ -565,18 +663,33 @@ class Netease {
           } else if (searchType == '1') {
             result = (data['result']['playlists'] as List).map((info) {
               return {
-                'id': 'neplaylist_${info['id']}',
+                'id': '${NePlaylistType.playlist.prefix}_${info['id']}',
                 'title': info['name'],
                 'source': 'netease',
                 'source_url':
                     'https://music.163.com/#/playlist?id=${info['id']}',
                 'img_url': info['coverImgUrl'],
-                'url': 'neplaylist_${info['id']}',
+                'url': '${NePlaylistType.playlist.prefix}_${info['id']}',
                 'author': info['creator']['nickname'],
                 'count': info['trackCount'],
               };
             }).toList();
             total = data['result']['playlistCount'];
+          } else if (searchType == '2') {
+            result = (data['result']['djRadios'] as List).map((info) {
+              return {
+                'id': '${NePlaylistType.dj.prefix}_${info['id']}',
+                'title': info['name'],
+                'source': 'netease',
+                'source_url':
+                    'https://music.163.com/#/djradio?id=${info['id']}',
+                'img_url': info['picUrl'],
+                'url': '${NePlaylistType.dj.prefix}_${info['id']}',
+                'author': info['dj']['nickname'],
+                'count': info['programCount'],
+              };
+            }).toList();
+            total = data['result']['djRadiosCount'];
           }
           fn({'result': result, 'total': total, 'type': searchType});
         } catch (e) {
@@ -604,7 +717,7 @@ class Netease {
         };
         final tracks = (data['album']['songs'] as List).map((songInfo) {
           return {
-            'id': 'netrack_${songInfo['id']}',
+            'id': '${NeTrackType.track.prefix}_${songInfo['id']}',
             'title': songInfo['name'],
             'artist': songInfo['artists'][0]['name'],
             'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
@@ -613,8 +726,6 @@ class Netease {
             'source': 'netease',
             'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
             'img_url': songInfo['album']['picUrl'],
-            // url: `netrack_${song_info.id}`,
-            // url: !this.is_playable(song_info) ? '' : undefined,
           };
         }).toList();
         fn({'tracks': tracks, 'info': info});
@@ -640,7 +751,7 @@ class Netease {
         };
         final tracks = (data['hotSongs'] as List).map((songInfo) {
           return {
-            'id': 'netrack_${songInfo['id']}',
+            'id': '${NeTrackType.track.prefix}_${songInfo['id']}',
             'title': songInfo['name'],
             'artist': songInfo['artists'][0]['name'],
             'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
@@ -649,8 +760,6 @@ class Netease {
             'source': 'netease',
             'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
             'img_url': songInfo['album']['picUrl'],
-            // url: `netrack_${song_info.id}`,
-            // url: !this.is_playable(song_info) ? '' : undefined,
           };
         }).toList();
         fn({'tracks': tracks, 'info': info});
@@ -746,6 +855,9 @@ class Netease {
     if (listId == NePlaylistType.artist.prefix)
       // await neArtist(url, fn);
       return ne_artist(url);
+    if (listId == NePlaylistType.dj.prefix)
+      // await neDjradio(url, fn);
+      return ne_get_djradio(url);
     // default:
     return {};
   }

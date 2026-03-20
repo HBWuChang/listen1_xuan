@@ -37,6 +37,15 @@ class XSearchController extends GetxController {
   final RxString playlistLastQuery = ''.obs;
   final RxString playlistLastSource = 'netease'.obs;
 
+  // DJ 搜索相关变量（仅网易云）
+  final RxBool djLoading = true.obs;
+  final RxBool djLoadingMore = false.obs;
+  final RxList<SearchPlayListItem> djs = <SearchPlayListItem>[].obs;
+  final RxMap<String, dynamic> djResult = <String, dynamic>{}.obs;
+  final RxInt djCurrentPage = 1.obs;
+  final RxString djLastQuery = ''.obs;
+  final RxString djLastSource = 'netease'.obs;
+
   // Tab 控制
   final RxInt currentTabIndex = 0.obs;
   final RxBool showTabBar = true.obs;
@@ -62,6 +71,7 @@ class XSearchController extends GetxController {
   late TextEditingController searchTextController;
   final ScrollController songScrollController = ScrollController();
   final ScrollController playlistScrollController = ScrollController();
+  final ScrollController djScrollController = ScrollController();
   final FocusNode focusNode = FocusNode();
 
   // Settings controller
@@ -93,11 +103,17 @@ class XSearchController extends GetxController {
       if (lastQuery.value != query || lastSource.value != source.value) {
         _performSongSearch();
       }
-    } else {
+    } else if (index == 1) {
       // 切换到歌单 tab，检查是否需要重新搜索
       if (playlistLastQuery.value != query ||
           playlistLastSource.value != source.value) {
         _performPlaylistSearch();
+      }
+    } else if (index == 2) {
+      // 切换到 DJ tab，检查是否需要重新搜索（仅网易云）
+      if (source.value != 'netease') return;
+      if (djLastQuery.value != query || djLastSource.value != source.value) {
+        _performDjSearch();
       }
     }
   }
@@ -124,6 +140,7 @@ class XSearchController extends GetxController {
     // Scroll listener for pagination
     songScrollController.addListener(_onSongScroll);
     playlistScrollController.addListener(_onPlaylistScroll);
+    djScrollController.addListener(_onDjScroll);
 
     // Focus listener for hotkey management
     focusNode.addListener(_onFocusChange);
@@ -187,6 +204,31 @@ class XSearchController extends GetxController {
     }
   }
 
+  void _onDjScroll() {
+    final currentOffset = djScrollController.position.pixels;
+
+    // 控制 TabBar 显示/隐藏
+    if (currentOffset > _lastScrollOffset && currentOffset > 50) {
+      // 向下滚动，隐藏 TabBar
+      if (showTabBar.value) {
+        showTabBar.value = false;
+      }
+    } else if (currentOffset < _lastScrollOffset) {
+      // 向上滚动，显示 TabBar
+      if (!showTabBar.value) {
+        showTabBar.value = true;
+      }
+    }
+
+    _lastScrollOffset = currentOffset;
+
+    // 分页加载
+    if (djScrollController.position.pixels >=
+        djScrollController.position.maxScrollExtent) {
+      loadMoreDjData();
+    }
+  }
+
   void updateSelectedOption(String displayName) {
     _updateSourceFromOption(displayName);
 
@@ -232,9 +274,12 @@ class XSearchController extends GetxController {
     if (currentTabIndex.value == 0) {
       // 当前显示歌曲 tab
       _performSongSearch();
-    } else {
+    } else if (currentTabIndex.value == 1) {
       // 当前显示歌单 tab
       _performPlaylistSearch();
+    } else if (currentTabIndex.value == 2) {
+      // 当前显示 DJ tab（仅网易云）
+      _performDjSearch();
     }
   }
 
@@ -258,6 +303,19 @@ class XSearchController extends GetxController {
     playlistLastQuery.value = '';
     playlistCurrentPage.value = 1;
     await _performPlaylistSearch();
+  }
+
+  // 下拉刷新 DJ 搜索（仅网易云）
+  Future<void> refreshDjSearch() async {
+    if (source.value != 'netease') return;
+
+    final query = searchQuery.value.trim();
+    if (query.isEmpty) return;
+
+    // 强制重新搜索，不检查缓存
+    djLastQuery.value = '';
+    djCurrentPage.value = 1;
+    await _performDjSearch();
   }
 
   Future<void> _performSongSearch() async {
@@ -359,6 +417,56 @@ class XSearchController extends GetxController {
     }
   }
 
+  Future<void> _performDjSearch() async {
+    if (source.value != 'netease') return;
+
+    final query = searchQuery.value.trim();
+
+    // Skip if query is empty or unchanged
+    if (query.isEmpty ||
+        (query == djLastQuery.value && source.value == djLastSource.value)) {
+      return;
+    }
+
+    // Save previous state for rollback
+    final previousQuery = djLastQuery.value;
+    final previousSource = djLastSource.value;
+    final previousPage = djCurrentPage.value;
+
+    // Update state
+    djLastQuery.value = query;
+    djLastSource.value = source.value;
+    djCurrentPage.value = 1;
+
+    try {
+      djLoading.value = true;
+
+      final ret = await MediaService.search(source.value, {
+        'keywords': query,
+        'curpage': djCurrentPage.value,
+        'type': 2, // 搜索 DJ
+      });
+
+      ret["success"]((data) {
+        try {
+          djResult.value = data;
+          djs.value = List<SearchPlayListItem>.from(
+            data['result'].map((item) => SearchPlayListItem.fromJson(item)),
+          );
+        } catch (e) {
+          _rollbackDjSearch(previousQuery, previousSource, previousPage);
+          showErrorSnackbar('DJ 搜索失败', e.toString());
+        } finally {
+          djLoading.value = false;
+        }
+      });
+    } catch (e) {
+      _rollbackDjSearch(previousQuery, previousSource, previousPage);
+      djLoading.value = false;
+      showErrorSnackbar('DJ 搜索请求失败', e.toString());
+    }
+  }
+
   Future<void> loadMoreData() async {
     if (loading.value || loadingMore.value) return;
 
@@ -452,6 +560,53 @@ class XSearchController extends GetxController {
     }
   }
 
+  Future<void> loadMoreDjData() async {
+    if (source.value != 'netease') return;
+    if (djLoading.value || djLoadingMore.value) return;
+
+    final previousPage = djCurrentPage.value;
+
+    try {
+      djCurrentPage.value += 1;
+
+      // Check if we've reached the end
+      if (djResult.isNotEmpty &&
+          djCurrentPage.value >=
+              djResult['total'] / (djs.length / (djCurrentPage.value - 1))) {
+        djCurrentPage.value = previousPage;
+        return;
+      }
+
+      djLoadingMore.value = true;
+
+      final ret = await MediaService.search(source.value, {
+        'keywords': searchQuery.value,
+        'curpage': djCurrentPage.value,
+        'type': 2, // 搜索 DJ
+      });
+
+      ret["success"]((data) {
+        try {
+          djResult.value = data;
+          djs.addAll(
+            List<SearchPlayListItem>.from(
+              data['result'].map((item) => SearchPlayListItem.fromJson(item)),
+            ),
+          );
+        } catch (e) {
+          djCurrentPage.value = previousPage;
+          showErrorSnackbar('加载更多 DJ 失败', e.toString());
+        } finally {
+          djLoadingMore.value = false;
+        }
+      });
+    } catch (e) {
+      djCurrentPage.value = previousPage;
+      djLoadingMore.value = false;
+      showErrorSnackbar('加载更多 DJ 失败', e.toString());
+    }
+  }
+
   void _rollbackSearch(String prevQuery, String prevSource, int prevPage) {
     lastQuery.value = prevQuery;
     lastSource.value = prevSource;
@@ -468,12 +623,20 @@ class XSearchController extends GetxController {
     playlistCurrentPage.value = prevPage;
   }
 
+  void _rollbackDjSearch(String prevQuery, String prevSource, int prevPage) {
+    djLastQuery.value = prevQuery;
+    djLastSource.value = prevSource;
+    djCurrentPage.value = prevPage;
+  }
+
   @override
   void onClose() {
     songScrollController.removeListener(_onSongScroll);
     songScrollController.dispose();
     playlistScrollController.removeListener(_onPlaylistScroll);
     playlistScrollController.dispose();
+    djScrollController.removeListener(_onDjScroll);
+    djScrollController.dispose();
     focusNode.removeListener(_onFocusChange);
     focusNode.dispose();
     searchTextController.dispose();

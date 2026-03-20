@@ -19,11 +19,10 @@ class _SearchlistinfoState extends State<Searchlistinfo>
 
     // 使用保存的 tab 索引初始化 TabController
     _tabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
       initialIndex: controller!.currentTabIndex.value,
     );
-
     // 监听 TabController 的变化
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
@@ -93,6 +92,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
                       tabs: const [
                         Tab(text: '歌曲'),
                         Tab(text: '歌单'),
+                        Tab(text: '播客'),
                       ],
                     )
                   : const SizedBox.shrink(),
@@ -104,6 +104,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
               children: [
                 _buildSongList(controller!),
                 _buildPlaylistList(controller!),
+                _buildDjList(controller!),
               ],
             ),
           ),
@@ -242,6 +243,98 @@ class _SearchlistinfoState extends State<Searchlistinfo>
               onTap: () {
                 if (playlist.id != null) {
                   controller.toListByIDOrSearch(playlist.id!);
+                }
+              },
+            );
+          },
+        ),
+      );
+    });
+  }
+
+  Widget _buildDjList(XSearchController controller) {
+    return Obx(() {
+      if (controller.source.value != 'netease') {
+        return Center(
+          child: Text(
+            '当前平台不支持搜索播客',
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          ),
+        );
+      }
+      if (controller.djLoading.value) {
+        return Center(child: globalLoadingAnime);
+      }
+
+      return RefreshIndicator(
+        onRefresh: () => controller.refreshDjSearch(),
+        child: ListView.builder(
+          key: const PageStorageKey<String>('djList'),
+          controller: controller.djScrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount:
+              controller.djs.length + (controller.djLoadingMore.value ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index >= controller.djs.length) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(child: globalLoadingAnime),
+              );
+            }
+
+            final dj = controller.djs[index];
+
+            return ListTile(
+              leading: dj.imgUrl != null && dj.imgUrl!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: ExtendedImage.network(
+                        dj.imgUrl!,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        cache: true,
+                        loadStateChanged: (state) {
+                          if (state.extendedImageLoadState ==
+                              LoadState.failed) {
+                            return const Icon(Icons.image_not_supported);
+                          }
+                          return null;
+                        },
+                      ),
+                    )
+                  : Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(Icons.music_note),
+                    ),
+              title: Text(
+                dj.title ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: dj.author != null && dj.author!.isNotEmpty
+                  ? Text(
+                      dj.author!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    )
+                  : null,
+              trailing: dj.count != null
+                  ? Text(
+                      '${dj.count} 首歌曲',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    )
+                  : null,
+
+              onTap: () {
+                if (dj.id != null) {
+                  controller.toListByIDOrSearch(dj.id!);
                 }
               },
             );
