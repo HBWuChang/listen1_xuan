@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
   charset_converter
+  desktop_drop
   dynamic_color
   flutter_acrylic
   gtk

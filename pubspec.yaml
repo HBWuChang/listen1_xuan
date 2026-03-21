@@ -106,7 +106,7 @@ dependencies:
   # 替换为 HTTPS URL 而不是 SSH
   # resizable_widget:
   #   path: E:\HB_WuChang\code\flutter\resizable_widget
-
+  desktop_drop: ^0.7.0
   protobuf: ^6.0.0
   fixnum: ^1.1.1
   expandable: ^5.0.1
