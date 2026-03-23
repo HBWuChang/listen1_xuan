@@ -102,22 +102,10 @@ class _MyPlaylistState extends State<MyPlaylist> {
       size: _coverSize(availableWidth),
     );
 
-    if (iconOnly) {
-      return Tooltip(
-        message: title,
-        child: InkWell(
-          onTap: () => _openPlaylist(playlist, isMy: isMy),
-          child: SizedBox(
-            height: 48,
-            child: Align(alignment: Alignment.center, child: cover),
-          ),
-        ),
-      );
-    }
-
-    // final leadingWidth = compact ? 36.0 : 44.0;
-    double sizeHeight = compact ? 48 : 56;
+    const sizeHeight = 56.0;
     final horizontalPadding = compact ? 8.0 : 12.0;
+    final spacing = compact ? 8.0 : 12.0;
+    const duration = Duration(milliseconds: 220);
 
     return Tooltip(
       message: title,
@@ -125,20 +113,44 @@ class _MyPlaylistState extends State<MyPlaylist> {
         onTap: () => _openPlaylist(playlist, isMy: isMy),
         child: SizedBox(
           height: sizeHeight,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-            child: Row(
+          child: AnimatedPadding(
+            duration: duration,
+            curve: Curves.easeInOut,
+            padding: EdgeInsets.symmetric(
+              horizontal: iconOnly ? 0.0 : horizontalPadding,
+            ),
+            child: Stack(
               children: [
-                SizedBox(
-                  width: sizeHeight,
-                  child: Center(child: cover),
+                Positioned.fill(
+                  child: AnimatedAlign(
+                    duration: duration,
+                    curve: Curves.easeInOut,
+                    alignment: iconOnly
+                        ? Alignment.center
+                        : Alignment.centerLeft,
+                    child: SizedBox(
+                      width: sizeHeight,
+                      child: Center(child: cover),
+                    ),
+                  ),
                 ),
-                SizedBox(width: compact ? 8 : 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                Positioned.fill(
+                  left: sizeHeight + spacing,
+                  child: IgnorePointer(
+                    ignoring: iconOnly,
+                    child: AnimatedOpacity(
+                      duration: duration,
+                      curve: Curves.easeInOut,
+                      opacity: iconOnly ? 0.0 : 1.0,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -158,10 +170,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
   }) {
     final iconOnly = _isIconOnlyMode(availableWidth);
     final compact = _isCompactMode(availableWidth);
-    final horizontalPadding = (iconOnly && centerLeadingWhenIconOnly)
+    final shouldCenterLeading = iconOnly && centerLeadingWhenIconOnly;
+    final horizontalPadding = shouldCenterLeading
         ? 0.0
         : (iconOnly ? 6.0 : (compact ? 8.0 : 12.0));
     final leadingWidth = iconOnly ? 18.0 : 24.0;
+    final spacing = compact ? 8.0 : 12.0;
+    const duration = Duration(milliseconds: 220);
 
     return Tooltip(
       message: title,
@@ -169,30 +184,47 @@ class _MyPlaylistState extends State<MyPlaylist> {
         onTap: onTap,
         child: SizedBox(
           height: compact ? 44 : 56,
-          child: Padding(
+          child: AnimatedPadding(
+            duration: duration,
+            curve: Curves.easeInOut,
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-            child: Row(
-              mainAxisAlignment: (iconOnly && centerLeadingWhenIconOnly)
-                  ? MainAxisAlignment.center
-                  : MainAxisAlignment.start,
+            child: Stack(
               children: [
-                SizedBox(
-                  width: leadingWidth,
-                  child: Center(child: leading),
+                Positioned.fill(
+                  child: AnimatedAlign(
+                    duration: duration,
+                    curve: Curves.easeInOut,
+                    alignment: shouldCenterLeading
+                        ? Alignment.center
+                        : Alignment.centerLeft,
+                    child: SizedBox(
+                      width: leadingWidth,
+                      child: Center(child: leading),
+                    ),
+                  ),
                 ),
-                if (!iconOnly) ...[
-                  SizedBox(width: compact ? 8 : 12),
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        title,
-                        style: TextStyle(fontSize: compact ? 15 : 20),
+                Positioned.fill(
+                  left: leadingWidth + spacing,
+                  child: IgnorePointer(
+                    ignoring: iconOnly,
+                    child: AnimatedOpacity(
+                      duration: duration,
+                      curve: Curves.easeInOut,
+                      opacity: iconOnly ? 0.0 : 1.0,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            title,
+                            style: TextStyle(fontSize: compact ? 15 : 20),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ],
+                ),
               ],
             ),
           ),
