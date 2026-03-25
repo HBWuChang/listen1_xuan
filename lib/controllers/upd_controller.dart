@@ -1183,7 +1183,7 @@ class UpdController extends GetxController {
         if (filePath != newFilePath) {
           await File(filePath).copy(newFilePath);
           File(filePath).delete().catchError((e) {
-            debugPrint('删除原文件失败: $e');
+            showDebugSnackbar('删除原文件失败', '请手动删除 $filePath');
           });
           filePath = newFilePath;
         }

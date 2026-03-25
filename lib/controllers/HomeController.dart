@@ -31,10 +31,10 @@ class HomeController extends GetxController {
   void updatePageControllers() {
     try {
       pageControllerHorizon.dispose(); // 销毁旧的 PageController
-    } catch (e) {}
+    } catch (e) {debugPrint('销毁旧的 pageControllerHorizon 失败: $e');}
     try {
       pageControllerPortrait.dispose(); // 销毁旧的 PageController
-    } catch (e) {}
+    } catch (e) {debugPrint('销毁旧的 pageControllerPortrait 失败: $e');}
     pageControllerHorizon = PreloadPageController(initialPage: 1);
     pageControllerPortrait = PreloadPageController(initialPage: 0);
     pageControllerHorizon.addListener(() {

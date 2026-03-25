@@ -41,7 +41,7 @@ class DioController extends GetxController {
     //   createHttpClient: () {
     //     final client = HttpClient();
     //     client.findProxy = (uri) {
-    //       return 'PROXY 192.168.2.123:9000';
+    //       return 'PROXY 192.168.31.42:9000';
     //     };
     //     return client;
     //   },

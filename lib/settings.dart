@@ -134,35 +134,25 @@ class _LoginWebviewState extends State<LoginWebview> {
       default:
         if (isWindows) {
           var t = jsonDecode(await widget.controller.getCookies())["cookies"];
-
-          print(t);
-          String cookies = "";
-          for (var item in t) {
-            cookies += "${item['name']}=${Uri.decodeComponent(item['value'])};";
-          }
-          cookies = cookies.substring(0, cookies.length - 1);
+          String cookies = t
+              .map<String>(
+                (item) =>
+                    "${item['name']}=${Uri.encodeComponent(item['value'])}",
+              )
+              .join(';');
           await savePlatformToken(widget.config_key, cookies);
-          // _msg('设置成功$cookies', 3.0);
           showSuccessSnackbar('设置成功', null);
         } else {
-          // if (isMacOS) {
-          //   // DONE: MacOS 支持
-          //   showErrorSnackbar('MacOS暂不支持此功能', null);
-          //   return;
-          // }
           final cookieManager = WebviewCookieManager();
 
           final gotCookies = await cookieManager.getCookies(widget.open_url);
-          // for (var item in gotCookies) {
-          //   print(item);
-          // }
-          String cookies = "";
-          for (var item in gotCookies) {
-            cookies += "${item.name}=${item.value};";
-          }
-          cookies = cookies.substring(0, cookies.length - 1);
+          String cookies = gotCookies
+              .map(
+                (cookie) =>
+                    "${cookie.name}=${Uri.encodeComponent(cookie.value)}",
+              )
+              .join('; ');
           await savePlatformToken(widget.config_key, cookies);
-          // _msg('设置成功$cookies', 3.0);
           showSuccessSnackbar('设置成功', null);
         }
     }

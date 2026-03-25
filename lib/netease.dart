@@ -1100,13 +1100,9 @@ class Netease {
           .split('=')
           .last;
       dynamic encryptReqData = {
-        // 'csrf_token': await get_csrf(),
         'csrf_token': _csrf,
       };
-      // print(encryptReqData);
-      // print(jsonEncode(encryptReqData));
       encryptReqData = weapi(encryptReqData);
-      // print(encryptReqData);
       final response = await dio_post_with_cookie_and_csrf(url, encryptReqData);
       dynamic result = {'is_login': false};
       var status = 'fail';

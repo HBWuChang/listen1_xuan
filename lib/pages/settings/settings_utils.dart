@@ -104,9 +104,7 @@ Future<void> importSettingsFromFile(
             break;
 
           case SettingsController.lyricHiveStoreKey:
-            await s.importLyricBoxFromString(
-              settings[key],
-            );
+            await s.importLyricBoxFromString(settings[key]);
             break;
           default:
             try {
@@ -230,7 +228,7 @@ Future<void> savePlatformToken(
   bool saveRightNow = true,
 }) async {
   try {
-    if (platform == 'github') {
+    if (platform == PlantformCodes.github) {
       final s = Get.find<SettingsController>();
       await s.setString('githubOauthAccessKey', token);
       return;
