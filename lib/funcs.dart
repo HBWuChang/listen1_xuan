@@ -21,38 +21,43 @@ Widget _buildCustomToast({
   required String? message,
   required Color backgroundColor,
   required Color textColor,
+  VoidCallback? onTap,
 }) {
   return LayoutBuilder(
     builder: (context, constraints) {
       // 计算最大宽度：屏幕宽度 - 两侧各64的margin
       final maxWidth = MediaQuery.of(context).size.width - 128;
 
-      return Container(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12.0),
-          color: backgroundColor,
-        ),
-        child: IntrinsicWidth(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: iconColor, size: 24),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  "${title ?? ''}${(!isEmpty(title) && !isEmpty(message)) ? '：' : ''}${message ?? ''}",
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.0),
+            color: backgroundColor,
+          ),
+          child: IntrinsicWidth(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: iconColor, size: 24),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    "${title ?? ''}${(!isEmpty(title) && !isEmpty(message)) ? '：' : ''}${message ?? ''}",
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: null,
                   ),
-                  textAlign: TextAlign.center,
-                  maxLines: null,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -68,6 +73,7 @@ void _showCustomToast({
   required String? message,
   required Color backgroundColor,
   required Color textColor,
+  VoidCallback? onTap,
 }) {
   try {
     fToast.removeCustomToast();
@@ -79,6 +85,7 @@ void _showCustomToast({
         message: message,
         backgroundColor: backgroundColor,
         textColor: textColor,
+        onTap: onTap,
       );
 
       fToast.showToast(
@@ -106,6 +113,7 @@ void showErrorSnackbar(
   String? title,
   String? message, {
   SnackPosition snackPosition = SnackPosition.TOP,
+  VoidCallback? onTap,
 }) {
   Clipboard.setData(ClipboardData(text: message ?? title ?? ''));
   debugPrint("Showing error toast: $title - $message");
@@ -116,6 +124,7 @@ void showErrorSnackbar(
     message: message,
     backgroundColor: Get.theme.colorScheme.errorContainer,
     textColor: Get.theme.colorScheme.onErrorContainer,
+    onTap: onTap,
   );
 }
 
@@ -123,6 +132,7 @@ void showWarningSnackbar(
   String? title,
   String? message, {
   SnackPosition snackPosition = SnackPosition.TOP,
+  VoidCallback? onTap,
 }) {
   debugPrint("Showing warning toast: $title - $message");
   _showCustomToast(
@@ -132,6 +142,7 @@ void showWarningSnackbar(
     message: message,
     backgroundColor: Get.theme.colorScheme.secondaryContainer,
     textColor: Get.theme.colorScheme.onSecondaryContainer,
+    onTap: onTap,
   );
 }
 
@@ -139,6 +150,7 @@ void showInfoSnackbar(
   String? title,
   String? message, {
   SnackPosition snackPosition = SnackPosition.TOP,
+  VoidCallback? onTap,
 }) {
   debugPrint("Showing info toast: $title - $message");
   _showCustomToast(
@@ -148,6 +160,7 @@ void showInfoSnackbar(
     message: message,
     backgroundColor: Get.theme.colorScheme.primaryContainer,
     textColor: Get.theme.colorScheme.onPrimaryContainer,
+    onTap: onTap,
   );
 }
 
@@ -155,6 +168,7 @@ void showSuccessSnackbar(
   String? title,
   String? message, {
   SnackPosition snackPosition = SnackPosition.TOP,
+  VoidCallback? onTap,
 }) {
   debugPrint("Showing success toast: $title - $message");
   _showCustomToast(
@@ -164,6 +178,7 @@ void showSuccessSnackbar(
     message: message,
     backgroundColor: Get.theme.colorScheme.tertiaryContainer,
     textColor: Get.theme.colorScheme.onTertiaryContainer,
+    onTap: onTap,
   );
 }
 
@@ -171,6 +186,7 @@ void showDebugSnackbar(
   String? title,
   String? message, {
   SnackPosition snackPosition = SnackPosition.TOP,
+  VoidCallback? onTap,
 }) {
   logger.d("Debug Toast - $title: $message");
   if (Get.find<SettingsController>().useDebugMode || kDebugMode) {
@@ -181,6 +197,7 @@ void showDebugSnackbar(
       message: message,
       backgroundColor: Get.theme.colorScheme.tertiaryContainer,
       textColor: Get.theme.colorScheme.onTertiaryContainer,
+      onTap: onTap,
     );
   }
 }

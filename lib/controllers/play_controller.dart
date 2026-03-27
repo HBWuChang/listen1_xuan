@@ -887,7 +887,14 @@ class PlayController extends GetxController
         return;
       }
       if (music_player.state.playing) {
-        showInfoSnackbar('其他设备正在播放: ${continuePlay.track.title}', null);
+        showInfoSnackbar(
+          '其他设备正在播放',
+          '${continuePlay.track.title}',
+          onTap: () {
+            toSeek = continuePlay.ext?['pos'] as int?;
+            playsong(continuePlay.track, start: true, isByClick: true);
+          },
+        );
         return;
       }
       toSeek = continuePlay.ext?['pos'] as int?;
