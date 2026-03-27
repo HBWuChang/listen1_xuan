@@ -26,6 +26,7 @@ import 'global_settings_animations.dart';
 import 'package:get/get.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:expandable/expandable.dart';
+import 'package:universal_io/io.dart' as universal_io;
 import 'settings.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
@@ -348,6 +349,43 @@ Future<dynamic> song_dialog(
                   await clean_local_cache(false, track.id);
                 },
               ),
+              if (isDesktop)
+                FutureBuilder<String>(
+                  future: get_local_cache(track.id),
+                  builder: (context, snapshot) {
+                    final localCachePath = snapshot.data ?? '';
+                    if (localCachePath.isEmpty) {
+                      return SizedBox.shrink();
+                    }
+                    return ListTile(
+                      title: Text('在文件夹中打开缓存文件'),
+                      subtitle: Text(
+                        localCachePath,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () async {
+                        try {
+                          if (isWindows) {
+                            await universal_io.Process.run(
+                              'explorer',
+                              ['/select,', localCachePath],
+                              runInShell: true,
+                            );
+                          } else if (isMacOS) {
+                            await universal_io.Process.run(
+                              'open',
+                              ['-R', localCachePath],
+                              runInShell: true,
+                            );
+                          }
+                        } catch (e) {
+                          showErrorSnackbar('打开失败', e.toString());
+                        }
+                      },
+                    );
+                  },
+                ),
               if (is_my)
                 ListTile(
                   title: Text('删除歌曲'),
