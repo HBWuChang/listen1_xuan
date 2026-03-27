@@ -144,6 +144,14 @@ class SettingsController extends GetxController {
     settings['hideOrMinimize'] = value;
   }
 
+  static const String disableOpacityInLyricPageKey =
+      'disableOpacityInLyricPage';
+  bool get disableOpacityInLyricPage =>
+      settings[disableOpacityInLyricPageKey] ?? false;
+  set disableOpacityInLyricPage(bool value) {
+    settings[disableOpacityInLyricPageKey] = value;
+  }
+
   static const String searchUseLastSourceKey = 'searchUseLastSource';
   bool get searchUseLastSource => settings[searchUseLastSourceKey] ?? true;
   set searchUseLastSource(bool value) {

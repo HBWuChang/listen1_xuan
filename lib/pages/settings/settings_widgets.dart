@@ -530,7 +530,8 @@ void _showOpacityDialog() {
           actions: [TextButton(onPressed: () => Get.back(), child: Text('关闭'))],
         );
       },
-    ),barrierColor:Colors.transparent
+    ),
+    barrierColor: Colors.transparent,
   );
 }
 
@@ -870,26 +871,7 @@ Widget get themeSettingsTiles => Column(
           Get.find<SettingsController>().lyricBackgroundBlurRadius.toString(),
         );
       }),
-      onTap: () async {
-        await showInputDialog(
-          title: '歌词背景高斯模糊距离',
-          message: '数值越大,模糊效果越明显',
-          initialValue: Get.find<SettingsController>().lyricBackgroundBlurRadius
-              .toString(),
-          onConfirm: (value) async {
-            if (isEmpty(value)) return false;
-            double? intValue = double.tryParse(value);
-            if (intValue == null || intValue < 0) {
-              throw '请输入有效的数值';
-            }
-            Get.find<SettingsController>().lyricBackgroundBlurRadius = intValue
-                .toDouble();
-            showSuccessSnackbar('设置成功', null);
-            return true;
-          },
-          keyboardType: TextInputType.number,
-        );
-      },
+      onTap: showLyricBackgroundBlurRadiusInputDialog,
     ),
     ListTile(
       leading: Icon(Icons.border_outer_rounded),

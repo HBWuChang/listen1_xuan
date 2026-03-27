@@ -126,21 +126,7 @@ class _LyricVPageState extends State<LyricVPage>
       }
 
       if (!lyricController.hasLyric.value) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '暂无歌词',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                ),
-              ),
-              SizedBox(height: 8),
-            ],
-          ),
-        );
+        return SizedBox.shrink();
       }
 
       return Container(
@@ -173,59 +159,6 @@ Widget traBtn(
   child: Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      // InkWell(
-      //   borderRadius: BorderRadius.circular(25),
-      //   onTap: () {
-      //     lyricController.toggleTranslation();
-      //   },
-      //   child: Container(
-      //     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      //     child: Row(
-      //       mainAxisSize: MainAxisSize.min,
-      //       children: [
-      //         Text(
-      //           '译',
-      //           style: TextStyle(
-      //             fontSize: 14,
-      //             fontWeight: FontWeight.w600,
-      //             color: settingsController.showLyricTranslation.value
-      //                 ? Theme.of(context).colorScheme.primary
-      //                 : Theme.of(
-      //                     context,
-      //                   ).textTheme.bodyMedium?.color?.withOpacity(0.6),
-      //           ),
-      //         ),
-      //         SizedBox(width: 6),
-      //         AnimatedContainer(
-      //           duration: Duration(milliseconds: 200),
-      //           width: 36,
-      //           height: 20,
-      //           decoration: BoxDecoration(
-      //             borderRadius: BorderRadius.circular(10),
-      //             color: settingsController.showLyricTranslation.value
-      //                 ? Theme.of(context).colorScheme.primary
-      //                 : Theme.of(context).disabledColor,
-      //           ),
-      //           child: AnimatedAlign(
-      //             duration: Duration(milliseconds: 200),
-      //             alignment: settingsController.showLyricTranslation.value
-      //                 ? Alignment.centerRight
-      //                 : Alignment.centerLeft,
-      //             child: Container(
-      //               width: 16,
-      //               height: 16,
-      //               margin: EdgeInsets.all(2),
-      //               decoration: BoxDecoration(
-      //                 color: Colors.white,
-      //                 borderRadius: BorderRadius.circular(8),
-      //               ),
-      //             ),
-      //           ),
-      //         ),
-      //       ],
-      //     ),
-      //   ),
-      // ),
       Obx(
         () =>
             isEmpty(lyricController.sLyricTra.value) ||
@@ -249,6 +182,24 @@ Widget traBtn(
                   ),
                 ),
               ),
+      ),
+      IconButton(
+        onPressed: lyricController.toggledisableOpacity,
+        onLongPress: () {
+          Get.find<SettingsController>().disableOpacityInLyricPage = false;
+          showLyricBackgroundBlurRadiusInputDialog(
+            disableBackgroundShadow: true,
+          );
+        },
+        padding: EdgeInsets.zero,
+        icon: Obx(
+          () => Icon(
+            Icons.opacity_rounded,
+            color: settingsController.disableOpacityInLyricPage
+                ? Theme.of(context).colorScheme.primary
+                : null,
+          ),
+        ),
       ),
       IconButton(
         onPressed: () {
@@ -359,7 +310,9 @@ class _LyricVBackPageState extends State<LyricVBackPage>
           child: Obx(
             () => buildBlurredImage(
               currentSong.img_url ?? '',
-              settingsController.lyricBackgroundBlurRadius,
+              settingsController.disableOpacityInLyricPage
+                  ? 0
+                  : settingsController.lyricBackgroundBlurRadius,
             ),
           ),
         ),

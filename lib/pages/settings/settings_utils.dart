@@ -463,3 +463,27 @@ Future<void> outputPlaylistToGithubGist() async {
     showErrorSnackbar('添加失败', '$e');
   }
 }
+
+Future<void> showLyricBackgroundBlurRadiusInputDialog({
+  bool disableBackgroundShadow = false,
+}) async {
+  await showInputDialog(
+    title: '歌词背景高斯模糊距离',
+    message: '数值越大,模糊效果越明显',
+    initialValue: Get.find<SettingsController>().lyricBackgroundBlurRadius
+        .toString(),
+    onConfirm: (value) async {
+      if (isEmpty(value)) return false;
+      double? intValue = double.tryParse(value);
+      if (intValue == null || intValue < 0) {
+        throw '请输入有效的数值';
+      }
+      Get.find<SettingsController>().lyricBackgroundBlurRadius = intValue
+          .toDouble();
+      showSuccessSnackbar('设置成功', null);
+      return disableBackgroundShadow ? false : true;
+    },
+    keyboardType: TextInputType.number,
+    disableBackgroundShadow: disableBackgroundShadow,
+  );
+}

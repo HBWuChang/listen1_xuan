@@ -288,6 +288,7 @@ Future<bool> showConfirmDialog(
 /// [onConfirm] 确认回调函数，返回true表示可以关闭对话框，false表示保持打开
 /// [confirmText] 确认按钮文本
 /// [cancelText] 取消按钮文本
+/// [disableBackgroundShadow] 是否禁用对话框背景遮罩阴影（默认 false）
 ///
 /// 返回用户输入的文本，如果取消则返回null
 Future<String?> showInputDialog({
@@ -302,6 +303,7 @@ Future<String?> showInputDialog({
   Future<bool> Function(String value)? onConfirm,
   String confirmText = '确定',
   String cancelText = '取消',
+  bool disableBackgroundShadow = false,
 }) async {
   final controller = TextEditingController(text: initialValue);
   final errorMessage = RxnString();
@@ -417,6 +419,7 @@ Future<String?> showInputDialog({
           ],
         ),
       ),
+      barrierColor: disableBackgroundShadow ? Colors.transparent : null,
     );
 
     return result;

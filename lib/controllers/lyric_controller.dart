@@ -335,6 +335,11 @@ class XLyricController extends GetxController {
     _processLyricData();
   }
 
+  void toggledisableOpacity() {
+    _settingsController.disableOpacityInLyricPage =
+        !_settingsController.disableOpacityInLyricPage;
+  }
+
   /// 查找哔哩哔哩歌词
   Future<void> findBilibiliLyric() async {
     try {

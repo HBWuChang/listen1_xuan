@@ -16,6 +16,7 @@ import 'package:extended_image/extended_image.dart';
 
 import '../../global_settings_animations.dart';
 import '../../loweb.dart';
+import '../../settings.dart';
 part 'lyric_v.dart';
 part 'lyric_shared.dart';
 
@@ -205,7 +206,9 @@ class _LyricPageState extends State<LyricPage>
           child: Obx(
             () => buildBlurredImage(
               currentSong.img_url ?? '',
-              settingsController.lyricBackgroundBlurRadius,
+              settingsController.disableOpacityInLyricPage
+                  ? 0
+                  : settingsController.lyricBackgroundBlurRadius,
             ),
           ),
         ),
@@ -289,21 +292,7 @@ class _LyricPageState extends State<LyricPage>
       }
 
       if (!lyricController.hasLyric.value) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '暂无歌词',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                ),
-              ),
-              SizedBox(height: 8),
-            ],
-          ),
-        );
+        return SizedBox.shrink();
       }
 
       return Container(
