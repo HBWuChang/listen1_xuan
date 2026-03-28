@@ -473,6 +473,11 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   @override
+  void onWindowClose() {
+    closeApp();
+  }
+
+  @override
   void didChangePlatformBrightness() {
     super.didChangePlatformBrightness();
     Get.find<ThemeController>().didChangePlatformBrightnessOrManual();
