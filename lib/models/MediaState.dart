@@ -12,20 +12,34 @@ class MediaState {
   /// 音频总时长
   Duration duration;
 
+  Duration buffer;
+
+  bool buffering;
+
   /// 是否正在播放
   bool playing;
 
   MediaState({
     required this.position,
     required this.duration,
+    required this.buffer,
+    required this.buffering,
     required this.playing,
   });
 
   /// 创建带有更新字段的副本
-  MediaState copyWith({Duration? position, Duration? duration, bool? playing}) {
+  MediaState copyWith({
+    Duration? position,
+    Duration? duration,
+    Duration? buffer,
+    bool? buffering,
+    bool? playing,
+  }) {
     return MediaState(
       position: position ?? this.position,
       duration: duration ?? this.duration,
+      buffer: buffer ?? this.buffer,
+      buffering: buffering ?? this.buffering,
       playing: playing ?? this.playing,
     );
   }
@@ -39,5 +53,5 @@ class MediaState {
 
   @override
   String toString() =>
-      'MediaState(position: $position, duration: $duration, playing: $playing)';
+      'MediaState(position: $position, duration: $duration, buffer: $buffer, buffering: $buffering, playing: $playing)';
 }

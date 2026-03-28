@@ -563,6 +563,26 @@ List<Widget> get cacheSettingsTiles => [
     },
     child: const Text('清除所有歌曲缓存'),
   ),
+  Obx(
+    () => SwitchListTile(
+      title: const Text('禁用歌曲缓存下载'),
+      subtitle: Text('开启后将不再下载歌曲缓存，已下载的缓存仍可使用'),
+      value: Get.find<SettingsController>().disableSongDownload,
+      onChanged: (bool value) {
+        Get.find<SettingsController>().disableSongDownload = value;
+      },
+    ),
+  ),
+  Obx(
+    () => SwitchListTile(
+      title: const Text('禁用歌词缓存下载'),
+      subtitle: Text('开启后将不再下载歌词缓存，已下载的缓存仍可使用'),
+      value: Get.find<SettingsController>().disableLyricDownload,
+      onChanged: (bool value) {
+        Get.find<SettingsController>().disableLyricDownload = value;
+      },
+    ),
+  ),
   ListTile(
     leading: Icon(Icons.edit),
     title: const Text('缓存命名方式'),

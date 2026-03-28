@@ -278,6 +278,18 @@ class SettingsController extends GetxController {
     settings[songReplaceAutoRepTragetTrackInAllPlaylistKey] = value;
   }
 
+  static const String disableLyricDownloadKey = 'disableLyricDownload';
+  bool get disableLyricDownload => settings[disableLyricDownloadKey] ?? false;
+  set disableLyricDownload(bool value) {
+    settings[disableLyricDownloadKey] = value;
+  }
+
+  static const String disableSongDownloadKey = 'disableSongDownload';
+  bool get disableSongDownload => settings[disableSongDownloadKey] ?? false;
+  set disableSongDownload(bool value) {
+    settings[disableSongDownloadKey] = value;
+  }
+
   static const String windowsCloseBtnCloseOrHideAppKey =
       'windowsCloseBtnCloseOrHideApp';
   bool? get windowsCloseBtnCloseOrHideApp =>

@@ -24,6 +24,7 @@ class CacheController extends GetxController {
   final Logger _logger = Logger();
   final String _localCacheListKey = 'local-cache-list';
   final _localCacheList = <String, String>{}.obs;
+  final _onlineCacheList = <String, String>{}.obs;
   final _toDelFiles = <String>{}.obs;
   SettingsController _settingsController = Get.find<SettingsController>();
   PlayController get _playController => Get.find<PlayController>();
@@ -84,6 +85,10 @@ class CacheController extends GetxController {
     Track track, {
     Track? sTrack,
   }) async {
+    if (_settingsController.disableSongDownload) {
+      _onlineCacheList[track.id] = res['url'];
+      return;
+    }
     final downDir = await xuanGetdownloadDirectory();
     String downPath = downDir.path;
     String fileName = getDownloadNamed(track, res['url']);
@@ -234,10 +239,17 @@ class CacheController extends GetxController {
     _isDeleting = false;
   }
 
+  bool isOnlineCache(String id) {
+    return _onlineCacheList.containsKey(id);
+  }
+
   /// 获取本地缓存文件路径
   Future<String> getLocalCache(String id) async {
     if (!_isDeleting) tryDelFiles(); // 尝试删除待删除的文件
     id = _playController.songReplaceSettings.value.getReplacementId(id) ?? id;
+    if (_onlineCacheList.containsKey(id)) {
+      return _onlineCacheList[id]!;
+    }
     if (_localCacheList.containsKey(id)) {
       var downDir = await xuanGetdataDirectory();
 
@@ -274,6 +286,11 @@ class CacheController extends GetxController {
     Get.find<XLyricController>().clearLyricCache(id);
     id = _playController.songReplaceSettings.value.getReplacementId(id) ?? id;
     final path = await getLocalCache(id);
+    if (isOnlineCache(id)) {
+      _onlineCacheList.remove(id);
+      showInfoSnackbar('没有可清理的缓存文件', null);
+      return;
+    }
     if (path.isNotEmpty) {
       try {
         await File(path).delete();

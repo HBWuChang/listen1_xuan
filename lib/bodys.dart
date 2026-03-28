@@ -354,7 +354,8 @@ Future<dynamic> song_dialog(
                   future: get_local_cache(track.id),
                   builder: (context, snapshot) {
                     final localCachePath = snapshot.data ?? '';
-                    if (localCachePath.isEmpty) {
+                    if (localCachePath.isEmpty ||
+                        Get.find<CacheController>().isOnlineCache(track.id)) {
                       return SizedBox.shrink();
                     }
                     return ListTile(
@@ -367,17 +368,15 @@ Future<dynamic> song_dialog(
                       onTap: () async {
                         try {
                           if (isWindows) {
-                            await universal_io.Process.run(
-                              'explorer',
-                              ['/select,', localCachePath],
-                              runInShell: true,
-                            );
+                            await universal_io.Process.run('explorer', [
+                              '/select,',
+                              localCachePath,
+                            ], runInShell: true);
                           } else if (isMacOS) {
-                            await universal_io.Process.run(
-                              'open',
-                              ['-R', localCachePath],
-                              runInShell: true,
-                            );
+                            await universal_io.Process.run('open', [
+                              '-R',
+                              localCachePath,
+                            ], runInShell: true);
                           }
                         } catch (e) {
                           showErrorSnackbar('打开失败', e.toString());

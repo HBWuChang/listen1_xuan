@@ -118,6 +118,8 @@ class PlayController extends GetxController
     MediaState(
       position: Duration.zero,
       duration: Duration.zero,
+      buffer: Duration.zero,
+      buffering: false,
       playing: false,
     ),
   );
@@ -151,6 +153,7 @@ class PlayController extends GetxController
     logger.d(music_player.state.audioDevices);
     logger.d(music_player.state.audioParams);
     music_player.stream.error.listen((error) {
+      showErrorSnackbar('播放器错误', error.toString());
       logger.e('Audio Player Error: $error');
       logger.d(music_player.state.audioParams);
     });
@@ -234,10 +237,11 @@ class PlayController extends GetxController
 
     // 监听 music_player.position 和 needUpdatePosToAudioService
     // 当两个流都至少更新一次时，更新 updatePosToAudioServiceNow
-    rxdart.Rx.combineLatest2<Duration, int, void>(
+    rxdart.Rx.combineLatest3<Duration, Duration, int, void>(
       music_player.stream.position,
+      music_player.stream.buffer,
       needUpdatePosToAudioService.stream,
-      (position, needUpdate) => null,
+      (position, buffer, needUpdate) => null,
     ).listen((_) {
       updatePosToAudioServiceNow.value++;
       if (updatePosToAudioServiceNow.value > 2e9) {
@@ -308,6 +312,17 @@ class PlayController extends GetxController
       // 更新 mediaState 的 duration
       mediaState.update((state) {
         state?.duration = duration;
+      });
+    });
+    music_player.stream.buffer.listen((buffer) {
+      mediaState.update((state) {
+        state?.buffer = buffer;
+      });
+    });
+    music_player.stream.buffering.listen((buffering) {
+      // 更新 mediaState 的 buffering 状态
+      mediaState.update((state) {
+        state?.buffering = buffering;
       });
     });
     if (isWindows) {
@@ -387,8 +402,24 @@ class PlayController extends GetxController
         MediaService.bootstrapTrack(track, start: start);
         return;
       }
+      Map<String, String>? httpHeaders;
+      if (track.id.startsWith('bi') &&
+          Get.find<CacheController>().isOnlineCache(track.id)) {
+        httpHeaders = {
+          "user-agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
+          "accept": "*/*",
+          "accept-encoding": "identity;q=1, *;q=0",
+          "accept-language": "zh-CN",
+          "referer": "https://www.bilibili.com/",
+          "sec-fetch-dest": "audio",
+          "sec-fetch-mode": "no-cors",
+          "sec-fetch-site": "cross-site",
+          "range": "bytes=0-",
+        };
+      }
       // 有缓存，直接播放
-      Media media = Media(tdir);
+      Media media = Media(tdir, httpHeaders: httpHeaders);
       await music_player.open(media, play: false);
       if (!randommodetemplist.any((element) => element.id == track.id)) {
         if (randomTrackInsertAtHead) {

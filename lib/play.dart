@@ -711,7 +711,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
           : AudioProcessingState.ready,
       updatePosition: _music_player.state.position,
       playing: _music_player.state.playing,
-      bufferedPosition: _music_player.state.duration,
+      bufferedPosition: _music_player.state.buffer,
     );
   }
 }

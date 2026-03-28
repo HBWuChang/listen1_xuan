@@ -120,7 +120,7 @@ Widget playH() {
                                     builder: (context, snapshot) {
                                       MediaState? mediaState = snapshot.data;
                                       return Text(
-                                        ('${formatDuration(mediaState?.position ?? Duration.zero)} / ${formatDuration(mediaState?.duration ?? Duration.zero)}'),
+                                        ('${formatDuration(mediaState?.position ?? Duration.zero)} / ${formatDuration(mediaState?.duration ?? Duration.zero)}${mediaState?.buffering == true ? '(${formatDuration(mediaState?.buffer ?? Duration.zero)})' : ''}'),
                                         style: TextStyle(fontSize: 20.0),
                                       );
                                     },

@@ -74,7 +74,6 @@ class XLyricController extends GetxController {
       if (!needsFileLyric && !needsFileTLyric) {
         return result;
       }
-
       // 2) lyricBox 没有时，再从本地文件缓存读取
       // 获取音乐文件的缓存路径作为基础路径
       final musicCachePath = await _cacheController.getLocalCache(trackId);
@@ -257,11 +256,12 @@ class XLyricController extends GetxController {
 
       if (lyric.isNotEmpty) {
         // 保存歌词到缓存
-        await _saveLyricToCache(trackId, lyric);
-        if (tlyric.isNotEmpty) {
-          await _saveLyricToCache(trackId, tlyric, isTranslation: true);
+        if (!_settingsController.disableLyricDownload) {
+          await _saveLyricToCache(trackId, lyric);
+          if (tlyric.isNotEmpty) {
+            await _saveLyricToCache(trackId, tlyric, isTranslation: true);
+          }
         }
-
         // 处理歌词数据
         _processLyricData(lyric, tlyric);
       } else {
