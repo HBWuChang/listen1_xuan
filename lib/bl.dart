@@ -27,6 +27,17 @@ enum BLPlaylistType {
   const BLPlaylistType(this.prefix);
 }
 
+enum BLPlayListXuanType {
+  my('my', desc: '我创建的收藏夹'),
+  toview('toview', desc: '稍后再看'),
+  ugcSeason('ugc_season', desc: '视频所处的合集'),
+  mycollect('', desc: '我追的合集/收藏夹');
+
+  final String prefix;
+  final String? desc;
+  const BLPlayListXuanType(this.prefix, {this.desc});
+}
+
 class Bilibili {
   Future<List<PlayList>> Xuan_get_bl_playlist() async {
     var bilibiliData = {};
@@ -77,7 +88,8 @@ class Bilibili {
               'info': {
                 'cover_img_url': element['cover'],
                 'title': element['title'],
-                'id': 'biplaylistxuan_my${element['id']}',
+                'id':
+                    '${BLPlaylistType.playlistxuan.prefix}_${BLPlayListXuanType.my.prefix}${element['id']}',
                 'source_url':
                     'https://api.bilibili.com/x/v3/fav/resource/list?ps=20&keyword&order=mtime&type=0&tid=0&platform=web&pn=1&media_id=${element['id']}',
               },
@@ -91,7 +103,8 @@ class Bilibili {
           'info': {
             'cover_img_url': item['cover'],
             'title': item['title'],
-            'id': 'biplaylistxuan_${item['id']}',
+            'id':
+                '${BLPlaylistType.playlistxuan.prefix}_${BLPlayListXuanType.mycollect.prefix}${item['id']}',
             'source_url':
                 'https://api.bilibili.com/x/space/fav/season/list?pn=1&ps=20&season_id=${item['mid']}',
           },
@@ -101,8 +114,8 @@ class Bilibili {
       return List.from([
         PlayList(
           info: PlayListInfo(
-            id: 'biplaylistxuan_toview$upMid',
-            title: '稍后再看',
+            id: '${BLPlaylistType.playlistxuan.prefix}_${BLPlayListXuanType.toview.prefix}$upMid',
+            title: BLPlayListXuanType.toview.desc,
             cover_img_url: '',
             source_url: 'https://www.bilibili.com/watchlater/list',
           ),
@@ -143,7 +156,7 @@ class Bilibili {
       };
     }
     try {
-      if (selectmid.substring(0, 2) == 'my') {
+      if (selectmid.startsWith(BLPlayListXuanType.my.prefix)) {
         var url = '';
         url =
             'https://api.bilibili.com/x/v3/fav/resource/list?ps=20&keyword&order=mtime&type=0&tid=0&platform=web&';
@@ -159,7 +172,7 @@ class Bilibili {
         final info = {
           'cover_img_url': data['info']['cover'],
           'title': data['info']['title'],
-          'id': 'biplaylistxuan_$selectmid',
+          'id': '${BLPlaylistType.playlistxuan.prefix}_$selectmid',
           'source_url':
               'https://api.bilibili.com/x/v3/fav/resource/list?ps=20&keyword&order=mtime&type=0&tid=0&platform=web&pn=1&media_id=${selectmid.substring(2)}',
         };
@@ -185,13 +198,12 @@ class Bilibili {
           return biConvertSongxuan(item);
         }).toList();
 
-        // return {'info': info, 'tracks': tracks};
         return {
           'success': (fn) {
             fn({'info': info, 'tracks': tracks});
           },
         };
-      } else if (selectmid.substring(0, 6) == 'toview') {
+      } else if (selectmid.startsWith(BLPlayListXuanType.toview.prefix)) {
         final url = 'https://api.bilibili.com/x/v2/history/toview/web';
         final res = await dioWithCookieManager.get(
           url,
@@ -221,7 +233,7 @@ class Bilibili {
         final info = {
           'cover_img_url': '',
           'title': '稍后再看',
-          'id': 'biplaylistxuan_$selectmid',
+          'id': '${BLPlaylistType.playlistxuan.prefix}_$selectmid',
           'source_url': 'https://www.bilibili.com/watchlater/list',
         };
         List<dynamic> medias = data['list'];
@@ -250,7 +262,7 @@ class Bilibili {
         final info = {
           'cover_img_url': data['info']['cover'],
           'title': data['info']['title'],
-          'id': 'biplaylistxuan_$selectmid',
+          'id': '${BLPlaylistType.playlistxuan.prefix}_$selectmid',
           'source_url':
               'https://api.bilibili.com/x/space/fav/season/list?pn=1&ps=20&season_id=${selectmid}',
         };
@@ -262,8 +274,6 @@ class Bilibili {
           return biConvertSongxuan(item);
         }).toList();
 
-        // return {'info': {}, 'tracks': []};
-        // return {'info': info, 'tracks': tracks};
         return {
           'success': (fn) {
             fn({'info': info, 'tracks': tracks});
@@ -804,6 +814,7 @@ class Bilibili {
       'success': (fn) async {
         final keyword = getParameterByName('keywords', url);
         final curpage = getParameterByName('curpage', url);
+        final type = int.tryParse(getParameterByName('type', url)) ?? 0;
         final targetUrl =
             'https://api.bilibili.com/x/web-interface/search/type?__refresh__=true&_extra=&context=&page=$curpage&page_size=42&platform=pc&highlight=1&single_column=0&keyword=${Uri.encodeComponent(keyword!)}&category_id=&search_type=video&dynamic_offset=0&preload=true&com2co=true';
 
@@ -837,9 +848,7 @@ class Bilibili {
   Future<Map<String, dynamic>> get_playlist(String url) async {
     final listId = getParameterByName('list_id', url)?.split('_')[0];
     // switch (listId) {
-    //   case 'biplaylist':
     if (listId == BLPlaylistType.playlist.prefix) return bi_get_playlist(url);
-    // case 'biplaylistxuan':
     if (listId == BLPlaylistType.playlistxuan.prefix)
       return biGetPlaylistxuan(url);
     // case 'bialbum':

@@ -22,7 +22,7 @@ dependencies:
   crypto: ^3.0.1
   html: ^0.15.0
   marquee: ^2.3.0
-  audioplayers: ^6.1.0
+  audioplayers: 6.5.1
   path_provider: 2.1.5
   path_provider_foundation: 2.4.4
   # flutter_local_notifications: ^18.0.1
@@ -50,7 +50,7 @@ dependencies:
   system_info3: ^4.0.1
   animations: ^2.1.0
   loading_animations: ^2.2.0
-  media_kit: ^1.2.2 # Primary package.
+  media_kit: 1.2.3 # Primary package.
   media_kit_libs_audio: ^1.0.7 # Native audio dependencies.
   window_manager: ^0.5.1
   webview_windows:
