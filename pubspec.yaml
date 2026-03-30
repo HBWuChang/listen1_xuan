@@ -48,7 +48,7 @@ dependencies:
   adaptive_theme: ^3.6.0
   preload_page_view: ^0.2.0
   system_info3: ^4.0.1
-  animations: ^2.1.0
+  animations: 2.1.1
   loading_animations: ^2.2.0
   media_kit: 1.2.3 # Primary package.
   media_kit_libs_audio: ^1.0.7 # Native audio dependencies.
@@ -110,7 +110,7 @@ dependencies:
   protobuf: ^6.0.0
   fixnum: ^1.1.1
   expandable: ^5.0.1
-  
+  flutter_rust_bridge: 2.11.1
   # auto_updater: ^1.0.0
 dev_dependencies:
   flutter_test:

@@ -304,7 +304,7 @@ class Bilibili {
       } else {
         return '';
       }
-      Response response = await Dio().get(
+      Response response = await dioWithCookieManager.get(
         'https://api.bilibili.com/x/web-interface/nav',
         options: Options(
           headers: {
@@ -334,7 +334,7 @@ class Bilibili {
   }
 
   static Future<Map<String, String>> fetch_wbi_key() async {
-    final response = await Dio().get(
+    final response = await dioWithCookieManager.get(
       'https://api.bilibili.com/x/web-interface/nav',
     );
     final jsonContent = response.data;
@@ -474,7 +474,7 @@ class Bilibili {
     } else {
       cookie = 'buvid3=0';
     }
-    var t = await Dio().get(
+    var t = await dioWithCookieManager.get(
       targetUrl,
       options: Options(
         headers: {
@@ -520,6 +520,25 @@ class Bilibili {
     }
     return {
       'id': 'bitrack_v_${songInfo['bvid']}',
+      'title': htmlDecode(songInfo['title']),
+      'artist': htmlDecode(songInfo['author']),
+      'artist_id': 'biartist_v_${songInfo['mid']}',
+      'source': 'bilibili',
+      'source_url': 'https://www.bilibili.com/${songInfo['bvid']}',
+      'img_url': imgUrl,
+    };
+  }
+
+  static Map<String, dynamic> biConvertSongToUgcSeason(
+    Map<String, dynamic> songInfo,
+  ) {
+    String imgUrl = songInfo['pic'];
+    if (imgUrl.startsWith('//')) {
+      imgUrl = 'https:$imgUrl';
+    }
+    return {
+      'id':
+          '${BLPlaylistType.playlistxuan.prefix}_${BLPlayListXuanType.ugcSeason.prefix}${songInfo['bvid']}',
       'title': htmlDecode(songInfo['title']),
       'artist': htmlDecode(songInfo['author']),
       'artist_id': 'biartist_v_${songInfo['mid']}',
@@ -591,7 +610,7 @@ class Bilibili {
 
     return {
       'success': (Function fn) {
-        Dio().get(targetUrl).then((response) async {
+        dioWithCookieManager.get(targetUrl).then((response) async {
           final data = response.data['data'];
           final info = {
             'cover_img_url': data['cover'],
@@ -601,7 +620,7 @@ class Bilibili {
           };
           final target =
               'https://www.bilibili.com/audio/music-service-c/web/song/of-menu?pn=1&ps=100&sid=$listId';
-          final res = await Dio().get(target);
+          final res = await dioWithCookieManager.get(target);
           final tracks = res.data['data']['data'].map((item) {
             return bi_convert_song(item);
           }).toList();
@@ -627,7 +646,7 @@ class Bilibili {
 
     return {
       'success': (Function fn) {
-        Dio().get(targetUrl).then((response) {
+        dioWithCookieManager.get(targetUrl).then((response) {
           final info = {
             'cover_img_url': response.data['data']['pic'],
             'title': response.data['data']['title'],
@@ -707,7 +726,7 @@ class Bilibili {
           } else {
             targetUrl =
                 'https://api.bilibili.com/audio/music-service-c/web/song/upper?pn=1&ps=0&order=2&uid=$artistId';
-            final res = await Dio().get(
+            final res = await dioWithCookieManager.get(
               targetUrl,
               options: Options(headers: {'cookie': cookie}),
             );
@@ -753,14 +772,14 @@ class Bilibili {
       final targetUrl =
           'https://api.bilibili.com/x/web-interface/view?bvid=$bvid';
       try {
-        final response = await Dio().get(targetUrl);
+        final response = await dioWithCookieManager.get(targetUrl);
         var cid = response.data['data']['pages'][0]['cid'];
         if (trackIdCheck.length > 1) {
           cid = trackIdCheck[1];
         }
         final targetUrl2 =
             'https://api.bilibili.com/x/player/playurl?fnval=16&bvid=$bvid&cid=$cid';
-        final response2 = await Dio().get(targetUrl2);
+        final response2 = await dioWithCookieManager.get(targetUrl2);
         try {
           final audioList = response2.data['data']['dash']['audio'];
           if (audioList.isNotEmpty) {
@@ -794,7 +813,7 @@ class Bilibili {
       final targetUrl =
           'https://www.bilibili.com/audio/music-service-c/web/url?sid=$songId';
       try {
-        final response = await Dio().get(targetUrl);
+        final response = await dioWithCookieManager.get(targetUrl);
         final data = response.data;
         if (data['code'] == 0) {
           sound['url'] = data['data']['cdns'][0];
@@ -822,11 +841,19 @@ class Bilibili {
             .get(targetUrl)
             .then(
               (response) {
-                final result = response.data['data']['result'].map((song) {
-                  return bi_convert_song2(song);
-                }).toList();
-                final total = response.data['data']['numResults'];
-                fn({'result': result, 'total': total});
+                if (type != 1) {
+                  final result = response.data['data']['result'].map((song) {
+                    return bi_convert_song2(song);
+                  }).toList();
+                  final total = response.data['data']['numResults'];
+                  fn({'result': result, 'total': total});
+                } else {
+                  final result = response.data['data']['result'].map((song) {
+                    return biConvertSongToUgcSeason(song);
+                  }).toList();
+                  final total = response.data['data']['numResults'];
+                  fn({'result': result, 'total': total});
+                }
               },
               onError: (e) {
                 showDebugSnackbar('Bilibili搜索失败', e.toString());
