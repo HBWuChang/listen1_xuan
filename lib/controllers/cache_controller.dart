@@ -268,9 +268,13 @@ class CacheController extends GetxController {
   }
 
   /// 清理本地缓存
-  Future<void> cleanLocalCache([bool all = false, String id = '']) async {
+  Future<void> cleanLocalCache([
+    bool all = false,
+    String id = '',
+    bool hideSnackbar = false,
+  ]) async {
     if (id.isNotEmpty) {
-      await _cleanSingleCache(id);
+      await _cleanSingleCache(id, hideSnackbar: hideSnackbar);
       return;
     }
 
@@ -281,14 +285,19 @@ class CacheController extends GetxController {
     }
   }
 
+  void testSetErrorAddr() {
+    _onlineCacheList[_playController.currentTrack.id] =
+        'http://example.com/nonexistentfile.mp3';
+  }
+
   /// 清理单个缓存文件
-  Future<void> _cleanSingleCache(String id) async {
+  Future<void> _cleanSingleCache(String id, {bool hideSnackbar = false}) async {
     Get.find<XLyricController>().clearLyricCache(id);
     id = _playController.songReplaceSettings.value.getReplacementId(id) ?? id;
     final path = await getLocalCache(id);
     if (isOnlineCache(id)) {
       _onlineCacheList.remove(id);
-      showInfoSnackbar('没有可清理的缓存文件', null);
+      if (!hideSnackbar) showInfoSnackbar('已清理在线缓存', null);
       return;
     }
     if (path.isNotEmpty) {
@@ -296,7 +305,9 @@ class CacheController extends GetxController {
         await File(path).delete();
         _localCacheList.remove(id);
 
-        showInfoSnackbar('已清理', null);
+        if (!hideSnackbar) {
+          showInfoSnackbar('已清理', null);
+        }
       } catch (e) {
         showErrorSnackbar('清理失败', e.toString());
       }

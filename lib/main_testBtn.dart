@@ -15,7 +15,7 @@ Widget get testBtn => Positioned.fill(
           children: [
             FloatingActionButton(
               heroTag: 'toast_count_btn',
-              onPressed: Get.find<XLyricController>().findBilibiliLyric,
+              onPressed: Get.find<CacheController>().testSetErrorAddr,
               child: Icon(Icons.format_list_numbered),
             ),
             FloatingActionButton(

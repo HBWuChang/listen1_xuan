@@ -152,11 +152,7 @@ class PlayController extends GetxController
     logger.d('PlayController initialized');
     logger.d(music_player.state.audioDevices);
     logger.d(music_player.state.audioParams);
-    music_player.stream.error.listen((error) {
-      showErrorSnackbar('播放器错误', error.toString());
-      logger.e('Audio Player Error: $error');
-      logger.d(music_player.state.audioParams);
-    });
+    music_player.stream.error.listen((error) => processMusicPlayerError(error));
     // 初始化播放按钮旋转动画控制器
     playVPlayBtnProcessControllerInit();
     // androidEQEnabled =
@@ -465,6 +461,20 @@ class PlayController extends GetxController
       debugPrint('播放失败!!!!');
       debugPrint(e.toString());
       debugPrint(stackTrace.toString());
+    }
+  }
+
+  void processMusicPlayerError(String error) {
+    showErrorSnackbar('播放器错误', error);
+    logger.e('Audio Player Error: $error');
+    logger.d(music_player.state.audioParams);
+    if (error.startsWith('Failed to open') && error.contains('http')) {
+      String? id = currentTrack.id;
+      if (isEmpty(id)) return;
+      cacheController.cleanLocalCache(false, id, true).then((_) {
+        toSeek = mediaState.value.position.inMilliseconds;
+        playsong(currentTrack, start: true);
+      });
     }
   }
 
