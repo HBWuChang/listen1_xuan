@@ -13,6 +13,7 @@ import 'package:listen1_xuan/models/Track.dart';
 
 import 'models/PlayListInfo.dart';
 import 'models/Playlist.dart';
+import 'models/SearchPlayListRes.dart';
 
 final bilibili = Bilibili();
 
@@ -30,7 +31,7 @@ enum BLPlaylistType {
 enum BLPlayListXuanType {
   my('my', desc: '我创建的收藏夹'),
   toview('toview', desc: '稍后再看'),
-  ugcSeason('ugc_season', desc: '视频所处的合集'),
+  ugcSeason('ugcSeason', desc: '视频所处的合集'),
   mycollect('', desc: '我追的合集/收藏夹');
 
   final String prefix;
@@ -201,6 +202,59 @@ class Bilibili {
         return {
           'success': (fn) {
             fn({'info': info, 'tracks': tracks});
+          },
+        };
+      } else if (selectmid.startsWith(BLPlayListXuanType.ugcSeason.prefix)) {
+        final url = 'https://api.bilibili.com/x/web-interface/wbi/view/detail';
+        final res = await dioWithCookieManager.get(
+          url,
+          queryParameters: {
+            'bvid': selectmid.substring(
+              BLPlayListXuanType.ugcSeason.prefix.length,
+            ),
+          },
+          options: Options(
+            headers: {
+              "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0",
+              "Connection": "keep-alive",
+              "Accept": "*/*",
+              "Accept-Encoding": "gzip, deflate, br, zstd",
+              "sec-ch-ua-platform": "\"Windows\"",
+              "sec-ch-ua":
+                  "\"Chromium\";v=\"142\", \"Microsoft Edge\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+              "sec-ch-ua-mobile": "?0",
+              "origin": "https://space.bilibili.com",
+              "sec-fetch-site": "same-site",
+              "sec-fetch-mode": "cors",
+              "sec-fetch-dest": "empty",
+              "referer": "https://www.bilibili.com/",
+              "accept-language":
+                  "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+              "priority": "u=1, i",
+            },
+          ),
+        );
+        Map<String, dynamic> data = res.data['data'];
+        if (data['View']?['ugc_season']?['id'] == null) {
+          throw '该视频没有所属合集信息，无法获取歌单\n如要查看分P，请点击歌曲信息中的“查看可能的分集”';
+        }
+        final info = PlayListInfo(
+          cover_img_url: data['View']?['ugc_season']?['cover'],
+          title: data['View']?['ugc_season']?['title'],
+          id: '${BLPlaylistType.playlistxuan.prefix}_$selectmid',
+          source_url:
+              'https://space.bilibili.com/${data['View']?['owner']['mid']}/lists?sid=${data['View']?['ugc_season']['id']}',
+        );
+        final tracks =
+            (data['View']?['ugc_season']?['sections'] as List<dynamic>)
+                .map((item) => biConvertUgcSeasonSectionToTracks(item))
+                .toList()
+                .fold(<Track>[], (prev, element) => [...prev, ...element]);
+
+        return {
+          'success': (fn) {
+            fn(PlayList(info: info, tracks: tracks));
           },
         };
       } else if (selectmid.startsWith(BLPlayListXuanType.toview.prefix)) {
@@ -529,24 +583,42 @@ class Bilibili {
     };
   }
 
-  static Map<String, dynamic> biConvertSongToUgcSeason(
+  static SearchPlayListItem biConvertSongToPlayListUgcSeason(
     Map<String, dynamic> songInfo,
   ) {
     String imgUrl = songInfo['pic'];
     if (imgUrl.startsWith('//')) {
       imgUrl = 'https:$imgUrl';
     }
-    return {
-      'id':
-          '${BLPlaylistType.playlistxuan.prefix}_${BLPlayListXuanType.ugcSeason.prefix}${songInfo['bvid']}',
-      'title': htmlDecode(songInfo['title']),
-      'artist': htmlDecode(songInfo['author']),
-      'artist_id': 'biartist_v_${songInfo['mid']}',
-      'source': 'bilibili',
-      'source_url': 'https://www.bilibili.com/${songInfo['bvid']}',
-      'img_url': imgUrl,
-    };
+    return SearchPlayListItem(
+      id: '${BLPlaylistType.playlistxuan.prefix}_${BLPlayListXuanType.ugcSeason.prefix}${songInfo['bvid']}',
+      title: htmlDecode(songInfo['title']),
+      source: 'bilibili',
+      sourceUrl: 'https://www.bilibili.com/video/${songInfo['bvid']}',
+      imgUrl: imgUrl,
+      url: 'https://www.bilibili.com/video/${songInfo['bvid']}',
+      author: htmlDecode(songInfo['author']),
+    );
   }
+
+  static List<Track> biConvertUgcSeasonSectionToTracks(
+    Map<String, dynamic> section,
+  ) => List<Track>.from(
+    section['episodes']
+        .map(
+          (item) => Track(
+            id: 'bitrack_v_${item['bvid']}',
+            title: htmlDecode(item['title']),
+            // /data/View/ugc_season/sections/0/episodes/0/arc/author/name
+            artist: htmlDecode(item['arc']['author']['name']),
+            artist_id: 'biartist_v_${item['arc']['author']['mid']}',
+            source: 'bilibili',
+            source_url: 'https://www.bilibili.com/video/${item['bvid']}',
+            img_url: item['arc']['pic'],
+          ),
+        )
+        .toList(),
+  );
 
   static Map<String, dynamic> biConvertSongxuan(Map<String, dynamic> songInfo) {
     return {
@@ -848,11 +920,14 @@ class Bilibili {
                   final total = response.data['data']['numResults'];
                   fn({'result': result, 'total': total});
                 } else {
-                  final result = response.data['data']['result'].map((song) {
-                    return biConvertSongToUgcSeason(song);
-                  }).toList();
+                  final result = List<SearchPlayListItem>.from(
+                    response.data['data']['result'].map((song) {
+                      return biConvertSongToPlayListUgcSeason(song);
+                    }).toList(),
+                  );
                   final total = response.data['data']['numResults'];
-                  fn({'result': result, 'total': total});
+                  // fn({'result': result, 'total': total});
+                  fn(SearchPlayListRes(result: result, total: total));
                 }
               },
               onError: (e) {

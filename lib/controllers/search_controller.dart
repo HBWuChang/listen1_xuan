@@ -32,7 +32,10 @@ class XSearchController extends GetxController {
   final RxBool playlistLoading = true.obs;
   final RxBool playlistLoadingMore = false.obs;
   final RxList<SearchPlayListItem> playlists = <SearchPlayListItem>[].obs;
-  final RxMap<String, dynamic> playlistResult = <String, dynamic>{}.obs;
+  final Rx<SearchPlayListRes> playlistResult = SearchPlayListRes(
+    result: [],
+    total: 0,
+  ).obs;
   final RxInt playlistCurrentPage = 1.obs;
   final RxString playlistLastQuery = ''.obs;
   final RxString playlistLastSource = 'netease'.obs;
@@ -399,10 +402,15 @@ class XSearchController extends GetxController {
 
       ret["success"]((data) {
         try {
-          playlistResult.value = data;
-          playlists.value = List<SearchPlayListItem>.from(
-            data['result'].map((item) => SearchPlayListItem.fromJson(item)),
-          );
+          if (data is SearchPlayListRes) {
+            playlistResult.value = data;
+            playlists.value = data.result;
+          } else {
+            playlistResult.value = SearchPlayListRes.fromJson(data);
+            playlists.value = List<SearchPlayListItem>.from(
+              data['result'].map((item) => SearchPlayListItem.fromJson(item)),
+            );
+          }
         } catch (e) {
           _rollbackPlaylistSearch(previousQuery, previousSource, previousPage);
           showErrorSnackbar('歌单搜索失败', e.toString());
@@ -522,9 +530,9 @@ class XSearchController extends GetxController {
       playlistCurrentPage.value += 1;
 
       // Check if we've reached the end
-      if (playlistResult.isNotEmpty &&
+      if (playlistResult.value.result.isNotEmpty &&
           playlistCurrentPage.value >=
-              playlistResult['total'] /
+              playlistResult.value.total /
                   (playlists.length / (playlistCurrentPage.value - 1))) {
         playlistCurrentPage.value = previousPage;
         return;
@@ -540,12 +548,18 @@ class XSearchController extends GetxController {
 
       ret["success"]((data) {
         try {
-          playlistResult.value = data;
-          playlists.addAll(
-            List<SearchPlayListItem>.from(
-              data['result'].map((item) => SearchPlayListItem.fromJson(item)),
-            ),
-          );
+          if (data is SearchPlayListRes) {
+            playlistResult.value = data;
+            playlists.addAll(data.result);
+          } else {
+            playlistResult.value = SearchPlayListRes.fromJson(data);
+            playlistResult.value = data;
+            playlists.addAll(
+              List<SearchPlayListItem>.from(
+                data['result'].map((item) => SearchPlayListItem.fromJson(item)),
+              ),
+            );
+          }
         } catch (e) {
           playlistCurrentPage.value = previousPage;
           showErrorSnackbar('加载更多歌单失败', e.toString());

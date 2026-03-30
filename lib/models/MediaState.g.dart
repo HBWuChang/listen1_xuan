@@ -9,8 +9,8 @@ part of 'MediaState.dart';
 MediaState _$MediaStateFromJson(Map<String, dynamic> json) => MediaState(
   position: Duration(microseconds: (json['position'] as num).toInt()),
   duration: Duration(microseconds: (json['duration'] as num).toInt()),
-  buffer: Duration(microseconds: (json['buffer'] as num?)?.toInt() ?? 0),
-  buffering: json['buffering'] as bool? ?? false,
+  buffer: Duration(microseconds: (json['buffer'] as num).toInt()),
+  buffering: json['buffering'] as bool,
   playing: json['playing'] as bool,
 );
 

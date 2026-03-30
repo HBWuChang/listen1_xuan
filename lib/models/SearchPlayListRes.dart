@@ -57,14 +57,7 @@ class SearchPlayListRes {
   /// 总数
   final int total;
 
-  /// 搜索类型（'0': 歌曲, '1': 歌单）
-  final String type;
-
-  SearchPlayListRes({
-    required this.result,
-    required this.total,
-    required this.type,
-  });
+  SearchPlayListRes({required this.result, required this.total});
 
   factory SearchPlayListRes.fromJson(Map<String, dynamic> json) =>
       _$SearchPlayListResFromJson(json);

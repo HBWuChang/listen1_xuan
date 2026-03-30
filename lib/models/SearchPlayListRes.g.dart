@@ -36,12 +36,7 @@ SearchPlayListRes _$SearchPlayListResFromJson(Map<String, dynamic> json) =>
           .map((e) => SearchPlayListItem.fromJson(e as Map<String, dynamic>))
           .toList(),
       total: (json['total'] as num).toInt(),
-      type: json['type'] as String,
     );
 
 Map<String, dynamic> _$SearchPlayListResToJson(SearchPlayListRes instance) =>
-    <String, dynamic>{
-      'result': instance.result,
-      'total': instance.total,
-      'type': instance.type,
-    };
+    <String, dynamic>{'result': instance.result, 'total': instance.total};
