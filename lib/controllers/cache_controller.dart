@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -85,57 +87,94 @@ class CacheController extends GetxController {
     Track track, {
     Track? sTrack,
   }) async {
-    if (_settingsController.disableSongDownload) {
-      _onlineCacheList[track.id] = res['url'];
+    _onlineCacheList[track.id] = res['url'];
+    if (_settingsController.disableSongDownload) return;
+
+    if (_playController.bootStrapDownloading.containsKey(
+      sTrack?.id ?? track.id,
+    ))
       return;
-    }
+
     final downDir = await xuanGetdownloadDirectory();
     String downPath = downDir.path;
     String fileName = getDownloadNamed(track, res['url']);
     final filePath = p.join(downPath, fileName);
-    _playController.bootStraping[sTrack?.id ?? track.id] = fileName;
+    _playController.bootStrapDownloading[sTrack?.id ?? track.id] = fileName;
     void onReceiveProgress(int count, int total) {
-      if (_playController.bootStraping.containsKey(sTrack?.id ?? track.id)) {
-        _playController.bootStraping[sTrack?.id ?? track.id] =
+      if (_playController.bootStrapDownloading.containsKey(
+        sTrack?.id ?? track.id,
+      )) {
+        _playController.bootStrapDownloading[sTrack?.id ?? track.id] =
             '${formatBytes(count)}/${formatBytes(total)}';
       }
     }
 
+    void onSuccess(res) {
+      showDebugSnackbar('$fileName 下载完成', null);
+      setLocalCache(track.id, fileName);
+    }
+
+    void onError(e) async {
+      _logger.e('下载文件失败: $e');
+      _playController.bootStrapDownloading.remove(sTrack?.id ?? track.id);
+      showErrorSnackbar('下载文件失败', e.toString());
+    }
+
     switch (res["platform"]) {
       case "bilibili":
-        await dioWithCookieManager.download(
-          res['url'],
-          filePath,
-          options: Options(
-            headers: {
-              "user-agent":
-                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
-              "accept": "*/*",
-              "accept-encoding": "identity;q=1, *;q=0",
-              "accept-language": "zh-CN",
-              "referer": "https://www.bilibili.com/",
-              "sec-fetch-dest": "audio",
-              "sec-fetch-mode": "no-cors",
-              "sec-fetch-site": "cross-site",
-              "range": "bytes=0-",
-            },
-          ),
-          onReceiveProgress: onReceiveProgress,
-        );
+        dioWithCookieManager
+            .download(
+              res['url'],
+              filePath,
+              options: Options(
+                headers: {
+                  "user-agent":
+                      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
+                  "accept": "*/*",
+                  "accept-encoding": "identity;q=1, *;q=0",
+                  "accept-language": "zh-CN",
+                  "referer": "https://www.bilibili.com/",
+                  "sec-fetch-dest": "audio",
+                  "sec-fetch-mode": "no-cors",
+                  "sec-fetch-site": "cross-site",
+                  "range": "bytes=0-",
+                },
+              ),
+              onReceiveProgress: onReceiveProgress,
+            )
+            .then((value) {
+              onSuccess(value);
+            })
+            .catchError((e) {
+              onError(e);
+            });
       case "netease":
-        await dioWithCookieManager.download(
-          res['url'],
-          onReceiveProgress: onReceiveProgress,
-          filePath,
-        );
+        dioWithCookieManager
+            .download(
+              res['url'],
+              onReceiveProgress: onReceiveProgress,
+              filePath,
+            )
+            .then((value) {
+              onSuccess(value);
+            })
+            .catchError((e) {
+              onError(e);
+            });
       default:
-        await dioWithCookieManager.download(
-          res['url'],
-          onReceiveProgress: onReceiveProgress,
-          filePath,
-        );
+        dioWithCookieManager
+            .download(
+              res['url'],
+              onReceiveProgress: onReceiveProgress,
+              filePath,
+            )
+            .then((value) {
+              onSuccess(value);
+            })
+            .catchError((e) {
+              onError(e);
+            });
     }
-    setLocalCache(track.id, fileName);
   }
 
   String getDownloadNamed(Track track, String url) {
@@ -193,7 +232,7 @@ class CacheController extends GetxController {
     String ext = extension(Uri.parse(url).pathSegments.last);
     // 处理重名
     Set<String> existingFileNames = _localCacheList.values.toSet().union(
-      Get.find<PlayController>().bootStraping.values.toSet(),
+      Get.find<PlayController>().bootStrapDownloading.values.toSet(),
     );
 
     // 检查不带后缀的情况下是否有重名
@@ -264,7 +303,9 @@ class CacheController extends GetxController {
 
   // 设置本地缓存文件路径
   void setLocalCache(String id, String fileName) async {
+    _onlineCacheList.remove(id);
     _localCacheList[id] = fileName;
+    _playController.bootStrapDownloading.remove(id);
   }
 
   /// 清理本地缓存

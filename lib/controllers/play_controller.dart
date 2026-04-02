@@ -93,6 +93,7 @@ class PlayController extends GetxController
 
   ///用于记录正在引导播放的曲目id及下载文件名
   final bootStraping = RxMap<String, String>();
+  final bootStrapDownloading = RxMap<String, String>();
 
   // Windows任务栏进度 (0-100)
   final taskbarProgress = 0.obs;
@@ -488,7 +489,7 @@ class PlayController extends GetxController
       if (isEmpty(await cacheController.getLocalCache(track.id))) {
         await cacheController.downloadAndCacheFile(res, track, sTrack: sTrack);
       }
-      // 理论上此时应歌曲文件准备完毕
+      // 此时应正在缓存本地文件
       bootStraping.remove(sTrack?.id ?? track.id);
       playsong(
         sTrack ?? track,
