@@ -948,6 +948,12 @@ class SettingsController extends GetxController {
     }
   }
 
+  static const String lyricStyleKey = 'lyric_style';
+  String get lyricStyle => settings[lyricStyleKey] ?? '{}';
+  set lyricStyle(String value) {
+    settings[lyricStyleKey] = value;
+  }
+
   bool get use => useHive && box != null;
 
   // === HiveBox Or SharedPreferences ===

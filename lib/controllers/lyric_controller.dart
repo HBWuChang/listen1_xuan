@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/core/lyric_model.dart';
@@ -12,6 +14,7 @@ import '../controllers/play_controller.dart';
 import '../controllers/cache_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../global_settings_animations.dart';
+import '../models/XLyricStyle.dart';
 import '../pages/lyric/bilibili_lyric_sheet.dart';
 import '../play.dart';
 import 'package:path/path.dart' as p;
@@ -23,6 +26,7 @@ class XLyricController extends GetxController {
   late LyricController lyricController;
   var isLyricLoading = false.obs;
   var hasLyric = false.obs;
+  Rx<XLyricStyle> lyricStyle = XLyricStyle().obs;
   RxDouble globalLyricDelay = RxDouble(0.0);
   RxDouble nowPlayingLyricDelay = RxDouble(0.0);
   bool updNowPlayingLyricDelay = false;
@@ -200,6 +204,12 @@ class XLyricController extends GetxController {
       );
       Get.find<PlayController>().songReplaceSettings.refresh();
     }, time: Duration(milliseconds: 100));
+    lyricStyle.value = XLyricStyle.fromJson(
+      jsonDecode(_settingsController.lyricStyle),
+    );
+    debounce(lyricStyle, (value) {
+      _settingsController.lyricStyle = jsonEncode(value.toJson());
+    }, time: Duration(milliseconds: 300));
   }
 
   /// 加载歌词

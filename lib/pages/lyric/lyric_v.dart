@@ -7,79 +7,14 @@ class LyricVPage extends StatefulWidget {
 
 class _LyricVPageState extends State<LyricVPage>
     with TickerProviderStateMixin, LyricFormattingMixin {
-  late XLyricController lyricController;
-  late PlayController playController;
-  late SettingsController settingsController;
-
   @override
   void initState() {
     super.initState();
 
     // 初始化控制器
-    lyricController = Get.find<XLyricController>();
-    playController = Get.find<PlayController>();
-    settingsController = Get.find<SettingsController>();
     // WidgetsBinding.instance.addPostFrameCallback(
     //   (_) => lyricController.loadLyric(),
     // );
-  }
-
-  // 创建主题化的歌词样式
-  LyricStyle _createThemedLyricStyle(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return LyricStyle(
-      textStyle: TextStyle(
-        fontSize: 16,
-        color:
-            theme.textTheme.bodyLarge?.color?.withOpacity(isDark ? 0.8 : 0.7) ??
-            (isDark ? Colors.white70 : Colors.black54),
-      ),
-      activeStyle: TextStyle(
-        fontSize: 18,
-        color: theme.colorScheme.primary,
-        fontWeight: FontWeight.w600,
-      ),
-      translationStyle: TextStyle(
-        fontSize: 14,
-        color:
-            theme.textTheme.bodyMedium?.color?.withOpacity(
-              isDark ? 0.6 : 0.5,
-            ) ??
-            (isDark ? Colors.white60 : Colors.black45),
-      ),
-      translationActiveColor: theme.colorScheme.primary.withOpacity(0.7),
-      lineTextAlign: TextAlign.center,
-      lineGap: 26,
-      translationLineGap: 10,
-      contentAlignment: CrossAxisAlignment.center,
-      contentPadding: EdgeInsets.only(
-        top: 500.w,
-        left: 20,
-        right: 20,
-        bottom: 20,
-      ),
-      selectionAnchorPosition: 0.48,
-      fadeRange: FadeRange(top: 80, bottom: 80),
-      selectedColor: theme.colorScheme.primary,
-      selectedTranslationColor: theme.colorScheme.primary.withOpacity(0.7),
-      scrollDuration: Duration(milliseconds: 240),
-      scrollDurations: {
-        500: Duration(milliseconds: 500),
-        1000: Duration(milliseconds: 1000),
-      },
-      enableSwitchAnimation: false,
-      selectionAutoResumeMode: SelectionAutoResumeMode.selecting,
-      selectionAutoResumeDuration: Duration(milliseconds: 320),
-      activeAutoResumeDuration: Duration(milliseconds: 3000),
-      activeHighlightColor: theme.colorScheme.primaryFixed.withAlpha(200),
-      switchEnterDuration: Duration(milliseconds: 300),
-      switchExitDuration: Duration(milliseconds: 500),
-      switchEnterCurve: Curves.easeOutBack,
-      switchExitCurve: Curves.easeOutQuint,
-      selectionAlignment: MainAxisAlignment.center,
-    );
   }
 
   @override
@@ -93,50 +28,14 @@ class _LyricVPageState extends State<LyricVPage>
         );
         return false;
       },
-      child: Stack(
+      child: Column(
         children: [
-          Column(
-            children: [
-              Expanded(child: _buildLyricContent()),
-              _buildTranslationToggle(context),
-              IgnorePointer(child: SizedBox(height: 500.w)),
-            ],
-          ),
+          Expanded(child: _buildLyricContent(context)),
+          _buildTranslationToggle(context),
+          IgnorePointer(child: SizedBox(height: 500.w)),
         ],
       ),
     );
-  }
-
-  Widget _buildLyricContent() {
-    return Obx(() {
-      // 监听翻译开关状态变化，确保UI能够响应
-      settingsController.showLyricTranslation.value;
-
-      if (lyricController.isLyricLoading.value) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              globalLoadingAnime,
-              SizedBox(height: 16),
-              Text('加载歌词中...'),
-            ],
-          ),
-        );
-      }
-
-      if (!lyricController.hasLyric.value) {
-        return SizedBox.shrink();
-      }
-
-      return Container(
-        padding: EdgeInsets.symmetric(horizontal: 20),
-        child: LyricView(
-          controller: lyricController.lyricController,
-          style: _createThemedLyricStyle(context),
-        ),
-      );
-    });
   }
 
   Widget _buildTranslationToggle(BuildContext context) {
@@ -201,29 +100,6 @@ Widget traBtn(
           ),
         ),
       ),
-      IconButton(
-        onPressed: () {
-          WoltModalSheet.show(
-            context: Get.context!,
-            modalBarrierColor: Colors.transparent,
-            modalTypeBuilder: (modalSheetContext) =>
-                WoltModalType.bottomSheet(),
-            pageListBuilder: (modalSheetContext) {
-              return [
-                WoltModalSheetPage(
-                  hasTopBarLayer: false,
-                  isTopBarLayerAlwaysVisible: false,
-                  enableDrag: true,
-                  child: LyricDelayAdjuster(lyricController: lyricController),
-                ),
-              ];
-            },
-            useRootNavigator: true,
-          );
-        },
-        padding: EdgeInsets.zero,
-        icon: Icon(Icons.av_timer_rounded),
-      ),
       Obx(
         () => !Get.find<PlayController>().currentTrack.id.startsWith('bi')
             ? SizedBox.shrink()
@@ -233,9 +109,83 @@ Widget traBtn(
                 icon: Icon(Icons.manage_search_rounded),
               ),
       ),
+      _ExpandableMoreMenu(lyricController: lyricController),
     ],
   ),
 );
+
+class _ExpandableMoreMenu extends StatefulWidget {
+  final XLyricController lyricController;
+
+  const _ExpandableMoreMenu({Key? key, required this.lyricController})
+    : super(key: key);
+
+  @override
+  __ExpandableMoreMenuState createState() => __ExpandableMoreMenuState();
+}
+
+class __ExpandableMoreMenuState extends State<_ExpandableMoreMenu> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isExpanded = true),
+      onExit: (_) => setState(() => _isExpanded = false),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isExpanded) ...[
+                  IconButton(
+                    onPressed: () => showLyricStyleSettings(Get.context!),
+                    padding: EdgeInsets.zero,
+                    icon: Icon(Icons.text_format_rounded),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      WoltModalSheet.show(
+                        context: Get.context!,
+                        modalBarrierColor: Colors.transparent,
+                        modalTypeBuilder: (modalSheetContext) =>
+                            WoltModalType.bottomSheet(),
+                        pageListBuilder: (modalSheetContext) {
+                          return [
+                            WoltModalSheetPage(
+                              hasTopBarLayer: false,
+                              isTopBarLayerAlwaysVisible: false,
+                              enableDrag: true,
+                              child: LyricDelayAdjuster(
+                                lyricController: widget.lyricController,
+                              ),
+                            ),
+                          ];
+                        },
+                        useRootNavigator: true,
+                      );
+                    },
+                    padding: EdgeInsets.zero,
+                    icon: Icon(Icons.av_timer_rounded),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => setState(() => _isExpanded = !_isExpanded),
+            padding: EdgeInsets.zero,
+            icon: Icon(Icons.more_vert_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class LyricVBackPage extends StatefulWidget {
   @override
