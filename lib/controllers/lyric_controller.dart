@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lyric/core/lyric_model.dart';
 import 'package:get/get.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'dart:io';
@@ -19,7 +20,8 @@ import '../pages/lyric/bilibili_lyric_sheet.dart';
 import '../play.dart';
 import 'package:path/path.dart' as p;
 import 'dart:typed_data';
-import '../generated/dm.pb.dart'; // 引入生成的类
+import '../generated/dm.pb.dart';
+import 'mock.dart'; // 引入生成的类
 
 class XLyricController extends GetxController {
   // 歌词显示相关
@@ -225,6 +227,9 @@ class XLyricController extends GetxController {
         ) ??
         0.0;
     try {
+      // _processLyricData(qrc, tlrc);
+      // isLyricLoading.value = false;
+      // return;
       // 首先尝试从本地缓存加载歌词
       final cachedLyrics = await _loadLyricFromCache(trackId);
 

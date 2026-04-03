@@ -338,8 +338,9 @@ void showLyricStyleSettings(BuildContext context) {
                 const MapEntry<int?, String>(5, 'end'),
               ];
               final availableValues = alignOptions.map((e) => e.key).toSet();
-              final selectedValue =
-                  availableValues.contains(value) ? value : null;
+              final selectedValue = availableValues.contains(value)
+                  ? value
+                  : null;
 
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -377,8 +378,9 @@ void showLyricStyleSettings(BuildContext context) {
                 const MapEntry<int?, String>(3, 'stretch'),
               ];
               final availableValues = alignOptions.map((e) => e.key).toSet();
-              final selectedValue =
-                  availableValues.contains(value) ? value : null;
+              final selectedValue = availableValues.contains(value)
+                  ? value
+                  : null;
 
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -576,7 +578,9 @@ LyricStyle _createThemedLyricStyle(BuildContext context) {
     ),
     activeStyle: TextStyle(
       fontSize: lyricStyle.activeStyleFontSizeValue,
-      color: theme.colorScheme.primary,
+      color:
+          theme.textTheme.bodyLarge?.color?.withOpacity(isDark ? 0.8 : 0.7) ??
+          (isDark ? Colors.white70 : Colors.black54),
       fontWeight: lyricStyle.activeTextWeightValue,
     ),
     translationStyle: TextStyle(
@@ -601,11 +605,12 @@ LyricStyle _createThemedLyricStyle(BuildContext context) {
       500: Duration(milliseconds: 500),
       1000: Duration(milliseconds: 1000),
     },
-    enableSwitchAnimation: false,
+    enableSwitchAnimation: true,
     selectionAutoResumeMode: SelectionAutoResumeMode.selecting,
     selectionAutoResumeDuration: Duration(milliseconds: 320),
     activeAutoResumeDuration: Duration(milliseconds: 3000),
-    activeHighlightColor: theme.colorScheme.primaryFixed.withAlpha(200),
+    activeHighlightColor: theme.colorScheme.primaryFixed,
+    activeHighlightExtraFadeWidth: 20,
     switchEnterDuration: Duration(milliseconds: 300),
     switchExitDuration: Duration(milliseconds: 500),
     switchEnterCurve: Curves.easeOutBack,
