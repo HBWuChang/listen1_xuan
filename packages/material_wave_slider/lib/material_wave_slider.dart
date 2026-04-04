@@ -87,6 +87,9 @@ class MaterialWaveSliderState extends State<MaterialWaveSlider> with SingleTicke
   bool _running = true;
 
   late final ScrollController _controller = ScrollController();
+  ScrollHoldController? _scrollHoldController;
+
+  static const int _scrollMultiplier = 1 << 32;
 
   Color? color;
   Path? defaultPath;
@@ -110,6 +113,11 @@ class MaterialWaveSliderState extends State<MaterialWaveSlider> with SingleTicke
   void pause() {
     if (_paused) return;
     _paused = true;
+
+    if (_controller.hasClients && _scrollHoldController == null) {
+      _scrollHoldController = _controller.position.hold(() {});
+    }
+
     setState(() {
       _running = false;
     });
@@ -118,9 +126,32 @@ class MaterialWaveSliderState extends State<MaterialWaveSlider> with SingleTicke
   void resume() {
     if (!_paused) return;
     _paused = false;
+
+    _scrollHoldController?.cancel();
+    _scrollHoldController = null;
+    _startAutoScroll();
+
     setState(() {
       _running = true;
     });
+  }
+
+  void _startAutoScroll() {
+    if (_paused || !_controller.hasClients) return;
+
+    final distance = widget.height * _scrollMultiplier;
+    final duration = widget.velocity * _scrollMultiplier;
+    final startOffset = _controller.offset;
+
+    _controller
+        .animateTo(
+          startOffset + distance,
+          duration: Duration(milliseconds: duration.round()),
+          curve: Curves.linear,
+        )
+        .catchError((_) {
+          // Scroll activity may be interrupted by pause/dispose.
+        });
   }
 
   void _onPointerDown(PointerDownEvent e, BoxConstraints constraints) {
@@ -161,20 +192,18 @@ class MaterialWaveSliderState extends State<MaterialWaveSlider> with SingleTicke
   @override
   void initState() {
     super.initState();
+    _paused = widget.paused;
+    _running = !_paused;
+
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      const multiplier = 1 << 32;
-      final distance = widget.height * multiplier;
-      final duration = widget.velocity * multiplier;
-      _controller.animateTo(
-        distance,
-        duration: Duration(milliseconds: duration.round()),
-        curve: Curves.linear,
-      );
+      _startAutoScroll();
     });
   }
 
   @override
   void dispose() {
+    _scrollHoldController?.cancel();
+    _scrollHoldController = null;
     super.dispose();
     _controller.dispose();
   }
