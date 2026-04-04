@@ -125,10 +125,13 @@ class SettingsController extends GetxController {
     }
   }
 
+  static const String lyricBackgroundBlurRadiusKey =
+      'lyricBackgroundBlurRadius';
+  final RxnDouble lyricBackgroundBlurRadiusRx = RxnDouble();
   double get lyricBackgroundBlurRadius =>
-      settings['lyricBackgroundBlurRadius'] ?? (globalHorizon ? 20.0 : 10.0);
+      lyricBackgroundBlurRadiusRx.value ?? (globalHorizon ? 20.0 : 10.0);
   set lyricBackgroundBlurRadius(double value) {
-    settings['lyricBackgroundBlurRadius'] = value;
+    lyricBackgroundBlurRadiusRx.value = value;
   }
 
   static const String globalLyricDelayKey = 'globalLyricDelay';
@@ -146,10 +149,10 @@ class SettingsController extends GetxController {
 
   static const String disableOpacityInLyricPageKey =
       'disableOpacityInLyricPage';
-  bool get disableOpacityInLyricPage =>
-      settings[disableOpacityInLyricPageKey] ?? false;
+  final RxBool disableOpacityInLyricPageRx = false.obs;
+  bool get disableOpacityInLyricPage => disableOpacityInLyricPageRx.value;
   set disableOpacityInLyricPage(bool value) {
-    settings[disableOpacityInLyricPageKey] = value;
+    disableOpacityInLyricPageRx.value = value;
   }
 
   static const String searchUseLastSourceKey = 'searchUseLastSource';
@@ -253,8 +256,13 @@ class SettingsController extends GetxController {
   ///歌曲替换按钮位置及大小设置
   static const String songReplaceFabLocationKey = 'songReplaceFabLocation';
   static const String songReplaceFabMiniKey = 'songReplaceFabMini';
+
+  final RxInt songReplaceFabLocationIndexRx =
+      SongReplaceFabLocation.startFloat.index.obs;
+  final RxBool songReplaceFabMiniRx = true.obs;
+
   SongReplaceFabLocation get songReplaceFabLocation {
-    int? locationIndex = settings[songReplaceFabLocationKey];
+    final int locationIndex = songReplaceFabLocationIndexRx.value;
     return SongReplaceFabLocation.values.firstWhere(
       (element) => element.index == locationIndex,
       orElse: () => SongReplaceFabLocation.startFloat,
@@ -262,12 +270,12 @@ class SettingsController extends GetxController {
   }
 
   set songReplaceFabLocation(SongReplaceFabLocation location) {
-    settings[songReplaceFabLocationKey] = location.index;
+    songReplaceFabLocationIndexRx.value = location.index;
   }
 
-  bool get songReplaceFabMini => settings[songReplaceFabMiniKey] ?? true;
+  bool get songReplaceFabMini => songReplaceFabMiniRx.value;
   set songReplaceFabMini(bool value) {
-    settings[songReplaceFabMiniKey] = value;
+    songReplaceFabMiniRx.value = value;
   }
 
   static const String songReplaceAutoRepTragetTrackInAllPlaylistKey =
@@ -292,10 +300,11 @@ class SettingsController extends GetxController {
 
   static const String windowsCloseBtnCloseOrHideAppKey =
       'windowsCloseBtnCloseOrHideApp';
+  final RxnBool windowsCloseBtnCloseOrHideAppRx = RxnBool();
   bool? get windowsCloseBtnCloseOrHideApp =>
-      settings[windowsCloseBtnCloseOrHideAppKey];
+      windowsCloseBtnCloseOrHideAppRx.value;
   set windowsCloseBtnCloseOrHideApp(bool? value) {
-    settings[windowsCloseBtnCloseOrHideAppKey] = value;
+    windowsCloseBtnCloseOrHideAppRx.value = value;
   }
 
   void completeDioInit() {
@@ -359,6 +368,67 @@ class SettingsController extends GetxController {
     super.onInit();
     debounce(settings, (callback) {
       saveSettings();
+    });
+
+    ever<Map<String, dynamic>>(settings, (_) {
+      final nextMini = settings[songReplaceFabMiniKey] as bool? ?? true;
+      final nextLocationIndex =
+          settings[songReplaceFabLocationKey] as int? ??
+          SongReplaceFabLocation.startFloat.index;
+      final nextWindowsCloseBtnCloseOrHideApp =
+          settings[windowsCloseBtnCloseOrHideAppKey] as bool?;
+      final nextDisableOpacityInLyricPage =
+          settings[disableOpacityInLyricPageKey] as bool? ?? false;
+      final nextLyricBackgroundBlurRadius =
+          (settings[lyricBackgroundBlurRadiusKey] as num?)?.toDouble();
+
+      if (songReplaceFabMiniRx.value != nextMini) {
+        songReplaceFabMiniRx.value = nextMini;
+      }
+      if (songReplaceFabLocationIndexRx.value != nextLocationIndex) {
+        songReplaceFabLocationIndexRx.value = nextLocationIndex;
+      }
+      if (windowsCloseBtnCloseOrHideAppRx.value !=
+          nextWindowsCloseBtnCloseOrHideApp) {
+        windowsCloseBtnCloseOrHideAppRx.value =
+            nextWindowsCloseBtnCloseOrHideApp;
+      }
+      if (disableOpacityInLyricPageRx.value != nextDisableOpacityInLyricPage) {
+        disableOpacityInLyricPageRx.value = nextDisableOpacityInLyricPage;
+      }
+      if (lyricBackgroundBlurRadiusRx.value != nextLyricBackgroundBlurRadius) {
+        lyricBackgroundBlurRadiusRx.value = nextLyricBackgroundBlurRadius;
+      }
+    });
+
+    ever<bool>(songReplaceFabMiniRx, (value) {
+      if (settings[songReplaceFabMiniKey] != value) {
+        settings[songReplaceFabMiniKey] = value;
+      }
+    });
+
+    ever<int>(songReplaceFabLocationIndexRx, (value) {
+      if (settings[songReplaceFabLocationKey] != value) {
+        settings[songReplaceFabLocationKey] = value;
+      }
+    });
+
+    ever<bool?>(windowsCloseBtnCloseOrHideAppRx, (value) {
+      if (settings[windowsCloseBtnCloseOrHideAppKey] != value) {
+        settings[windowsCloseBtnCloseOrHideAppKey] = value;
+      }
+    });
+
+    ever<bool>(disableOpacityInLyricPageRx, (value) {
+      if (settings[disableOpacityInLyricPageKey] != value) {
+        settings[disableOpacityInLyricPageKey] = value;
+      }
+    });
+
+    ever<double?>(lyricBackgroundBlurRadiusRx, (value) {
+      if (settings[lyricBackgroundBlurRadiusKey] != value) {
+        settings[lyricBackgroundBlurRadiusKey] = value;
+      }
     });
 
     // 监听 showLyricTranslation 变化并保存到 settings

@@ -413,29 +413,28 @@ class _MyPlaylistState extends State<MyPlaylist> {
 
   @override
   Widget build(BuildContext context) {
+    final settingsController = Get.find<SettingsController>();
+    final routeController = Get.find<RouteController>();
+
     return Obx(
       () => Scaffold(
-        floatingActionButton: Obx(
-          () => FloatingActionButton(
-            heroTag: HeroTags.songReplaceFab,
-            mini: Get.find<SettingsController>().songReplaceFabMini,
-            onPressed: () {
-              if (Get.find<RouteController>().inSongReplacePage.value) {
-                Get.back(id: 1);
-                return;
-              }
-              Get.toNamed(RouteName.songReplacePage, id: 1);
-            },
-            tooltip: '歌曲替换列表',
-            child: Icon(Icons.find_replace_rounded),
-          ),
+        floatingActionButton: FloatingActionButton(
+          heroTag: HeroTags.songReplaceFab,
+          mini: settingsController.songReplaceFabMiniRx.value,
+          onPressed: () {
+            if (routeController.inSongReplacePage.value) {
+              Get.back(id: 1);
+              return;
+            }
+            Get.toNamed(RouteName.songReplacePage, id: 1);
+          },
+          tooltip: '歌曲替换列表',
+          child: Icon(Icons.find_replace_rounded),
         ),
         floatingActionButtonLocation:
-            Get.find<SettingsController>().songReplaceFabMini
-            ? Get.find<SettingsController>()
-                  .songReplaceFabLocation
-                  .fabMiniLocation
-            : Get.find<SettingsController>().songReplaceFabLocation.fabLocation,
+            settingsController.songReplaceFabMiniRx.value
+            ? settingsController.songReplaceFabLocation.fabMiniLocation
+            : settingsController.songReplaceFabLocation.fabLocation,
         body: LayoutBuilder(
           builder: (context, constraints) {
             final availableWidth = constraints.maxWidth;

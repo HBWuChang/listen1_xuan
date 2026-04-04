@@ -158,7 +158,6 @@ Widget playH() {
                       : StreamBuilder<MediaState>(
                           stream: _mediaStateStream,
                           builder: (context, snapshot) {
-                            final position = snapshot.data;
                             MediaState? mediaState = snapshot.data;
                             return MaterialWaveSlider(
                               key: materialWaveSliderStateKeyH,
