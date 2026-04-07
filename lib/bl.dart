@@ -578,7 +578,7 @@ class Bilibili {
       'artist': htmlDecode(songInfo['author']),
       'artist_id': 'biartist_v_${songInfo['mid']}',
       'source': 'bilibili',
-      'source_url': 'https://www.bilibili.com/${songInfo['bvid']}',
+      'source_url': 'https://www.bilibili.com/video/${songInfo['bvid']}',
       'img_url': imgUrl,
     };
   }
@@ -627,7 +627,7 @@ class Bilibili {
       'artist': htmlDecode(songInfo['upper']['name']),
       'artist_id': 'biartist_v_${songInfo['upper']['mid']}',
       'source': 'bilibili',
-      'source_url': 'https://www.bilibili.com/${songInfo['bvid']}',
+      'source_url': 'https://www.bilibili.com/video/${songInfo['bvid']}',
       'img_url': songInfo['cover'],
     };
   }
@@ -641,7 +641,7 @@ class Bilibili {
       'artist': htmlDecode(songInfo['owner']['name']),
       'artist_id': 'biartist_v_${songInfo['owner']['mid']}',
       'source': 'bilibili',
-      'source_url': 'https://www.bilibili.com/${songInfo['bvid']}',
+      'source_url': 'https://www.bilibili.com/video/${songInfo['bvid']}',
       'img_url': songInfo['cover'] ?? songInfo['pic'] ?? songInfo['cover43'],
     };
   }
@@ -723,7 +723,7 @@ class Bilibili {
             'cover_img_url': response.data['data']['pic'],
             'title': response.data['data']['title'],
             'id': 'bitrack_v_$trackId',
-            'source_url': 'https://www.bilibili.com/$trackId',
+            'source_url': 'https://www.bilibili.com/video/$trackId',
           };
           final author = response.data['data']['owner'];
           final defaultImg = response.data['data']['pic'];
@@ -752,7 +752,7 @@ class Bilibili {
       'artist': htmlDecode(author['name']),
       'artist_id': 'biartist_v_${author['mid']}',
       'source': 'bilibili',
-      'source_url': 'https://www.bilibili.com/$bvid/?p=${songInfo['page']}',
+      'source_url': 'https://www.bilibili.com/video/$bvid/?p=${songInfo['page']}',
       'img_url': imgUrl,
     };
   }

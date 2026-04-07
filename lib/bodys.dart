@@ -1,6 +1,7 @@
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:listen1_xuan/const.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:share_plus/share_plus.dart';
 import 'controllers/controllers.dart';
 import 'controllers/myPlaylist_controller.dart';
@@ -246,6 +247,17 @@ Future<dynamic> song_dialog(
                     child: ListTile(
                       title: Text('歌曲链接'),
                       onTap: () {
+                        if (playController.nowPlayingTrackId == track.id) {
+                          if ((track.source_url ?? '').contains('bilibili')) {
+                            Uri url = Uri.parse(track.source_url!);
+                            url = url.replace(queryParameters: {
+                              ...url.queryParameters,
+                              't': playController.music_player.state.position.inSeconds.toString(),
+                            });
+                            launchUrl(url);
+                            return;
+                          }
+                        }
                         launchUrl(Uri.parse(track.source_url ?? ''));
                       },
                       onLongPress: () {
