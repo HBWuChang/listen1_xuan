@@ -244,9 +244,7 @@ Widget playH() {
             child: IconButton(
               tooltip: '正在播放列表',
               icon: Icon(Icons.playlist_play_rounded),
-              onPressed: () async {
-                Get.toNamed(RouteName.nowPlayingPage, id: 1);
-              },
+              onPressed: _openNowPlayListPage,
             ),
           ),
         ),

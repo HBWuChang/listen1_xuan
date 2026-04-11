@@ -173,31 +173,7 @@ Listener _mainContent() => Listener(
                                 ? "关闭"
                                 : "隐藏到托盘",
                             icon: Icon(Icons.close, size: 13),
-                            onPressed: () {
-                              showTriStateConfirmDialog(
-                                title: '请选择默认操作',
-                                message: '关闭应用还是隐藏到托盘？',
-                                currentValue: Get.find<SettingsController>()
-                                    .windowsCloseBtnCloseOrHideApp,
-                                confirmText: '关闭应用',
-                                rejectText: '隐藏到托盘',
-                                autoRem: true,
-                                onRemember: (value) {
-                                  // 用户勾选"记住选择"时保存设置
-                                  Get.find<SettingsController>()
-                                          .windowsCloseBtnCloseOrHideApp =
-                                      value;
-                                },
-                              ).then((value) async {
-                                if (value == null) return;
-                                if (value == true) {
-                                  closeApp();
-                                } else {
-                                  windowManager.hide();
-                                  windowManager.setSkipTaskbar(true);
-                                }
-                              });
-                            },
+                            onPressed: _clickCloseBtn,
                           ),
                         ],
                       ),

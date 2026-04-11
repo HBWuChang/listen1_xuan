@@ -6,6 +6,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/settings.dart';
 
+import 'controllers/appLinksController.dart';
 import 'controllers/settings_controller.dart';
 import 'global_settings_animations.dart';
 import 'widgets/smooth_sheet_toast.dart';
@@ -559,7 +560,7 @@ Future<bool?> showTriStateConfirmDialog({
   String rejectText = '拒绝',
   String cancelText = '取消',
   String rememberText = '记住我的选择',
-  bool autoRem=false,
+  bool autoRem = false,
   ConfirmLevel confirmLevel = ConfirmLevel.info,
 }) async {
   // 如果当前值非 null，直接返回
@@ -567,7 +568,7 @@ Future<bool?> showTriStateConfirmDialog({
     return currentValue;
   }
 
-  final rememberChoice =autoRem ? true.obs : false.obs;
+  final rememberChoice = autoRem ? true.obs : false.obs;
 
   ButtonStyle getButtonStyle(ConfirmLevel level) {
     switch (level) {
@@ -589,6 +590,9 @@ Future<bool?> showTriStateConfirmDialog({
     }
   }
 
+  if (isDesktop) {
+    Get.find<Applinkscontroller>().xshow?.call();
+  }
   bool? result = await Get.dialog<bool?>(
     AlertDialog(
       title: Text(title),

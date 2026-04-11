@@ -440,7 +440,6 @@ class _MyHomePageState extends State<MyHomePage>
     await windowManager.setAlwaysOnTop(true);
     await windowManager.setAlwaysOnTop(false);
     await windowManager.setBackgroundColor(Colors.transparent);
-    // await
     createThemeController().didChangePlatformBrightnessOrManual();
   }
 
@@ -474,7 +473,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void onWindowClose() {
-    closeApp();
+    _clickCloseBtn();
   }
 
   @override
