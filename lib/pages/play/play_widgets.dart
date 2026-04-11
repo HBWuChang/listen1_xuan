@@ -101,59 +101,64 @@ Widget buildSongInfo({
   return Builder(
     builder: (context) => Obx(() {
       Track? mediaItem = _playController.nowPlayingTrackRx.value;
-      return Container(
-        color: Colors.transparent,
-        padding: EdgeInsets.only(bottom: 20.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isCollapsed)
-              Text(
-                mediaItem?.title ?? '未播放',
-                style: TextStyle(
-                  fontSize: titleSize,
-                  fontWeight: FontWeight.bold,
+      return AnimatedSwitcher(
+        duration: Duration(milliseconds: 200),
+        transitionBuilder: horTitleTextTra,
+        child: Container(
+          key: ValueKey(mediaItem?.id ?? 'no-song'),
+          color: Colors.transparent,
+          padding: EdgeInsets.only(bottom: 20.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isCollapsed)
+                Text(
+                  mediaItem?.title ?? '未播放',
+                  style: TextStyle(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                )
+              else
+                SelectableText(
+                  mediaItem?.title ?? '未播放',
+                  style: TextStyle(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  onTap: () => _onTap(context),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              )
-            else
-              SelectableText(
-                mediaItem?.title ?? '未播放',
-                style: TextStyle(
-                  fontSize: titleSize,
-                  fontWeight: FontWeight.bold,
+              SizedBox(height: 4),
+              if (isCollapsed)
+                Text(
+                  mediaItem?.artist ?? '',
+                  style: TextStyle(
+                    fontSize: artistSize,
+                    color: Get.theme.textTheme.bodySmall?.color,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                )
+              else
+                SelectableText(
+                  mediaItem?.artist ?? '',
+                  style: TextStyle(
+                    fontSize: artistSize,
+                    color: Get.theme.textTheme.bodySmall?.color,
+                  ),
+                  onTap: () => _onTap(context),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
                 ),
-                onTap: () => _onTap(context),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-              ),
-            SizedBox(height: 4),
-            if (isCollapsed)
-              Text(
-                mediaItem?.artist ?? '',
-                style: TextStyle(
-                  fontSize: artistSize,
-                  color: Get.theme.textTheme.bodySmall?.color,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              )
-            else
-              SelectableText(
-                mediaItem?.artist ?? '',
-                style: TextStyle(
-                  fontSize: artistSize,
-                  color: Get.theme.textTheme.bodySmall?.color,
-                ),
-                onTap: () => _onTap(context),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-              ),
-          ],
+            ],
+          ),
         ),
       );
     }),
