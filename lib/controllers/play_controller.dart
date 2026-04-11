@@ -388,7 +388,7 @@ class PlayController extends GetxController
       }
       nowPlayingTrackRx.value = track;
       add_current_playing([track]);
-      Get.find<NowPlayingPageController>().scrollToCurrentTrack?.call();
+      // Get.find<NowPlayingPageController>().scrollToCurrentTrack?.call();
       final tdir = await get_local_cache(track.id);
       debugPrint('playsong');
       debugPrint(track.toString());

@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:scrollview_observer/scrollview_observer.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
+import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import '../bodys.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/nowplaying_controller.dart';
@@ -16,20 +19,17 @@ class NowPlayingPage extends StatefulWidget {
 class _NowPlayingPageState extends State<NowPlayingPage> {
   late NowPlayingPageController controller;
   late ScrollController scrollController;
-  late ListObserverController listObserverController;
+  final ListController _listController = ListController();
+  RxBool useReorderableList = false.obs;
   @override
   void initState() {
     super.initState();
     controller = Get.find<NowPlayingPageController>();
     scrollController = ScrollController();
-    listObserverController = ListObserverController(
-      controller: scrollController,
-    );
     scrollController.addListener(_onScroll);
     controller.scrollToCurrentTrack = scrollToCurrentTrack;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 确保页面加载后，滚动到当前播放位置
-      listObserverController.reattach();
       scrollToCurrentTrack(animated: false);
     });
   }
@@ -110,35 +110,23 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       (track) => track.id == currentTrackId,
     );
 
-    if (currentIndex != -1 && scrollController.hasClients) {
-      // 计算滚动位置 - 使用动态高度
-      final targetOffset = currentIndex * controller.itemHeight;
-
-      // 获取可视区域高度
-      final viewportHeight = scrollController.position.viewportDimension;
-
-      // 调整滚动位置，让当前播放的项目在屏幕中央
-      final centeredOffset =
-          targetOffset - (viewportHeight / 2) + (controller.itemHeight / 2);
-
-      // 确保滚动位置在有效范围内
-      final maxOffset = scrollController.position.maxScrollExtent;
-      final finalOffset = centeredOffset.clamp(0.0, maxOffset);
+    if (currentIndex != -1 &&
+        scrollController.hasClients &&
+        _listController.isAttached) {
       if (animated) {
-        //   listObserverController.animateTo(
-        //     index: currentIndex,
-        //     duration: Duration(milliseconds: 500),
-        //     curve: Curves.easeInOut,
-        //     alignment: 0.5, // 使其居中
-        //   );
-        scrollController.animateTo(
-          finalOffset,
-          duration: Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
+        _listController.animateToItem(
+          index: currentIndex,
+          scrollController: scrollController,
+          alignment: 0.5,
+          duration: (_) => Duration(milliseconds: 300),
+          curve: (_) => Curves.fastLinearToSlowEaseIn,
         );
       } else {
-        // listObserverController.jumpTo(index: currentIndex);
-        scrollController.jumpTo(finalOffset);
+        _listController.jumpToItem(
+          index: currentIndex,
+          scrollController: scrollController,
+          alignment: 0.5,
+        );
       }
 
       // 添加震动反馈
@@ -200,6 +188,25 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
             onPressed: () {
               controller.toggleSearch();
             },
+          ),
+          Tooltip(
+            message: '排序',
+            child: IconButton(
+              onPressed: () {
+                useReorderableList.value = !useReorderableList.value;
+              },
+              icon: Transform.rotate(
+                angle: -math.pi / 2.0,
+                child: Obx(
+                  () => Icon(
+                    Icons.compare_arrows_rounded,
+                    color: useReorderableList.value
+                        ? theme.colorScheme.primary
+                        : null,
+                  ),
+                ),
+              ),
+            ),
           ),
           IconButton(
             tooltip: '清空播放列表',
@@ -336,62 +343,57 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         );
       }
 
-      return ListViewObserver(
-        controller: listObserverController,
-        onObserve: (resultModel) {
-          print('firstChild.index -- ${resultModel.firstChild?.index}');
-          print('displaying -- ${resultModel.displayingChildIndexList}');
-        },
-        child: ReorderableListView.builder(
-          scrollController: scrollController,
-          buildDefaultDragHandles: false,
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          cacheExtent: controller.itemHeight,
-          prototypeItem: SizedBox(
-            height: controller.itemHeight,
-            child: Container(),
-          ),
-          // _buildTrackItem(
-          //   context,
-          //   playingList.first,
-          //   0,
-          //   playingList.first.id == currentTrackId,
-          //   controller,
-          // ),
-          itemCount: playingList.length,
+      final canReorder =
+          useReorderableList.value && !controller.isSearching.value;
+
+      if (canReorder) {
+        return AnimatedReorderableListView(
           onReorder: (oldIndex, newIndex) {
-            // 在搜索状态下禁用重排序
-            if (!controller.isSearching.value) {
-              // 需要找到在原始列表中的索引
-              final originalList = controller.currentPlayingList;
-              final draggedTrack = playingList[oldIndex];
-              final targetTrack = playingList[newIndex];
-
-              final originalOldIndex = originalList.indexWhere(
-                (t) => t.id == draggedTrack.id,
-              );
-              final originalNewIndex = originalList.indexWhere(
-                (t) => t.id == targetTrack.id,
-              );
-
-              if (originalOldIndex != -1 && originalNewIndex != -1) {
-                controller.reorderPlaylist(originalOldIndex, originalNewIndex);
-              }
-            }
+            controller.reorderPlaylist(oldIndex, newIndex);
           },
+          isSameItem: (trackA, trackB) => trackA.id == trackB.id,
+          controller: scrollController,
+          items: playingList,
+          longPressDraggable: true,
+          buildDefaultDragHandles: false,
+          enterTransition: [SlideInDown()],
+          exitTransition: [SlideInUp()],
+          insertDuration: const Duration(milliseconds: 250),
+          removeDuration: const Duration(milliseconds: 250),
+          dragStartDelay: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(horizontal: 16),
           itemBuilder: (context, index) {
             final track = playingList[index];
             final isCurrentTrack = track.id == currentTrackId;
-
             return _buildTrackItem(
               context,
               track,
               index,
               isCurrentTrack,
               controller,
+              reorderEnabled: true,
             );
           },
-        ),
+        );
+      }
+
+      return SuperListView.builder(
+        controller: scrollController,
+        listController: _listController,
+        itemCount: playingList.length,
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        itemBuilder: (context, index) {
+          final track = playingList[index];
+          final isCurrentTrack = track.id == currentTrackId;
+          return _buildTrackItem(
+            context,
+            track,
+            index,
+            isCurrentTrack,
+            controller,
+            reorderEnabled: false,
+          );
+        },
       );
     });
   }
@@ -401,8 +403,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     Track track,
     int index,
     bool isCurrentTrack,
-    NowPlayingPageController controller,
-  ) {
+    NowPlayingPageController controller, {
+    required bool reorderEnabled,
+  }) {
     final theme = Theme.of(context);
     void playT() {
       controller.playTrack(track);
@@ -430,15 +433,12 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
             Obx(
               () => controller.isSearching.value
                   ? SizedBox(width: 20) // 占位符保持布局一致
-                  : ReorderableDragStartListener(
-                      index: index,
-                      child: Icon(
-                        Icons.drag_handle,
-                        color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                          0.5,
-                        ),
-                        size: 20,
+                  : Icon(
+                      reorderEnabled ? Icons.drag_handle : Icons.more_horiz,
+                      color: theme.textTheme.bodyMedium?.color?.withOpacity(
+                        0.5,
                       ),
+                      size: 20,
                     ),
             ),
             SizedBox(width: 8),
@@ -539,7 +539,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         (track) => track.id == controller.currentTrackId,
       );
 
-      if (!shouldShow || !isCurrentInFilteredList) {
+      if (!shouldShow || !isCurrentInFilteredList || useReorderableList.value) {
         return SizedBox.shrink();
       }
 
@@ -547,7 +547,6 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         scale: controller.showScrollButton.value ? 1.0 : 0.0,
         duration: Duration(milliseconds: 200),
         child: FloatingActionButton.small(
-          // onPressed: listObserverController.reattach,
           onPressed: scrollToCurrentTrack,
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,

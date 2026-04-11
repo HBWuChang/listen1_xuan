@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/controllers/lyric_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/generated/dm.pb.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 
 Future<void> showBilibiliLyricSheet({
   required BuildContext context,
@@ -208,7 +208,7 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
             else ...[
               SizedBox(
                 height: 36,
-                child: ListView.builder(
+                child: SuperListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: _groupEntries.length,
                   itemBuilder: (context, groupIndex) {
@@ -263,7 +263,7 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       )
-                    : ListView.builder(
+                    : SuperListView.builder(
                         cacheExtent: 600,
                         itemCount: currentList.length,
                         itemBuilder: (context, index) {

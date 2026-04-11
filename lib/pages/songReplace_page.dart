@@ -6,7 +6,7 @@ import 'package:listen1_xuan/controllers/play_controller.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
-
+import 'package:super_sliver_list/super_sliver_list.dart';
 import '../const.dart';
 import '../controllers/myPlaylist_controller.dart';
 import '../funcs.dart';
@@ -86,7 +86,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
                       );
                     }
 
-                    return ListView.builder(
+                    return SuperListView.builder(
                       padding: const EdgeInsets.all(8.0),
                       itemCount: mappings.length,
 

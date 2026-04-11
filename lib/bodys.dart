@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:listen1_xuan/const.dart';
 import 'package:listen1_xuan/funcs.dart';
@@ -30,6 +32,8 @@ import 'package:expandable/expandable.dart';
 import 'package:universal_io/io.dart' as universal_io;
 import 'settings.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:animated_reorderable_list/animated_reorderable_list.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 
 part './pages/PlaylistPage.dart';
 part './pages/SearchListInfoPage.dart';
@@ -250,10 +254,17 @@ Future<dynamic> song_dialog(
                         if (playController.nowPlayingTrackId == track.id) {
                           if ((track.source_url ?? '').contains('bilibili')) {
                             Uri url = Uri.parse(track.source_url!);
-                            url = url.replace(queryParameters: {
-                              ...url.queryParameters,
-                              't': playController.music_player.state.position.inSeconds.toString(),
-                            });
+                            url = url.replace(
+                              queryParameters: {
+                                ...url.queryParameters,
+                                't': playController
+                                    .music_player
+                                    .state
+                                    .position
+                                    .inSeconds
+                                    .toString(),
+                              },
+                            );
                             launchUrl(url);
                             return;
                           }
@@ -482,6 +493,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
   StateSetter? scroll_bar_setState; // 添加这个变量
   bool last_move_is_up = false;
   bool on_drag_slider = false;
+  RxBool useReorderableList = false.obs;
   final FocusNode _focusNode = FocusNode(); // 创建 FocusNode
   @override
   void initState() {
@@ -571,9 +583,6 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
       'top',
     );
     setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
       final item = tracks.removeAt(oldIndex);
       tracks.insert(newIndex, item);
     });
@@ -893,58 +902,161 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                 }
                               },
                             ),
+                      if (widget.is_my)
+                        Tooltip(
+                          message: '排序',
+                          child: IconButton(
+                            onPressed: () {
+                              useReorderableList.value =
+                                  !useReorderableList.value;
+                            },
+                            icon: Transform.rotate(
+                              angle: -math.pi / 2.0,
+                              child: Obx(
+                                () => Icon(
+                                  Icons.compare_arrows_rounded,
+                                  color: useReorderableList.value
+                                      ? Theme.of(
+                                          context_PlaylistInfo,
+                                        ).colorScheme.primary
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                  SliverFillRemaining(
-                    hasScrollBody: true,
-                    child: ReorderableListView(
-                      onReorder: _onReorder,
-                      scrollController: inner_scrollController,
-                      children: tracks.map((track) {
-                        var _key = GlobalKey();
-                        return ListTile(
-                          key: _key,
-                          title: Text(track.title ?? '未知标题'),
-                          subtitle: Text(
-                            '${track.artist ?? '未知艺术家'} - ${track.album ?? '未知专辑'}',
-                          ),
-                          trailing: IconButton(
-                            icon: Icon(Icons.more_vert),
-                            onPressed: () async {
-                              var ret = await song_dialog(
-                                context_PlaylistInfo,
-                                track,
-                                is_my: widget.is_my,
-                                nowplaylistinfo: result.info,
-                                deltrack: deltrack,
-                                position: Offset(
-                                  MediaQuery.of(context).size.width,
-                                  (_key.currentContext!.findRenderObject()
-                                          as RenderBox)
-                                      .localToGlobal(Offset.zero)
-                                      .dy,
-                                ),
-                              );
+                  Obx(
+                    () => SliverFillRemaining(
+                      hasScrollBody: true,
+                      child: useReorderableList.value
+                          ? AnimatedReorderableListView(
+                              onReorder: _onReorder,
+                              isSameItem: (trackA, trackB) =>
+                                  trackA.id == trackB.id,
+                              controller: inner_scrollController,
+                              items: tracks,
+                              enterTransition: [SlideInDown()],
+                              exitTransition: [SlideInUp()],
+                              insertDuration: const Duration(milliseconds: 300),
+                              removeDuration: const Duration(milliseconds: 300),
+                              dragStartDelay: const Duration(milliseconds: 300),
+                              buildDefaultDragHandles: false,
+                              longPressDraggable: false,
+                              itemBuilder: (context, index) {
+                                final track = tracks[index];
+                                final key = ValueKey(track.id);
+                                return ListTile(
+                                  key: key,
+                                  title: Text(track.title ?? '未知标题'),
+                                  subtitle: Text(
+                                    '${track.artist ?? '未知艺术家'} - ${track.album ?? '未知专辑'}',
+                                  ),
+                                  trailing: Builder(
+                                    builder: (iconContext) => IconButton(
+                                      icon: Icon(Icons.more_vert),
+                                      onPressed: () async {
+                                        final renderObject = iconContext
+                                            .findRenderObject();
+                                        final iconDy = renderObject is RenderBox
+                                            ? renderObject
+                                                  .localToGlobal(Offset.zero)
+                                                  .dy
+                                            : 0.0;
+                                        var ret = await song_dialog(
+                                          context_PlaylistInfo,
+                                          track,
+                                          is_my: widget.is_my,
+                                          nowplaylistinfo: result.info,
+                                          deltrack: deltrack,
+                                          position: Offset(
+                                            MediaQuery.of(context).size.width,
+                                            iconDy,
+                                          ),
+                                        );
 
-                              if (ret != null) {
-                                if (ret["pop"] == true) {
-                                  Get.back(id: 1);
-                                }
-                                if (ret["push"] != null) {
-                                  Get.toNamed(
-                                    ret["push"],
-                                    arguments: {'listId': ret["push"]},
-                                    id: 1,
-                                  );
-                                }
-                              }
-                            },
-                          ),
-                          onTap: () {
-                            playsong(track, isByClick: true);
-                          },
-                        );
-                      }).toList(),
+                                        if (ret != null) {
+                                          if (ret["pop"] == true) {
+                                            Get.back(id: 1);
+                                          }
+                                          if (ret["push"] != null) {
+                                            Get.toNamed(
+                                              ret["push"],
+                                              arguments: {
+                                                'listId': ret["push"],
+                                              },
+                                              id: 1,
+                                            );
+                                          }
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    playsong(track, isByClick: true);
+                                  },
+                                );
+                              },
+                            )
+                          : SuperListView.builder(
+                              controller: inner_scrollController,
+                              itemCount: tracks.length,
+                              itemBuilder: (context, index) {
+                                final track = tracks[index];
+                                final key = ValueKey(track.id);
+                                return ListTile(
+                                  key: key,
+                                  title: Text(track.title ?? '未知标题'),
+                                  subtitle: Text(
+                                    '${track.artist ?? '未知艺术家'} - ${track.album ?? '未知专辑'}',
+                                  ),
+                                  trailing: Builder(
+                                    builder: (iconContext) => IconButton(
+                                      icon: Icon(Icons.more_vert),
+                                      onPressed: () async {
+                                        final renderObject = iconContext
+                                            .findRenderObject();
+                                        final iconDy = renderObject is RenderBox
+                                            ? renderObject
+                                                  .localToGlobal(Offset.zero)
+                                                  .dy
+                                            : 0.0;
+                                        var ret = await song_dialog(
+                                          context_PlaylistInfo,
+                                          track,
+                                          is_my: widget.is_my,
+                                          nowplaylistinfo: result.info,
+                                          deltrack: deltrack,
+                                          position: Offset(
+                                            MediaQuery.of(context).size.width,
+                                            iconDy,
+                                          ),
+                                        );
+
+                                        if (ret != null) {
+                                          if (ret["pop"] == true) {
+                                            Get.back(id: 1);
+                                          }
+                                          if (ret["push"] != null) {
+                                            Get.toNamed(
+                                              ret["push"],
+                                              arguments: {
+                                                'listId': ret["push"],
+                                              },
+                                              id: 1,
+                                            );
+                                          }
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    playsong(track, isByClick: true);
+                                  },
+                                );
+                              },
+                            ),
                     ),
                   ),
                 ],

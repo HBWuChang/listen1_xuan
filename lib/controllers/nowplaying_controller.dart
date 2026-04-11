@@ -84,10 +84,6 @@ class NowPlayingPageController extends GetxController {
   void reorderPlaylist(int oldIndex, int newIndex) {
     final currentList = List<Track>.from(playController.current_playing);
 
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
-
     final track = currentList.removeAt(oldIndex);
     currentList.insert(newIndex, track);
 

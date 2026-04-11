@@ -282,9 +282,6 @@ class MyPlaylist {
     if (index == -1 || insertIndex == -1 || index == insertIndex) {
       return playlist;
     }
-    if (insertIndex > index) {
-      insertIndex -= 1;
-    }
     final offset = direction == 'top' ? 0 : 1;
     arrayMove(playlist.tracks!, index, insertIndex + offset);
     _myPlayListController.playerlists[playlistId] = playlist;
