@@ -9,7 +9,6 @@ import 'package:flutter/material.dart'
 // import 'package:flutter_lyric/lyrics_reader_model.dart';
 import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
-import 'package:listen1_xuan/controllers/upd_controller.dart';
 import 'package:listen1_xuan/main.dart';
 import 'dart:io';
 import 'package:extended_image/extended_image.dart';
@@ -35,7 +34,7 @@ import 'package:material_wave_slider/material_wave_slider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'widgets/container_with_outer_shadow.dart';
 import 'package:media_kit/media_kit.dart' hide Track;
-
+import 'package:animated_digit/animated_digit.dart';
 import 'widgets/progress_indicator_xuan.dart';
 
 part 'pages/play/play_v.dart';
@@ -476,6 +475,34 @@ class _PlayState extends State<Play> {
 }
 
 Stream<MediaState> get _mediaStateStream => _playController.mediaState.stream;
+Stream<int> get _mediaPositionHourStream =>
+    _mediaStateStream.map((state) => state.position.inHours).distinct();
+Stream<int> get _mediaPositionMinuteStream => _mediaStateStream
+    .map((state) => state.position.inMinutes.remainder(60))
+    .distinct();
+Stream<int> get _mediaPositionSecondStream => _mediaStateStream
+    .map((state) => state.position.inSeconds.remainder(60))
+    .distinct();
+
+Stream<int> get _mediaDurationHourStream =>
+    _mediaStateStream.map((state) => state.duration.inHours).distinct();
+Stream<int> get _mediaDurationMinuteStream => _mediaStateStream
+    .map((state) => state.duration.inMinutes.remainder(60))
+    .distinct();
+Stream<int> get _mediaDurationSecondStream => _mediaStateStream
+    .map((state) => state.duration.inSeconds.remainder(60))
+    .distinct();
+
+Stream<int> get _mediaBufferHourStream =>
+    _mediaStateStream.map((state) => state.buffer.inHours).distinct();
+Stream<int> get _mediaBufferMinuteStream => _mediaStateStream
+    .map((state) => state.buffer.inMinutes.remainder(60))
+    .distinct();
+Stream<int> get _mediaBufferSecondStream => _mediaStateStream
+    .map((state) => state.buffer.inSeconds.remainder(60))
+    .distinct();
+Stream<bool> get _mediaBufferingStream =>
+    _mediaStateStream.map((state) => state.buffering).distinct();
 
 IconButton _button(
   IconData iconData,

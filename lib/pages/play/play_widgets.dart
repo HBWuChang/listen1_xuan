@@ -362,18 +362,43 @@ Widget get positionSlider => StreamBuilder<MediaState>(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Obx(
-                  () => Text(
-                    _playController.loading
-                        ? _playController
-                                  .bootStraping[_playController
-                                      .nowPlayingTrackRx
-                                      .value
-                                      ?.id]
-                                  ?.split('/')
-                                  .first ??
-                              ''
-                        : formatDuration(mediaState?.position ?? Duration.zero),
-                    style: TextStyle(fontSize: 48.0.w),
+                  () => AnimatedSwitcher(
+                    duration: Duration(milliseconds: 200),
+                    transitionBuilder: horTitleTextTra,
+                    child: _playController.loading
+                        ? Text(
+                            key: ValueKey('slider-loading-position'),
+                            _playController
+                                    .bootStraping[_playController
+                                        .nowPlayingTrackRx
+                                        .value
+                                        ?.id]
+                                    ?.split('/')
+                                    .first ??
+                                '',
+                            style: TextStyle(fontSize: 48.0.w),
+                          )
+                        : KeyedSubtree(
+                            key: ValueKey('slider-playing-position'),
+                            child: _buildDurationBySplitStreams(
+                              hourStream: _mediaPositionHourStream,
+                              minuteStream: _mediaPositionMinuteStream,
+                              secondStream: _mediaPositionSecondStream,
+                              initialHour:
+                                  (mediaState?.position ?? Duration.zero)
+                                      .inHours,
+                              initialMinute:
+                                  (mediaState?.position ?? Duration.zero)
+                                      .inMinutes
+                                      .remainder(60),
+                              initialSecond:
+                                  (mediaState?.position ?? Duration.zero)
+                                      .inSeconds
+                                      .remainder(60),
+                              textStyle: TextStyle(fontSize: 48.0.w),
+                              keyPrefix: 'slider-pos',
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -436,18 +461,43 @@ Widget get positionSlider => StreamBuilder<MediaState>(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Obx(
-                  () => Text(
-                    _playController.loading
-                        ? _playController
-                                  .bootStraping[_playController
-                                      .nowPlayingTrackRx
-                                      .value
-                                      ?.id]
-                                  ?.split('/')
-                                  .last ??
-                              ''
-                        : formatDuration(mediaState?.duration ?? Duration.zero),
-                    style: TextStyle(fontSize: 48.0.w),
+                  () => AnimatedSwitcher(
+                    duration: Duration(milliseconds: 200),
+                    transitionBuilder: horTitleTextTra,
+                    child: _playController.loading
+                        ? Text(
+                            key: ValueKey('slider-loading-duration'),
+                            _playController
+                                    .bootStraping[_playController
+                                        .nowPlayingTrackRx
+                                        .value
+                                        ?.id]
+                                    ?.split('/')
+                                    .last ??
+                                '',
+                            style: TextStyle(fontSize: 48.0.w),
+                          )
+                        : KeyedSubtree(
+                            key: ValueKey('slider-playing-duration'),
+                            child: _buildDurationBySplitStreams(
+                              hourStream: _mediaDurationHourStream,
+                              minuteStream: _mediaDurationMinuteStream,
+                              secondStream: _mediaDurationSecondStream,
+                              initialHour:
+                                  (mediaState?.duration ?? Duration.zero)
+                                      .inHours,
+                              initialMinute:
+                                  (mediaState?.duration ?? Duration.zero)
+                                      .inMinutes
+                                      .remainder(60),
+                              initialSecond:
+                                  (mediaState?.duration ?? Duration.zero)
+                                      .inSeconds
+                                      .remainder(60),
+                              textStyle: TextStyle(fontSize: 48.0.w),
+                              keyPrefix: 'slider-dur',
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -587,5 +637,206 @@ class _PlayPauseBtnState extends State<PlayPauseBtn>
         }
       },
     );
+  }
+}
+
+Widget Function(Widget, Animation<double>) get horTitleTextTra =>
+    (Widget child, Animation<double> animation) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeInCirc),
+
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+          ),
+          child: child,
+        ),
+      );
+    };
+
+Widget formatMediaStateByParts({TextStyle? textStyle}) {
+  final style = textStyle ?? TextStyle(fontSize: 20.0);
+  final state = _playController.mediaState.value;
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      _buildDurationBySplitStreams(
+        hourStream: _mediaPositionHourStream,
+        minuteStream: _mediaPositionMinuteStream,
+        secondStream: _mediaPositionSecondStream,
+        initialHour: state.position.inHours,
+        initialMinute: state.position.inMinutes.remainder(60),
+        initialSecond: state.position.inSeconds.remainder(60),
+        textStyle: style,
+        keyPrefix: 'pos',
+      ),
+      Text('/', style: style),
+      _buildDurationBySplitStreams(
+        hourStream: _mediaDurationHourStream,
+        minuteStream: _mediaDurationMinuteStream,
+        secondStream: _mediaDurationSecondStream,
+        initialHour: state.duration.inHours,
+        initialMinute: state.duration.inMinutes.remainder(60),
+        initialSecond: state.duration.inSeconds.remainder(60),
+        textStyle: style,
+        keyPrefix: 'dur',
+      ),
+      AnimatedSize(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeInOut,
+        child: StreamBuilder<bool>(
+          stream: _mediaBufferingStream,
+          initialData: state.buffering,
+          builder: (context, snapshot) {
+            final buffering = snapshot.data ?? false;
+            if (!buffering) return const SizedBox.shrink();
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('(', style: style),
+                _buildDurationBySplitStreams(
+                  hourStream: _mediaBufferHourStream,
+                  minuteStream: _mediaBufferMinuteStream,
+                  secondStream: _mediaBufferSecondStream,
+                  initialHour: state.buffer.inHours,
+                  initialMinute: state.buffer.inMinutes.remainder(60),
+                  initialSecond: state.buffer.inSeconds.remainder(60),
+                  textStyle: style,
+                  keyPrefix: 'buf',
+                ),
+                Text(')', style: style),
+              ],
+            );
+          },
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildDurationBySplitStreams({
+  required Stream<int> hourStream,
+  required Stream<int> minuteStream,
+  required Stream<int> secondStream,
+  required int initialHour,
+  required int initialMinute,
+  required int initialSecond,
+  required TextStyle textStyle,
+  required String keyPrefix,
+}) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      AnimatedSize(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeInOut,
+        child: StreamBuilder<int>(
+          stream: hourStream,
+          initialData: initialHour,
+          builder: (context, snapshot) {
+            final hour = snapshot.data ?? 0;
+            if (hour <= 0) return const SizedBox.shrink();
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StableAnimatedDigit(
+                  key: ValueKey('$keyPrefix-hour'),
+                  value: hour,
+                  firstScrollAnimate: false,
+                  fractionDigits: 0,
+                  textStyle: textStyle,
+                ),
+                Text(':', style: textStyle),
+              ],
+            );
+          },
+        ),
+      ),
+      StreamBuilder<int>(
+        stream: minuteStream,
+        initialData: initialMinute,
+        builder: (context, snapshot) {
+          return StableAnimatedDigit(
+            key: ValueKey('$keyPrefix-min'),
+            value: snapshot.data ?? 0,
+            enableMinIntegerDigits: true,
+            firstScrollAnimate: false,
+            fractionDigits: 0,
+            textStyle: textStyle,
+          );
+        },
+      ),
+      Text(':', style: textStyle),
+      StreamBuilder<int>(
+        stream: secondStream,
+        initialData: initialSecond,
+        builder: (context, snapshot) {
+          return StableAnimatedDigit(
+            key: ValueKey('$keyPrefix-sec'),
+            value: snapshot.data ?? 0,
+            enableMinIntegerDigits: true,
+            firstScrollAnimate: false,
+            textStyle: textStyle,
+            fractionDigits: 0,
+          );
+        },
+      ),
+    ],
+  );
+}
+
+class StableAnimatedDigit extends StatefulWidget {
+  final int value;
+  final bool enableMinIntegerDigits;
+  final bool firstScrollAnimate;
+  final int fractionDigits;
+  final TextStyle? textStyle;
+
+  const StableAnimatedDigit({
+    super.key,
+    required this.value,
+    this.enableMinIntegerDigits = false,
+    this.firstScrollAnimate = false,
+    this.fractionDigits = 0,
+    this.textStyle,
+  });
+
+  @override
+  State<StableAnimatedDigit> createState() => _StableAnimatedDigitState();
+}
+
+class _StableAnimatedDigitState extends State<StableAnimatedDigit> {
+  late int _cachedValue;
+  late Widget _cachedWidget;
+
+  @override
+  void initState() {
+    super.initState();
+    _cachedValue = widget.value;
+    _cachedWidget = _buildDigit(_cachedValue);
+  }
+
+  @override
+  void didUpdateWidget(covariant StableAnimatedDigit oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value != _cachedValue) {
+      _cachedValue = widget.value;
+      _cachedWidget = _buildDigit(_cachedValue);
+    }
+  }
+
+  Widget _buildDigit(int value) {
+    return AnimatedDigitWidget(
+      value: value,
+      enableMinIntegerDigits: widget.enableMinIntegerDigits,
+      firstScrollAnimate: widget.firstScrollAnimate,
+      fractionDigits: widget.fractionDigits,
+      textStyle: widget.textStyle,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _cachedWidget;
   }
 }

@@ -84,15 +84,20 @@ Widget playH() {
                       child: Obx(() {
                         Track? mediaItem =
                             _playController.nowPlayingTrackRx.value;
-                        return Text(
-                          '${mediaItem?.title ?? 'null'}  -  ${mediaItem?.artist ?? 'null'}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        return AnimatedSwitcher(
+                          duration: Duration(milliseconds: 200),
+                          transitionBuilder: horTitleTextTra,
+                          child: Text(
+                            key: ValueKey(mediaItem?.id ?? 'null'),
+                            '${mediaItem?.title ?? 'null'}  -  ${mediaItem?.artist ?? 'null'}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         );
                       }),
                     ),
@@ -102,29 +107,28 @@ Widget playH() {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Obx(
-                            () => _playController.loading
-                                ? Obx(
-                                    () => Text(
-                                      (_playController
-                                                  .bootStraping[_playController
-                                                  .nowPlayingTrackRx
-                                                  .value
-                                                  ?.id] ??
-                                              '加载中...')
-                                          .toString(),
-                                      style: TextStyle(fontSize: 20.0),
-                                    ),
-                                  )
-                                : StreamBuilder<MediaState>(
-                                    stream: _mediaStateStream,
-                                    builder: (context, snapshot) {
-                                      MediaState? mediaState = snapshot.data;
-                                      return Text(
-                                        ('${formatDuration(mediaState?.position ?? Duration.zero)} / ${formatDuration(mediaState?.duration ?? Duration.zero)}${mediaState?.buffering == true ? '(${formatDuration(mediaState?.buffer ?? Duration.zero)})' : ''}'),
+                            () => AnimatedSwitcher(
+                              duration: Duration(milliseconds: 200),
+                              transitionBuilder: horTitleTextTra,
+                              child: _playController.loading
+                                  ? Obx(
+                                      () => Text(
+                                        key: ValueKey('loading-media-state'),
+                                        (_playController.bootStraping[
+                                                    _playController
+                                                        .nowPlayingTrackRx
+                                                        .value
+                                                        ?.id] ??
+                                                '加载中...')
+                                            .toString(),
                                         style: TextStyle(fontSize: 20.0),
-                                      );
-                                    },
-                                  ),
+                                      ),
+                                    )
+                                  : KeyedSubtree(
+                                      key: ValueKey('playing-media-state'),
+                                      child: formatMediaStateByParts(),
+                                    ),
+                            ),
                           ),
                         ),
                       ),
@@ -155,39 +159,26 @@ Widget playH() {
                             ),
                           ),
                         )
-                      : StreamBuilder<MediaState>(
-                          stream: _mediaStateStream,
-                          builder: (context, snapshot) {
-                            MediaState? mediaState = snapshot.data;
-                            return MaterialWaveSlider(
-                              key: materialWaveSliderStateKeyH,
-                              height: 20,
-                              paused: !(mediaState?.playing ?? false),
-                              value:
-                                  (mediaState?.position.inMilliseconds
-                                              .toDouble() ??
-                                          0.0) >
-                                      (mediaState?.duration.inMilliseconds
-                                              .toDouble() ??
-                                          0.0)
-                                  ? (mediaState?.duration.inMilliseconds
-                                            .toDouble() ??
-                                        0.0)
-                                  : (mediaState?.position.inMilliseconds
-                                            .toDouble() ??
-                                        0.0),
-                              max:
-                                  mediaState?.duration.inMilliseconds
-                                      .toDouble() ??
-                                  0.0,
-                              onChanged: (value) {
-                                globalSeek(
-                                  Duration(milliseconds: value.toInt()),
-                                );
-                              },
-                            );
-                          },
-                        ),
+                      : Obx(() {
+                          final mediaState = _playController.mediaState.value;
+                          return MaterialWaveSlider(
+                            key: materialWaveSliderStateKeyH,
+                            height: 20,
+                            paused: !mediaState.playing,
+                            value:
+                                (mediaState.position.inMilliseconds.toDouble()) >
+                                    (mediaState.duration.inMilliseconds
+                                        .toDouble())
+                                ? mediaState.duration.inMilliseconds.toDouble()
+                                : mediaState.position.inMilliseconds.toDouble(),
+                            max: mediaState.duration.inMilliseconds.toDouble(),
+                            onChanged: (value) {
+                              globalSeek(
+                                Duration(milliseconds: value.toInt()),
+                              );
+                            },
+                          );
+                        }),
                 ),
               ),
             ],
