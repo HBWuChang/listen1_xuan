@@ -4,7 +4,7 @@ description: "Rewrite From listen1"
 # Prevent accidental publishing to pub.dev.
 publish_to: "none"
 
-version: 2.4.2+39
+version: 2.4.3+40
 
 environment:
   sdk: ^3.8.1
@@ -50,7 +50,7 @@ dependencies:
   system_info3: ^4.0.1
   animations: 2.1.1
   loading_animations: ^2.2.0
-  media_kit: 1.2.3 # Primary package.
+  media_kit: ^1.2.6
   media_kit_libs_audio: ^1.0.7 # Native audio dependencies.
   window_manager: ^0.5.1
   webview_windows:
@@ -125,6 +125,7 @@ dependencies:
       url: https://github.com/HBWuChang/animated_digit
     # path: E:\HB_WuChang\code\flutter\animated_digit
   # auto_updater: ^1.0.0
+  flutter_volume_controller: ^1.3.4
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,15 +1,12 @@
 import 'dart:convert';
 import 'dart:ui';
 import 'package:animations/animations.dart';
-import 'package:archive/archive_io.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
-import 'package:listen1_xuan/controllers/hyper_download_controller.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/play.dart';
 import 'package:logger/logger.dart';
@@ -18,9 +15,7 @@ import 'controllers/upd_controller.dart';
 import 'models/GitHubRelease.dart';
 import 'models/SupabasePlaylist.dart' as PlaylistModel;
 import 'dart:io';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'controllers/DioController.dart';
 import 'controllers/cache_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
@@ -30,17 +25,13 @@ import 'controllers/routeController.dart';
 import 'controllers/supabase_auth_controller.dart';
 import 'controllers/websocket_client_controller.dart';
 import 'pages/settings/play_buttons_settings_page.dart';
-import 'pages/settings/settings_supabase_login_page.dart';
 import 'pages/settings/settings_password_dialog.dart';
-import 'examples/equalizer_integration_example.dart';
 import 'examples/websocket_client_example.dart';
 import 'examples/websocket_server_example.dart';
 import 'funcs.dart';
 import 'models/websocket_message.dart';
-import 'netease.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:marquee/marquee.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webview_cookie_manager/webview_cookie_manager.dart';
@@ -48,16 +39,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:dio/dio.dart';
 import 'dart:async';
-import 'package:archive/archive.dart';
-import 'package:install_plugin/install_plugin.dart';
 import 'package:system_info3/system_info3.dart';
 import 'global_settings_animations.dart';
 import 'package:webview_windows/webview_windows.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:charset_converter/charset_converter.dart';
 import 'package:get/get.dart' hide Response;
 import 'package:adaptive_theme/adaptive_theme.dart';
@@ -72,7 +59,6 @@ import 'package:path/path.dart' as p;
 import 'utils/curve_utils.dart';
 import 'widgets/curve_selector_dialog.dart';
 import 'package:flutter/material.dart' hide SearchController;
-import 'pages/settings/cache_naming_page.dart';
 import 'widgets/elevated_button_icon.dart';
 part 'pages/settings/settings_utils.dart';
 part 'pages/settings/settings_github.dart';
@@ -733,8 +719,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {
                           return ListTile(
-                            leading: Icon(Icons.miscellaneous_services),
-                            title: Text('杂项'),
+                            leading: Icon(Icons.play_circle_fill_rounded),
+                            title: Text('播放设置'),
                           );
                         },
                         canTapOnHeader: true,
@@ -744,13 +730,46 @@ class _SettingsPageState extends State<SettingsPage> {
                           children: [
                             Obx(
                               () => SwitchListTile(
+                                title: const Text('音量跟随系统'),
+                                value: Get.find<SettingsController>()
+                                    .volumnFollowSystem,
+                                onChanged:
+                                    Get.find<SettingsController>()
+                                        .volumnFollowSystemChanging
+                                        .value
+                                    ? null
+                                    : (bool value) async {
+                                        Get.find<SettingsController>()
+                                                .volumnFollowSystemChanging
+                                                .value =
+                                            true;
+                                        Get.find<SettingsController>()
+                                                .volumnFollowSystem =
+                                            value;
+                                        await Get.find<PlayController>()
+                                            .initOrUpdSysVolAndSet();
+                                        Get.find<SettingsController>()
+                                                .volumnFollowSystemChanging
+                                                .value =
+                                            false;
+                                      },
+                              ),
+                            ),
+                            Obx(
+                              () => SwitchListTile(
                                 title: const Text('下一首播放模式'),
                                 subtitle: Obx(
-                                  () => Text(
-                                    Get.find<SettingsController>()
-                                            .nextTrackQueueOrStackMethod
-                                        ? '队列：先添加的曲目将先播放'
-                                        : '栈：后添加的曲目将先播放',
+                                  () => setSubTitleTextAniSwi(
+                                    Text(
+                                      Get.find<SettingsController>()
+                                              .nextTrackQueueOrStackMethod
+                                          ? '队列：先添加的曲目将先播放'
+                                          : '栈：后添加的曲目将先播放',
+                                      key: ValueKey<bool>(
+                                        Get.find<SettingsController>()
+                                            .nextTrackQueueOrStackMethod,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 value: Get.find<SettingsController>()
@@ -764,7 +783,49 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             Obx(
                               () => SwitchListTile(
-                                title: const Text('默认搜索源/记忆上次搜索源'),
+                                title: const Text('在“循环播放”模式下列表播放完成时停止播放'),
+
+                                value: Get.find<SettingsController>()
+                                    .stopOnPlayListEnd,
+                                onChanged: (bool value) {
+                                  Get.find<SettingsController>()
+                                          .stopOnPlayListEnd =
+                                      value;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ExpansionPanel(
+                        headerBuilder: (BuildContext context, bool isExpanded) {
+                          return ListTile(
+                            leading: Icon(Icons.miscellaneous_services),
+                            title: Text('杂项'),
+                          );
+                        },
+                        canTapOnHeader: true,
+                        isExpanded: settingsController.settingsPageExpansion
+                            .contains(8),
+                        body: Column(
+                          children: [
+                            Obx(
+                              () => SwitchListTile(
+                                title: const Text('搜索源选择方式'),
+                                subtitle: Obx(
+                                  () => setSubTitleTextAniSwi(
+                                    Text(
+                                      Get.find<SettingsController>()
+                                              .searchUseLastSource
+                                          ? '记忆上次搜索源'
+                                          : '默认搜索源',
+                                      key: ValueKey<bool>(
+                                        Get.find<SettingsController>()
+                                            .searchUseLastSource,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                                 value: Get.find<SettingsController>()
                                     .searchUseLastSource,
                                 onChanged: (bool value) {
@@ -809,19 +870,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                       ),
                               ),
                             ),
-                            Obx(
-                              () => SwitchListTile(
-                                title: const Text('在“循环播放”模式下列表播放完成时停止播放'),
 
-                                value: Get.find<SettingsController>()
-                                    .stopOnPlayListEnd,
-                                onChanged: (bool value) {
-                                  Get.find<SettingsController>()
-                                          .stopOnPlayListEnd =
-                                      value;
-                                },
-                              ),
-                            ),
                             Obx(
                               () => SwitchListTile(
                                 title: const Text('禁用ssl证书验证'),
@@ -850,7 +899,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
 
-                // buildEqualizerTile(context),
                 ListTile(
                   leading: Icon(Icons.book),
                   title: Text('查看README'),

@@ -18,6 +18,7 @@ import 'package:media_kit/media_kit.dart' show Player;
 import 'package:rxdart/rxdart.dart' as rxdart;
 import 'package:flutter/foundation.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
+import 'constants/network_defaults.dart';
 import 'funcs.dart';
 import 'package:vibration/vibration.dart';
 import 'package:logger/logger.dart';
@@ -36,6 +37,7 @@ import 'widgets/container_with_outer_shadow.dart';
 import 'package:media_kit/media_kit.dart' hide Track;
 import 'package:animated_digit/animated_digit.dart';
 import 'widgets/progress_indicator_xuan.dart';
+import 'widgets/showVolumeSlider.dart';
 
 part 'pages/play/play_v.dart';
 // part 'pages/play/play_v0.dart';
@@ -333,12 +335,14 @@ Future<void> change_playback_state(
       id: track.id,
       title: track.title!,
       artist: track.artist,
+      album: track.album,
       artUri: Uri.parse(
         track.img_url == null
             ? 'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0'
             : track.img_url!,
       ),
       duration: _duration,
+      artHeaders: kGlobalDefaultHeaders,
     );
     _currentMediaItem = _item;
     (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)

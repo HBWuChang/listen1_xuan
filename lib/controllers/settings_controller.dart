@@ -131,7 +131,7 @@ class SettingsController extends GetxController {
   double get lyricBackgroundBlurRadius =>
       lyricBackgroundBlurRadiusRx.value ?? (globalHorizon ? 20.0 : 10.0);
   set lyricBackgroundBlurRadius(double value) {
-    lyricBackgroundBlurRadiusRx.value = value;
+    settings[lyricBackgroundBlurRadiusKey] = value;
   }
 
   static const String globalLyricDelayKey = 'globalLyricDelay';
@@ -152,7 +152,7 @@ class SettingsController extends GetxController {
   final RxBool disableOpacityInLyricPageRx = false.obs;
   bool get disableOpacityInLyricPage => disableOpacityInLyricPageRx.value;
   set disableOpacityInLyricPage(bool value) {
-    disableOpacityInLyricPageRx.value = value;
+    settings[disableOpacityInLyricPageKey] = value;
   }
 
   static const String searchUseLastSourceKey = 'searchUseLastSource';
@@ -270,12 +270,12 @@ class SettingsController extends GetxController {
   }
 
   set songReplaceFabLocation(SongReplaceFabLocation location) {
-    songReplaceFabLocationIndexRx.value = location.index;
+    settings[songReplaceFabLocationKey] = location.index;
   }
 
   bool get songReplaceFabMini => songReplaceFabMiniRx.value;
   set songReplaceFabMini(bool value) {
-    songReplaceFabMiniRx.value = value;
+    settings[songReplaceFabMiniKey] = value;
   }
 
   static const String songReplaceAutoRepTragetTrackInAllPlaylistKey =
@@ -304,7 +304,7 @@ class SettingsController extends GetxController {
   bool? get windowsCloseBtnCloseOrHideApp =>
       windowsCloseBtnCloseOrHideAppRx.value;
   set windowsCloseBtnCloseOrHideApp(bool? value) {
-    windowsCloseBtnCloseOrHideAppRx.value = value;
+    settings[windowsCloseBtnCloseOrHideAppKey] = value;
   }
 
   void completeDioInit() {
@@ -354,6 +354,14 @@ class SettingsController extends GetxController {
     settings[stopOnPlayListEndKey] = value;
   }
 
+  static const String volumnFollowSystemKey = 'volumnFollowSystem';
+  final RxBool volumnFollowSystemRx = false.obs;
+  bool get volumnFollowSystem => volumnFollowSystemRx.value;
+  set volumnFollowSystem(bool? value) {
+    settings[volumnFollowSystemKey] = value;
+  }
+  final RxBool volumnFollowSystemChanging = false.obs;
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
@@ -381,6 +389,8 @@ class SettingsController extends GetxController {
           settings[disableOpacityInLyricPageKey] as bool? ?? false;
       final nextLyricBackgroundBlurRadius =
           (settings[lyricBackgroundBlurRadiusKey] as num?)?.toDouble();
+      final nextVolumnFollowSystem =
+          settings[volumnFollowSystemKey] as bool? ?? false;
 
       if (songReplaceFabMiniRx.value != nextMini) {
         songReplaceFabMiniRx.value = nextMini;
@@ -399,35 +409,8 @@ class SettingsController extends GetxController {
       if (lyricBackgroundBlurRadiusRx.value != nextLyricBackgroundBlurRadius) {
         lyricBackgroundBlurRadiusRx.value = nextLyricBackgroundBlurRadius;
       }
-    });
-
-    ever<bool>(songReplaceFabMiniRx, (value) {
-      if (settings[songReplaceFabMiniKey] != value) {
-        settings[songReplaceFabMiniKey] = value;
-      }
-    });
-
-    ever<int>(songReplaceFabLocationIndexRx, (value) {
-      if (settings[songReplaceFabLocationKey] != value) {
-        settings[songReplaceFabLocationKey] = value;
-      }
-    });
-
-    ever<bool?>(windowsCloseBtnCloseOrHideAppRx, (value) {
-      if (settings[windowsCloseBtnCloseOrHideAppKey] != value) {
-        settings[windowsCloseBtnCloseOrHideAppKey] = value;
-      }
-    });
-
-    ever<bool>(disableOpacityInLyricPageRx, (value) {
-      if (settings[disableOpacityInLyricPageKey] != value) {
-        settings[disableOpacityInLyricPageKey] = value;
-      }
-    });
-
-    ever<double?>(lyricBackgroundBlurRadiusRx, (value) {
-      if (settings[lyricBackgroundBlurRadiusKey] != value) {
-        settings[lyricBackgroundBlurRadiusKey] = value;
+      if (volumnFollowSystemRx.value != nextVolumnFollowSystem) {
+        volumnFollowSystemRx.value = nextVolumnFollowSystem;
       }
     });
 

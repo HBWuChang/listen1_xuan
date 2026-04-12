@@ -374,7 +374,6 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-var main_showVolumeSlider;
 
 late bool globalHorizon;
 final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
@@ -388,17 +387,13 @@ class _MyHomePageState extends State<MyHomePage>
     with TrayListener, WindowListener, WidgetsBindingObserver {
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
-  PlayController _playController = Get.find<PlayController>();
-  OverlayEntry? _overlayEntry;
-  Timer? _timer;
-  bool volumeSliderVisible = false;
+  
   @override
   void initState() {
     super.initState();
     if (isDesktop) WidgetsBinding.instance.addObserver(this);
     trayManager.addListener(this);
     homeController.updatePageControllers();
-    main_showVolumeSlider = showVolumeSlider;
     if (isDesktop) {
       _initTrayManager();
       init_hotkeys();
@@ -491,7 +486,6 @@ class _MyHomePageState extends State<MyHomePage>
       windowManager.removeListener(this);
     }
     _focusNode.dispose();
-    _timer?.cancel();
     _focusNode2.dispose();
     homeController.pageControllerHorizon.dispose(); // 销毁 PageController
     homeController.pageControllerPortrait.dispose();
@@ -701,78 +695,5 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void onWindowUnmaximize() {
     Get.find<SettingsController>().onWindowUnmaximize();
-  }
-
-  void showVolumeSlider() async {
-    if (volumeSliderVisible) {
-      _overlayEntry?.remove();
-      _overlayEntry = null;
-      volumeSliderVisible = false;
-      return;
-    }
-    volumeSliderVisible = true;
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    _overlayEntry = _createOverlayEntry();
-    Overlay.of(homeController.main_context).insert(_overlayEntry!);
-    _startAutoCloseTimer();
-  }
-
-  void _startAutoCloseTimer() {
-    _timer?.cancel();
-    _timer = Timer(Duration(seconds: 3), () {
-      _overlayEntry?.remove();
-      _overlayEntry = null;
-      volumeSliderVisible = false;
-    });
-  }
-
-  OverlayEntry _createOverlayEntry() {
-    return OverlayEntry(
-      builder: (context) => Positioned(
-        top: MediaQuery.of(context).size.height / 2 - 100,
-        right: 0,
-        child: Material(
-          color: Colors.transparent,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              _overlayEntry?.remove();
-              _overlayEntry = null;
-              volumeSliderVisible = false;
-            },
-            child: Container(
-              height: 200,
-              width: 40,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface, // 使用当前主题的表面颜色
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color.fromARGB(113, 120, 120, 120),
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: RotatedBox(
-                quarterTurns: -1,
-                child: Obx(
-                  () => Slider(
-                    min: 0.0,
-                    max: 100.0,
-                    value: _playController.currentVolume,
-                    onChanged: (value) {
-                      _playController.currentVolume = value;
-                      _startAutoCloseTimer();
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

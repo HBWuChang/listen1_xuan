@@ -52,7 +52,7 @@ Widget withDragDetector({required Widget child, required bool isCollapsed}) {
 
 Future<void> _onTap(BuildContext context) async {
   if (!globalHorizon) {
-    main_showVolumeSlider();
+    showVolumeSlider();
   }
   final track = await getnowplayingsong();
   var ret = await song_dialog(context, track['track'], position: position);
@@ -184,7 +184,7 @@ Widget get showVolumeSliderBtn {
   return IconButton(
     style: controlBtnsStyle,
     icon: Icon(Icons.volume_up, size: 64.w),
-    onPressed: main_showVolumeSlider,
+    onPressed: showVolumeSlider,
   );
 }
 

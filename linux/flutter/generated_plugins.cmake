@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   desktop_drop
   dynamic_color
   flutter_acrylic
+  flutter_volume_controller
   gtk
   hotkey_manager_linux
   media_kit_libs_linux

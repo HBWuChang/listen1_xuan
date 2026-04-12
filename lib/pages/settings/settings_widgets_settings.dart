@@ -565,3 +565,40 @@ class _SupabasePlaylistContent extends StatelessWidget {
     );
   }
 }
+
+Widget Function(Widget, Animation<double>) get setSubTitleTextTra =>
+    (Widget child, Animation<double> animation) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeInCirc),
+
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+          ),
+          child: child,
+        ),
+      );
+    };
+Widget Function(Widget? currentChild, List<Widget> previousChildren)
+get centerLeftLayoutBuilder =>
+    (Widget? currentChild, List<Widget> previousChildren) {
+      return Stack(
+        alignment: Alignment.centerLeft,
+        children: [...previousChildren, if (currentChild != null) currentChild],
+      );
+    };
+AnimatedSwitcher setSubTitleTextAniSwi(Widget child) {
+  return AnimatedSwitcher(
+    duration: const Duration(milliseconds: 200),
+    transitionBuilder: setSubTitleTextTra,
+    layoutBuilder: centerLeftLayoutBuilder,
+    child: child,
+  );
+}
+
+// AnimatedSwitcher(
+//   duration: const Duration(milliseconds: 200),
+//   transitionBuilder: setSubTitleTextTra,
+//   layoutBuilder: centerLeftLayoutBuilder,
+//   child:
+// ),

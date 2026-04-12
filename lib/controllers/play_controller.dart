@@ -1,11 +1,9 @@
 // ignore_for_file: non_constant_identifier_names
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,11 +14,10 @@ import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:logger/logger.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart' hide Track;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:rxdart/rxdart.dart' as rxdart;
 import '../global_settings_animations.dart';
@@ -28,8 +25,8 @@ import '../loweb.dart';
 import '../models/MediaState.dart';
 import '../models/SongReplaceSettings.dart';
 import '../utils/curve_utils.dart';
+import '../widgets/showVolumeSlider.dart';
 import 'lyric_controller.dart';
-import 'nowplaying_controller.dart';
 import 'routeController.dart';
 import 'settings_controller.dart';
 import 'websocket_card_controller.dart';
@@ -127,11 +124,85 @@ class PlayController extends GetxController
 
   var isplaying = false.obs;
 
+  Future<void> initOrUpdSysVolAndSet() async {
+    if (settingsController.volumnFollowSystem) {
+      await Get.find<PlayController>().getSysVolAndSet();
+    } else {
+      Get.find<PlayController>().currentVolume = 100;
+    }
+  }
+
+  Future<void> getSysVolAndSet() async {
+    try {
+      double? sysVol = await FlutterVolumeController.getVolume();
+      if (sysVol != null) {
+        double t_volume = sysVol * 100.0;
+        _skipForVolChange = true;
+        currentVolume = t_volume;
+      }
+    } catch (e) {
+      logger.e('Error getting system volume: $e');
+    }
+  }
+
   double get currentVolume => _player_settings['volume'] ?? 50.0;
+  bool _skipForVolChange = true;
   set currentVolume(double value) {
     _player_settings['volume'] = value;
-    music_player.setVolume(value);
+    if (settingsController.volumnFollowSystem) {
+      if (_skipForVolChange) {
+        _skipForVolChange = false;
+        return;
+      }
+      setSystemVolume(value);
+    } else {
+      music_player.setVolume(value);
+    }
   }
+
+  void _setShowSystemUI(bool value, Function callback) {
+    FlutterVolumeController.updateShowSystemUI(
+      value,
+    ).then((_) => callback()).catchError((e) {
+      logger.e('Error updating show system UI: $e');
+      callback();
+    });
+  }
+
+  void setSystemVolume(double volume) {
+    final toSet = volume / 100.0;
+    if (settingSystemVolume) {
+      toSetSystemVolume = volume;
+      return;
+    }
+    settingSystemVolume = true;
+    music_player.setVolume(100);
+    _setShowSystemUI(false, () {
+      FlutterVolumeController.setVolume(toSet)
+          .then((_) {
+            _setShowSystemUI(true, () {
+              settingSystemVolume = false;
+              if (toSetSystemVolume != null) {
+                setSystemVolume(toSetSystemVolume!);
+                toSetSystemVolume = null;
+              }
+            });
+          })
+          .catchError((e) {
+            logger.e('Error setting system volume: $e');
+            _setShowSystemUI(true, () {
+              settingSystemVolume = false;
+              if (toSetSystemVolume != null) {
+                setSystemVolume(toSetSystemVolume!);
+                toSetSystemVolume = null;
+              }
+            });
+          });
+    });
+  }
+
+  bool settingSystemVolume = false;
+  double? toSetSystemVolume;
 
   Set<String> get playingIds {
     return currentPlayingRx.map((track) => track.id).toSet();
@@ -147,7 +218,8 @@ class PlayController extends GetxController
   @override
   void onInit() {
     super.onInit();
-    music_player = Player();
+    music_player = Player(configuration: PlayerConfiguration());
+    // (music_player.platform as NativePlayer).setProperty(property, value);
     random = Random(DateTime.now().hashCode);
     // music_player.setAudioDevice()
     logger.d('PlayController initialized');
@@ -338,10 +410,22 @@ class PlayController extends GetxController
         );
       }, time: Duration(milliseconds: 500));
     }
+    FlutterVolumeController.addListener((volume) {
+      _onSysVolumeChanged(volume);
+    });
+  }
+
+  void _onSysVolumeChanged(double volume) {
+    // debugPrint('Volume changed: $volume');
+    if (!settingsController.volumnFollowSystem) return;
+    _skipForVolChange = true;
+    // if (!globalHorizon) continueshowVolumeSlider();
+    currentVolume = volume * 100.0;
   }
 
   @override
   void onClose() {
+    FlutterVolumeController.removeListener();
     playVPlayBtnProcessController.dispose();
     music_player.dispose();
     super.onClose();
@@ -432,14 +516,18 @@ class PlayController extends GetxController
       }
 
       Get.find<XLyricController>().loadLyric();
-      double t_volume = 100;
-      try {
-        t_volume = getPlayerSettings("volume");
-      } catch (e) {
-        t_volume = 100;
-        setPlayerSetting("volume", t_volume);
+      if (!settingsController.volumnFollowSystem) {
+        double t_volume = 100;
+        try {
+          t_volume = getPlayerSettings("volume");
+        } catch (e) {
+          t_volume = 100;
+          setPlayerSetting("volume", t_volume);
+        }
+        music_player.setVolume(t_volume);
+      } else {
+        music_player.setVolume(100);
       }
-      music_player.setVolume(t_volume);
       if (toSeek != null) {
         try {
           music_player.stream.duration
@@ -659,6 +747,7 @@ class PlayController extends GetxController
         playsong(nowPlayingTrackRx.value!, start: music_player.state.playing);
       }
     }
+    initOrUpdSysVolAndSet();
   }
 
   List<Track> get current_playing => currentPlayingRx.toList();
