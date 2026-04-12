@@ -124,7 +124,13 @@ class PlayController extends GetxController
 
   var isplaying = false.obs;
 
-  Future<void> initOrUpdSysVolAndSet() async {
+  Future<void> initSysVolAndSet() async {
+    if (settingsController.volumnFollowSystem) {
+      await Get.find<PlayController>().getSysVolAndSet();
+    } 
+  }
+
+  Future<void> updSysVolAndSet() async {
     if (settingsController.volumnFollowSystem) {
       await Get.find<PlayController>().getSysVolAndSet();
     } else {
@@ -747,7 +753,7 @@ class PlayController extends GetxController
         playsong(nowPlayingTrackRx.value!, start: music_player.state.playing);
       }
     }
-    initOrUpdSysVolAndSet();
+    initSysVolAndSet();
   }
 
   List<Track> get current_playing => currentPlayingRx.toList();

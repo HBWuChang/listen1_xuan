@@ -747,7 +747,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                 .volumnFollowSystem =
                                             value;
                                         await Get.find<PlayController>()
-                                            .initOrUpdSysVolAndSet();
+                                            .updSysVolAndSet();
                                         Get.find<SettingsController>()
                                                 .volumnFollowSystemChanging
                                                 .value =
