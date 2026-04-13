@@ -127,7 +127,7 @@ class PlayController extends GetxController
   Future<void> initSysVolAndSet() async {
     if (settingsController.volumnFollowSystem) {
       await Get.find<PlayController>().getSysVolAndSet();
-    } 
+    }
   }
 
   Future<void> updSysVolAndSet() async {
@@ -489,22 +489,8 @@ class PlayController extends GetxController
         MediaService.bootstrapTrack(track, start: start);
         return;
       }
-      Map<String, String>? httpHeaders;
-      if (track.id.startsWith('bi') &&
-          Get.find<CacheController>().isOnlineCache(track.id)) {
-        httpHeaders = {
-          "user-agent":
-              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
-          "accept": "*/*",
-          "accept-encoding": "identity;q=1, *;q=0",
-          "accept-language": "zh-CN",
-          "referer": "https://www.bilibili.com/",
-          "sec-fetch-dest": "audio",
-          "sec-fetch-mode": "no-cors",
-          "sec-fetch-site": "cross-site",
-          "range": "bytes=0-",
-        };
-      }
+      Map<String, String>? httpHeaders = Get.find<CacheController>()
+          .httpHeadersOfOnlineCache(track.id);
       // 有缓存，直接播放
       Media media = Media(tdir, httpHeaders: httpHeaders);
       await music_player.open(media, play: false);

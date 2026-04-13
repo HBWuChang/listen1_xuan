@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:convert';
 import '../const.dart';
+import '../constants/network_defaults.dart';
 import '../global_settings_animations.dart';
 import '../main.dart';
 import 'DioController.dart';
@@ -280,6 +281,14 @@ class CacheController extends GetxController {
 
   bool isOnlineCache(String id) {
     return _onlineCacheList.containsKey(id);
+  }
+
+  Map<String, String>? httpHeadersOfOnlineCache(String id) {
+    id = _playController.songReplaceSettings.value.getReplacementId(id) ?? id;
+    if (isOnlineCache(id) && id.startsWith('bi')) {
+      return kBilibiliPlayHeader;
+    }
+    return null;
   }
 
   /// 获取本地缓存文件路径
