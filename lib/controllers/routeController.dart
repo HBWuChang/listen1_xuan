@@ -251,5 +251,6 @@ class RouteName {
   static const String supabaseLoginPage = '/supabase_login';
   static const String supabasePasswordLoginPage = '/supabase_password_login';
   static const String cacheNamingPage = '/cache_naming';
+  static const String equalizerPage = '/equalizer';
   static const String songReplacePage = '/song_replace';
 }

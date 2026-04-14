@@ -565,6 +565,15 @@ Listener _mainContent() => Listener(
                   );
                   addAndCleanReapeatRoute(route, RouteName.cacheNamingPage);
                   return route;
+                case RouteName.equalizerPage:
+                  var route = GetPageRoute(
+                    settings: settings,
+                    transition: Transition.rightToLeftWithFade,
+                    page: () => AndroidEqualizerPage(),
+                    middlewares: [ListenPopMiddleware()],
+                  );
+                  addAndCleanReapeatRoute(route, RouteName.equalizerPage);
+                  return route;
                 case RouteName.songReplacePage:
                   var route = GetPageRoute(
                     settings: settings,

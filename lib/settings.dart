@@ -728,6 +728,16 @@ class _SettingsPageState extends State<SettingsPage> {
                             .contains(7),
                         body: Column(
                           children: [
+                            ListTile(
+                              leading: Icon(Icons.equalizer),
+                              title: const Text('均衡器设置'),
+                              subtitle: const Text(
+                                '编辑 EQ 预设并调整 f/t/w/g/m/a/r 全参数',
+                              ),
+                              trailing: Icon(Icons.chevron_right),
+                              onTap: () =>
+                                  Get.toNamed(RouteName.equalizerPage, id: 1),
+                            ),
                             Obx(
                               () => SwitchListTile(
                                 title: const Text('音量跟随系统'),

@@ -20,6 +20,7 @@ import 'pages/settings/settings_readme.dart';
 import 'pages/settings/settings_supabase_login_page.dart';
 import 'pages/settings/settings_supabase_password_login_page.dart';
 import 'pages/settings/cache_naming_page.dart';
+import 'pages/android_equalizer_page.dart';
 import 'pages/songReplace_page.dart';
 import 'settings.dart';
 import 'loweb.dart';

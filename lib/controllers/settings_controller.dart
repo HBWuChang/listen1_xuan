@@ -6,6 +6,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:hive/hive.dart';
+import 'package:listen1_xuan/funcs.dart';
 
 import 'package:path/path.dart' as p;
 import 'package:flutter/foundation.dart';
@@ -25,6 +26,7 @@ import '../const.dart';
 import '../global_settings_animations.dart';
 import '../kugou.dart';
 import '../main.dart';
+import '../models/Equalizer/EqSetting.dart';
 import '../models/Playlist.dart';
 import '../models/SongReplaceSettings.dart';
 import '../netease.dart';
@@ -360,7 +362,17 @@ class SettingsController extends GetxController {
   set volumnFollowSystem(bool? value) {
     settings[volumnFollowSystemKey] = value;
   }
+
   final RxBool volumnFollowSystemChanging = false.obs;
+
+  static const String eqSettingKey = 'eqSetting';
+  final RxString _eqSettingJsonRx = ''.obs;
+  final Rx<EqSetting> eqSettingRx = Rx<EqSetting>(EqSetting());
+  EqSetting get eqSetting => eqSettingRx.value;
+
+  set eqSetting(EqSetting value) {
+    settings[eqSettingKey] = jsonEncode(value.toJson());
+  }
 
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
@@ -391,6 +403,7 @@ class SettingsController extends GetxController {
           (settings[lyricBackgroundBlurRadiusKey] as num?)?.toDouble();
       final nextVolumnFollowSystem =
           settings[volumnFollowSystemKey] as bool? ?? false;
+      final eqSettingJson = settings[eqSettingKey] as String? ?? '';
 
       if (songReplaceFabMiniRx.value != nextMini) {
         songReplaceFabMiniRx.value = nextMini;
@@ -411,6 +424,16 @@ class SettingsController extends GetxController {
       }
       if (volumnFollowSystemRx.value != nextVolumnFollowSystem) {
         volumnFollowSystemRx.value = nextVolumnFollowSystem;
+      }
+      if (_eqSettingJsonRx.value != eqSettingJson) {
+        _eqSettingJsonRx.value = eqSettingJson;
+        try {
+          final eqSettingMap =
+              jsonDecode(eqSettingJson) as Map<String, dynamic>;
+          eqSettingRx.value = EqSetting.fromJson(eqSettingMap);
+        } catch (e) {
+          logger.e('Failed to parse eqSetting JSON: $e');
+        }
       }
     });
 
