@@ -25,7 +25,6 @@ import '../loweb.dart';
 import '../models/MediaState.dart';
 import '../models/SongReplaceSettings.dart';
 import '../utils/curve_utils.dart';
-import '../widgets/showVolumeSlider.dart';
 import 'lyric_controller.dart';
 import 'routeController.dart';
 import 'settings_controller.dart';
@@ -123,6 +122,25 @@ class PlayController extends GetxController
   );
 
   var isplaying = false.obs;
+
+  Future<void> setEq() async {
+    String? eqString = Get.find<SettingsController>().eqSetting
+        .toFilterStringOfNowSelected();
+    if (isEmpty(eqString)) eqString = '';
+    await (music_player.platform as NativePlayer).setProperty('af', eqString!);
+    nowEq.value = await (music_player.platform as NativePlayer).getProperty(
+      'af',
+    );
+  }
+
+  Future<void> test() async {
+    await (music_player.platform as NativePlayer).setProperty(
+      'af',
+      'lavfi=help',
+    );
+  }
+
+  RxString nowEq = ''.obs;
 
   Future<void> initSysVolAndSet() async {
     if (settingsController.volumnFollowSystem) {
@@ -224,7 +242,9 @@ class PlayController extends GetxController
   @override
   void onInit() {
     super.onInit();
-    music_player = Player(configuration: PlayerConfiguration());
+    music_player = Player(
+      configuration: PlayerConfiguration(logLevel: MPVLogLevel.debug),
+    );
     // (music_player.platform as NativePlayer).setProperty(property, value);
     random = Random(DateTime.now().hashCode);
     // music_player.setAudioDevice()
@@ -232,6 +252,7 @@ class PlayController extends GetxController
     logger.d(music_player.state.audioDevices);
     logger.d(music_player.state.audioParams);
     music_player.stream.error.listen((error) => processMusicPlayerError(error));
+    music_player.stream.log.listen((log) => debugPrint('$log'));
     // 初始化播放按钮旋转动画控制器
     playVPlayBtnProcessControllerInit();
     // androidEQEnabled =
@@ -260,10 +281,10 @@ class PlayController extends GetxController
     music_player.stream.playing.listen((event) {
       isplaying.value = event;
     });
-    ever(isplaying, (callback) {
+    interval(isplaying, (callback) {
       broadcastWs();
       updateContinuePlay();
-    });
+    }, time: Duration(milliseconds: 300));
     debounce(showPlayVInlineLyricVisible, (value) {
       if (value) {
         showPlayVInlineLyricOp.value = true;
@@ -740,6 +761,9 @@ class PlayController extends GetxController
       }
     }
     initSysVolAndSet();
+    setEq().catchError((e) {
+      showErrorSnackbar('设置均衡器失败', e.toString());
+    });
   }
 
   List<Track> get current_playing => currentPlayingRx.toList();

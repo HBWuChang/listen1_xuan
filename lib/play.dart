@@ -316,7 +316,7 @@ Future<void> change_playback_state(
     }
     if (track == null) return;
     debugPrint('开始更新播放状态');
-    broadcastWs();
+    // broadcastWs();
     // 使用 Completer 来等待 _duration 被赋值
     final Completer<void> completer = Completer<void>();
     _playController.music_player.stream.duration.listen((duration) {

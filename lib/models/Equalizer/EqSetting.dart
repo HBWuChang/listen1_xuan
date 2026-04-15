@@ -16,11 +16,14 @@ class EqSetting {
   EqSetting._internal(this.equalizers, String? nowSelected)
     : nowSelected = _resolveNowSelected(nowSelected, equalizers);
 
-  static String _resolveNowSelected(
+  static String? _resolveNowSelected(
     String? nowSelected,
     Map<String, AEqualizer> equalizers,
   ) {
-    if (nowSelected != null && equalizers.containsKey(nowSelected)) {
+    if (nowSelected == null) {
+      return null;
+    }
+    if (equalizers.containsKey(nowSelected)) {
       return nowSelected;
     }
     if (equalizers.containsKey('flat')) {

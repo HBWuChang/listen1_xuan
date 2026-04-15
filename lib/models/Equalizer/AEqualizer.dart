@@ -19,6 +19,7 @@ class AEqualizer {
     for (final eq in equalizers) {
       params.add(eq.toFilterString());
     }
+    // return 'aformat=sample_fmts=fltp,${params.join(',')}';
     return params.join(',');
   }
 }

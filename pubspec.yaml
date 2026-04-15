@@ -51,7 +51,9 @@ dependencies:
   animations: 2.1.1
   loading_animations: ^2.2.0
   media_kit: ^1.2.6
-  media_kit_libs_audio: ^1.0.7 # Native audio dependencies.
+  media_kit_libs_audio:
+    path: packages/media_kit_libs_audio-1.0.7
+
   window_manager: ^0.5.1
   webview_windows:
     path: packages/webview_windows
@@ -126,6 +128,9 @@ dependencies:
     # path: E:\HB_WuChang\code\flutter\animated_digit
   # auto_updater: ^1.0.0
   flutter_volume_controller: ^1.3.4
+
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
