@@ -25,7 +25,6 @@ dependencies:
   audioplayers: 6.5.1
   path_provider: 2.1.5
   path_provider_foundation: 2.4.4
-  # flutter_local_notifications: ^18.0.1
   audio_service:
     path: packages/audio_service-0.18.18
   audio_session: ^0.2.2
