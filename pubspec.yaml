@@ -110,7 +110,6 @@ dependencies:
   resizable_widget:
     git:
       url: https://github.com/HBWuChang/resizable_widget.git
-  # 替换为 HTTPS URL 而不是 SSH
   # resizable_widget:
   #   path: E:\HB_WuChang\code\flutter\resizable_wcidget
   desktop_drop: ^0.7.0
