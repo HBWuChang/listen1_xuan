@@ -487,3 +487,26 @@ Future<void> showLyricBackgroundBlurRadiusInputDialog({
     disableBackgroundShadow: disableBackgroundShadow,
   );
 }
+
+Future<void> showShowSearchAreaWidthInputDialog({
+  bool disableBackgroundShadow = false,
+}) async {
+  await showInputDialog(
+    title: '当左边栏大于一定宽度时隐藏搜索页面的搜索框',
+    message: '数值越大,模糊效果越明显',
+    initialValue: Get.find<SettingsController>().showSearchAreaWidth
+        .toStringAsFixed(2),
+    onConfirm: (value) async {
+      if (isEmpty(value)) return false;
+      double? intValue = double.tryParse(value);
+      if (intValue == null || intValue < 0) {
+        throw '请输入有效的数值';
+      }
+      Get.find<SettingsController>().showSearchAreaWidth = intValue;
+      showSuccessSnackbar('设置成功', null);
+      return disableBackgroundShadow ? false : true;
+    },
+    keyboardType: TextInputType.number,
+    disableBackgroundShadow: disableBackgroundShadow,
+  );
+}

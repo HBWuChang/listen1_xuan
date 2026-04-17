@@ -217,6 +217,7 @@ Future<void> closeApp() async {
 
 class RouteController extends GetxController {
   RxBool inLyricPage = false.obs;
+  RxBool inSearchPage = false.obs;
   RxBool inNowPlayListPage = false.obs;
   RxBool inSongReplacePage = false.obs;
   @override
@@ -224,12 +225,15 @@ class RouteController extends GetxController {
     super.onInit();
     ever(top_routeWithName, (callback) {
       inLyricPage.value = false;
+      inSearchPage.value = false;
       inNowPlayListPage.value = false;
       inSongReplacePage.value = false;
       if (top_routeWithName.isNotEmpty) {
         switch (top_routeWithName.last.name) {
           case RouteName.lyricPage:
             inLyricPage.value = true;
+          case RouteName.searchPage:
+            inSearchPage.value = true;
           case RouteName.nowPlayingPage:
             inNowPlayListPage.value = true;
           case RouteName.songReplacePage:

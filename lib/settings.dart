@@ -816,6 +816,28 @@ class _SettingsPageState extends State<SettingsPage> {
                             .contains(8),
                         body: Column(
                           children: [
+                            ListTile(
+                              leading: Icon(Icons.width_normal),
+                              title: const Text('当左边栏大于一定宽度时隐藏搜索页面的搜索框'),
+                              subtitle: Obx(
+                                () => setSubTitleTextAniSwi(
+                                  Text(
+                                    '当前宽度：${Get.find<XSearchController>().leftBarWidth.value.toStringAsFixed(2)}, 设置宽度：${Get.find<SettingsController>().showSearchAreaWidth.toStringAsFixed(2)}',
+                                    key: ValueKey<double>(
+                                      Get.find<XSearchController>()
+                                          .leftBarWidth
+                                          .value,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              onTap: showShowSearchAreaWidthInputDialog,
+                              onLongPress: () => showInfoSnackbar(
+                                '@zhiquanchi',
+                                'https://github.com/HBWuChang/listen1_xuan/issues/33',
+                              ),
+                            ),
+
                             Obx(
                               () => SwitchListTile(
                                 title: const Text('搜索源选择方式'),

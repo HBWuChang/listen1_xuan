@@ -49,10 +49,30 @@ Widget get _leftBar => Scaffold(
         height: 56,
         child: LayoutBuilder(
           builder: (context, constraints) {
+            XSearchController searchController = Get.find<XSearchController>();
+            bool useFocusNode = !searchController.showSearchArea.value;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              searchController.leftBarWidth.value = constraints.maxWidth;
+            });
+            if (constraints.maxWidth > 200) {
+              if (searchController.showSearchArea.value) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  searchController.showSearchArea.value = false;
+                });
+              }
+            } else {
+              if (!searchController.showSearchArea.value) {
+                useFocusNode = false;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  searchController.showSearchArea.value = true;
+                });
+              }
+            }
             final inputFontSize = (constraints.maxWidth / 6)
                 .clamp(12.0, 16.0)
                 .toDouble();
             return TextField(
+              focusNode: useFocusNode ? searchController.focusNode : null,
               decoration: InputDecoration(
                 labelText: '请输入歌曲名，歌手或专辑',
                 labelStyle: TextStyle(fontSize: inputFontSize),
@@ -60,10 +80,12 @@ Widget get _leftBar => Scaffold(
               ),
               style: TextStyle(fontSize: inputFontSize),
               controller: input_text_Controller,
-              readOnly: true,
-              onTap: () async {
-                Get.toNamed(RouteName.searchPage, id: 1);
-              },
+              readOnly: searchController.showSearchArea.value,
+              onTap: searchController.showSearchArea.value
+                  ? () async {
+                      Get.toNamed(RouteName.searchPage, id: 1);
+                    }
+                  : null,
             );
           },
         ),

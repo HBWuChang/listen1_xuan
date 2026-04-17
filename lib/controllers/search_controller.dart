@@ -77,6 +77,9 @@ class XSearchController extends GetxController {
   final ScrollController djScrollController = ScrollController();
   final FocusNode focusNode = FocusNode();
 
+  RxBool showSearchArea = true.obs;
+  RxDouble leftBarWidth = 0.0.obs;
+
   // Settings controller
   final SettingsController settingsController = Get.find<SettingsController>();
 
@@ -151,6 +154,9 @@ class XSearchController extends GetxController {
 
   void _onFocusChange() {
     if (focusNode.hasFocus) {
+      if (!Get.find<RouteController>().inSearchPage.value) {
+        Get.toNamed(RouteName.searchPage, id: 1);
+      }
       set_inapp_hotkey(false);
     } else {
       set_inapp_hotkey(true);

@@ -157,6 +157,13 @@ class SettingsController extends GetxController {
     settings[disableOpacityInLyricPageKey] = value;
   }
 
+  static const String showSearchAreaWidthKey = 'showSearchAreaWidth';
+  final RxDouble showSearchAreaWidthRx = 200.0.obs;
+  double get showSearchAreaWidth => showSearchAreaWidthRx.value;
+  set showSearchAreaWidth(double value) {
+    settings[showSearchAreaWidthKey] = value;
+  }
+
   static const String searchUseLastSourceKey = 'searchUseLastSource';
   bool get searchUseLastSource => settings[searchUseLastSourceKey] ?? true;
   set searchUseLastSource(bool value) {
@@ -403,6 +410,9 @@ class SettingsController extends GetxController {
           (settings[lyricBackgroundBlurRadiusKey] as num?)?.toDouble();
       final nextVolumnFollowSystem =
           settings[volumnFollowSystemKey] as bool? ?? false;
+      final nextShowSearchAreaWidth =
+          (settings[showSearchAreaWidthKey] as num?)?.toDouble() ?? 200.0;
+
       final eqSettingJson = settings[eqSettingKey] as String? ?? '';
 
       if (songReplaceFabMiniRx.value != nextMini) {
@@ -424,6 +434,9 @@ class SettingsController extends GetxController {
       }
       if (volumnFollowSystemRx.value != nextVolumnFollowSystem) {
         volumnFollowSystemRx.value = nextVolumnFollowSystem;
+      }
+      if (showSearchAreaWidthRx.value != nextShowSearchAreaWidth) {
+        showSearchAreaWidthRx.value = nextShowSearchAreaWidth;
       }
       if (_eqSettingJsonRx.value != eqSettingJson) {
         _eqSettingJsonRx.value = eqSettingJson;

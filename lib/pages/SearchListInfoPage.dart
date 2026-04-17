@@ -32,6 +32,11 @@ class _SearchlistinfoState extends State<Searchlistinfo>
 
     // 每次进入页面时刷新平台设置
     controller?.refreshFromSettings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!controller!.showSearchArea.value) {
+        controller!.focusNode.requestFocus();
+      }
+    });
   }
 
   @override
@@ -48,16 +53,28 @@ class _SearchlistinfoState extends State<Searchlistinfo>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              child: TextField(
-                focusNode: controller!.focusNode,
-                decoration: const InputDecoration(
-                  hintText: '请输入歌曲名，歌手或专辑',
-                  border: InputBorder.none,
-                ),
-                controller: controller!.searchTextController,
-                autofocus: true,
+              child: Obx(
+                () => !controller!.showSearchArea.value
+                    ? TabBar(
+                        controller: _tabController,
+                        tabs: const [
+                          Tab(text: '歌曲'),
+                          Tab(text: '歌单'),
+                          Tab(text: '播客'),
+                        ],
+                      )
+                    : TextField(
+                        focusNode: controller!.focusNode,
+                        decoration: const InputDecoration(
+                          hintText: '请输入歌曲名，歌手或专辑',
+                          border: InputBorder.none,
+                        ),
+                        controller: controller!.searchTextController,
+                        autofocus: true,
+                      ),
               ),
             ),
+
             Obx(
               () => DropdownButton<String>(
                 value: controller!.selectedOption,
@@ -83,20 +100,22 @@ class _SearchlistinfoState extends State<Searchlistinfo>
       body: Column(
         children: [
           Obx(
-            () => AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: controller!.showTabBar.value ? 48 : 0,
-              child: controller!.showTabBar.value
-                  ? TabBar(
-                      controller: _tabController,
-                      tabs: const [
-                        Tab(text: '歌曲'),
-                        Tab(text: '歌单'),
-                        Tab(text: '播客'),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-            ),
+            () => controller!.showSearchArea.value
+                ? AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: controller!.showTabBar.value ? 48 : 0,
+                    child: controller!.showTabBar.value
+                        ? TabBar(
+                            controller: _tabController,
+                            tabs: const [
+                              Tab(text: '歌曲'),
+                              Tab(text: '歌单'),
+                              Tab(text: '播客'),
+                            ],
+                          )
+                        : const SizedBox.shrink(),
+                  )
+                : const SizedBox.shrink(),
           ),
           Expanded(
             child: TabBarView(
