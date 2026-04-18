@@ -633,12 +633,18 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {
+                          final theme = Theme.of(context);
+                          final resolvedIconColor =
+                              ListTileTheme.of(context).iconColor ??
+                              theme.listTileTheme.iconColor ??
+                              theme.colorScheme.onSurfaceVariant;
+                          final resolvedIconSize =
+                              IconTheme.of(context).size ?? 24.0;
                           return ListTile(
                             leading: Iconify(
                               Octicon.cache_16,
-                              color: AdaptiveTheme.of(
-                                Get.context!,
-                              ).theme.iconTheme.color,
+                              color: resolvedIconColor,
+                              size: resolvedIconSize,
                             ),
                             title: Text('缓存'),
                           );
@@ -700,12 +706,16 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       ExpansionPanel(
                         headerBuilder: (BuildContext context, bool isExpanded) {
+                          final theme = Theme.of(context);
+                          final resolvedIconColor =
+                              ListTileTheme.of(context).iconColor ??
+                              theme.listTileTheme.iconColor ??
+                              theme.colorScheme.onSurfaceVariant;
+
                           return ListTile(
                             leading: Iconify(
                               FaSolid.tshirt,
-                              color: AdaptiveTheme.of(
-                                Get.context!,
-                              ).theme.iconTheme.color,
+                              color: resolvedIconColor,
                               size: 18,
                             ),
                             title: Text('外观设置'),

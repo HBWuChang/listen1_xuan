@@ -375,7 +375,6 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-
 late bool globalHorizon;
 final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
 
@@ -388,7 +387,7 @@ class _MyHomePageState extends State<MyHomePage>
     with TrayListener, WindowListener, WidgetsBindingObserver {
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
-  
+
   @override
   void initState() {
     super.initState();
@@ -543,8 +542,8 @@ class _MyHomePageState extends State<MyHomePage>
               homeController.show_filter.value = true;
             } else {
               homeController.selectedIndex.value = 0;
-              if(Get.find<XSearchController>().leftBarWidth.value!=0){
-                Get.find<XSearchController>().leftBarWidth.value = 0;
+              if (!Get.find<XSearchController>().showSearchArea.value) {
+                Get.find<XSearchController>().showSearchArea.value = true;
               }
               debugPrint('当前为竖屏模式');
               SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
