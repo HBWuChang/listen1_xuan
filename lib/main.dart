@@ -543,6 +543,9 @@ class _MyHomePageState extends State<MyHomePage>
               homeController.show_filter.value = true;
             } else {
               homeController.selectedIndex.value = 0;
+              if(Get.find<XSearchController>().leftBarWidth.value!=0){
+                Get.find<XSearchController>().leftBarWidth.value = 0;
+              }
               debugPrint('当前为竖屏模式');
               SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
             }
