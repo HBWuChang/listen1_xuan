@@ -720,7 +720,13 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
 
                                     playsong(tracks[0], isByClick: true);
                                   },
-                                  child: Text('播放全部（共${tracks.length}首）'),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '播放全部（共${tracks.length}首）',
+                                      maxLines: 1,
+                                    ),
+                                  ),
                                 ),
                               ),
                               Expanded(
