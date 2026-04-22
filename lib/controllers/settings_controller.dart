@@ -381,6 +381,16 @@ class SettingsController extends GetxController {
     settings[eqSettingKey] = jsonEncode(value.toJson());
   }
 
+  static const String disableSomeEffectWhenInactiveKey =
+      'disableSomeEffectWhenInactive';
+  final RxBool disableSomeEffectWhenInactiveRx = true.obs;
+  bool get disableSomeEffectWhenInactive =>
+      disableSomeEffectWhenInactiveRx.value;
+
+  set disableSomeEffectWhenInactive(bool value) {
+    settings[disableSomeEffectWhenInactiveKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
@@ -414,6 +424,8 @@ class SettingsController extends GetxController {
           (settings[showSearchAreaWidthKey] as num?)?.toDouble() ?? 200.0;
 
       final eqSettingJson = settings[eqSettingKey] as String? ?? '';
+      final nextDisableSomeEffectWhenInactive =
+          settings[disableSomeEffectWhenInactiveKey] as bool? ?? true;
 
       if (songReplaceFabMiniRx.value != nextMini) {
         songReplaceFabMiniRx.value = nextMini;
@@ -447,6 +459,11 @@ class SettingsController extends GetxController {
         } catch (e) {
           logger.e('Failed to parse eqSetting JSON: $e');
         }
+      }
+      if (disableSomeEffectWhenInactiveRx.value !=
+          nextDisableSomeEffectWhenInactive) {
+        disableSomeEffectWhenInactiveRx.value =
+            nextDisableSomeEffectWhenInactive;
       }
     });
 

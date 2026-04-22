@@ -410,6 +410,12 @@ class _MyHomePageState extends State<MyHomePage>
     smoothSheetToast.init(navigatorKey.currentContext!);
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    Get.find<ThemeController>().stateAppLifecycleStateResumed.value =
+        state == AppLifecycleState.resumed;
+  }
+
   void _initTrayManager() async {
     await trayManager.setIcon('assets/images/app_icon.ico');
     await trayManager.setToolTip('Listen1_xuan');

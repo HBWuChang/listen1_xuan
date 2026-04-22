@@ -813,7 +813,12 @@ Widget get themeSettingsTiles => Column(
         return PlayButtonsSettingsPage();
       },
     ),
-
+    SwitchListTile(
+      title: Text('当不处于活动状态时禁用一些效果来减少GPU占用'),
+      value: Get.find<SettingsController>().disableSomeEffectWhenInactive,
+      onChanged: (bool value) =>
+          Get.find<SettingsController>().disableSomeEffectWhenInactive = value,
+    ),
     if (isDesktop)
       ListTile(
         leading: Icon(Icons.opacity_rounded),

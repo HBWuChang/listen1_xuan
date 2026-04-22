@@ -9,6 +9,7 @@ import 'package:flutter/material.dart'
 // import 'package:flutter_lyric/lyrics_reader_model.dart';
 import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
+import 'package:listen1_xuan/controllers/theme.dart';
 import 'package:listen1_xuan/main.dart';
 import 'dart:io';
 import 'package:extended_image/extended_image.dart';

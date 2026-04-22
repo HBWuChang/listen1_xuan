@@ -16,6 +16,11 @@ class ThemeController extends GetxController {
   // ColorScheme? _dark;
   final _dark = Rx<ColorScheme?>(null);
 
+  RxBool stateAppLifecycleStateResumed = true.obs;
+  bool get disSomeEffect =>
+      (!stateAppLifecycleStateResumed.value) &&
+      Get.find<SettingsController>().disableSomeEffectWhenInactive;
+
   // Windows主题变化监听的MethodChannel
   static const MethodChannel _themeChannel = MethodChannel('theme_monitor');
 

@@ -106,19 +106,20 @@ Widget playH() {
                       child: Center(
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: Obx(
-                            () => AnimatedSwitcher(
+                          child: StreamBuilder(
+                            stream: _playController.bootStraping.stream,
+                            builder: (context, snapshot) => AnimatedSwitcher(
                               duration: Duration(milliseconds: 200),
                               transitionBuilder: horTitleTextTra,
-                              child: _playController.loading
+                              child: playController.loading
                                   ? Obx(
                                       () => Text(
                                         key: ValueKey('loading-media-state'),
-                                        (_playController.bootStraping[
-                                                    _playController
-                                                        .nowPlayingTrackRx
-                                                        .value
-                                                        ?.id] ??
+                                        (playController
+                                                    .bootStraping[playController
+                                                    .nowPlayingTrackRx
+                                                    .value
+                                                    ?.id] ??
                                                 '加载中...')
                                             .toString(),
                                         style: TextStyle(fontSize: 20.0),
@@ -164,18 +165,19 @@ Widget playH() {
                           return MaterialWaveSlider(
                             key: materialWaveSliderStateKeyH,
                             height: 20,
-                            paused: !mediaState.playing,
+                            paused:
+                                !mediaState.playing ||
+                                Get.find<ThemeController>().disSomeEffect,
                             value:
-                                (mediaState.position.inMilliseconds.toDouble()) >
+                                (mediaState.position.inMilliseconds
+                                        .toDouble()) >
                                     (mediaState.duration.inMilliseconds
                                         .toDouble())
                                 ? mediaState.duration.inMilliseconds.toDouble()
                                 : mediaState.position.inMilliseconds.toDouble(),
                             max: mediaState.duration.inMilliseconds.toDouble(),
                             onChanged: (value) {
-                              globalSeek(
-                                Duration(milliseconds: value.toInt()),
-                              );
+                              globalSeek(Duration(milliseconds: value.toInt()));
                             },
                           );
                         }),

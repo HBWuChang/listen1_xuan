@@ -662,61 +662,68 @@ Widget Function(Widget, Animation<double>) get horTitleTextTra =>
 Widget formatMediaStateByParts({TextStyle? textStyle}) {
   final style = textStyle ?? TextStyle(fontSize: 20.0);
   final state = _playController.mediaState.value;
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      _buildDurationBySplitStreams(
-        hourStream: _mediaPositionHourStream,
-        minuteStream: _mediaPositionMinuteStream,
-        secondStream: _mediaPositionSecondStream,
-        initialHour: state.position.inHours,
-        initialMinute: state.position.inMinutes.remainder(60),
-        initialSecond: state.position.inSeconds.remainder(60),
-        textStyle: style,
-        keyPrefix: 'pos',
-      ),
-      Text('/', style: style),
-      _buildDurationBySplitStreams(
-        hourStream: _mediaDurationHourStream,
-        minuteStream: _mediaDurationMinuteStream,
-        secondStream: _mediaDurationSecondStream,
-        initialHour: state.duration.inHours,
-        initialMinute: state.duration.inMinutes.remainder(60),
-        initialSecond: state.duration.inSeconds.remainder(60),
-        textStyle: style,
-        keyPrefix: 'dur',
-      ),
-      AnimatedSize(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeInOut,
-        child: StreamBuilder<bool>(
-          stream: _mediaBufferingStream,
-          initialData: state.buffering,
-          builder: (context, snapshot) {
-            final buffering = snapshot.data ?? false;
-            if (!buffering) return const SizedBox.shrink();
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('(', style: style),
-                _buildDurationBySplitStreams(
-                  hourStream: _mediaBufferHourStream,
-                  minuteStream: _mediaBufferMinuteStream,
-                  secondStream: _mediaBufferSecondStream,
-                  initialHour: state.buffer.inHours,
-                  initialMinute: state.buffer.inMinutes.remainder(60),
-                  initialSecond: state.buffer.inSeconds.remainder(60),
-                  textStyle: style,
-                  keyPrefix: 'buf',
-                ),
-                Text(')', style: style),
-              ],
-            );
-          },
+
+  return Obx(() {
+    bool disSomeEffect = Get.find<ThemeController>().disSomeEffect;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildDurationBySplitStreams(
+          hourStream: _mediaPositionHourStream,
+          minuteStream: _mediaPositionMinuteStream,
+          secondStream: _mediaPositionSecondStream,
+          initialHour: state.position.inHours,
+          initialMinute: state.position.inMinutes.remainder(60),
+          initialSecond: state.position.inSeconds.remainder(60),
+          textStyle: style,
+          keyPrefix: 'pos',
+          disSomeEffect: disSomeEffect,
         ),
-      ),
-    ],
-  );
+        Text('/', style: style),
+        _buildDurationBySplitStreams(
+          hourStream: _mediaDurationHourStream,
+          minuteStream: _mediaDurationMinuteStream,
+          secondStream: _mediaDurationSecondStream,
+          initialHour: state.duration.inHours,
+          initialMinute: state.duration.inMinutes.remainder(60),
+          initialSecond: state.duration.inSeconds.remainder(60),
+          textStyle: style,
+          keyPrefix: 'dur',
+          disSomeEffect: disSomeEffect,
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeInOut,
+          child: StreamBuilder<bool>(
+            stream: _mediaBufferingStream,
+            initialData: state.buffering,
+            builder: (context, snapshot) {
+              final buffering = snapshot.data ?? false;
+              if (!buffering) return const SizedBox.shrink();
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('(', style: style),
+                  _buildDurationBySplitStreams(
+                    hourStream: _mediaBufferHourStream,
+                    minuteStream: _mediaBufferMinuteStream,
+                    secondStream: _mediaBufferSecondStream,
+                    initialHour: state.buffer.inHours,
+                    initialMinute: state.buffer.inMinutes.remainder(60),
+                    initialSecond: state.buffer.inSeconds.remainder(60),
+                    textStyle: style,
+                    keyPrefix: 'buf',
+                    disSomeEffect: disSomeEffect,
+                  ),
+                  Text(')', style: style),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  });
 }
 
 Widget _buildDurationBySplitStreams({
@@ -728,6 +735,7 @@ Widget _buildDurationBySplitStreams({
   required int initialSecond,
   required TextStyle textStyle,
   required String keyPrefix,
+  bool disSomeEffect = false,
 }) {
   return Row(
     mainAxisSize: MainAxisSize.min,
@@ -744,14 +752,18 @@ Widget _buildDurationBySplitStreams({
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                StableAnimatedDigit(
-                  key: ValueKey('$keyPrefix-hour'),
-                  value: hour,
-                  firstScrollAnimate: false,
-                  fractionDigits: 0,
-                  textStyle: textStyle,
-                ),
-                Text(':', style: textStyle),
+                if (disSomeEffect)
+                  Text('${hour.toString().padLeft(2, '0')}:', style: textStyle)
+                else ...[
+                  StableAnimatedDigit(
+                    key: ValueKey('$keyPrefix-hour'),
+                    value: hour,
+                    firstScrollAnimate: false,
+                    fractionDigits: 0,
+                    textStyle: textStyle,
+                  ),
+                  Text(':', style: textStyle),
+                ],
               ],
             );
           },
@@ -761,14 +773,16 @@ Widget _buildDurationBySplitStreams({
         stream: minuteStream,
         initialData: initialMinute,
         builder: (context, snapshot) {
-          return StableAnimatedDigit(
-            key: ValueKey('$keyPrefix-min'),
-            value: snapshot.data ?? 0,
-            enableMinIntegerDigits: true,
-            firstScrollAnimate: false,
-            fractionDigits: 0,
-            textStyle: textStyle,
-          );
+          return disSomeEffect
+              ? Text('${snapshot.data ?? 0}'.padLeft(2, '0'), style: textStyle)
+              : StableAnimatedDigit(
+                  key: ValueKey('$keyPrefix-min'),
+                  value: snapshot.data ?? 0,
+                  enableMinIntegerDigits: true,
+                  firstScrollAnimate: false,
+                  fractionDigits: 0,
+                  textStyle: textStyle,
+                );
         },
       ),
       Text(':', style: textStyle),
@@ -776,14 +790,16 @@ Widget _buildDurationBySplitStreams({
         stream: secondStream,
         initialData: initialSecond,
         builder: (context, snapshot) {
-          return StableAnimatedDigit(
-            key: ValueKey('$keyPrefix-sec'),
-            value: snapshot.data ?? 0,
-            enableMinIntegerDigits: true,
-            firstScrollAnimate: false,
-            textStyle: textStyle,
-            fractionDigits: 0,
-          );
+          return disSomeEffect
+              ? Text('${snapshot.data ?? 0}'.padLeft(2, '0'), style: textStyle)
+              : StableAnimatedDigit(
+                  key: ValueKey('$keyPrefix-sec'),
+                  value: snapshot.data ?? 0,
+                  enableMinIntegerDigits: true,
+                  firstScrollAnimate: false,
+                  textStyle: textStyle,
+                  fractionDigits: 0,
+                );
         },
       ),
     ],
