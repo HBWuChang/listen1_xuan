@@ -14,6 +14,7 @@ import 'controllers/HomeController.dart';
 import 'controllers/upd_controller.dart';
 import 'examples/websocket_server_example.dart';
 import 'examples/websocket_client_example.dart';
+import 'packages/circular_theme_reveal/src/circular_theme_reveal_overlay.dart';
 import 'pages/download_page.dart';
 import 'pages/nowPlaying_page.dart';
 import 'pages/settings/settings_readme.dart';
@@ -306,6 +307,9 @@ class MyApp extends StatelessWidget {
           builder: (theme, darkTheme) => GetMaterialApp(
             title: 'Listen1',
             builder: (context, widget) {
+              widget = CircularThemeRevealOverlay(
+                child: widget ?? SizedBox.shrink(),
+              );
               widget = FToastBuilder()(context, widget);
               // 处理 MediaQuery 异常问题，特别是小米澎湃系统
               MediaQueryData mediaQuery = MediaQuery.of(context);
@@ -313,7 +317,7 @@ class MyApp extends StatelessWidget {
 
               // 如果出现异常值，使用默认值替代
               if (safeTop > 80 || safeTop < 0) {
-                print(
+                debugPrint(
                   'Detected abnormal top padding: $safeTop, using fallback.',
                 );
                 safeTop = 24.0; // 合理默认值

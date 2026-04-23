@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:get/get.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/settings.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import '../global_settings_animations.dart';
+import '../packages/circular_theme_reveal/src/circular_theme_reveal_overlay.dart';
 import 'settings_controller.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
 
@@ -417,6 +419,18 @@ class ThemeController extends GetxController {
       color: t,
     );
   }
+
+  bool get nowIsLight =>
+      themeMode.value == AdaptiveThemeMode.light ||
+      (themeMode.value == AdaptiveThemeMode.system &&
+          WidgetsBinding.instance.window.platformBrightness ==
+              Brightness.light);
+  bool get nextIsLight =>
+      (themeMode.value == AdaptiveThemeMode.dark &&
+          WidgetsBinding.instance.window.platformBrightness ==
+              Brightness.light) ||
+      themeMode.value == AdaptiveThemeMode.system;
+  bool get needTransition => nowIsLight != nextIsLight;
 }
 
 ThemeController createThemeController() {
@@ -431,9 +445,9 @@ class ThemeToggleButton extends StatelessWidget {
   final double? iconSize;
   final EdgeInsetsGeometry? padding;
 
-  const ThemeToggleButton({Key? key, this.iconSize, this.padding})
-    : super(key: key);
+  ThemeToggleButton({Key? key, this.iconSize, this.padding}) : super(key: key);
 
+  final RxBool inTransition = false.obs;
   @override
   Widget build(BuildContext context) {
     final themeController = createThemeController();
@@ -442,23 +456,51 @@ class ThemeToggleButton extends StatelessWidget {
       onLongPress: () {
         showThemeDialog();
       },
-      child: IconButton(
-        tooltip: GetPlatform.isWindows ? '长按打开主题设置' : null,
-        icon: Obx(() {
-          final currentMode = themeController.themeMode.value;
-          return Icon(
-            currentMode == AdaptiveThemeMode.light
-                ? Icons.light_mode
-                : currentMode == AdaptiveThemeMode.dark
-                ? Icons.dark_mode
-                : Icons.brightness_auto,
-            size: iconSize ?? 24.0,
-          );
-        }),
-        padding: padding ?? const EdgeInsets.all(8.0),
-        onPressed: () {
-          themeController.toggleThemeMode();
-        },
+      child: Obx(
+        () => IconButton(
+          tooltip: GetPlatform.isWindows ? '长按打开主题设置' : null,
+          icon: Obx(() {
+            final currentMode = themeController.themeMode.value;
+            return Icon(
+              currentMode == AdaptiveThemeMode.light
+                  ? Icons.light_mode
+                  : currentMode == AdaptiveThemeMode.dark
+                  ? Icons.dark_mode
+                  : Icons.brightness_auto,
+              size: iconSize ?? 24.0,
+            );
+          }),
+          padding: padding ?? const EdgeInsets.all(8.0),
+          onPressed: inTransition.value
+              ? null
+              : () async {
+                  inTransition.value = true;
+                  bool needTransition = themeController.needTransition;
+                  if (!needTransition) {
+                    themeController.toggleThemeMode();
+                  } else {
+                    final center =
+                        CircularThemeRevealOverlay.getCenterFromContext(
+                          context,
+                        );
+                    final overlay = CircularThemeRevealOverlay.of(context);
+                    if (overlay == null) {
+                      showDebugSnackbar(
+                        '无法执行过渡动画',
+                        '未找到 CircularThemeRevealOverlay',
+                      );
+                    }
+                    await overlay?.startTransition(
+                      center: center,
+                      reverse: false,
+                      onThemeChange: () {
+                        themeController.toggleThemeMode();
+                      },
+                    );
+                  }
+                  inTransition.value = false;
+                },
+        ),
       ),
     );
   }

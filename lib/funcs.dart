@@ -191,6 +191,12 @@ void showDebugSnackbar(
 }) {
   logger.d("Debug Toast - $title: $message");
   if (Get.find<SettingsController>().useDebugMode || kDebugMode) {
+    Clipboard.setData(
+      ClipboardData(
+        text:
+            '${title ?? ''}${(!isEmpty(title) && !isEmpty(message)) ? '：' : ''}${message ?? ''}',
+      ),
+    );
     _showCustomToast(
       icon: Icons.bug_report_rounded,
       iconColor: Get.theme.colorScheme.tertiary,
