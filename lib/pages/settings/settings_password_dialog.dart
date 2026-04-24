@@ -1,17 +1,16 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/supabase_auth_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/widgets/progress_indicator_xuan.dart';
 
 /// 设置密码对话框
 class SetPasswordDialog extends StatefulWidget {
   /// 是否为修改模式（true=修改，false=设置）
   final bool isUpdateMode;
 
-  const SetPasswordDialog({
-    Key? key,
-    this.isUpdateMode = false,
-  }) : super(key: key);
+  const SetPasswordDialog({Key? key, this.isUpdateMode = false})
+    : super(key: key);
 
   @override
   State<SetPasswordDialog> createState() => _SetPasswordDialogState();
@@ -43,9 +42,7 @@ class _SetPasswordDialogState extends State<SetPasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(
-        widget.isUpdateMode ? '修改密码' : '设置密码',
-      ),
+      title: Text(widget.isUpdateMode ? '修改密码' : '设置密码'),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -189,9 +186,7 @@ class _SetPasswordDialogState extends State<SetPasswordDialog> {
                 ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Text(widget.isUpdateMode ? '修改' : '设置'),
           ),

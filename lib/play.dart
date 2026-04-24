@@ -6,7 +6,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_lyric/core/lyric_model.dart';
 import 'package:flutter/material.dart'
     hide CircularProgressIndicator, LinearProgressIndicator;
-// import 'package:flutter_lyric/lyrics_reader_model.dart';
 import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/theme.dart';

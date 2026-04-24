@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/supabase_auth_controller.dart';
 import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/widgets/progress_indicator_xuan.dart';
 
 import '../../global_settings_animations.dart';
 
@@ -210,9 +211,7 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
                 () => ElevatedButton(
                   onPressed: _authController.isLoading.value
                       ? null
-                      : () => _isSignUpMode.value
-                          ? _signUp()
-                          : _signIn(),
+                      : () => _isSignUpMode.value ? _signUp() : _signIn(),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     minimumSize: const Size(double.infinity, 50),
@@ -221,9 +220,7 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
                           _isSignUpMode.value ? '注册' : '登录',
@@ -236,9 +233,7 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    _isSignUpMode.value ? '已有账户？' : '没有账户？',
-                  ),
+                  Text(_isSignUpMode.value ? '已有账户？' : '没有账户？'),
                   TextButton(
                     onPressed: () {
                       _isSignUpMode.toggle();
@@ -254,10 +249,8 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
               ),
               const SizedBox(height: 20),
               // 分隔线
-              const Divider(
-                thickness: 1,
-              ),
-             
+              const Divider(thickness: 1),
+
               // 错误消息
               Obx(
                 () => _authController.errorMessage.value.isNotEmpty

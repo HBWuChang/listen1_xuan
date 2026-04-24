@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:listen1_xuan/funcs.dart';
@@ -6,6 +6,7 @@ import '../controllers/WsDownloadController.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/cache_controller.dart';
 import '../controllers/websocket_client_controller.dart';
+import '../widgets/progress_indicator_xuan.dart';
 
 class DownloadPage extends StatelessWidget {
   const DownloadPage({Key? key}) : super(key: key);

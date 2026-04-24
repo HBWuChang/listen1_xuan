@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/websocket_card_controller.dart';
@@ -7,6 +7,7 @@ import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../widgets/progress_indicator_xuan.dart';
 
 /// WebSocket 服务器卡片组件
 /// 提供简洁的服务器状态显示和快速操作

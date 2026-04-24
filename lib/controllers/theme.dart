@@ -567,333 +567,347 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-      child: Container(
-        constraints: BoxConstraints(maxWidth: 400, maxHeight: 600),
-        padding: const EdgeInsets.all(24.0),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 标题
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ValueListenableBuilder(
+      valueListenable: AdaptiveTheme.of(context).modeChangeNotifier,
+      builder: (context, mode, child) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          child: Container(
+            constraints: BoxConstraints(maxWidth: 400, maxHeight: 600),
+            padding: const EdgeInsets.all(24.0),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 标题
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '主题设置',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        onPressed: () => Get.back(),
+                        icon: Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 主题模式选择
                   Text(
-                    '主题设置',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                    '主题模式',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Get.back(),
-                    icon: Icon(Icons.close),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildThemeModeChip(
+                        context,
+                        '亮色',
+                        Icons.light_mode,
+                        AdaptiveThemeMode.light,
+                        themeController,
+                      ),
+                      _buildThemeModeChip(
+                        context,
+                        '暗色',
+                        Icons.dark_mode,
+                        AdaptiveThemeMode.dark,
+                        themeController,
+                      ),
+                      _buildThemeModeChip(
+                        context,
+                        '系统',
+                        Icons.brightness_auto,
+                        AdaptiveThemeMode.system,
+                        themeController,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-              // 主题模式选择
-              Text(
-                '主题模式',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _buildThemeModeChip(
-                    context,
-                    '亮色',
-                    Icons.light_mode,
-                    AdaptiveThemeMode.light,
-                    themeController,
-                  ),
-                  _buildThemeModeChip(
-                    context,
-                    '暗色',
-                    Icons.dark_mode,
-                    AdaptiveThemeMode.dark,
-                    themeController,
-                  ),
-                  _buildThemeModeChip(
-                    context,
-                    '系统',
-                    Icons.brightness_auto,
-                    AdaptiveThemeMode.system,
-                    themeController,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // 主题颜色选择
-              Text(
-                '主题颜色',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8), // 动态颜色开关
-              Obx(
-                () => SwitchListTile(
-                  title: Text('使用动态颜色'),
-                  subtitle: InkWell(
-                    onTap: () => g_launchURL(
-                      Uri.parse('https://pub.dev/packages/dynamic_color'),
-                    ),
-                    child: Text('不支持IOS,@dynamic_color'),
-                  ),
-                  value: themeController.useDynamicColor.value,
-                  onChanged: (value) {
-                    themeController.setUseDynamicColor(value);
-                  },
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Obx(
-                () => IgnorePointer(
-                  ignoring: themeController.useDynamicColor.value,
-                  child: Opacity(
-                    opacity: themeController.useDynamicColor.value ? 0.5 : 1.0,
-                    child: Wrap(
-                      spacing: 8.0,
-                      runSpacing: 8.0,
-                      children: themeController.themeColors.entries.map((
-                        entry,
-                      ) {
-                        final isSelected =
-                            themeController.selectedThemeColor.value ==
-                            entry.value;
-                        return GestureDetector(
-                          onTap: () {
-                            themeController.setThemeColor(entry.value);
-                          },
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: entry.value,
-                              borderRadius: BorderRadius.circular(30),
-                              border: isSelected
-                                  ? Border.all(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                      width: 3,
-                                    )
-                                  : null,
-                            ),
-                            child: isSelected
-                                ? Icon(
-                                    Icons.check,
-                                    color: Colors.white,
-                                    size: 24,
-                                  )
-                                : null,
-                          ),
-                        );
-                      }).toList(),
+                  // 主题颜色选择
+                  Text(
+                    '主题颜色',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 自定义颜色
-              Text(
-                '自定义颜色',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-
-              Obx(
-                () => IgnorePointer(
-                  ignoring: themeController.useDynamicColor.value,
-                  child: Opacity(
-                    opacity: themeController.useDynamicColor.value ? 0.5 : 1.0,
-                    child: Column(
-                      children: [
-                        // 颜色代码输入框
-                        TextField(
-                          controller: _colorCodeController,
-                          decoration: InputDecoration(
-                            labelText: '颜色代码 (HEX)',
-                            hintText: 'RRGGBB',
-                            prefixText: '#',
-                            border: OutlineInputBorder(),
-                            suffixIcon: Obx(
-                              () => Container(
-                                margin: EdgeInsets.all(8),
-                                width: 40,
-                                height: 40,
+                  const SizedBox(height: 8), // 动态颜色开关
+                  Obx(
+                    () => SwitchListTile(
+                      title: Text('使用动态颜色'),
+                      subtitle: InkWell(
+                        onTap: () => g_launchURL(
+                          Uri.parse('https://pub.dev/packages/dynamic_color'),
+                        ),
+                        child: Text('不支持IOS,@dynamic_color'),
+                      ),
+                      value: themeController.useDynamicColor.value,
+                      onChanged: (value) {
+                        themeController.setUseDynamicColor(value);
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Obx(
+                    () => IgnorePointer(
+                      ignoring: themeController.useDynamicColor.value,
+                      child: Opacity(
+                        opacity: themeController.useDynamicColor.value
+                            ? 0.5
+                            : 1.0,
+                        child: Wrap(
+                          spacing: 8.0,
+                          runSpacing: 8.0,
+                          children: themeController.themeColors.entries.map((
+                            entry,
+                          ) {
+                            final isSelected =
+                                themeController.selectedThemeColor.value ==
+                                entry.value;
+                            return GestureDetector(
+                              onTap: () {
+                                themeController.setThemeColor(entry.value);
+                              },
+                              child: Container(
+                                width: 60,
+                                height: 60,
                                 decoration: BoxDecoration(
-                                  color:
-                                      themeController.selectedThemeColor.value,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.outline,
+                                  color: entry.value,
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: isSelected
+                                      ? Border.all(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                          width: 3,
+                                        )
+                                      : null,
+                                ),
+                                child: isSelected
+                                    ? Icon(
+                                        Icons.check,
+                                        color: Colors.white,
+                                        size: 24,
+                                      )
+                                    : null,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 自定义颜色
+                  Text(
+                    '自定义颜色',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Obx(
+                    () => IgnorePointer(
+                      ignoring: themeController.useDynamicColor.value,
+                      child: Opacity(
+                        opacity: themeController.useDynamicColor.value
+                            ? 0.5
+                            : 1.0,
+                        child: Column(
+                          children: [
+                            // 颜色代码输入框
+                            TextField(
+                              controller: _colorCodeController,
+                              decoration: InputDecoration(
+                                labelText: '颜色代码 (HEX)',
+                                hintText: 'RRGGBB',
+                                prefixText: '#',
+                                border: OutlineInputBorder(),
+                                suffixIcon: Obx(
+                                  () => Container(
+                                    margin: EdgeInsets.all(8),
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: themeController
+                                          .selectedThemeColor
+                                          .value,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outline,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
+                              maxLength: 6,
+                              onSubmitted: _setColorFromCode,
                             ),
-                          ),
-                          maxLength: 6,
-                          onSubmitted: _setColorFromCode,
-                        ),
-                        const SizedBox(height: 16),
+                            const SizedBox(height: 16),
 
-                        // RGB滑块
-                        Column(
-                          children: [
-                            // Red
-                            Row(
+                            // RGB滑块
+                            Column(
                               children: [
-                                SizedBox(
-                                  width: 30,
-                                  child: Text(
-                                    'R',
-                                    style: TextStyle(
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.bold,
+                                // Red
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 30,
+                                      child: Text(
+                                        'R',
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Slider(
-                                    value: themeController.customColorR,
-                                    min: 0,
-                                    max: 255,
-                                    divisions: 255,
-                                    activeColor: Colors.red,
-                                    label: themeController.customColorR
-                                        .toInt()
-                                        .toString(),
-                                    onChanged: (value) {
-                                      themeController.customColorR = value;
-                                      setState(() {}); // 触发UI更新
-                                    },
-                                    onChangeEnd: (value) {
-                                      themeController.setThemeColorFromRGB();
-                                    },
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 40,
-                                  child: Text(
-                                    themeController.customColorR
-                                        .toInt()
-                                        .toString(),
-                                    textAlign: TextAlign.right,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // Green
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 30,
-                                  child: Text(
-                                    'G',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
+                                    Expanded(
+                                      child: Slider(
+                                        value: themeController.customColorR,
+                                        min: 0,
+                                        max: 255,
+                                        divisions: 255,
+                                        activeColor: Colors.red,
+                                        label: themeController.customColorR
+                                            .toInt()
+                                            .toString(),
+                                        onChanged: (value) {
+                                          themeController.customColorR = value;
+                                          setState(() {}); // 触发UI更新
+                                        },
+                                        onChangeEnd: (value) {
+                                          themeController
+                                              .setThemeColorFromRGB();
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Slider(
-                                    value: themeController.customColorG,
-                                    min: 0,
-                                    max: 255,
-                                    divisions: 255,
-                                    activeColor: Colors.green,
-                                    label: themeController.customColorG
-                                        .toInt()
-                                        .toString(),
-                                    onChanged: (value) {
-                                      themeController.customColorG = value;
-                                      setState(() {}); // 触发UI更新
-                                    },
-                                    onChangeEnd: (value) {
-                                      themeController.setThemeColorFromRGB();
-                                    },
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 40,
-                                  child: Text(
-                                    themeController.customColorG
-                                        .toInt()
-                                        .toString(),
-                                    textAlign: TextAlign.right,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // Blue
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 30,
-                                  child: Text(
-                                    'B',
-                                    style: TextStyle(
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.bold,
+                                    SizedBox(
+                                      width: 40,
+                                      child: Text(
+                                        themeController.customColorR
+                                            .toInt()
+                                            .toString(),
+                                        textAlign: TextAlign.right,
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                                Expanded(
-                                  child: Slider(
-                                    value: themeController.customColorB,
-                                    min: 0,
-                                    max: 255,
-                                    divisions: 255,
-                                    activeColor: Colors.blue,
-                                    label: themeController.customColorB
-                                        .toInt()
-                                        .toString(),
-                                    onChanged: (value) {
-                                      themeController.customColorB = value;
-                                      setState(() {}); // 触发UI更新
-                                    },
-                                    onChangeEnd: (value) {
-                                      themeController.setThemeColorFromRGB();
-                                    },
-                                  ),
+                                // Green
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 30,
+                                      child: Text(
+                                        'G',
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Slider(
+                                        value: themeController.customColorG,
+                                        min: 0,
+                                        max: 255,
+                                        divisions: 255,
+                                        activeColor: Colors.green,
+                                        label: themeController.customColorG
+                                            .toInt()
+                                            .toString(),
+                                        onChanged: (value) {
+                                          themeController.customColorG = value;
+                                          setState(() {}); // 触发UI更新
+                                        },
+                                        onChangeEnd: (value) {
+                                          themeController
+                                              .setThemeColorFromRGB();
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 40,
+                                      child: Text(
+                                        themeController.customColorG
+                                            .toInt()
+                                            .toString(),
+                                        textAlign: TextAlign.right,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                SizedBox(
-                                  width: 40,
-                                  child: Text(
-                                    themeController.customColorB
-                                        .toInt()
-                                        .toString(),
-                                    textAlign: TextAlign.right,
-                                  ),
+                                // Blue
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 30,
+                                      child: Text(
+                                        'B',
+                                        style: TextStyle(
+                                          color: Colors.blue,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Slider(
+                                        value: themeController.customColorB,
+                                        min: 0,
+                                        max: 255,
+                                        divisions: 255,
+                                        activeColor: Colors.blue,
+                                        label: themeController.customColorB
+                                            .toInt()
+                                            .toString(),
+                                        onChanged: (value) {
+                                          themeController.customColorB = value;
+                                          setState(() {}); // 触发UI更新
+                                        },
+                                        onChangeEnd: (value) {
+                                          themeController
+                                              .setThemeColorFromRGB();
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 40,
+                                      child: Text(
+                                        themeController.customColorB
+                                            .toInt()
+                                            .toString(),
+                                        textAlign: TextAlign.right,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

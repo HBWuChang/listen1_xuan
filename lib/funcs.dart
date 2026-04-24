@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/settings.dart';
+import '../widgets/progress_indicator_xuan.dart';
 
 import 'controllers/appLinksController.dart';
 import 'controllers/settings_controller.dart';

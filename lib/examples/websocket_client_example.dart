@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
@@ -11,6 +11,7 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:listen1_xuan/pages/qr_scanner_page.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import '../widgets/progress_indicator_xuan.dart';
 
 import '../bodys.dart';
 import '../play.dart';

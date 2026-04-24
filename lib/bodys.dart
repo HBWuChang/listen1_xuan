@@ -11,7 +11,7 @@ import 'controllers/play_controller.dart';
 import 'controllers/websocket_client_controller.dart';
 import 'controllers/search_controller.dart';
 import 'examples/websocket_client_example.dart';
-import 'package:flutter/material.dart' hide SearchController;
+import 'package:flutter/material.dart' hide SearchController, CircularProgressIndicator;
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/qq.dart';
 import 'models/PlayListInfo.dart';
@@ -34,6 +34,7 @@ import 'settings.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
+import '../widgets/progress_indicator_xuan.dart';
 
 part './pages/PlaylistPage.dart';
 part './pages/SearchListInfoPage.dart';

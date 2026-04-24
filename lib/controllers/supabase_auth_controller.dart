@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
@@ -11,6 +11,7 @@ import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/settings.dart' as settings;
 import 'package:uuid/uuid.dart';
+import '../widgets/progress_indicator_xuan.dart';
 
 import '../funcs.dart';
 import '../settings.dart';

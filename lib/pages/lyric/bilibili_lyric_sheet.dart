@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:listen1_xuan/controllers/lyric_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/generated/dm.pb.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
+import '../../widgets/progress_indicator_xuan.dart';
 
 Future<void> showBilibiliLyricSheet({
   required BuildContext context,
@@ -45,7 +46,8 @@ class _BilibiliLyricSheetBody extends StatefulWidget {
   });
 
   @override
-  State<_BilibiliLyricSheetBody> createState() => _BilibiliLyricSheetBodyState();
+  State<_BilibiliLyricSheetBody> createState() =>
+      _BilibiliLyricSheetBodyState();
 }
 
 class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
@@ -191,7 +193,10 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('弹幕获取失败', style: Theme.of(context).textTheme.titleSmall),
+                        Text(
+                          '弹幕获取失败',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
                         const SizedBox(height: 6),
                         Text(
                           _loadError ?? '',
@@ -199,7 +204,10 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 10),
-                        Text('点击空白区域重试', style: Theme.of(context).textTheme.bodyMedium),
+                        Text(
+                          '点击空白区域重试',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
@@ -245,7 +253,9 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                         final allIndexes = Set<int>.from(
                           List<int>.generate(currentList.length, (i) => i),
                         );
-                        _selectedIndexes = allIndexes.difference(_selectedIndexes);
+                        _selectedIndexes = allIndexes.difference(
+                          _selectedIndexes,
+                        );
                       });
                     },
                     child: const Text('反选'),
@@ -299,8 +309,9 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                               subtitle: Text(
                                 widget.lyricController.formatLrcTimestamp(
                                   Duration(
-                                    milliseconds:
-                                        danmu.progress < 0 ? 0 : danmu.progress,
+                                    milliseconds: danmu.progress < 0
+                                        ? 0
+                                        : danmu.progress,
                                   ),
                                 ),
                               ),
@@ -323,8 +334,9 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed:
-                          _isSaving ? null : () => _saveAsLyric(isTranslation: false),
+                      onPressed: _isSaving
+                          ? null
+                          : () => _saveAsLyric(isTranslation: false),
                       child: _isSaving
                           ? const SizedBox(
                               width: 16,

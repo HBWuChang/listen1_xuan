@@ -801,18 +801,22 @@ Widget get themeSettingsTiles => Column(
         showThemeDialog();
       },
     ),
-    OpenContainer(
-      closedColor: AdaptiveTheme.of(Get.context!).theme.cardColor,
-      openColor: AdaptiveTheme.of(Get.context!).theme.scaffoldBackgroundColor,
-      closedBuilder: (context, _) => ListTile(
-        leading: Icon(Icons.smart_button_rounded),
-        title: Text('竖屏播放栏按钮'),
-        trailing: Icon(Icons.unfold_more_rounded),
+    ValueListenableBuilder<AdaptiveThemeMode>(
+      valueListenable: AdaptiveTheme.of(Get.context!).modeChangeNotifier,
+      builder: (context, mode, child) => OpenContainer(
+        closedColor: AdaptiveTheme.of(Get.context!).theme.cardColor,
+        openColor: AdaptiveTheme.of(Get.context!).theme.scaffoldBackgroundColor,
+        closedBuilder: (context, _) => ListTile(
+          leading: Icon(Icons.smart_button_rounded),
+          title: Text('竖屏播放栏按钮'),
+          trailing: Icon(Icons.unfold_more_rounded),
+        ),
+        openBuilder: (context, _) {
+          return PlayButtonsSettingsPage();
+        },
       ),
-      openBuilder: (context, _) {
-        return PlayButtonsSettingsPage();
-      },
     ),
+
     SwitchListTile(
       title: Text('当不处于活动状态时禁用一些效果来减少GPU占用'),
       value: Get.find<SettingsController>().disableSomeEffectWhenInactive,
