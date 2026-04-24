@@ -7,7 +7,10 @@ import 'package:get/get.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/bl.dart';
+import 'package:listen1_xuan/constants/network_defaults.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
+import 'package:listen1_xuan/models/SubtitleDetail.dart';
+import 'package:listen1_xuan/models/Subtitle.dart';
 import 'dart:io';
 import '../funcs.dart';
 import '../loweb.dart';
@@ -33,6 +36,7 @@ class XLyricController extends GetxController {
   RxDouble nowPlayingLyricDelay = RxDouble(0.0);
   bool updNowPlayingLyricDelay = false;
   Rx<LyricLine?> updFormatShowLyric = Rx<LyricLine?>(null);
+  Map<String, dynamic> trackIdToOid = {};
   // showTranslation 已移至 SettingsController
 
   // 歌词解析相关
@@ -406,6 +410,24 @@ class XLyricController extends GetxController {
     await loadLyric();
   }
 
+  Future<void> saveSubtitleAsLyric({
+    required String trackId,
+    required List<SubtitleDetail> subtitleDetails,
+    required bool isTranslation,
+  }) async {
+    final lrcContent = buildLrcFromSubtitleDetails(subtitleDetails);
+    if (isEmpty(lrcContent)) {
+      throw '所选字幕文本为空';
+    }
+    await _saveLyricToCache(
+      trackId,
+      lrcContent,
+      isTranslation: isTranslation,
+      toLyricBox: true,
+    );
+    await loadLyric();
+  }
+
   String buildLrcFromDanmu(List<DanmuElem> danmuList) {
     if (danmuList.isEmpty) return '';
 
@@ -425,6 +447,29 @@ class XLyricController extends GetxController {
     return buffer.toString().trim();
   }
 
+  String buildLrcFromSubtitleDetails(List<SubtitleDetail> subtitleDetails) {
+    if (subtitleDetails.isEmpty) return '';
+
+    final sorted = List<SubtitleDetail>.from(subtitleDetails)
+      ..sort((a, b) => (a.from ?? 0).compareTo(b.from ?? 0));
+
+    final buffer = StringBuffer();
+    for (final detail in sorted) {
+      final content = detail.content?.trim() ?? '';
+      if (content.isEmpty) {
+        continue;
+      }
+      final fromSeconds = detail.from ?? 0;
+      final milliseconds = fromSeconds <= 0 ? 0 : (fromSeconds * 1000).round();
+      final timestamp = formatLrcTimestamp(
+        Duration(milliseconds: milliseconds),
+      );
+      buffer.writeln('[$timestamp]$content');
+    }
+
+    return buffer.toString().trim();
+  }
+
   String formatLrcTimestamp(Duration duration) {
     final totalMilliseconds = duration.inMilliseconds;
     final minutes = (totalMilliseconds ~/ 60000).toString().padLeft(2, '0');
@@ -437,6 +482,38 @@ class XLyricController extends GetxController {
       '0',
     );
     return '$minutes:$seconds.$centiseconds';
+  }
+
+  Future<dynamic> _getCid(String trackId) async {
+    if (trackId.split('-').length > 1) {
+      return trackId.split('-')[1];
+    } else {
+      if (trackIdToOid.containsKey(trackId)) {
+        return trackIdToOid[trackId];
+      }
+      final aOrBvId = trackId.substring('bitrack_v_'.length);
+      if (aOrBvId.startsWith('BV')) {
+        //         curl -G 'https://api.bilibili.com/x/player/pagelist' \
+        // --data-urlencode 'bvid=BV1ex411J7GE'
+        final response = await dioWithCookieManager.get(
+          'https://api.bilibili.com/x/player/pagelist',
+          queryParameters: {'bvid': aOrBvId},
+        );
+        final ret = response.data['data'][0]['cid'];
+        trackIdToOid['trackId'] = ret;
+        return ret;
+      } else {
+        //         curl -G 'https://api.bilibili.com/x/player/pagelist' \
+        // --data-urlencode 'aid=13502509'
+        final response = await dioWithCookieManager.get(
+          'https://api.bilibili.com/x/player/pagelist',
+          queryParameters: {'aid': aOrBvId},
+        );
+        final ret = response.data['data'][0]['cid'];
+        trackIdToOid['trackId'] = ret;
+        return ret;
+      }
+    }
   }
 
   Future<List<DanmuElem>> findBilibiliLyricDanmu(
@@ -457,30 +534,7 @@ class XLyricController extends GetxController {
       // "segment_index": 1,
       "pull_mode": 1,
     };
-    if (trackId.split('-').length > 1) {
-      param['oid'] = trackId.split('-')[1];
-    } else {
-      final aOrBvId = trackId.substring('bitrack_v_'.length);
-      if (aOrBvId.startsWith('BV')) {
-        //         curl -G 'https://api.bilibili.com/x/player/pagelist' \
-        // --data-urlencode 'bvid=BV1ex411J7GE'
-        final response = await dioWithCookieManager.get(
-          'https://api.bilibili.com/x/player/pagelist',
-          queryParameters: {'bvid': aOrBvId},
-        );
-        final cid = response.data['data'][0]['cid'];
-        param['oid'] = cid;
-      } else {
-        //         curl -G 'https://api.bilibili.com/x/player/pagelist' \
-        // --data-urlencode 'aid=13502509'
-        final response = await dioWithCookieManager.get(
-          'https://api.bilibili.com/x/player/pagelist',
-          queryParameters: {'aid': aOrBvId},
-        );
-        final cid = response.data['data'][0]['cid'];
-        param['oid'] = cid;
-      }
-    }
+    param['oid'] = await _getCid(trackId);
     int segmentIndex = 1;
     List<DanmuElem> allDanmuElems = [];
     do {
@@ -517,6 +571,65 @@ class XLyricController extends GetxController {
 
     // debugPrint('总弹幕数量: ${allDanmuElems.length}');
     return allDanmuElems;
+  }
+
+  Future<List<Subtitle>> fetchBilibiliSubtitles(String trackId) async {
+    if (!trackId.startsWith('bi')) {
+      throw '当前歌曲不是哔哩哔哩歌曲，无法获取字幕';
+    }
+    String? cid;
+    if (trackId.split('-').length > 1) {
+      cid = trackId.split('-')[1];
+    }
+    // https://api.bilibili.com/x/player/wbi/v2?aid=116447602875105&cid=37719312328&isGaiaAvoided=false&web_location=1315873&dm_img_list=%5B%7B%22x%22:2985,%22y%22:1795,%22z%22:0,%22timestamp%22:2203,%22k%22:65,%22type%22:0%7D,%7B%22x%22:3169,%22y%22:1520,%22z%22:43,%22timestamp%22:2700,%22k%22:116,%22type%22:0%7D,%7B%22x%22:3358,%22y%22:1332,%22z%22:121,%22timestamp%22:2854,%22k%22:119,%22type%22:0%7D,%7B%22x%22:3950,%22y%22:871,%22z%22:77,%22timestamp%22:3561,%22k%22:87,%22type%22:0%7D,%7B%22x%22:3932,%22y%22:788,%22z%22:47,%22timestamp%22:3686,%22k%22:74,%22type%22:0%7D,%7B%22x%22:5019,%22y%22:718,%22z%22:396,%22timestamp%22:4690,%22k%22:69,%22type%22:0%7D%5D&dm_img_str=V2ViR0wgMS4wIChPcGVuR0wgRVMgMi4wIENocm9taXVtKQ&dm_cover_img_str=QU5HTEUgKE5WSURJQSwgTlZJRElBIEdlRm9yY2UgUlRYIDMwNjAgTGFwdG9wIEdQVSAoMHgwMDAwMjUyMCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSlHb29nbGUgSW5jLiAoTlZJRElBKQ&dm_img_inter=%7B%22ds%22:%5B%7B%22t%22:2,%22c%22:%22YnB4LXBsYXllci1sb2FkaW5nLXBhbmVsIGJweC1zdGF0ZS1sb2FkaW%22,%22p%22:%5B698,60,661%5D,%22s%22:%5B160,4822,2296%5D%7D%5D,%22wh%22:%5B5685,6175,85%5D,%22of%22:%5B499,998,499%5D%7D&w_rid=f859d87abf1cd11f1f59c601386a24eb&wts=1777037254
+    final response = await Bilibili.wrap_wbi_request(
+      'https://api.bilibili.com/x/player/wbi/v2',
+      {
+        'bvid': trackId.split('_').last.split('-').first,
+        'cid': await _getCid(trackId),
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = response.data;
+      if (data['code'] == 0 && data['data'] != null) {
+        // /data/subtitle/subtitles/0/subtitle_url
+        final subtitlesData = data['data']['subtitle']['subtitles'] as List;
+        List<Subtitle> subtitles = List.from(
+          subtitlesData.map((item) => Subtitle.fromJson(item)),
+        );
+        return subtitles;
+      } else {
+        throw '请求字幕失败: ${data['message'] ?? '未知错误'}';
+      }
+    } else {
+      throw '请求字幕失败，状态码: ${response.statusCode}';
+    }
+  }
+
+  Future<List<SubtitleDetail>> fetchBilibiliSubtitleDetail(
+    Subtitle subtitle,
+  ) async {
+    if (isEmpty(subtitle.subtitleUrl)) {
+      throw '字幕URL不可用';
+    }
+    final response = await dioWithCookieManager.get(
+      'https:${subtitle.subtitleUrl!}',
+      options: Options(headers: kBilibiliHeaders),
+    );
+    if (response.statusCode == 200) {
+      final data = response.data;
+      if (data['body'] != null) {
+        final subtitleDetailsData = data['body'] as List;
+        List<SubtitleDetail> subtitleDetails = List.from(
+          subtitleDetailsData.map((item) => SubtitleDetail.fromJson(item)),
+        );
+        return subtitleDetails;
+      } else {
+        throw '请求字幕详情失败: ${data['message'] ?? '未知错误'}';
+      }
+    } else {
+      throw '请求字幕详情失败，状态码: ${response.statusCode}';
+    }
   }
 
   Future<void> fetchDanmu() async {

@@ -521,13 +521,13 @@ class Bilibili {
   }) async {
     final queryString = await encWbi(params);
     final targetUrl = '$url?$queryString';
-    String cookie = '';
-    Map<String, dynamic> settings = await _getsettings();
-    if (settings.containsKey('bl') && settings['bl'] != '') {
-      cookie = settings['bl'];
-    } else {
-      cookie = 'buvid3=0';
-    }
+    // String cookie = '';
+    // Map<String, dynamic> settings = await _getsettings();
+    // if (settings.containsKey('bl') && settings['bl'] != '') {
+    //   cookie = settings['bl'];
+    // } else {
+    //   cookie = 'buvid3=0';
+    // }
     var t = await dioWithCookieManager.get(
       targetUrl,
       options: Options(
@@ -542,7 +542,7 @@ class Bilibili {
           "sec-fetch-dest": "empty",
           "sec-fetch-mode": "cors",
           "sec-fetch-site": "cross-site",
-          'cookie': cookie,
+          // 'cookie': cookie,
         },
         validateStatus: (status) {
           // 允许 412 状态码不抛出异常

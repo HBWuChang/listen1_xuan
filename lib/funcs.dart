@@ -500,6 +500,8 @@ bool isEmpty(dynamic str) {
   return str == null;
 }
 
+bool isNotEmpty(dynamic str) => !isEmpty(str);
+
 /// 将字节数格式化为可读的字符串
 ///
 /// [bytes] 字节数
