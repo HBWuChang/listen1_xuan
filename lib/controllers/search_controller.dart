@@ -559,7 +559,6 @@ class XSearchController extends GetxController {
             playlists.addAll(data.result);
           } else {
             playlistResult.value = SearchPlayListRes.fromJson(data);
-            playlistResult.value = data;
             playlists.addAll(
               List<SearchPlayListItem>.from(
                 data['result'].map((item) => SearchPlayListItem.fromJson(item)),
