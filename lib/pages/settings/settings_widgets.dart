@@ -419,7 +419,8 @@ Widget _buildThirdPartyLoginPanel(
 
 /// 显示修改昵称对话框
 void _showEditNicknameDialog(SupabaseAuthController authController) async {
-  await showInputDialog(
+  bool mod = false;
+  showInputDialog(
     title: '修改昵称',
     placeholder: '请输入新昵称',
     initialValue: authController.userNickname ?? '',
@@ -433,13 +434,17 @@ void _showEditNicknameDialog(SupabaseAuthController authController) async {
     onConfirm: (nickname) async {
       final success = await authController.updateNickname(nickname);
       if (success) {
-        showSuccessSnackbar(null, '昵称修改成功');
+        mod = true;
         return true;
       } else {
         throw authController.errorMessage.value;
       }
     },
-  );
+  ).then((value) {
+    if (mod) {
+      showSuccessSnackbar('昵称修改成功', null);
+    }
+  });
 }
 
 /// 显示密码管理对话框

@@ -20,6 +20,8 @@ mixin LyricBlurredBackgroundMixin<T extends StatefulWidget> on State<T> {
         loadStateChanged: (state) {
           if (state.extendedImageLoadState == LoadState.failed) {
             return buildFallbackGradient();
+          } else if (state.extendedImageLoadState == LoadState.loading) {
+            return Center(child: globalLoadingAnime);
           }
           return null;
         },
@@ -80,6 +82,8 @@ mixin LyricBlurredBackgroundMixin<T extends StatefulWidget> on State<T> {
         loadStateChanged: (state) {
           if (state.extendedImageLoadState == LoadState.failed) {
             return buildFallbackGradient();
+          } else if (state.extendedImageLoadState == LoadState.loading) {
+            return Center(child: globalLoadingAnime);
           }
           return null;
         },

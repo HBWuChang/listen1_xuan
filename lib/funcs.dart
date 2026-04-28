@@ -218,7 +218,7 @@ void showLoadingDialog(RxString message) {
         content: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(strokeWidth: 4),
+            globalLoadingAnime,
             const SizedBox(width: 20),
             Obx(
               () => Text(message.value, style: const TextStyle(fontSize: 16)),
@@ -283,6 +283,193 @@ Future<bool> showConfirmDialog(
   return result ?? false;
 }
 
+class _InputDialogWidget extends StatefulWidget {
+  final String title;
+  final String? message;
+  final String? initialValue;
+  final String? placeholder;
+  final TextInputType keyboardType;
+  final int maxLines;
+  final int? maxLength;
+  final String? Function(String?)? validator;
+  final Future<bool> Function(String value)? onConfirm;
+  final String confirmText;
+  final String cancelText;
+
+  const _InputDialogWidget({
+    required this.title,
+    this.message,
+    this.initialValue,
+    this.placeholder,
+    this.keyboardType = TextInputType.text,
+    this.maxLines = 1,
+    this.maxLength,
+    this.validator,
+    this.onConfirm,
+    required this.confirmText,
+    required this.cancelText,
+  });
+
+  @override
+  State<_InputDialogWidget> createState() => _InputDialogWidgetState();
+}
+
+class _InputDialogWidgetState extends State<_InputDialogWidget> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+  final _errorMessage = RxnString();
+  final _isProcessing = false.obs;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+    _focusNode = FocusNode();
+    _focusNode.addListener(_focusListener);
+  }
+
+  void _focusListener() {
+    if (_focusNode.hasFocus) {
+      set_inapp_hotkey(false);
+    } else {
+      set_inapp_hotkey(true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_focusListener);
+    set_inapp_hotkey(true);
+    _controller.dispose();
+    _focusNode.dispose();
+    _errorMessage.close();
+    _isProcessing.close();
+    super.dispose();
+  }
+
+  Future<void> _handleConfirm() async {
+    final value = _controller.text;
+
+    // 执行验证
+    if (widget.validator != null) {
+      final error = widget.validator!(value);
+      if (error != null) {
+        _errorMessage.value = error;
+        return;
+      }
+    }
+
+    // 执行确认回调
+    if (widget.onConfirm != null) {
+      try {
+        _isProcessing.value = true;
+        final canClose = await widget.onConfirm!(value);
+        _isProcessing.value = false;
+
+        if (canClose) {
+          Get.back(result: value);
+        }
+        // 如果返回false，对话框保持打开状态
+      } catch (e) {
+        _isProcessing.value = false;
+        _errorMessage.value = '处理失败: ${e.toString()}';
+      }
+    } else {
+      // 没有回调函数，直接关闭
+      Get.back(result: value);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // ignore: deprecated_member_use
+    return WillPopScope(
+      onWillPop: () async => !_isProcessing.value,
+      child: AlertDialog(
+        title: Text(widget.title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.message != null) ...[
+              Text(
+                widget.message!,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Get.theme.textTheme.bodySmall?.color,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            Obx(
+              () => TextField(
+                controller: _controller,
+                keyboardType: widget.keyboardType,
+                maxLines: widget.maxLines,
+                maxLength: widget.maxLength,
+                focusNode: _focusNode,
+                autofocus: true,
+                enabled: !_isProcessing.value,
+                decoration: InputDecoration(
+                  hintText: widget.placeholder,
+                  errorText: _errorMessage.value,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  counterText: widget.maxLength != null ? null : '',
+                ),
+                onChanged: (value) {
+                  // 输入时清除错误消息
+                  if (_errorMessage.value != null) {
+                    _errorMessage.value = null;
+                  }
+                },
+                onSubmitted: (value) async {
+                  // 按回车键提交（仅限单行输入）
+                  if (widget.maxLines == 1 && !_isProcessing.value) {
+                    await _handleConfirm();
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Obx(
+            () => TextButton(
+              onPressed: _isProcessing.value
+                  ? null
+                  : () => Get.back(result: null),
+              child: Text(widget.cancelText),
+            ),
+          ),
+          Obx(
+            () => ElevatedButton(
+              onPressed: _isProcessing.value
+                  ? null
+                  : () async {
+                      await _handleConfirm();
+                    },
+              child: _isProcessing.value
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Get.theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                    )
+                  : Text(widget.confirmText),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 显示文本输入对话框
 ///
 /// [title] 对话框标题
@@ -313,174 +500,22 @@ Future<String?> showInputDialog({
   String cancelText = '取消',
   bool disableBackgroundShadow = false,
 }) async {
-  final controller = TextEditingController(text: initialValue);
-  final errorMessage = RxnString();
-  final isProcessing = false.obs;
-  final focusNode = FocusNode();
-
-  // 定义焦点监听器
-  void focusListener() {
-    if (focusNode.hasFocus) {
-      set_inapp_hotkey(false);
-    } else {
-      set_inapp_hotkey(true);
-    }
-  }
-
-  focusNode.addListener(focusListener);
-
-  try {
-    String? result = await Get.dialog<String>(
-      WillPopScope(
-        onWillPop: () async => !isProcessing.value,
-        child: AlertDialog(
-          title: Text(title),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (message != null) ...[
-                Text(
-                  message,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Get.theme.textTheme.bodySmall?.color,
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              Obx(
-                () => TextField(
-                  controller: controller,
-                  keyboardType: keyboardType,
-                  maxLines: maxLines,
-                  maxLength: maxLength,
-                  focusNode: focusNode,
-                  autofocus: true,
-                  enabled: !isProcessing.value,
-                  decoration: InputDecoration(
-                    hintText: placeholder,
-                    errorText: errorMessage.value,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    counterText: maxLength != null ? null : '',
-                  ),
-                  onChanged: (value) {
-                    // 输入时清除错误消息
-                    if (errorMessage.value != null) {
-                      errorMessage.value = null;
-                    }
-                  },
-                  onSubmitted: (value) async {
-                    // 按回车键提交（仅限单行输入）
-                    if (maxLines == 1 && !isProcessing.value) {
-                      await _handleConfirm(
-                        controller,
-                        validator,
-                        onConfirm,
-                        errorMessage,
-                        isProcessing,
-                      );
-                    }
-                  },
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            Obx(
-              () => TextButton(
-                onPressed: isProcessing.value
-                    ? null
-                    : () => Get.back(result: null),
-                child: Text(cancelText),
-              ),
-            ),
-            Obx(
-              () => ElevatedButton(
-                onPressed: isProcessing.value
-                    ? null
-                    : () async {
-                        await _handleConfirm(
-                          controller,
-                          validator,
-                          onConfirm,
-                          errorMessage,
-                          isProcessing,
-                        );
-                      },
-                child: isProcessing.value
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Get.theme.colorScheme.onPrimary,
-                          ),
-                        ),
-                      )
-                    : Text(confirmText),
-              ),
-            ),
-          ],
-        ),
-      ),
-      barrierColor: disableBackgroundShadow ? Colors.transparent : null,
-    );
-
-    return result;
-  } finally {
-    // 先移除监听器，再 dispose，避免 "used after being disposed" 错误
-    focusNode.removeListener(focusListener);
-    set_inapp_hotkey(true);
-
-    // 延迟 dispose，确保对话框动画完成
-    await Future.delayed(Duration(milliseconds: 100));
-    controller.dispose();
-    focusNode.dispose();
-  }
-}
-
-/// 处理输入确认逻辑
-Future<void> _handleConfirm(
-  TextEditingController controller,
-  String? Function(String?)? validator,
-  Future<bool> Function(String value)? onConfirm,
-  RxnString errorMessage,
-  RxBool isProcessing,
-) async {
-  final value = controller.text;
-
-  // 执行验证
-  if (validator != null) {
-    final error = validator(value);
-    if (error != null) {
-      errorMessage.value = error;
-      return;
-    }
-  }
-
-  // 执行确认回调
-  if (onConfirm != null) {
-    try {
-      isProcessing.value = true;
-      final canClose = await onConfirm(value);
-      isProcessing.value = false;
-
-      if (canClose) {
-        Get.back(result: value);
-      }
-      // 如果返回false，对话框保持打开状态
-    } catch (e) {
-      isProcessing.value = false;
-      errorMessage.value = '处理失败: ${e.toString()}';
-    }
-  } else {
-    // 没有回调函数，直接关闭
-    Get.back(result: value);
-  }
+  return Get.dialog<String>(
+    _InputDialogWidget(
+      title: title,
+      message: message,
+      initialValue: initialValue,
+      placeholder: placeholder,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      maxLength: maxLength,
+      validator: validator,
+      onConfirm: onConfirm,
+      confirmText: confirmText,
+      cancelText: cancelText,
+    ),
+    barrierColor: disableBackgroundShadow ? Colors.transparent : null,
+  );
 }
 
 bool isEmpty(dynamic str) {
