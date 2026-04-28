@@ -1,14 +1,7 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-/// @docImport 'package:flutter/semantics.dart';
-///
-/// @docImport 'refresh_indicator.dart';
 library;
 
 import 'dart:math' as math;
-
+import 'package:motor/motor.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 

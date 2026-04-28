@@ -246,7 +246,7 @@ Widget buildPlayPauseButton(double expandProgress) {
                   return Transform.rotate(
                     angle: curvedValue * 2 * pi,
                     child: Obx(
-                      () => CircularProgressIndicator(
+                      () => MotorCircularProgressIndicator(
                         key: _playButtonKey,
                         strokeWidth: 4.w,
                         value: _playController.loading ? null : progress,
