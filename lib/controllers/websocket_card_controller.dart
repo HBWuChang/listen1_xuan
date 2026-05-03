@@ -153,6 +153,8 @@ class WebSocketCardController extends GetxController {
   final RxBool isLoadingIpAddresses = false.obs;
   RxString selectBestAvailableAddress = '127.0.0.1'.obs;
 
+  RxString shareFilePath = ''.obs;
+
   /// 刷新本地IP地址列表
   Future<void> refreshIpAddresses() async {
     if (isLoadingIpAddresses.value) return;

@@ -269,6 +269,7 @@ Widget _buildThirdPartyLoginPanel(
                   width: 18,
                   height: 18,
                   cache: true,
+                  loadStateChanged: loadStateChanged,
                 ),
 
                 ExtendedImage.network(
@@ -276,6 +277,7 @@ Widget _buildThirdPartyLoginPanel(
                   cache: true,
                   width: 18,
                   height: 18,
+                  loadStateChanged: loadStateChanged,
                 ),
 
                 Iconify(

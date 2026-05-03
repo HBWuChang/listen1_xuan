@@ -22,6 +22,9 @@ Widget buildCoverImage(double size, {double? borderRadius}) {
                     if (state.extendedImageLoadState == LoadState.failed) {
                       return Icon(Icons.music_note, size: size);
                     }
+                    if (state.extendedImageLoadState == LoadState.loading) {
+                      return globalLoadingAnimeOfExtendedImage;
+                    }
                     return null;
                   },
                 );

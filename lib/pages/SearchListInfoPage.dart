@@ -226,6 +226,10 @@ class _SearchlistinfoState extends State<Searchlistinfo>
                               LoadState.failed) {
                             return const Icon(Icons.image_not_supported);
                           }
+                          if (state.extendedImageLoadState ==
+                              LoadState.loading) {
+                            return globalLoadingAnimeOfExtendedImage;
+                          }
                           return null;
                         },
                       ),
@@ -317,6 +321,10 @@ class _SearchlistinfoState extends State<Searchlistinfo>
                           if (state.extendedImageLoadState ==
                               LoadState.failed) {
                             return const Icon(Icons.image_not_supported);
+                          }
+                          if (state.extendedImageLoadState ==
+                              LoadState.loading) {
+                            return globalLoadingAnimeOfExtendedImage;
                           }
                           return null;
                         },

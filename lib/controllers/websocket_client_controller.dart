@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/main.dart';
+import 'package:listen1_xuan/widgets/motor_progress_indicator_xuan.dart';
+import 'package:listen1_xuan/widgets/smooth_sheet_toast.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:punycode/punycode.dart';
@@ -856,7 +858,7 @@ class WebSocketClientController extends GetxController {
       _logger.i('$_tag 停止状态轮询');
     }
   }
-
+  
   /// 处理接收到的消息
   void _onMessage(dynamic data) {
     try {
@@ -873,6 +875,9 @@ class WebSocketClientController extends GetxController {
 
       // 根据消息类型进行特殊处理
       switch (message.type) {
+        case WebSocketMessageType.putShareFileNameToCli:
+          receiveShareFileName(message.content);
+          break;
         case WebSocketMessageType.status:
           // 处理播放状态消息
           try {
@@ -1110,6 +1115,137 @@ class WebSocketClientController extends GetxController {
     } catch (e) {
       _logger.e('$_tag Punycode 编码失败: $e');
       return host; // 编码失败时返回原主机名
+    }
+  }
+
+  Future<void> receiveShareFileName(String fileName) async {
+    try {
+      RxBool isDownloading = false.obs;
+      RxString progressText = '准备下载'.obs;
+      RxnDouble progress = RxnDouble();
+      // 构建进度指示器 widget，支持显示百分比
+      Widget _buildProgressIcon() {
+        return Obx(() {
+          if (!isDownloading.value) {
+            return Icon(Icons.switch_access_shortcut_add_outlined);
+          }
+
+          return Center(
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  MotorCircularProgressIndicator(
+                    strokeWidth: 2,
+                    value: progress.value,
+                    color: Get.theme.colorScheme.onPrimary,
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      }
+
+      if (isNotEmpty(fileName)) {
+        smoothSheetToast.showToast(
+          builder: (_, controller) => Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.only(left: 16),
+                  title: Text(
+                    '收到${Get.find<WebSocketClientController>().serverAddress}分享的文件',
+                    style: Get.theme.textTheme.titleMedium,
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FittedBox(
+                        child: Text(
+                          fileName,
+                          maxLines: 1,
+                          style: Get.theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: IconButton(
+                    onPressed: controller.peek,
+                    icon: Icon(Icons.minimize_rounded),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Obx(
+                      () => TextButton(
+                        onPressed: isDownloading.value
+                            ? null
+                            : () {
+                                controller.hide();
+                              },
+                        child: Text(
+                          '忽略',
+                          style: TextStyle(
+                            color: Get.theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Obx(
+                      () => ElevatedButton.icon(
+                        onPressed: isDownloading.value
+                            ? null
+                            : () async {
+                                // 进入锁定模式，防止用户滑动时关闭Toast
+                                controller.enterLockedMode();
+                                Future.delayed(
+                                  Duration(milliseconds: 2000),
+                                  () {
+                                    controller.peek();
+                                  },
+                                );
+                                isDownloading.value = true;
+                                progressText.value = '准备下载';
+                                try {
+                                  throw '测试';
+                                  showErrorSnackbar('下载成功', null);
+                                  return controller.hide();
+                                } catch (e) {
+                                  showErrorSnackbar('下载失败', e.toString());
+                                  progressText.value = '下载失败';
+                                  controller.expand();
+                                } finally {
+                                  isDownloading.value = false;
+                                  controller.exitLockedMode();
+                                }
+                              },
+                        icon: _buildProgressIcon(),
+                        label: FittedBox(
+                          child: Obx(
+                            () => Text(
+                              isDownloading.value ? progressText.value : '下载',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      _logger.e('$_tag 处理共享文件消息失败', error: e);
     }
   }
 }

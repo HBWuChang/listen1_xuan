@@ -71,6 +71,9 @@ class _MyPlaylistState extends State<MyPlaylist> {
         fit: BoxFit.cover,
         cache: true,
         loadStateChanged: (state) {
+          if (state.extendedImageLoadState == LoadState.loading) {
+            return globalLoadingAnimeOfExtendedImage;
+          }
           if (state.extendedImageLoadState == LoadState.failed) {
             return _buildCoverFallbackText(title, size);
           }
@@ -561,6 +564,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                       cache: true,
                       width: 18,
                       height: 18,
+                      loadStateChanged: loadStateChanged,
                     ),
                     title: '我的QQ歌单',
                     isExpanded: _isExpandedQq,

@@ -64,6 +64,9 @@ Widget playH() {
                       size: globalHorizon ? 50 : 168.w,
                     );
                   }
+                  if (state.extendedImageLoadState == LoadState.loading) {
+                    return globalLoadingAnimeOfExtendedImage;
+                  }
                 },
               ),
             ),

@@ -424,52 +424,35 @@ class _WebSocketClientControlContentState
                                             height: 80,
                                             fit: BoxFit.cover,
                                             cache: true,
-                                            loadStateChanged: (ExtendedImageState state) {
-                                              switch (state
-                                                  .extendedImageLoadState) {
-                                                case LoadState.loading:
-                                                  return Container(
-                                                    width: 80,
-                                                    height: 80,
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.grey[200],
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
-                                                          ),
-                                                    ),
-                                                    child: const Center(
-                                                      child: SizedBox(
-                                                        width: 20,
-                                                        height: 20,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                              strokeWidth: 2,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                  );
-                                                case LoadState.failed:
-                                                  return Container(
-                                                    width: 80,
-                                                    height: 80,
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.grey[300],
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
-                                                          ),
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.music_note,
-                                                      color: Colors.grey,
-                                                      size: 40,
-                                                    ),
-                                                  );
-                                                case LoadState.completed:
-                                                  return null;
-                                              }
-                                            },
+                                            loadStateChanged:
+                                                (ExtendedImageState state) {
+                                                  switch (state
+                                                      .extendedImageLoadState) {
+                                                    case LoadState.loading:
+                                                      return globalLoadingAnimeOfExtendedImage;
+
+                                                    case LoadState.failed:
+                                                      return Container(
+                                                        width: 80,
+                                                        height: 80,
+                                                        decoration: BoxDecoration(
+                                                          color:
+                                                              Colors.grey[300],
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                        ),
+                                                        child: const Icon(
+                                                          Icons.music_note,
+                                                          color: Colors.grey,
+                                                          size: 40,
+                                                        ),
+                                                      );
+                                                    case LoadState.completed:
+                                                      return null;
+                                                  }
+                                                },
                                           ),
                                         )
                                       : Container(

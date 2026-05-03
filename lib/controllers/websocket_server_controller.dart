@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:get/get.dart';
+import 'package:path/path.dart' as p;
+import 'package:listen1_xuan/controllers/websocket_card_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:logger/logger.dart';
@@ -63,6 +65,15 @@ class WebSocketServerController extends GetxController {
   void onInit() {
     super.onInit();
     _logger.i('$_tag 初始化完成');
+    ever(Get.find<WebSocketCardController>().shareFilePath, (path) {
+      if (isNotEmpty(path.isNotEmpty)) {
+        final message =
+            WebSocketMessageBuilder.createPutShareFileNameToCliMessage(
+              p.basename(path),
+            );
+        _broadcastMessage(message);
+      }
+    });
   }
 
   /// 启动 WebSocket 服务器
@@ -162,7 +173,14 @@ class WebSocketServerController extends GetxController {
       connection.id,
     );
     _sendMessage(connection, welcomeMessage);
-
+    String path = Get.find<WebSocketCardController>().shareFilePath.value;
+    if (isNotEmpty(path.isNotEmpty)) {
+      final message =
+          WebSocketMessageBuilder.createPutShareFileNameToCliMessage(
+            p.basename(path),
+          );
+      _sendMessage(connection, message);
+    }
     // 监听消息
     webSocket.listen(
       (data) => _handleMessage(connection, data),
@@ -473,11 +491,11 @@ class WebSocketServerController extends GetxController {
       final track = Track.fromJson(trackData);
 
       _logger.i('$_tag 准备设置下一首歌曲: ${track.title} - ${track.artist}');
-      
+
       try {
         Get.find<PlayController>().nextTrack = track;
         _logger.i('$_tag 下一首歌曲已设置: ${track.title}');
-        
+
         // 发送成功响应
         final successMessage = WebSocketMessageBuilder.createMessage(
           '下一首已设置: ${track.title} - ${track.artist}',

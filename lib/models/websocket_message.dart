@@ -206,6 +206,8 @@ class WebSocketMessageType {
 
   /// 设置 Cookie 消息
   static const String setCookie = 'setCookie';
+
+  static const String putShareFileNameToCli = 'putShareFileName';
 }
 
 /// 播放控制命令常量
@@ -335,6 +337,13 @@ class WebSocketMessageBuilder {
     return WebSocketMessage(
       type: WebSocketMessageType.trackNext,
       content: trackJson,
+    );
+  }
+
+  static WebSocketMessage createPutShareFileNameToCliMessage(String name) {
+    return WebSocketMessage(
+      type: WebSocketMessageType.putShareFileNameToCli,
+      content: name,
     );
   }
 }

@@ -11,7 +11,8 @@ import 'controllers/play_controller.dart';
 import 'controllers/websocket_client_controller.dart';
 import 'controllers/search_controller.dart';
 import 'examples/websocket_client_example.dart';
-import 'package:flutter/material.dart' hide SearchController, CircularProgressIndicator;
+import 'package:flutter/material.dart'
+    hide SearchController, CircularProgressIndicator;
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/qq.dart';
 import 'models/PlayListInfo.dart';
@@ -122,6 +123,10 @@ Future<dynamic> song_dialog(
                           if (state.extendedImageLoadState ==
                               LoadState.failed) {
                             return Icon(Icons.error);
+                          }
+                          if (state.extendedImageLoadState ==
+                              LoadState.loading) {
+                            return globalLoadingAnimeOfExtendedImage;
                           }
                         },
                       ),
@@ -702,6 +707,10 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                               if (state.extendedImageLoadState ==
                                   LoadState.failed) {
                                 return Icon(Icons.error);
+                              }
+                              if (state.extendedImageLoadState ==
+                                  LoadState.loading) {
+                                return globalLoadingAnimeOfExtendedImage;
                               }
                             },
                           ),

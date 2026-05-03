@@ -296,6 +296,9 @@ class Playlist extends GetView<PlaylistController> {
                         ),
                       );
                     }
+                    if (state.extendedImageLoadState == LoadState.loading) {
+                      return globalLoadingAnimeOfExtendedImage;
+                    }
                     return null; // Use default rendering
                   },
                 ),

@@ -1,4 +1,5 @@
 import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -288,6 +289,16 @@ Widget get globalLoadingAnime => ExpressiveLoadingIndicator(
   semanticsLabel: 'Loading',
   semanticsValue: 'In progress',
 );
+
+Widget get globalLoadingAnimeOfExtendedImage =>
+    Center(child: globalLoadingAnime);
+Widget? loadStateChanged(ExtendedImageState state) {
+  if (state.extendedImageLoadState == LoadState.loading) {
+    return globalLoadingAnimeOfExtendedImage;
+  }
+
+  return null;
+}
 
 Widget search_Animation({
   required Animation<double> animation,
