@@ -286,13 +286,15 @@ class PlayController extends GetxController
       updateContinuePlay();
     }, time: Duration(milliseconds: 300));
     debounce(showPlayVInlineLyricVisible, (value) {
-      if (value) {
+      if (value && !showPlayVInlineLyricOp.value) {
         showPlayVInlineLyricOp.value = true;
       }
     }, time: Duration(milliseconds: 100));
     debounce(showPlayVInlineLyricOp, (value) {
       if (!value) {
-        showPlayVInlineLyricVisible.value = false;
+        if (showPlayVInlineLyricVisible.value) {
+          showPlayVInlineLyricVisible.value = false;
+        }
       }
     }, time: Duration(milliseconds: 300));
     // 使用 interval 控制任务栏进度更新频率(每500ms最多更新一次)

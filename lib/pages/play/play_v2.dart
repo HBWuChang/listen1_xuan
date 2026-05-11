@@ -20,10 +20,12 @@ Widget get playV2 => LayoutBuilder(
             left: 0,
             right: 0,
             height: 1.sh,
-            child: Obx(
-              () => Visibility(
-                visible: _playController.showPlayVInlineLyricVisible.value,
-                child: SheetOffsetClip(child: LyricVBackPage()),
+            child: RepaintBoundary(
+              child: Obx(
+                () => Visibility(
+                  visible: _playController.showPlayVInlineLyricVisible.value,
+                  child: SheetOffsetClip(child: LyricVBackPage()),
+                ),
               ),
             ),
           ),
@@ -102,13 +104,23 @@ Widget get playV2 => LayoutBuilder(
                               );
                           expandAnimationStage2.addListener(() {
                             if (expandAnimationStage2.value >= 0.5) {
-                              _playController
-                                      .showPlayVInlineLyricVisible
-                                      .value =
-                                  true;
+                              if (!_playController
+                                  .showPlayVInlineLyricVisible
+                                  .value) {
+                                _playController
+                                        .showPlayVInlineLyricVisible
+                                        .value =
+                                    true;
+                              }
                             } else {
-                              _playController.showPlayVInlineLyricOp.value =
-                                  false;
+                              if (_playController
+                                  .showPlayVInlineLyricVisible
+                                  .value) {
+                                _playController
+                                        .showPlayVInlineLyricVisible
+                                        .value =
+                                    false;
+                              }
                             }
                           });
                           return
@@ -467,12 +479,14 @@ Widget get playV2 => LayoutBuilder(
             left: 0,
             right: 0,
             height: 1.sh,
-            child: Obx(
-              () => Visibility(
-                visible: _playController.showPlayVInlineLyricVisible.value,
-                child: IgnorePointer(
-                  ignoring: !_playController.showPlayVInlineLyricOp.value,
-                  child: SheetOffsetClip(type2: true, child: LyricVPage()),
+            child: RepaintBoundary(
+              child: Obx(
+                () => Visibility(
+                  visible: _playController.showPlayVInlineLyricVisible.value,
+                  child: IgnorePointer(
+                    ignoring: !_playController.showPlayVInlineLyricOp.value,
+                    child: SheetOffsetClip(type2: true, child: LyricVPage()),
+                  ),
                 ),
               ),
             ),

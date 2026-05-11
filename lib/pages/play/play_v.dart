@@ -75,9 +75,12 @@ Widget get playV => LayoutBuilder(
                     endOffset: _playController.playVMaxOffset,
                   );
                   expandAnimationStage2.addListener(() {
-                    if (expandAnimationStage2.value >= 0.5) {
+                    if (expandAnimationStage2.value >= 0.5 &&
+                        !_playController.showPlayVInlineLyricVisible.value) {
                       _playController.showPlayVInlineLyricVisible.value = true;
-                    } else {
+                    } else if (_playController
+                        .showPlayVInlineLyricVisible
+                        .value) {
                       _playController.showPlayVInlineLyricOp.value = false;
                     }
                   });

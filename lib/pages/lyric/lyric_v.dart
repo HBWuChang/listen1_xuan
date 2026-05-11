@@ -8,16 +8,6 @@ class LyricVPage extends StatefulWidget {
 class _LyricVPageState extends State<LyricVPage>
     with TickerProviderStateMixin, LyricFormattingMixin {
   @override
-  void initState() {
-    super.initState();
-
-    // 初始化控制器
-    // WidgetsBinding.instance.addPostFrameCallback(
-    //   (_) => lyricController.loadLyric(),
-    // );
-  }
-
-  @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
@@ -30,7 +20,7 @@ class _LyricVPageState extends State<LyricVPage>
       },
       child: Column(
         children: [
-          Expanded(child: _buildLyricContent(context)),
+          Expanded(child: RepaintBoundary(child: _buildLyricContent(context))),
           _buildTranslationToggle(context),
           IgnorePointer(child: SizedBox(height: 500.w)),
         ],
