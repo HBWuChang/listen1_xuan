@@ -37,11 +37,8 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'widgets/container_with_outer_shadow.dart';
 import 'package:media_kit/media_kit.dart' hide Track;
 import 'package:animated_digit/animated_digit.dart';
-import 'widgets/progress_indicator_xuan.dart';
 import 'widgets/showVolumeSlider.dart';
 
-// part 'pages/play/play_v.dart';
-// part 'pages/play/play_v0.dart';
 part 'pages/play/play_v2.dart';
 part 'pages/play/play_h.dart';
 part 'pages/play/play_widgets.dart';
