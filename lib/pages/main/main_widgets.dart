@@ -81,6 +81,7 @@ Widget get _leftBar => Scaffold(
               style: TextStyle(fontSize: inputFontSize),
               controller: input_text_Controller,
               readOnly: searchController.showSearchArea.value,
+              onSubmitted: (value) => searchController.performSearch(),
               onTap: searchController.showSearchArea.value
                   ? () async {
                       Get.toNamed(RouteName.searchPage, id: 1);

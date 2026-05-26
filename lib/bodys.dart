@@ -664,6 +664,9 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
             ? Text('加载失败')
             : CustomScrollView(
                 controller: outter_scrollController,
+                scrollBehavior: ScrollConfiguration.of(
+                  context,
+                ).copyWith(scrollbars: false),
                 slivers: [
                   SliverAppBar(
                     expandedHeight: 280.0,
@@ -1025,7 +1028,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                                   key: key,
                                   title: Text(track.title ?? '未知标题'),
                                   subtitle: Text(
-                                    '${track.artist ?? '未知艺术家'} - ${track.album ?? '未知专辑'}',
+                                    '${track.artist} - ${track.album}${track.totalDurMsg != null ? ' | ${track.totalDurMsg}' : ''}',
                                   ),
                                   trailing: Builder(
                                     builder: (iconContext) => IconButton(

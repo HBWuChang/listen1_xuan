@@ -391,6 +391,13 @@ class SettingsController extends GetxController {
     settings[disableSomeEffectWhenInactiveKey] = value;
   }
 
+  static const String copyErrorMessageKey = 'copyErrorMessage';
+  final RxBool copyErrorMessageRx = false.obs;
+  bool get copyErrorMessage => copyErrorMessageRx.value;
+  set copyErrorMessage(bool value) {
+    settings[copyErrorMessageKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
@@ -422,6 +429,7 @@ class SettingsController extends GetxController {
           settings[volumnFollowSystemKey] as bool? ?? false;
       final nextShowSearchAreaWidth =
           (settings[showSearchAreaWidthKey] as num?)?.toDouble() ?? 200.0;
+      final copyErrorMessage = settings[copyErrorMessageKey] as bool? ?? false;
 
       final eqSettingJson = settings[eqSettingKey] as String? ?? '';
       final nextDisableSomeEffectWhenInactive =
@@ -464,6 +472,9 @@ class SettingsController extends GetxController {
           nextDisableSomeEffectWhenInactive) {
         disableSomeEffectWhenInactiveRx.value =
             nextDisableSomeEffectWhenInactive;
+      }
+      if (copyErrorMessageRx.value != copyErrorMessage) {
+        copyErrorMessageRx.value = copyErrorMessage;
       }
     });
 

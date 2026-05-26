@@ -70,6 +70,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
                           border: InputBorder.none,
                         ),
                         controller: controller!.searchTextController,
+                        onSubmitted: (value) => controller!.performSearch(),
                         autofocus: true,
                       ),
               ),
@@ -132,10 +133,41 @@ class _SearchlistinfoState extends State<Searchlistinfo>
     );
   }
 
+  Widget _buildErr(String err) {
+    return AbsorbPointer(
+      child: SizedBox.expand(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '搜索失败,点击重试',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                err,
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSongList(XSearchController controller) {
     return Obx(() {
       if (controller.loading.value) {
         return Center(child: globalLoadingAnime);
+      }
+
+      if (controller.resultErr != null) {
+        return GestureDetector(
+          onTap: () => controller.refreshSongSearch(),
+          child: _buildErr(controller.resultErr!),
+        );
       }
 
       return RefreshIndicator(
@@ -159,7 +191,9 @@ class _SearchlistinfoState extends State<Searchlistinfo>
 
             return ListTile(
               title: Text(track.title ?? ''),
-              subtitle: Text('${track.artist} - ${track.album}'),
+              subtitle: Text(
+                '${track.artist} - ${track.album}${track.totalDurMsg != null ? ' | ${track.totalDurMsg}' : ''}',
+              ),
               trailing: IconButton(
                 key: key,
                 icon: const Icon(Icons.more_vert),
@@ -176,6 +210,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
                   );
                 },
               ),
+
               onTap: () {
                 playsong(track, isByClick: true);
               },
@@ -191,7 +226,12 @@ class _SearchlistinfoState extends State<Searchlistinfo>
       if (controller.playlistLoading.value) {
         return Center(child: globalLoadingAnime);
       }
-
+      if (controller.playlistResultErr != null) {
+        return GestureDetector(
+          onTap: () => controller.refreshPlaylistSearch(),
+          child: _buildErr(controller.playlistResultErr!),
+        );
+      }
       return RefreshIndicator(
         onRefresh: () => controller.refreshPlaylistSearch(),
         child: ListView.builder(
@@ -256,9 +296,9 @@ class _SearchlistinfoState extends State<Searchlistinfo>
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     )
                   : null,
-              trailing: playlist.count != null
+              trailing: playlist.count != null || playlist.totalDurMsg != null
                   ? Text(
-                      '${playlist.count} 首歌曲',
+                      '${playlist.count != null ? '${playlist.count} 首歌曲' : ''}${playlist.count != null && playlist.totalDurMsg != null ? ' | ' : ''}${playlist.totalDurMsg != null ? '${playlist.totalDurMsg}' : ''}',
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     )
                   : null,
@@ -288,7 +328,12 @@ class _SearchlistinfoState extends State<Searchlistinfo>
       if (controller.djLoading.value) {
         return Center(child: globalLoadingAnime);
       }
-
+      if (controller.djResultErr != null) {
+        return GestureDetector(
+          onTap: () => controller.refreshDjSearch(),
+          child: _buildErr(controller.djResultErr!),
+        );
+      }
       return RefreshIndicator(
         onRefresh: () => controller.refreshDjSearch(),
         child: ListView.builder(

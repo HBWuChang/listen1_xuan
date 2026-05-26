@@ -117,7 +117,9 @@ void showErrorSnackbar(
   SnackPosition snackPosition = SnackPosition.TOP,
   VoidCallback? onTap,
 }) {
-  Clipboard.setData(ClipboardData(text: message ?? title ?? ''));
+  if (Get.find<SettingsController>().copyErrorMessage) {
+    Clipboard.setData(ClipboardData(text: message ?? title ?? ''));
+  }
   debugPrint("Showing error toast: $title - $message");
   _showCustomToast(
     icon: Icons.cancel,

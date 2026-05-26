@@ -30,6 +30,7 @@ class Track {
   String? source_url;
   String? img_url;
   String? lyric_url;
+  String? totalDurMsg;
 
   Track({
     required this.id,
@@ -42,6 +43,7 @@ class Track {
     this.source_url,
     this.img_url,
     this.lyric_url,
+    this.totalDurMsg,
   });
 
   // 从 JSON 创建 Track 对象
@@ -65,6 +67,7 @@ class Track {
       source_url: json['source_url'] as String?,
       img_url: json['img_url'] as String?,
       lyric_url: lyric_url,
+      totalDurMsg: json['total_dur_msg'] as String?,
     );
   }
   factory Track.fromBase64MaybeGzip(String base64Str) {
@@ -97,6 +100,7 @@ class Track {
     if (source_url != null) map['source_url'] = source_url;
     if (img_url != null) map['img_url'] = img_url;
     if (lyric_url != null) map['lyric_url'] = lyric_url;
+    if (totalDurMsg != null) map['total_dur_msg'] = totalDurMsg;
     return map;
   }
 }

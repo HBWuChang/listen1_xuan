@@ -16,6 +16,7 @@ SearchPlayListItem _$SearchPlayListItemFromJson(Map<String, dynamic> json) =>
       url: json['url'] as String?,
       author: json['author'] as String?,
       count: (json['count'] as num?)?.toInt(),
+      totalDurMsg: json['totalDurMsg'] as String?,
     );
 
 Map<String, dynamic> _$SearchPlayListItemToJson(SearchPlayListItem instance) =>
@@ -28,6 +29,7 @@ Map<String, dynamic> _$SearchPlayListItemToJson(SearchPlayListItem instance) =>
       'url': instance.url,
       'author': instance.author,
       'count': instance.count,
+      'totalDurMsg': instance.totalDurMsg,
     };
 
 SearchPlayListRes _$SearchPlayListResFromJson(Map<String, dynamic> json) =>
@@ -36,7 +38,12 @@ SearchPlayListRes _$SearchPlayListResFromJson(Map<String, dynamic> json) =>
           .map((e) => SearchPlayListItem.fromJson(e as Map<String, dynamic>))
           .toList(),
       total: (json['total'] as num).toInt(),
+      error: json['error'] as String?,
     );
 
 Map<String, dynamic> _$SearchPlayListResToJson(SearchPlayListRes instance) =>
-    <String, dynamic>{'result': instance.result, 'total': instance.total};
+    <String, dynamic>{
+      'result': instance.result,
+      'total': instance.total,
+      'error': instance.error,
+    };

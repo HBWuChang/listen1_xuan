@@ -693,7 +693,12 @@ class Netease {
           }
           fn({'result': result, 'total': total, 'type': searchType});
         } catch (e) {
-          fn({'result': [], 'total': 0, 'type': searchType});
+          fn({
+            'result': [],
+            'total': 0,
+            'type': searchType,
+            'error': e.toString(),
+          });
         }
       },
     };
@@ -1099,9 +1104,7 @@ class Netease {
           .firstWhere((String element) => element.contains('__csrf'))
           .split('=')
           .last;
-      dynamic encryptReqData = {
-        'csrf_token': _csrf,
-      };
+      dynamic encryptReqData = {'csrf_token': _csrf};
       encryptReqData = weapi(encryptReqData);
       final response = await dio_post_with_cookie_and_csrf(url, encryptReqData);
       dynamic result = {'is_login': false};

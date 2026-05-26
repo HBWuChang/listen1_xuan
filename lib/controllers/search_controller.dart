@@ -22,6 +22,7 @@ class XSearchController extends GetxController {
   final RxBool songOrPlaylist = false.obs;
   final RxList<Track> tracks = <Track>[].obs;
   final RxMap<String, dynamic> result = <String, dynamic>{}.obs;
+  String? get resultErr => result['error'] as String?;
   final RxString source = 'netease'.obs;
   final RxString lastSource = 'netease'.obs;
   final RxInt currentPage = 1.obs;
@@ -36,6 +37,7 @@ class XSearchController extends GetxController {
     result: [],
     total: 0,
   ).obs;
+  String? get playlistResultErr => playlistResult.value.error;
   final RxInt playlistCurrentPage = 1.obs;
   final RxString playlistLastQuery = ''.obs;
   final RxString playlistLastSource = 'netease'.obs;
@@ -45,6 +47,8 @@ class XSearchController extends GetxController {
   final RxBool djLoadingMore = false.obs;
   final RxList<SearchPlayListItem> djs = <SearchPlayListItem>[].obs;
   final RxMap<String, dynamic> djResult = <String, dynamic>{}.obs;
+  String? get djResultErr => djResult['error'] as String?;
+
   final RxInt djCurrentPage = 1.obs;
   final RxString djLastQuery = ''.obs;
   final RxString djLastSource = 'netease'.obs;
@@ -139,7 +143,7 @@ class XSearchController extends GetxController {
     // Debounced search trigger
     debounce(
       searchQuery,
-      (_) => _performSearch(),
+      (_) => performSearch(),
       time: const Duration(milliseconds: 400),
     );
 
@@ -248,7 +252,7 @@ class XSearchController extends GetxController {
 
     // 切换平台后重新搜索
     if (searchQuery.value.trim().isNotEmpty) {
-      _performSearch();
+      performSearch();
     }
   }
 
@@ -271,7 +275,7 @@ class XSearchController extends GetxController {
     }
   }
 
-  Future<void> _performSearch() async {
+  Future<void> performSearch() async {
     final query = searchQuery.value.trim();
 
     // Skip if query is empty
@@ -666,9 +670,14 @@ class XSearchController extends GetxController {
     String id, {
     bool is_my = false,
     String search_text = "",
+    bool off = false,
   }) {
     if (!isEmpty(id)) {
-      Get.toNamed(id, arguments: {'listId': id, 'is_my': is_my}, id: 1);
+      if (off) {
+        Get.offNamed(id, arguments: {'listId': id, 'is_my': is_my}, id: 1);
+      } else {
+        Get.toNamed(id, arguments: {'listId': id, 'is_my': is_my}, id: 1);
+      }
     } else {
       if (!isEmpty(search_text)) {
         final searchController = Get.find<XSearchController>();

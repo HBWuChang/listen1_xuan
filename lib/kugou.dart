@@ -275,28 +275,37 @@ class Kugou {
     if (searchType == '1') {
       return {
         'success': (fn) async {
-          final target_url =
-              'http://mobilecdnbj.kugou.com/api/v3/search/special?keyword=$keyword&pagesize=20&filter=0&page=$curpage';
-          final response = await dioWithCookieManager.get(target_url);
-          final result = jsonDecode(response.data)['data']['info']
-              .map(
-                (item) => ({
-                  'id': 'kgplaylist_${item['specialid']}',
-                  'title': item['specialname'],
-                  'source': 'kugou',
-                  'source_url':
-                      'https://www.kugou.com/yy/special/single/${item['specialid']}.html',
-                  'img_url': item['imgurl'] != null
-                      ? item['imgurl'].replaceAll('{size}', '400')
-                      : '',
-                  'url': 'kgplaylist_${item['specialid']}',
-                  'author': item['nickname'],
-                  'count': item['songcount'],
-                }),
-              )
-              .toList();
-          final total = jsonDecode(response.data)['data']['total'];
-          return fn({'result': result, 'total': total, 'type': searchType});
+          try {
+            final target_url =
+                'http://mobilecdnbj.kugou.com/api/v3/search/special?keyword=$keyword&pagesize=20&filter=0&page=$curpage';
+            final response = await dioWithCookieManager.get(target_url);
+            final result = jsonDecode(response.data)['data']['info']
+                .map(
+                  (item) => ({
+                    'id': 'kgplaylist_${item['specialid']}',
+                    'title': item['specialname'],
+                    'source': 'kugou',
+                    'source_url':
+                        'https://www.kugou.com/yy/special/single/${item['specialid']}.html',
+                    'img_url': item['imgurl'] != null
+                        ? item['imgurl'].replaceAll('{size}', '400')
+                        : '',
+                    'url': 'kgplaylist_${item['specialid']}',
+                    'author': item['nickname'],
+                    'count': item['songcount'],
+                  }),
+                )
+                .toList();
+            final total = jsonDecode(response.data)['data']['total'];
+            return fn({'result': result, 'total': total, 'type': searchType});
+          } catch (e) {
+            return fn({
+              'result': [],
+              'total': 0,
+              'type': searchType,
+              'error': e.toString(),
+            });
+          }
         },
       };
     }

@@ -874,6 +874,18 @@ class _SettingsPageState extends State<SettingsPage> {
                                 },
                               ),
                             ),
+                            Obx(
+                              () => SwitchListTile(
+                                title: const Text('复制错误信息到剪贴板'),
+                                value: Get.find<SettingsController>()
+                                    .copyErrorMessage,
+                                onChanged: (bool value) {
+                                  Get.find<SettingsController>()
+                                          .copyErrorMessage =
+                                      value;
+                                },
+                              ),
+                            ),
                             AnimatedSize(
                               duration: Duration(milliseconds: 300),
                               child: Obx(

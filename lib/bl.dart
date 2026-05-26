@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' as getx;
+import 'package:listen1_xuan/controllers/search_controller.dart';
 import 'package:listen1_xuan/settings.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -147,8 +148,8 @@ class Bilibili {
     }
   }
 
-  static Future<Map<String, dynamic>> biGetPlaylistxuan(String url) async {
-    final selectmid = getParameterByName('list_id', url)?.split('_').last;
+  static Future<Map<String, dynamic>> biGetPlaylistxuan(String surl) async {
+    final selectmid = getParameterByName('list_id', surl)?.split('_').last;
     if (selectmid == null) {
       return {
         'success': (fn) {
@@ -237,7 +238,11 @@ class Bilibili {
         );
         Map<String, dynamic> data = res.data['data'];
         if (data['View']?['ugc_season']?['id'] == null) {
-          throw '该视频没有所属合集信息，无法获取歌单\n如要查看分P，请点击歌曲信息中的“查看可能的分集”';
+          getx.Get.find<XSearchController>().toListByIDOrSearch(
+            'bitrack_v_${selectmid.substring(BLPlayListXuanType.ugcSeason.prefix.length)}',
+            off: true,
+          );
+          throw '该视频没有所属合集信息，无法获取歌单\n已尝试跳转到分P信息';
         }
         final info = PlayListInfo(
           cover_img_url: data['View']?['ugc_season']?['cover'],
@@ -580,6 +585,7 @@ class Bilibili {
       'source': 'bilibili',
       'source_url': 'https://www.bilibili.com/video/${songInfo['bvid']}',
       'img_url': imgUrl,
+      'total_dur_msg': songInfo['duration']?.toString(),
     };
   }
 
@@ -598,6 +604,7 @@ class Bilibili {
       imgUrl: imgUrl,
       url: 'https://www.bilibili.com/video/${songInfo['bvid']}',
       author: htmlDecode(songInfo['author']),
+      totalDurMsg: songInfo['duration']?.toString(),
     );
   }
 
@@ -752,7 +759,8 @@ class Bilibili {
       'artist': htmlDecode(author['name']),
       'artist_id': 'biartist_v_${author['mid']}',
       'source': 'bilibili',
-      'source_url': 'https://www.bilibili.com/video/$bvid/?p=${songInfo['page']}',
+      'source_url':
+          'https://www.bilibili.com/video/$bvid/?p=${songInfo['page']}',
       'img_url': imgUrl,
     };
   }
@@ -926,13 +934,12 @@ class Bilibili {
                     }).toList(),
                   );
                   final total = response.data['data']['numResults'];
-                  // fn({'result': result, 'total': total});
                   fn(SearchPlayListRes(result: result, total: total));
                 }
               },
               onError: (e) {
                 showDebugSnackbar('Bilibili搜索失败', e.toString());
-                fn({'result': [], 'total': 0});
+                fn({'result': [], 'total': 0, 'error': e.toString()});
               },
             );
       },
