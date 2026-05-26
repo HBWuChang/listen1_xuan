@@ -114,10 +114,10 @@ Widget get playV2 => LayoutBuilder(
                               }
                             } else {
                               if (_playController
-                                  .showPlayVInlineLyricVisible
+                                  .showPlayVInlineLyricOp
                                   .value) {
                                 _playController
-                                        .showPlayVInlineLyricVisible
+                                        .showPlayVInlineLyricOp
                                         .value =
                                     false;
                               }
