@@ -40,7 +40,7 @@ import 'package:animated_digit/animated_digit.dart';
 import 'widgets/progress_indicator_xuan.dart';
 import 'widgets/showVolumeSlider.dart';
 
-part 'pages/play/play_v.dart';
+// part 'pages/play/play_v.dart';
 // part 'pages/play/play_v0.dart';
 part 'pages/play/play_v2.dart';
 part 'pages/play/play_h.dart';
