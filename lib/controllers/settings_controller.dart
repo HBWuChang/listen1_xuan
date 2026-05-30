@@ -3,10 +3,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:hive/hive.dart';
-import 'package:listen1_xuan/funcs.dart';
 
 import 'package:path/path.dart' as p;
 import 'package:flutter/foundation.dart';
@@ -398,6 +396,13 @@ class SettingsController extends GetxController {
     settings[copyErrorMessageKey] = value;
   }
 
+  static const String showTimeInNotifyAblKey = 'showTimeInNotify';
+  final RxBool showTimeInNotifyRx = false.obs;
+  bool get showTimeInNotify => showTimeInNotifyRx.value;
+  set showTimeInNotify(bool value) {
+    settings[showTimeInNotifyAblKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
@@ -413,7 +418,10 @@ class SettingsController extends GetxController {
     debounce(settings, (callback) {
       saveSettings();
     });
-
+    debounce(
+      showTimeInNotifyRx,
+      (enable) => Get.find<PlayController>().showTimeInAlbum(enable),
+    );
     ever<Map<String, dynamic>>(settings, (_) {
       final nextMini = settings[songReplaceFabMiniKey] as bool? ?? true;
       final nextLocationIndex =
@@ -434,6 +442,8 @@ class SettingsController extends GetxController {
       final eqSettingJson = settings[eqSettingKey] as String? ?? '';
       final nextDisableSomeEffectWhenInactive =
           settings[disableSomeEffectWhenInactiveKey] as bool? ?? true;
+      final nextShowTimeInNotify =
+          settings[showTimeInNotifyAblKey] as bool? ?? false;
 
       if (songReplaceFabMiniRx.value != nextMini) {
         songReplaceFabMiniRx.value = nextMini;
@@ -475,6 +485,9 @@ class SettingsController extends GetxController {
       }
       if (copyErrorMessageRx.value != copyErrorMessage) {
         copyErrorMessageRx.value = copyErrorMessage;
+      }
+      if (showTimeInNotifyRx.value != nextShowTimeInNotify) {
+        showTimeInNotifyRx.value = nextShowTimeInNotify;
       }
     });
 
@@ -574,7 +587,7 @@ class SettingsController extends GetxController {
       if (decoded['data'] is Map) {
         data = Map<String, dynamic>.from(decoded['data'] as Map);
       } else {
-        data = Map<String, dynamic>.from(decoded as Map);
+        data = Map<String, dynamic>.from(decoded);
       }
     }
 

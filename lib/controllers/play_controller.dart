@@ -1066,4 +1066,18 @@ class PlayController extends GetxController
       Get.toNamed(RouteName.songReplacePage, id: 1);
     }
   }
+
+  Stream<int> get secStr =>
+      mediaState.stream.map((state) => state.position.inSeconds).distinct();
+  StreamSubscription<int>? showTimeInAlbumSub;
+  Future<void> showTimeInAlbum(bool enable) async {
+    if (enable) {
+      await showTimeInAlbumSub?.cancel();
+      showTimeInAlbumSub = secStr.listen((time) {
+        change_playback_state(null, sec: time);
+      });
+    } else {
+      await showTimeInAlbumSub?.cancel();
+    }
+  }
 }

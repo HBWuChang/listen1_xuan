@@ -257,6 +257,7 @@ Future<void> change_playback_state(
   Track? track, {
   LyricLine? lyric,
   bool onDisableLyricUpdate = false,
+  int? sec,
 }) async {
   try {
     if (onDisableLyricUpdate && _currentMediaItem != null) {
@@ -310,6 +311,15 @@ Future<void> change_playback_state(
             .change_playbackstate(_item);
       }
 
+      return;
+    }
+    if (sec != null) {
+      if (_currentMediaItem == null) return;
+      MediaItem _item = _currentMediaItem!.copyWith(
+        album: formatDuration(Duration(seconds: sec)),
+      );
+      (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
+          .change_playbackstate(_item);
       return;
     }
     if (track == null) return;

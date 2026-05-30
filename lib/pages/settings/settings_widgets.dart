@@ -724,6 +724,20 @@ List<Widget> get notificationSettingsTiles => [
             },
     ),
   ),
+  Obx(
+    () => SwitchListTile(
+      title: const Text('使用Album字段显示当前播放时长'),
+      subtitle: GestureDetector(
+        onLongPress: () => g_launchURL(
+          Uri.parse('https://github.com/HBWuChang/listen1_xuan/issues/36'),
+        ),
+        child: Text('@Gitkila'),
+      ),
+      value: Get.find<SettingsController>().showTimeInNotify,
+      onChanged: (bool value) =>
+          Get.find<SettingsController>().showTimeInNotify = value,
+    ),
+  ),
 ];
 
 enum AudioServiceButtonActions {
