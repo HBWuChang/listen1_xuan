@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -148,6 +149,47 @@ class PlayController extends GetxController
     }
   }
 
+  /// 初始化音频会话，监听蓝牙断开等系统音频事件
+  Future<void> _initAudioSession() async {
+    if (!isAndroid) return;
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(
+        const AudioSessionConfiguration(
+          androidAudioAttributes: AndroidAudioAttributes(
+            contentType: AndroidAudioContentType.music,
+            usage: AndroidAudioUsage.media,
+          ),
+          androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+          androidWillPauseWhenDucked: true,
+        ),
+      );
+      debugPrint('Audio session configured: ${session.configuration}');
+      // 监听蓝牙/耳机断开事件 -> 自动暂停播放
+      session.becomingNoisyEventStream.listen((_) {
+        if (isplaying.value) {
+          globalPause();
+        }
+      });
+      session.devicesChangedEventStream.listen((event) {
+        if (event.devicesRemoved.any(
+          (device) =>
+              device.type == AudioDeviceType.bluetoothA2dp ||
+              device.type == AudioDeviceType.wiredHeadphones,
+        )) {
+          if (isplaying.value) {
+            globalPause();
+          }
+        }
+      });
+      session.interruptionEventStream.listen((event) {
+        debugPrint('Audio session interruption event: $event');
+      });
+    } catch (e) {
+      logger.e('初始化音频会话失败: $e');
+    }
+  }
+
   Future<void> updSysVolAndSet() async {
     if (settingsController.volumnFollowSystem) {
       await Get.find<PlayController>().getSysVolAndSet();
@@ -253,6 +295,8 @@ class PlayController extends GetxController
     logger.d(music_player.state.audioParams);
     music_player.stream.error.listen((error) => processMusicPlayerError(error));
     music_player.stream.log.listen((log) => debugPrint('$log'));
+    // 初始化音频会话（注册蓝牙断开等系统事件监听）
+    _initAudioSession();
     // 初始化播放按钮旋转动画控制器
     playVPlayBtnProcessControllerInit();
     // androidEQEnabled =
@@ -284,6 +328,13 @@ class PlayController extends GetxController
     interval(isplaying, (callback) {
       broadcastWs();
       updateContinuePlay();
+    }, time: Duration(milliseconds: 300));
+    debounce(isplaying, (callback) {
+      broadcastWs();
+      updateContinuePlay();
+      AudioSession.instance.then((session) {
+        session.setActive(isplaying.value);
+      });
     }, time: Duration(milliseconds: 300));
     debounce(showPlayVInlineLyricVisible, (value) {
       if (value && !showPlayVInlineLyricOp.value) {

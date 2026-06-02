@@ -253,6 +253,10 @@ Future<void> bind_smtc() async {
 }
 
 MediaItem? _currentMediaItem;
+MediaItem? _currentShowMediaItem;
+MediaItem? get showItem => _currentShowMediaItem ?? _currentMediaItem;
+int lastSec = 0;
+String get fSec => formatDuration(Duration(seconds: lastSec));
 Future<void> change_playback_state(
   Track? track, {
   LyricLine? lyric,
@@ -265,41 +269,22 @@ Future<void> change_playback_state(
           .change_playbackstate(_currentMediaItem!);
     }
     if (lyric != null) {
-      // if (_currentMediaItem == null || isEmpty(lyric.mainText)) return;
-      // bool useTitleInsteadOfDisplayTitle =
-      //     Get.find<SettingsController>().tryShowLyricInNotificationInTitle;
-      // bool showTranslation =
-      //     Get.find<SettingsController>().showLyricTranslation.value;
-      // MediaItem _item = _currentMediaItem!.copyWith(
-      //   displayTitle: useTitleInsteadOfDisplayTitle ? null : lyric.mainText,
-      //   title: useTitleInsteadOfDisplayTitle
-      //       ? '${lyric.mainText!}${showTranslation && lyric.hasExt ? '\n${lyric.extText}' : ''}'
-      //       : _currentMediaItem!.title,
-      //   artist: _currentMediaItem!.title,
-      //   album:
-      //       '${_currentMediaItem?.artist}${_currentMediaItem?.album != null ? ' - ${_currentMediaItem!.album}' : ''}',
-      // );
-      // if (showTranslation) {
-      //   _item = _item.copyWith(
-      //     displaySubtitle: (lyric.hasExt ? lyric.extText : null),
-      //   );
-      // }
-      if (_currentMediaItem == null) return;
+      if (showItem == null) return;
       bool show = Get.find<SettingsController>().tryShowLyricInNotification;
       bool showInTitle =
           Get.find<SettingsController>().tryShowLyricInNotificationInTitle;
       bool showTra = Get.find<SettingsController>().showLyricTranslation.value;
       if (!show && !showInTitle) return;
       if (((isAndroid && show) || !isAndroid) && showInTitle) {
-        MediaItem _item = _currentMediaItem!.copyWith(
+        MediaItem _item = showItem!.copyWith(
           title:
               '${lyric.text}${!isEmpty(lyric.translation) && showTra ? '\n${lyric.translation}' : ''}',
-          artist: '${_currentMediaItem!.title} - ${_currentMediaItem!.artist}',
+          artist: '${showItem!.title} - ${showItem!.artist}',
         );
         (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
             .change_playbackstate(_item);
       } else if (isAndroid && show) {
-        MediaItem _item = _currentMediaItem!.copyWith(displayTitle: lyric.text);
+        MediaItem _item = showItem!.copyWith(displayTitle: lyric.text);
         if (showTra) {
           _item = _item.copyWith(
             displaySubtitle: !isEmpty(lyric.translation)
@@ -314,10 +299,9 @@ Future<void> change_playback_state(
       return;
     }
     if (sec != null) {
-      if (_currentMediaItem == null) return;
-      MediaItem _item = _currentMediaItem!.copyWith(
-        album: formatDuration(Duration(seconds: sec)),
-      );
+      lastSec = sec;
+      if (showItem == null) return;
+      MediaItem _item = showItem!.copyWith(album: fSec);
       (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
           .change_playbackstate(_item);
       return;
@@ -710,6 +694,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   void change_playbackstate(MediaItem _item) {
     // All options shown:
     // playbackState.add(_playbackState);
+    _currentShowMediaItem = _item;
     mediaItem.add(_item);
   }
   // In this simple example, we handle only 4 actions: play, pause, seek and

@@ -24,7 +24,6 @@ class AudioHandlerController extends GetxController {
         androidNotificationChannelId: 'com.xiebian.listen1_xuan.channel',
         androidNotificationChannelName: '音频播放',
         androidNotificationOngoing: false,
-        androidStopForegroundOnPause: false,
         androidNotificationIcon: 'mipmap/launcher_icon',
       ),
       cacheManager: null,
