@@ -7,7 +7,7 @@ import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
-import '../const.dart';
+import '../constants/const.dart';
 import '../controllers/myPlaylist_controller.dart';
 import '../funcs.dart';
 import '../settings.dart';

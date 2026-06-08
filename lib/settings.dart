@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:ui';
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
+import 'package:listen1_xuan/bl.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -26,6 +27,7 @@ import 'controllers/supabase_auth_controller.dart';
 import 'controllers/websocket_client_controller.dart';
 import 'pages/settings/play_buttons_settings_page.dart';
 import 'pages/settings/settings_password_dialog.dart';
+import 'pages/settings/select_audio_quality_of_bl_dialog.dart';
 import 'examples/websocket_client_example.dart';
 import 'examples/websocket_server_example.dart';
 import 'funcs.dart';
@@ -744,6 +746,12 @@ class _SettingsPageState extends State<SettingsPage> {
                               trailing: Icon(Icons.chevron_right),
                               onTap: () =>
                                   Get.toNamed(RouteName.equalizerPage, id: 1),
+                            ),
+                            ListTile(
+                              leading: Icon(Icons.audiotrack),
+                              title: const Text('默认音频质量'),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => DefaultQualitySettingsSheet.show(),
                             ),
                             Obx(
                               () => SwitchListTile(

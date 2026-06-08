@@ -20,7 +20,7 @@ import 'package:listen1_xuan/models/Track.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../bl.dart';
-import '../const.dart';
+import '../constants/const.dart';
 import '../global_settings_animations.dart';
 import '../kugou.dart';
 import '../main.dart';
@@ -403,6 +403,16 @@ class SettingsController extends GetxController {
     settings[showTimeInNotifyAblKey] = value;
   }
 
+  static const String selectAudioQualityOfBLKey = 'selectAudioQualityOfBL';
+  final RxInt selectAudioQualityOfBLRx = AudioQualityOfBL.hiRes.code.obs;
+  AudioQualityOfBL get selectAudioQualityOfBL =>
+      AudioQualityCode.fromCode(selectAudioQualityOfBLRx.value) ??
+      AudioQualityOfBL.hiRes;
+
+  set selectAudioQualityOfBL(AudioQualityOfBL value) {
+    settings[selectAudioQualityOfBLKey] = value.code;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
@@ -444,6 +454,9 @@ class SettingsController extends GetxController {
           settings[disableSomeEffectWhenInactiveKey] as bool? ?? true;
       final nextShowTimeInNotify =
           settings[showTimeInNotifyAblKey] as bool? ?? false;
+      final nextSelectAudioQualityOfBL =
+          settings[selectAudioQualityOfBLKey] as int? ??
+          AudioQualityOfBL.hiRes.code;
 
       if (songReplaceFabMiniRx.value != nextMini) {
         songReplaceFabMiniRx.value = nextMini;
@@ -488,6 +501,9 @@ class SettingsController extends GetxController {
       }
       if (showTimeInNotifyRx.value != nextShowTimeInNotify) {
         showTimeInNotifyRx.value = nextShowTimeInNotify;
+      }
+      if (selectAudioQualityOfBLRx.value != nextSelectAudioQualityOfBL) {
+        selectAudioQualityOfBLRx.value = nextSelectAudioQualityOfBL;
       }
     });
 

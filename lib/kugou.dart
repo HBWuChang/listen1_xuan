@@ -4,6 +4,7 @@ import 'package:listen1_xuan/controllers/play_controller.dart';
 import 'package:listen1_xuan/settings.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'constants/const.dart';
 import 'controllers/DioController.dart';
 import 'lowebutil.dart';
 import 'dart:math';
@@ -22,6 +23,7 @@ enum KgPlaylistType {
 }
 
 class Kugou {
+  static String get sourceName => PlatformSource.kugou.toString();
   // static kg_convert_song(song) {
   //   const track = {
   //     id: `kgtrack_${song.FileHash}`,
@@ -68,7 +70,7 @@ class Kugou {
       artist_id: '',
       album: song['AlbumName'],
       album_id: 'kgalbum_${song['AlbumID']}',
-      source: 'kugou',
+      source: sourceName,
       source_url:
           'https://www.kugou.com/song/#hash=${song['FileHash']}&album_id=${song['AlbumID']}',
       img_url: '',
@@ -284,7 +286,7 @@ class Kugou {
                   (item) => ({
                     'id': 'kgplaylist_${item['specialid']}',
                     'title': item['specialname'],
-                    'source': 'kugou',
+                    'source': sourceName,
                     'source_url':
                         'https://www.kugou.com/yy/special/single/${item['specialid']}.html',
                     'img_url': item['imgurl'] != null
@@ -388,7 +390,7 @@ class Kugou {
       'artist_id': '',
       'album': '',
       'album_id': 'kgalbum_${item['album_id']}',
-      'source': 'kugou',
+      'source': sourceName,
       'source_url':
           'https://www.kugou.com/song/#hash=$hash&album_id=${item['album_id']}',
       'img_url': '',
@@ -578,7 +580,7 @@ class Kugou {
       'artist_id': info['id'],
       'album': '',
       'album_id': 'kgalbum_${item['album_id']}',
-      'source': 'kugou',
+      'source': sourceName,
       'source_url':
           'https://www.kugou.com/song/#hash=${item['hash']}&album_id=${item['album_id']}',
       'img_url': '',
@@ -758,7 +760,7 @@ class Kugou {
     return success({
       'url': url,
       'bitrate': '${info['bitRate']}kbps',
-      'platform': 'kugou',
+      'platform': sourceName,
     }, track);
   }
 
@@ -850,7 +852,7 @@ class Kugou {
       'artist_id': '',
       'album': info['title'],
       'album_id': 'kgalbum_$album_id',
-      'source': 'kugou',
+      'source': sourceName,
       'source_url':
           'https://www.kugou.com/song/#hash=${item['hash']}&album_id=$album_id',
       'img_url': '',

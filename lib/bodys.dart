@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:adaptive_theme/adaptive_theme.dart';
-import 'package:listen1_xuan/const.dart';
+import 'package:listen1_xuan/constants/const.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:share_plus/share_plus.dart';

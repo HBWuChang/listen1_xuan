@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' show parse;
+import 'constants/const.dart';
 import 'controllers/DioController.dart';
 import 'lowebutil.dart';
 import 'package:marquee/marquee.dart';
@@ -33,6 +34,8 @@ enum QQPlaylistType {
 }
 
 class QQ {
+  static String get sourceName => PlatformSource.qq.toString();
+
   static String htmlDecode(String value) {
     var document = parse(value);
     return document.body?.text ?? '';
@@ -167,7 +170,7 @@ class QQ {
       'album': htmlDecode(song['albumname']),
       'album_id': 'qqalbum_${song['albummid']}',
       'img_url': qq_get_image_url(song['albummid'], 'album'),
-      'source': 'qq',
+      'source': sourceName,
       'source_url':
           'https://y.qq.com/#type=song&mid=${song['songmid']}&tpl=yqq_song_detail',
       'url': !qq_is_playable(song) ? '' : null,
@@ -184,7 +187,7 @@ class QQ {
       'album': htmlDecode(song['album']['name']),
       'album_id': 'qqalbum_${song['album']['mid']}',
       'img_url': qq_get_image_url(song['album']['mid'], 'album'),
-      'source': 'qq',
+      'source': sourceName,
       'source_url':
           'https://y.qq.com/#type=song&mid=${song['mid']}&tpl=yqq_song_detail',
       'url': '',
@@ -263,7 +266,7 @@ class QQ {
                   'album': htmlDecode(song['album']['name']),
                   'album_id': 'qqalbum_${song['album']['mid']}',
                   'img_url': qq_get_image_url(song['album']['mid'], 'album'),
-                  'source': 'qq',
+                  'source': sourceName,
                   'source_url':
                       'https://y.qq.com/#type=song&mid=${song['mid']}&tpl=yqq_song_detail',
                 };
@@ -453,7 +456,7 @@ class QQ {
                   (info) => ({
                     'id': 'qqplaylist_${info['dissid']}',
                     'title': htmlDecode(info['dissname']),
-                    'source': 'qq',
+                    'source': sourceName,
                     'source_url':
                         'https://y.qq.com/n/ryqq/playlist/${info['dissid']}',
                     'img_url': info['imgurl'],
@@ -555,7 +558,7 @@ class QQ {
     var prefix = purl.substring(0, 4);
     var found = fileConfig.values.where((i) => i['s'] == prefix);
     sound['bitrate'] = found.isNotEmpty ? found.first['bitrate'] : '';
-    sound['platform'] = 'qq';
+    sound['platform'] = sourceName;
     success(sound, track);
   }
 
@@ -928,7 +931,7 @@ class QQ {
         'user_name': uin,
         'nickname': info['nick'],
         'avatar': info['headurl'],
-        'platform': 'qq',
+        'platform': sourceName,
         'data': data,
       };
       // callback({'status': 'success', 'data': result});

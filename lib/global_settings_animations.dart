@@ -10,7 +10,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'const.dart';
+import 'constants/const.dart';
 import 'controllers/settings_controller.dart';
 import 'funcs.dart';
 import 'settings.dart';

@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' show parse;
+import 'constants/const.dart';
 import 'controllers/DioController.dart';
 import 'controllers/settings_controller.dart';
 import 'funcs.dart';
@@ -17,6 +18,32 @@ import 'models/Playlist.dart';
 import 'models/SearchPlayListRes.dart';
 
 final bilibili = Bilibili();
+
+enum AudioQualityOfBL { k64, k132, k192, dolby, hiRes }
+
+extension AudioQualityCode on AudioQualityOfBL {
+  static final List<int> _codeList = [30216, 30232, 30280, 30250, 30251];
+  int get code => _codeList[index];
+
+  static AudioQualityOfBL? fromCode(int code) {
+    final index = _codeList.indexOf(code);
+    if (index != -1) {
+      return AudioQualityOfBL.values[index];
+    }
+    return null;
+  }
+}
+
+extension AudioQualityDesc on AudioQualityOfBL {
+  static final List<String> _descList = [
+    '64K',
+    '132K',
+    '192K',
+    '杜比全景声',
+    'Hi-Res无损',
+  ];
+  get description => _descList[index];
+}
 
 enum BLPlaylistType {
   playlist('biplaylist'),
@@ -41,6 +68,8 @@ enum BLPlayListXuanType {
 }
 
 class Bilibili {
+  static String get sourceName => PlatformSource.bilibili.toString();
+
   Future<List<PlayList>> Xuan_get_bl_playlist() async {
     var bilibiliData = {};
     var bilibiliData2 = [];
@@ -565,7 +594,7 @@ class Bilibili {
       'title': songInfo['title'],
       'artist': songInfo['uname'],
       'artist_id': 'biartist_${songInfo['uid']}',
-      'source': 'bilibili',
+      'source': sourceName,
       'source_url': 'https://www.bilibili.com/audio/au${songInfo['id']}',
       'img_url': songInfo['cover'],
       'lyric_url': songInfo['lyric'],
@@ -582,7 +611,7 @@ class Bilibili {
       'title': htmlDecode(songInfo['title']),
       'artist': htmlDecode(songInfo['author']),
       'artist_id': 'biartist_v_${songInfo['mid']}',
-      'source': 'bilibili',
+      'source': sourceName,
       'source_url': 'https://www.bilibili.com/video/${songInfo['bvid']}',
       'img_url': imgUrl,
       'total_dur_msg': songInfo['duration']?.toString(),
@@ -599,7 +628,7 @@ class Bilibili {
     return SearchPlayListItem(
       id: '${BLPlaylistType.playlistxuan.prefix}_${BLPlayListXuanType.ugcSeason.prefix}${songInfo['bvid']}',
       title: htmlDecode(songInfo['title']),
-      source: 'bilibili',
+      source: sourceName,
       sourceUrl: 'https://www.bilibili.com/video/${songInfo['bvid']}',
       imgUrl: imgUrl,
       url: 'https://www.bilibili.com/video/${songInfo['bvid']}',
@@ -619,7 +648,7 @@ class Bilibili {
             // /data/View/ugc_season/sections/0/episodes/0/arc/author/name
             artist: htmlDecode(item['arc']['author']['name']),
             artist_id: 'biartist_v_${item['arc']['author']['mid']}',
-            source: 'bilibili',
+            source: sourceName,
             source_url: 'https://www.bilibili.com/video/${item['bvid']}',
             img_url: item['arc']['pic'],
           ),
@@ -633,7 +662,7 @@ class Bilibili {
       'title': htmlDecode(songInfo['title']),
       'artist': htmlDecode(songInfo['upper']['name']),
       'artist_id': 'biartist_v_${songInfo['upper']['mid']}',
-      'source': 'bilibili',
+      'source': sourceName,
       'source_url': 'https://www.bilibili.com/video/${songInfo['bvid']}',
       'img_url': songInfo['cover'],
     };
@@ -647,7 +676,7 @@ class Bilibili {
       'title': htmlDecode(songInfo['title']),
       'artist': htmlDecode(songInfo['owner']['name']),
       'artist_id': 'biartist_v_${songInfo['owner']['mid']}',
-      'source': 'bilibili',
+      'source': sourceName,
       'source_url': 'https://www.bilibili.com/video/${songInfo['bvid']}',
       'img_url': songInfo['cover'] ?? songInfo['pic'] ?? songInfo['cover43'],
     };
@@ -758,7 +787,7 @@ class Bilibili {
       'title': htmlDecode(songInfo['part']),
       'artist': htmlDecode(author['name']),
       'artist_id': 'biartist_v_${author['mid']}',
-      'source': 'bilibili',
+      'source': sourceName,
       'source_url':
           'https://www.bilibili.com/video/$bvid/?p=${songInfo['page']}',
       'img_url': imgUrl,
@@ -861,6 +890,21 @@ class Bilibili {
             'https://api.bilibili.com/x/player/playurl?fnval=16&bvid=$bvid&cid=$cid';
         final response2 = await dioWithCookieManager.get(targetUrl2);
         try {
+          /// flac
+          try {
+            final flac = response2.data['data']['dash']['flac'];
+            if (flac != null &&
+                flac['display'] &&
+                isNotEmpty(flac['baseUrl'])) {
+              final url = flac['baseUrl'];
+              sound['url'] = url;
+              sound['platform'] = sourceName;
+              success(sound, track);
+              return;
+            }
+          } finally {}
+
+          /// 原方法
           final audioList = response2.data['data']['dash']['audio'];
           if (audioList.isNotEmpty) {
             // 找到最大的 id 对应的元素
@@ -869,7 +913,7 @@ class Bilibili {
             );
             final url = maxAudio['baseUrl'];
             sound['url'] = url;
-            sound['platform'] = 'bilibili';
+            sound['platform'] = sourceName;
             success(sound, track);
           } else {
             failure(track);
@@ -878,7 +922,7 @@ class Bilibili {
           if (response2.data['data']['durl'].length > 0) {
             final url = response2.data['data']['durl'][0]['url'];
             sound['url'] = url;
-            sound['platform'] = 'bilibili';
+            sound['platform'] = sourceName;
             success(sound, track);
           } else {
             failure(track);
@@ -897,7 +941,7 @@ class Bilibili {
         final data = response.data;
         if (data['code'] == 0) {
           sound['url'] = data['data']['cdns'][0];
-          sound['platform'] = 'bilibili';
+          sound['platform'] = sourceName;
           success(sound, track);
         } else {
           failure(track);

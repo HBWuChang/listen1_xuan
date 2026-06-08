@@ -11,7 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:convert';
-import '../const.dart';
+import '../constants/const.dart';
 import '../constants/network_defaults.dart';
 import '../global_settings_animations.dart';
 import '../main.dart';
