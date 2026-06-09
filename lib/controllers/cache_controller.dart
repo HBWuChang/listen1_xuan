@@ -355,6 +355,10 @@ class CacheController extends GetxController {
 
   /// 清理单个缓存文件
   Future<void> _cleanSingleCache(String id, {bool hideSnackbar = false}) async {
+    if (_playController.bootStrapDownloading.containsKey(id)) {
+      showWarningSnackbar('正在下载中，无法清理', null);
+      return;
+    }
     Get.find<XLyricController>().clearLyricCache(id);
     id = _playController.songReplaceSettings.value.getReplacementId(id) ?? id;
     final path = await getLocalCache(id);
