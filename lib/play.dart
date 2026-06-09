@@ -451,13 +451,16 @@ class _PlayState extends State<Play> {
     Widget ctx_bu = GetBuilder<AudioHandlerController>(
       builder: (controller) {
         if (controller.loading.value) {
-          return Center(child: globalLoadingAnime);
+          return Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: widget.horizon
+                  ? EdgeInsets.zero
+                  : EdgeInsets.only(bottom: max((256.w - 64) / 2, 0)),
+              child: globalLoadingAnime,
+            ),
+          );
         } else {
-          // WidgetsBinding.instance.addPostFrameCallback((_) {
-          //   Get.find<ThemeController>().didChangePlatformBrightnessOrManual(
-          //     once: true,
-          //   );
-          // });
           Widget tW = widget.horizon
               ? SizedBox(height: 60, child: playH())
               : playV2;

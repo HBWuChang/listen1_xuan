@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/bl.dart';
+import 'package:listen1_xuan/constants/const.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -20,9 +21,13 @@ class _QualitySheetController extends GetxController {
 
 /// 平台默认音频质量设置入口
 class DefaultQualitySettingsSheet {
-  static Future<void> show() async {
+  static Future<void> show({PlatformSource? platformSource}) async {
     final ctrl = Get.put(_QualitySheetController(), tag: 'quality_sheet');
     try {
+      final hasPlatform = platformSource != null;
+      if (hasPlatform) {
+        ctrl.pageIndex = 1;
+      }
       await WoltModalSheet.show<void>(
         pageIndexNotifier: ctrl.pageIndexNotifier,
         context: Get.context!,
@@ -71,8 +76,9 @@ class DefaultQualitySettingsSheet {
   }
 
   static SliverWoltModalSheetPage _buildBLQualityPage(
-    _QualitySheetController ctrl,
-  ) {
+    _QualitySheetController ctrl, {
+    bool showBack = true,
+  }) {
     final qualities = AudioQualityOfBL.values.reversed.toList();
     final settingsController = Get.find<SettingsController>();
 
@@ -85,7 +91,7 @@ class DefaultQualitySettingsSheet {
           child: _buildHeader(
             context,
             title: '选择B站默认音频质量',
-            showBack: true,
+            showBack: showBack,
             onBack: () => ctrl.pageIndex = 0,
             onClose: () => Get.back(),
           ),

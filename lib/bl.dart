@@ -871,7 +871,7 @@ class Bilibili {
   ) async {
     final trackId = track.id;
     if (trackId.startsWith('bitrack_v_')) {
-      final sound = {};
+      Map<String, dynamic> sound = {};
       var bvid = trackId.substring('bitrack_v_'.length);
 
       final trackIdCheck = trackId.split('-');
@@ -887,37 +887,67 @@ class Bilibili {
           cid = trackIdCheck[1];
         }
         final targetUrl2 =
-            'https://api.bilibili.com/x/player/playurl?fnval=16&bvid=$bvid&cid=$cid';
+            'https://api.bilibili.com/x/player/playurl?fnval=4048&bvid=$bvid&cid=$cid';
         final response2 = await dioWithCookieManager.get(targetUrl2);
+        Map<int, dynamic> audioTracks = {};
+        AudioQualityOfBL selectAudioQualityOfBL =
+            getx.Get.find<SettingsController>().selectAudioQualityOfBL;
+        List<AudioQualityOfBL> canSelectQualities = AudioQualityOfBL.values
+            .where((quality) => quality.index <= selectAudioQualityOfBL.index)
+            .toList();
         try {
           /// flac
           try {
             final flac = response2.data['data']['dash']['flac'];
-            if (flac != null &&
-                flac['display'] &&
-                isNotEmpty(flac['baseUrl'])) {
-              final url = flac['baseUrl'];
-              sound['url'] = url;
+            if (flac != null && flac['display'] && isNotEmpty(flac['audio'])) {
+              audioTracks[flac['audio']['id']] = flac['audio'];
+            }
+          } catch (_) {}
+
+          /// dolby
+          try {
+            final dolby = response2.data['data']['dash']['dolby'];
+            if (dolby != null &&
+                dolby['audio'] != null &&
+                isNotEmpty(dolby['audio'])) {
+              for (Map<String, dynamic> item in dolby['audio']) {
+                audioTracks[item['id']] = item;
+              }
+            }
+          } catch (_) {}
+
+          /// 原方法
+          // if (audioList.isNotEmpty) {
+          //   // 找到最大的 id 对应的元素
+          //   final maxAudio = audioList.reduce(
+          //     (a, b) => a['id'] > b['id'] ? a : b,
+          //   );
+          //   final url = maxAudio['baseUrl'];
+          //   sound['url'] = url;
+          //   sound['platform'] = sourceName;
+          //   success(sound, track);
+          // } else {
+          //   failure(track);
+          // }
+          try {
+            final audioList = response2.data['data']['dash']['audio'];
+            if (audioList.isNotEmpty) {
+              for (Map<String, dynamic> item in audioList) {
+                audioTracks[item['id']] = item;
+              }
+            }
+          } catch (_) {}
+          while (canSelectQualities.isNotEmpty) {
+            final quality = canSelectQualities.removeLast();
+            if (audioTracks.containsKey(quality.code)) {
+              sound['url'] = audioTracks[quality.code]['baseUrl'];
               sound['platform'] = sourceName;
+              sound['audioQualityOfBL'] = quality;
               success(sound, track);
               return;
             }
-          } finally {}
-
-          /// 原方法
-          final audioList = response2.data['data']['dash']['audio'];
-          if (audioList.isNotEmpty) {
-            // 找到最大的 id 对应的元素
-            final maxAudio = audioList.reduce(
-              (a, b) => a['id'] > b['id'] ? a : b,
-            );
-            final url = maxAudio['baseUrl'];
-            sound['url'] = url;
-            sound['platform'] = sourceName;
-            success(sound, track);
-          } else {
-            failure(track);
           }
+          failure(track);
         } catch (e) {
           if (response2.data['data']['durl'].length > 0) {
             final url = response2.data['data']['durl'][0]['url'];

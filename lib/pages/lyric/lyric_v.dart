@@ -116,6 +116,13 @@ class _ExpandableMoreMenu extends StatefulWidget {
 
 class __ExpandableMoreMenuState extends State<_ExpandableMoreMenu> {
   bool _isExpanded = false;
+  String? get nowPlatformSourceDesc {
+    final track = Get.find<PlayController>().currentTrack;
+    if (isEmpty(track.source)) return null;
+    return PlatformSourceExt.findPlatformSourceByName(
+      track.source!,
+    )?.shortDisplayName;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,6 +169,43 @@ class __ExpandableMoreMenuState extends State<_ExpandableMoreMenu> {
                     padding: EdgeInsets.zero,
                     icon: Icon(Icons.av_timer_rounded),
                   ),
+                  Obx(() {
+                    OnlineCacheItem? currentCacheItem =
+                        Get.find<PlayController>()
+                            .currentPlayingOnlineCacheItem
+                            .value;
+                    return currentCacheItem?.qualityPlat != null
+                        ? IconButton(
+                            onPressed: () => DefaultQualitySettingsSheet.show(
+                              platformSource: currentCacheItem.qualityPlat,
+                            ),
+                            padding: EdgeInsets.zero,
+                            icon: Container(
+                              key: ValueKey(currentCacheItem?.qualityDesc),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                currentCacheItem!.qualityDesc!,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ),
+                          )
+                        : SizedBox.shrink();
+                  }),
                 ],
               ],
             ),
@@ -169,7 +213,35 @@ class __ExpandableMoreMenuState extends State<_ExpandableMoreMenu> {
           IconButton(
             onPressed: () => setState(() => _isExpanded = !_isExpanded),
             padding: EdgeInsets.zero,
-            icon: Icon(Icons.more_vert_rounded),
+            icon: Obx(() {
+              String? _nowPlatformSourceDesc = nowPlatformSourceDesc;
+              return FadeThroughBox(
+                alignment: Alignment.center,
+                child: _isExpanded && isNotEmpty(_nowPlatformSourceDesc)
+                    ? Container(
+                        key: ValueKey(_nowPlatformSourceDesc),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _nowPlatformSourceDesc!,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      )
+                    : Icon(Icons.more_vert_rounded),
+              );
+            }),
           ),
         ],
       ),

@@ -11,6 +11,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/controllers/cache_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/main.dart';
+import 'package:listen1_xuan/models/OnlineCacheItem.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 import 'package:smtc_windows/smtc_windows.dart';
@@ -526,6 +527,7 @@ class PlayController extends GetxController
   /// 目前设想在第一次播放完成前且未获取云端时为true
   bool receivedContinuePlay = false;
   int? toSeek;
+  Rxn<OnlineCacheItem> currentPlayingOnlineCacheItem = Rxn<OnlineCacheItem>();
   Future<void> playsong(
     Track track, {
     bool start = true,
@@ -553,7 +555,8 @@ class PlayController extends GetxController
       nowPlayingTrackRx.value = track;
       add_current_playing([track]);
       // Get.find<NowPlayingPageController>().scrollToCurrentTrack?.call();
-      final tdir = await get_local_cache(track.id);
+      final tdir = await Get.find<CacheController>().getLocalCache(track.id);
+
       debugPrint('playsong');
       debugPrint(track.toString());
       debugPrint(tdir);
@@ -565,6 +568,8 @@ class PlayController extends GetxController
       }
       Map<String, String>? httpHeaders = Get.find<CacheController>()
           .httpHeadersOfOnlineCache(track.id);
+      currentPlayingOnlineCacheItem.value = Get.find<CacheController>()
+          .getLocalCacheOnlineCacheItem(track.id);
       // 有缓存，直接播放
       Media media = Media(tdir, httpHeaders: httpHeaders);
       await music_player.open(media, play: false);

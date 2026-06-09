@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/lyric_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/models/OnlineCacheItem.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -27,7 +28,7 @@ class CacheController extends GetxController {
   final Logger _logger = Logger();
   final String _localCacheListKey = 'local-cache-list';
   final _localCacheList = <String, String>{}.obs;
-  final _onlineCacheList = <String, String>{}.obs;
+  final _onlineCacheList = <String, OnlineCacheItem>{}.obs;
   final _toDelFiles = <String>{}.obs;
   SettingsController _settingsController = Get.find<SettingsController>();
   PlayController get _playController => Get.find<PlayController>();
@@ -88,7 +89,10 @@ class CacheController extends GetxController {
     Track track, {
     Track? sTrack,
   }) async {
-    _onlineCacheList[track.id] = res['url'];
+    _onlineCacheList[track.id] = OnlineCacheItem(
+      url: res['url'],
+      audioQualityOfBL: res['audioQualityOfBL'],
+    );
     if (_settingsController.disableSongDownload) return;
 
     if (_playController.bootStrapDownloading.containsKey(
@@ -296,7 +300,7 @@ class CacheController extends GetxController {
     if (!_isDeleting) tryDelFiles(); // 尝试删除待删除的文件
     id = _playController.songReplaceSettings.value.getReplacementId(id) ?? id;
     if (_onlineCacheList.containsKey(id)) {
-      return _onlineCacheList[id]!;
+      return _onlineCacheList[id]!.url;
     }
     if (_localCacheList.containsKey(id)) {
       var downDir = await xuanGetdataDirectory();
@@ -308,6 +312,14 @@ class CacheController extends GetxController {
       }
     }
     return '';
+  }
+
+  OnlineCacheItem? getLocalCacheOnlineCacheItem(String id) {
+    id = _playController.songReplaceSettings.value.getReplacementId(id) ?? id;
+    if (_onlineCacheList.containsKey(id)) {
+      return _onlineCacheList[id]!;
+    }
+    return null;
   }
 
   // 设置本地缓存文件路径
@@ -336,8 +348,9 @@ class CacheController extends GetxController {
   }
 
   void testSetErrorAddr() {
-    _onlineCacheList[_playController.currentTrack.id] =
-        'http://example.com/nonexistentfile.mp3';
+    _onlineCacheList[_playController.currentTrack.id] = OnlineCacheItem(
+      url: 'http://example.com/nonexistentfile.mp3',
+    );
   }
 
   /// 清理单个缓存文件

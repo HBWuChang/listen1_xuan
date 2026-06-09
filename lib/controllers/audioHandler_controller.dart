@@ -12,12 +12,12 @@ class AudioHandlerController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    print('AudioHandlerController initialized');
+    debugPrint('AudioHandlerController initialized');
     setNotification();
   }
 
   Future<void> setNotification() async {
-    print('setNotification');
+    debugPrint('setNotification');
     audioHandler = await AudioService.init(
       builder: () => AudioPlayerHandler(),
       config: AudioServiceConfig(
