@@ -795,7 +795,14 @@ class UpdController extends GetxController {
               (release) => !release.prerelease,
               orElse: () => releases.first,
             );
+
+      final rLatestRelease = releases.first;
+      final rLatestBuild = _selectReleaseAsset(rLatestRelease);
+      final rLatestBuildNumber = rLatestBuild == null
+          ? null
+          : p.basenameWithoutExtension(rLatestBuild.name).split('-').last;
       final latestBuild = _selectReleaseAsset(latestRelease);
+
       if (latestBuild == null) {
         showDebugSnackbar('未能获取最新版本的安装包信息', null);
         return;
@@ -815,7 +822,9 @@ class UpdController extends GetxController {
         await delReleasesCache(oldReleases, latestBuildNumber);
       }
 
-      if (localBuildNumber != latestBuildNumber && !kDebugMode) {
+      if (localBuildNumber != latestBuildNumber &&
+          !kDebugMode &&
+          localBuildNumber != rLatestBuildNumber) {
         // 有新版本可用
         _showReleaseUpdateDialog(latestRelease, latestBuild);
       }
