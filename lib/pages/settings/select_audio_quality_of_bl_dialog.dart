@@ -32,10 +32,7 @@ class DefaultQualitySettingsSheet {
         pageIndexNotifier: ctrl.pageIndexNotifier,
         context: Get.context!,
         pageListBuilder: (modalSheetContext) {
-          return [
-            _buildPlatformListPage(ctrl),
-            _buildBLQualityPage(ctrl),
-          ];
+          return [_buildPlatformListPage(ctrl), _buildBLQualityPage(ctrl)];
         },
       );
     } finally {
@@ -102,8 +99,7 @@ class DefaultQualitySettingsSheet {
             final quality = qualities[index];
             return Obx(() {
               final isSelected =
-                  settingsController.selectAudioQualityOfBLRx.value ==
-                  quality.code;
+                  settingsController.selectAudioQualityOfBL == quality;
 
               return ListTile(
                 leading: Icon(
@@ -133,8 +129,7 @@ class DefaultQualitySettingsSheet {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 onTap: () {
-                  settingsController.selectAudioQualityOfBLRx.value =
-                      quality.code;
+                  settingsController.selectAudioQualityOfBL = quality;
                   Get.back();
                 },
               );

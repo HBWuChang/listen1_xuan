@@ -404,10 +404,10 @@ class SettingsController extends GetxController {
   }
 
   static const String selectAudioQualityOfBLKey = 'selectAudioQualityOfBL';
-  final RxInt selectAudioQualityOfBLRx = AudioQualityOfBL.hiRes.code.obs;
+  final RxInt selectAudioQualityOfBLRx = AudioQualityOfBL.k192.code.obs;
   AudioQualityOfBL get selectAudioQualityOfBL =>
       AudioQualityCode.fromCode(selectAudioQualityOfBLRx.value) ??
-      AudioQualityOfBL.hiRes;
+      AudioQualityOfBL.k192;
 
   set selectAudioQualityOfBL(AudioQualityOfBL value) {
     settings[selectAudioQualityOfBLKey] = value.code;
@@ -456,7 +456,7 @@ class SettingsController extends GetxController {
           settings[showTimeInNotifyAblKey] as bool? ?? false;
       final nextSelectAudioQualityOfBL =
           settings[selectAudioQualityOfBLKey] as int? ??
-          AudioQualityOfBL.hiRes.code;
+          AudioQualityOfBL.k192.code;
 
       if (songReplaceFabMiniRx.value != nextMini) {
         songReplaceFabMiniRx.value = nextMini;
