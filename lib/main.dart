@@ -626,7 +626,7 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
 
                   ///测试按钮
-                  if (kDebugMode) testBtn,
+                  if (kDebugMode && !testBtnoff) testBtn,
 
                   ///WebSocketClientControlPanel悬浮按钮
                   Positioned.fill(

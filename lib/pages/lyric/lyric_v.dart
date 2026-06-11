@@ -213,35 +213,39 @@ class __ExpandableMoreMenuState extends State<_ExpandableMoreMenu> {
           IconButton(
             onPressed: () => setState(() => _isExpanded = !_isExpanded),
             padding: EdgeInsets.zero,
-            icon: Obx(() {
-              String? _nowPlatformSourceDesc = nowPlatformSourceDesc;
-              return FadeThroughBox(
-                alignment: Alignment.center,
-                child: _isExpanded && isNotEmpty(_nowPlatformSourceDesc)
-                    ? Container(
-                        key: ValueKey(_nowPlatformSourceDesc),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.primary,
+            icon: SizedBox(
+              height: 24,
+              child: Obx(() {
+                String? nowPlatformSourceDesc = this.nowPlatformSourceDesc;
+                return FadeThroughBox(
+                  alignment: Alignment.center,
+                  margin: EdgeInsets.zero,
+                  child: _isExpanded && isNotEmpty(nowPlatformSourceDesc)
+                      ? Container(
+                          key: ValueKey(nowPlatformSourceDesc),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          _nowPlatformSourceDesc!,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      )
-                    : Icon(Icons.more_vert_rounded),
-              );
-            }),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            nowPlatformSourceDesc!,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        )
+                      : Icon(Icons.more_vert_rounded),
+                );
+              }),
+            ),
           ),
         ],
       ),

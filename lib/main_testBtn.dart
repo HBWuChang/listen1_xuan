@@ -2,6 +2,8 @@ part of 'main.dart';
 
 RxInt testCount = 0.obs;
 
+bool testBtnoff = true;
+
 Widget get testBtn => Positioned.fill(
   child: SafeArea(
     top: false,
