@@ -50,7 +50,6 @@ dependencies:
   # media_kit: ^1.2.6
   media_kit: 
     git:
-    # https://github.com/media-kit/media-kit/tree/main/media_kit
       url: https://github.com/media-kit/media-kit.git
       ref: main
       path: media_kit
