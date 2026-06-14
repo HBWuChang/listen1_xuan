@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     if: "contains(github.event.head_commit.message, 'win')"
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - name: Output Commit Information
         run: |
@@ -23,6 +23,8 @@ jobs:
           echo "GITHASH (前7位): $GITHASH"
         shell: pwsh
       - uses: actions/checkout@v3
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
