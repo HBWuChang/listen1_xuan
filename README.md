@@ -2,7 +2,7 @@
 
 本软件为flutter重写的Listen1,支持Windows、MacOS、Android及iOS平台。
 -https://www.bilibili.com/video/BV133VHzaEPt/
-flutter version 3.44.2
+flutter version 3.38.10
 
 ## Releases说明
 
