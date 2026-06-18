@@ -35,7 +35,7 @@ dependencies:
   fluttertoast: ^9.0.0
   file_picker: ^8.1.6
   permission_handler: ^11.3.1
-  vibration: ^2.0.1
+  vibration: ^3.1.8
   logger: ^2.5.0
   connectivity_plus: ^6.1.4
   flutter_markdown_plus: ^1.0.5
@@ -88,7 +88,7 @@ dependencies:
   mobile_scanner: ^7.0.1
   app_links: ^6.4.1
   msix: ^3.16.12
-  win32_registry: ^2.1.0
+  win32_registry: ^3.0.3
   dynamic_color: ^1.8.1
   bonsoir: ^6.0.3
   punycode: ^1.0.0
@@ -108,8 +108,8 @@ dependencies:
   json_annotation: ^4.9.0
   dotted_border: ^3.1.0
   skeletonizer: ^2.1.1
-  package_info_plus: ^9.0.0
-  share_plus: ^12.0.1
+  package_info_plus: ^10.1.0
+  share_plus: ^13.1.0
   hive: ^2.2.3
   resizable_widget:
     git:
