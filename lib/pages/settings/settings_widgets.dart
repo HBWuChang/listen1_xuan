@@ -1042,7 +1042,7 @@ class _SupabaseTokenManagementContent extends StatelessWidget {
       showInfoSnackbar('正在下载', null);
       final success = await authController.downloadAllTokens();
       if (success) {
-        showSuccessSnackbar('一键下载成功', '请重启应用以生效');
+        showSuccessSnackbar('一键下载成功', null);
       } else {
         showErrorSnackbar('一键下载失败', authController.errorMessage.value);
       }
@@ -1085,7 +1085,7 @@ class _SupabaseTokenManagementContent extends StatelessWidget {
       );
       if (cloudToken != null && cloudToken.isNotEmpty) {
         await savePlatformToken(platformCode, cloudToken);
-        showSuccessSnackbar('下载成功', '请重启应用以生效');
+        showSuccessSnackbar('下载成功', null);
       } else {
         showErrorSnackbar('下载失败', '云端 Token 为空');
       }

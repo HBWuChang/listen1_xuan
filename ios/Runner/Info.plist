@@ -39,6 +39,11 @@
 	<string>This app needs camera access to scan QR codes</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>111</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_listen1xuan._tcp</string>
+		<!-- Add more here -->
+	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs photos access to get QR code from photo library</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

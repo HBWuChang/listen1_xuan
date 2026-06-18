@@ -235,6 +235,6 @@ SPEC CHECKSUMS:
   webview_cookie_manager: d63a76cabdf42a7ea3d92768ac67d4853a1367f8
   webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
 
-PODFILE CHECKSUM: 6ea40ae703cd1911d373b4f0216d85ad697bc33a
+PODFILE CHECKSUM: 375eb443af2d6a6ce29eae4426340af65bb11904
 
 COCOAPODS: 1.16.2
