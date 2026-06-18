@@ -70,6 +70,7 @@ dependencies:
   shelf: ^1.4.2
   shelf_web_socket: ^3.0.0
   shelf_router: ^1.1.4
+  
   # flutter_lyric: 3.0.2
   flutter_lyric:
     git:
