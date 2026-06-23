@@ -277,11 +277,14 @@ class Playlist extends GetView<PlaylistController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
+            SizedBox(
               width: itemWidth,
               height: itemWidth, // Square aspect ratio
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
+              child: ClipSmoothRect(
+                radius: SmoothBorderRadius(
+                  cornerRadius: 16,
+                  cornerSmoothing: 1,
+                ),
                 child: ExtendedImage.network(
                   playlist['cover_img_url'],
                   fit: BoxFit.cover,

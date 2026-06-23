@@ -5,11 +5,11 @@ Widget buildCoverImage(double size, {double? borderRadius}) {
   final radius = borderRadius ?? 8.0;
   return GestureDetector(
     onTap: () => _openLyricPage(),
-    child: Container(
+    child: SizedBox(
       width: size,
       height: size,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
+      child: ClipSmoothRect(
+        radius: SmoothBorderRadius(cornerRadius: radius, cornerSmoothing: 1),
         child: Obx(() {
           Track? mediaItem = _playController.nowPlayingTrackRx.value;
           return isEmpty(mediaItem?.img_url)
