@@ -150,7 +150,7 @@ Future<void> importSettingsFromFile(
       await Permission.storage.request().isGranted) {
     try {
       // 弹出系统文件选择器选择文件
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.any,
       );
 

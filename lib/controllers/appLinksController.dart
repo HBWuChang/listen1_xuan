@@ -70,18 +70,13 @@ class Applinkscontroller extends GetxController {
     String appPath = Platform.resolvedExecutable;
 
     String protocolRegKey = 'Software\\Classes\\$scheme';
-    RegistryValue protocolRegValue = const RegistryValue.string(
-      'URL Protocol',
-      '',
-    );
     String protocolCmdRegKey = 'shell\\open\\command';
-    RegistryValue protocolCmdRegValue = RegistryValue.string(
-      '',
-      '"$appPath" "%1"',
-    );
 
-    final regKey = Registry.currentUser.createKey(protocolRegKey);
-    regKey.createValue(protocolRegValue);
-    regKey.createKey(protocolCmdRegKey).createValue(protocolCmdRegValue);
+    final regKey = CURRENT_USER.create(protocolRegKey);
+    regKey.setValue('URL Protocol', const RegistryValue.string(''));
+    final cmdKey = regKey.create(protocolCmdRegKey);
+    cmdKey.setValue('', RegistryValue.string('"$appPath" "%1"'));
+    cmdKey.close();
+    regKey.close();
   }
 }
