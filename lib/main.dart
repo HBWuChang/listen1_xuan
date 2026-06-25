@@ -7,6 +7,7 @@ import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/search_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:media_kit/media_kit.dart' show MediaKit;
 import 'package:resizable_widget/resizable_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -587,7 +588,7 @@ class _MyHomePageState extends State<MyHomePage>
                 children: [
                   Positioned.fill(
                     child: Column(
-                      children: [
+                      children: <Widget>[
                         Expanded(
                           child: globalHorizon
                               ? ResizableWidget(
@@ -611,16 +612,15 @@ class _MyHomePageState extends State<MyHomePage>
                                     isWindows || isMacOS
                                         ? DragToMoveArea(child: _leftBar)
                                         : _leftBar,
-
                                     _mainContent(),
                                   ],
                                 )
                               : _mainContent(),
                         ),
                         if (!globalHorizon)
-                          SafeArea(top: false, child: SizedBox(height: 256.w))
+                          SafeArea(top: false, child: 256.wsbh)
                         else
-                          SizedBox(height: 60),
+                          60.sbh,
                       ],
                     ),
                   ),

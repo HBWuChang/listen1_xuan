@@ -22,7 +22,7 @@ class _LyricVPageState extends State<LyricVPage>
         children: [
           Expanded(child: RepaintBoundary(child: _buildLyricContent(context))),
           _buildTranslationToggle(context),
-          IgnorePointer(child: SizedBox(height: 500.w)),
+          IgnorePointer(child: 500.wsbh),
         ],
       ),
     );
@@ -213,39 +213,36 @@ class __ExpandableMoreMenuState extends State<_ExpandableMoreMenu> {
           IconButton(
             onPressed: () => setState(() => _isExpanded = !_isExpanded),
             padding: EdgeInsets.zero,
-            icon: SizedBox(
-              height: 24,
-              child: Obx(() {
-                String? nowPlatformSourceDesc = this.nowPlatformSourceDesc;
-                return FadeThroughBox(
-                  alignment: Alignment.center,
-                  margin: EdgeInsets.zero,
-                  child: _isExpanded && isNotEmpty(nowPlatformSourceDesc)
-                      ? Container(
-                          key: ValueKey(nowPlatformSourceDesc),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+            icon: Obx(() {
+              String? nowPlatformSourceDesc = this.nowPlatformSourceDesc;
+              return FadeThroughBox(
+                alignment: Alignment.center,
+                margin: EdgeInsets.zero,
+                child: _isExpanded && isNotEmpty(nowPlatformSourceDesc)
+                    ? Container(
+                        key: ValueKey(nowPlatformSourceDesc),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
                           ),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            nowPlatformSourceDesc!,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        )
-                      : Icon(Icons.more_vert_rounded),
-                );
-              }),
-            ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          nowPlatformSourceDesc!,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      )
+                    : Icon(Icons.more_vert_rounded),
+              );
+            }).sbh(24),
           ),
         ],
       ),
@@ -535,7 +532,7 @@ class LyricDelayAdjuster extends StatelessWidget {
             ),
           ),
 
-          SizedBox(height: 12),
+          12.sbh,
           // 全局延迟调整
           _DelaySliderItem(
             label: Text(
@@ -548,7 +545,7 @@ class LyricDelayAdjuster extends StatelessWidget {
             theme: theme,
             enabled: true,
           ),
-          SizedBox(height: 16),
+          16.sbh,
         ],
       ),
     );
@@ -634,7 +631,7 @@ class _DelaySliderItemState extends State<_DelaySliderItem> {
                   ),
                 ],
               ),
-              SizedBox(height: 12),
+              12.sbh,
               // 滑块
               Row(
                 children: [

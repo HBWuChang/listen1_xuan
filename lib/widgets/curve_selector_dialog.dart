@@ -2,13 +2,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import '../models/CurveOption.dart';
 
 /// 曲线选择对话框
-/// 
+///
 /// 显示所有可用的曲线选项，并提供实时预览
 /// 用户选择后返回曲线的名称（String类型）
-/// 
+///
 /// 使用方法:
 /// ```dart
 /// final selectedCurveName = await showCurveSelectorDialog(
@@ -41,10 +42,10 @@ Future<String?> showCurveSelectorDialog(
 class CurveSelectorDialog extends StatefulWidget {
   /// 当前选中的曲线名称
   final String? currentCurveName;
-  
+
   /// 对话框标题
   final String? title;
-  
+
   /// 是否显示预览区域
   final bool showPreview;
 
@@ -70,7 +71,7 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
     super.initState();
     selectedCurveName = widget.currentCurveName;
     _scrollController = ScrollController();
-    
+
     // 初始化预览动画控制器
     _previewController = AnimationController(
       vsync: this,
@@ -114,13 +115,13 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
                 ),
               ],
             ),
-            SizedBox(height: 32.w),
+            32.wsbh,
 
             // 预览区域
             if (widget.showPreview && selectedCurveName != null)
               _buildPreviewSection(),
 
-            SizedBox(height: 32.w),
+            32.wsbh,
 
             // 曲线列表
             Expanded(
@@ -129,8 +130,9 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
                 itemCount: categories.length,
                 itemBuilder: (context, index) {
                   final category = categories[index];
-                  final curvesInCategory =
-                      CurveOption.getCurvesByCategory(category);
+                  final curvesInCategory = CurveOption.getCurvesByCategory(
+                    category,
+                  );
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,14 +158,14 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
                         (option) => _buildCurveItem(option),
                       ),
 
-                      SizedBox(height: 32.w),
+                      32.wsbh,
                     ],
                   );
                 },
               ),
             ),
 
-            SizedBox(height: 32.w),
+            32.wsbh,
 
             // 底部按钮
             Row(
@@ -171,18 +173,12 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
               children: [
                 TextButton(
                   onPressed: () => Get.back(),
-                  child: Text(
-                    '取消',
-                    style: TextStyle(fontSize: 44.sp),
-                  ),
+                  child: Text('取消', style: TextStyle(fontSize: 44.sp)),
                 ),
-                SizedBox(width: 32.w),
+                32.wsbw,
                 ElevatedButton(
                   onPressed: () => Get.back(result: selectedCurveName),
-                  child: Text(
-                    '确定',
-                    style: TextStyle(fontSize: 44.sp),
-                  ),
+                  child: Text('确定', style: TextStyle(fontSize: 44.sp)),
                 ),
               ],
             ),
@@ -202,21 +198,15 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
       decoration: BoxDecoration(
         color: Get.theme.cardColor,
         borderRadius: BorderRadius.circular(24.w),
-        border: Border.all(
-          color: Get.theme.dividerColor,
-          width: 2.w,
-        ),
+        border: Border.all(color: Get.theme.dividerColor, width: 2.w),
       ),
       child: Column(
         children: [
           Text(
             '预览: ${option.displayName}',
-            style: TextStyle(
-              fontSize: 48.sp,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 48.sp, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 24.w),
+          24.wsbh,
           Text(
             option.description,
             style: TextStyle(
@@ -224,77 +214,74 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
               color: Get.theme.textTheme.bodySmall?.color,
             ),
           ),
-          SizedBox(height: 48.w),
+          48.wsbh,
 
           // 动画预览
-          SizedBox(
-            height: 200.w,
-            child: AnimatedBuilder(
-              animation: _previewController,
-              builder: (context, child) {
-                final curvedValue =
-                    option.curve.transform(_previewController.value);
+          AnimatedBuilder(
+            animation: _previewController,
+            builder: (context, child) {
+              final curvedValue = option.curve.transform(
+                _previewController.value,
+              );
 
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    // 旋转示例
-                    Transform.rotate(
-                      angle: curvedValue * 2 * pi,
-                      child: Container(
-                        width: 120.w,
-                        height: 120.w,
-                        decoration: BoxDecoration(
-                          color: Get.theme.primaryColor,
-                          borderRadius: BorderRadius.circular(24.w),
-                        ),
-                        child: Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 80.w,
-                        ),
-                      ),
-                    ),
-
-                    // 位置移动示例
-                    Container(
-                      width: 400.w,
-                      height: 40.w,
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // 旋转示例
+                  Transform.rotate(
+                    angle: curvedValue * 2 * pi,
+                    child: Container(
+                      width: 120.w,
+                      height: 120.w,
                       decoration: BoxDecoration(
-                        color: Get.theme.dividerColor,
-                        borderRadius: BorderRadius.circular(20.w),
+                        color: Get.theme.primaryColor,
+                        borderRadius: BorderRadius.circular(24.w),
                       ),
-                      child: Align(
-                        alignment:
-                            Alignment(-1 + curvedValue * 2, 0),
-                        child: Container(
-                          width: 80.w,
-                          height: 80.w,
-                          decoration: BoxDecoration(
-                            color: Get.theme.primaryColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+                      child: Icon(
+                        Icons.play_arrow,
+                        color: Colors.white,
+                        size: 80.w,
                       ),
                     ),
+                  ),
 
-                    // 缩放示例
-                    Transform.scale(
-                      scale: 0.5 + curvedValue * 0.5,
+                  // 位置移动示例
+                  Container(
+                    width: 400.w,
+                    height: 40.w,
+                    decoration: BoxDecoration(
+                      color: Get.theme.dividerColor,
+                      borderRadius: BorderRadius.circular(20.w),
+                    ),
+                    child: Align(
+                      alignment: Alignment(-1 + curvedValue * 2, 0),
                       child: Container(
-                        width: 120.w,
-                        height: 120.w,
+                        width: 80.w,
+                        height: 80.w,
                         decoration: BoxDecoration(
                           color: Get.theme.primaryColor,
                           shape: BoxShape.circle,
                         ),
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
-          ),
+                  ),
+
+                  // 缩放示例
+                  Transform.scale(
+                    scale: 0.5 + curvedValue * 0.5,
+                    child: Container(
+                      width: 120.w,
+                      height: 120.w,
+                      decoration: BoxDecoration(
+                        color: Get.theme.primaryColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ).wsbh(200),
         ],
       ),
     );
@@ -311,19 +298,14 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
         });
       },
       child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: 48.w,
-          vertical: 32.w,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: 48.w, vertical: 32.w),
         decoration: BoxDecoration(
           color: isSelected
               ? Get.theme.primaryColor.withOpacity(0.1)
               : Colors.transparent,
           border: Border(
             left: BorderSide(
-              color: isSelected
-                  ? Get.theme.primaryColor
-                  : Colors.transparent,
+              color: isSelected ? Get.theme.primaryColor : Colors.transparent,
               width: 8.w,
             ),
           ),
@@ -345,15 +327,11 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
                 color: isSelected ? Get.theme.primaryColor : Colors.transparent,
               ),
               child: isSelected
-                  ? Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 32.w,
-                    )
+                  ? Icon(Icons.check, color: Colors.white, size: 32.w)
                   : null,
             ),
 
-            SizedBox(width: 32.w),
+            32.wsbw,
 
             // 曲线信息
             Expanded(
@@ -369,7 +347,7 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
                           : FontWeight.normal,
                     ),
                   ),
-                  SizedBox(height: 8.w),
+                  8.wsbh,
                   Text(
                     option.description,
                     style: TextStyle(
@@ -383,10 +361,7 @@ class _CurveSelectorDialogState extends State<CurveSelectorDialog>
 
             // 曲线名称标签
             Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 24.w,
-                vertical: 12.w,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.w),
               decoration: BoxDecoration(
                 color: Get.theme.dividerColor.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12.w),

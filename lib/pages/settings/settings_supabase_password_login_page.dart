@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/supabase_auth_controller.dart';
 import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:listen1_xuan/widgets/progress_indicator_xuan.dart';
 
 import '../../global_settings_animations.dart';
@@ -103,13 +104,13 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
           () => Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 20),
+              20.sbh,
               Icon(
                 _isSignUpMode.value ? Icons.person_add : Icons.email,
                 size: 80,
                 color: Colors.blue,
               ),
-              const SizedBox(height: 40),
+              40.sbh,
               // 邮箱输入框
               TextFormField(
                 controller: _emailController,
@@ -134,7 +135,7 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
                   return null;
                 },
               ),
-              const SizedBox(height: 20),
+              20.sbh,
               // 密码输入框
               TextFormField(
                 controller: _passwordController,
@@ -168,7 +169,7 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
                   return null;
                 },
               ),
-              const SizedBox(height: 20),
+              20.sbh,
               // 确认密码输入框（仅注册模式显示）
               if (_isSignUpMode.value)
                 Column(
@@ -203,7 +204,7 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    20.sbh,
                   ],
                 ),
               // 登录/注册按钮
@@ -217,18 +218,14 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
                     minimumSize: const Size(double.infinity, 50),
                   ),
                   child: _authController.isLoading.value
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                      ? CircularProgressIndicator(strokeWidth: 2).sbs(20)
                       : Text(
                           _isSignUpMode.value ? '注册' : '登录',
                           style: const TextStyle(fontSize: 16),
                         ),
                 ),
               ),
-              const SizedBox(height: 20),
+              20.sbh,
               // 切换模式
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -247,7 +244,7 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              20.sbh,
               // 分隔线
               const Divider(thickness: 1),
 
@@ -267,7 +264,7 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
                           style: TextStyle(color: Colors.red.shade700),
                         ),
                       )
-                    : const SizedBox.shrink(),
+                    : SizedBox.shrink(),
               ),
             ],
           ),

@@ -409,129 +409,125 @@ void showLyricStyleSettings(BuildContext context) {
               );
             }
 
-            return SizedBox(
-              width: globalHorizon ? 0.33.w : null,
-              height: globalHorizon ? null : 200,
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      const Text(
-                        '选中歌词',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    8.sbh,
+                    const Text(
+                      '选中歌词',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
                       ),
-                      buildSlider(
-                        '字体大小',
-                        style.activeTextSize ?? 24.0,
-                        (v) => style.activeTextSize = v,
-                      ),
-                      buildSwitch(
-                        '使用屏幕宽度比例 (w)',
-                        style.activeTextSizeUseW ?? false,
-                        (v) => style.activeTextSizeUseW = v,
-                      ),
-                      buildWeightDropdown(
-                        '字体粗细',
-                        style.activeTextWeight,
-                        (v) => style.activeTextWeight = v,
-                      ),
-                      const SizedBox(height: 16),
+                    ),
+                    buildSlider(
+                      '字体大小',
+                      style.activeTextSize ?? 24.0,
+                      (v) => style.activeTextSize = v,
+                    ),
+                    buildSwitch(
+                      '使用屏幕宽度比例 (w)',
+                      style.activeTextSizeUseW ?? false,
+                      (v) => style.activeTextSizeUseW = v,
+                    ),
+                    buildWeightDropdown(
+                      '字体粗细',
+                      style.activeTextWeight,
+                      (v) => style.activeTextWeight = v,
+                    ),
+                    16.sbh,
 
-                      const Divider(),
-                      const Text(
-                        '普通歌词',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
+                    const Divider(),
+                    const Text(
+                      '普通歌词',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
                       ),
-                      buildSlider(
-                        '字体大小',
-                        style.textStyleFontSize ?? 16.0,
-                        (v) => style.textStyleFontSize = v,
-                      ),
-                      buildSwitch(
-                        '使用屏幕宽度比例 (w)',
-                        style.textStyleFontSizeUseW ?? false,
-                        (v) => style.textStyleFontSizeUseW = v,
-                      ),
-                      buildWeightDropdown(
-                        '字体粗细',
-                        style.textStyleFontWeight,
-                        (v) => style.textStyleFontWeight = v,
-                      ),
-                      const SizedBox(height: 16),
+                    ),
+                    buildSlider(
+                      '字体大小',
+                      style.textStyleFontSize ?? 16.0,
+                      (v) => style.textStyleFontSize = v,
+                    ),
+                    buildSwitch(
+                      '使用屏幕宽度比例 (w)',
+                      style.textStyleFontSizeUseW ?? false,
+                      (v) => style.textStyleFontSizeUseW = v,
+                    ),
+                    buildWeightDropdown(
+                      '字体粗细',
+                      style.textStyleFontWeight,
+                      (v) => style.textStyleFontWeight = v,
+                    ),
+                    16.sbh,
 
-                      const Divider(),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '翻译歌词',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
+                    const Divider(),
+                    8.sbh,
+                    const Text(
+                      '翻译歌词',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
                       ),
-                      buildSlider(
-                        '字体大小',
-                        style.translationTextSize ?? 14.0,
-                        (v) => style.translationTextSize = v,
-                      ),
-                      buildSwitch(
-                        '使用屏幕宽度比例 (w)',
-                        style.translationTextSizeUseW ?? false,
-                        (v) => style.translationTextSizeUseW = v,
-                      ),
-                      buildWeightDropdown(
-                        '字体粗细',
-                        style.translationTextWeight,
-                        (v) => style.translationTextWeight = v,
-                      ),
-                      const SizedBox(height: 16),
+                    ),
+                    buildSlider(
+                      '字体大小',
+                      style.translationTextSize ?? 14.0,
+                      (v) => style.translationTextSize = v,
+                    ),
+                    buildSwitch(
+                      '使用屏幕宽度比例 (w)',
+                      style.translationTextSizeUseW ?? false,
+                      (v) => style.translationTextSizeUseW = v,
+                    ),
+                    buildWeightDropdown(
+                      '字体粗细',
+                      style.translationTextWeight,
+                      (v) => style.translationTextWeight = v,
+                    ),
+                    16.sbh,
 
-                      const Divider(),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '排版',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
+                    const Divider(),
+                    8.sbh,
+                    const Text(
+                      '排版',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
                       ),
-                      buildLineTextAlignDropdown(
-                        '行文本对齐',
-                        style.lineTextAlign,
-                        (v) => style.lineTextAlign = v,
-                      ),
-                      buildContentAlignmentDropdown(
-                        '内容对齐',
-                        style.contentAlignment,
-                        (v) => style.contentAlignment = v,
-                      ),
-                      buildSlider(
-                        '歌词行间距',
-                        (style.lineGap ?? 25.0).clamp(5.0, 60.0),
-                        (v) => style.lineGap = v,
-                      ),
-                      buildSlider(
-                        '翻译行间距',
-                        (style.translationLineGap ?? 8.0).clamp(5.0, 60.0),
-                        (v) => style.translationLineGap = v,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+                    ),
+                    buildLineTextAlignDropdown(
+                      '行文本对齐',
+                      style.lineTextAlign,
+                      (v) => style.lineTextAlign = v,
+                    ),
+                    buildContentAlignmentDropdown(
+                      '内容对齐',
+                      style.contentAlignment,
+                      (v) => style.contentAlignment = v,
+                    ),
+                    buildSlider(
+                      '歌词行间距',
+                      (style.lineGap ?? 25.0).clamp(5.0, 60.0),
+                      (v) => style.lineGap = v,
+                    ),
+                    buildSlider(
+                      '翻译行间距',
+                      (style.translationLineGap ?? 8.0).clamp(5.0, 60.0),
+                      (v) => style.translationLineGap = v,
+                    ),
+                    24.sbh,
+                  ],
                 ),
               ),
-            );
+            ).sbwh(globalHorizon ? 0.33.w : null, globalHorizon ? null : 200);
           }),
         ),
       ];
@@ -546,11 +542,7 @@ Widget _buildLyricContent(BuildContext context) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            globalLoadingAnime,
-            SizedBox(height: 16),
-            Text('加载歌词中...'),
-          ],
+          children: [globalLoadingAnime, 16.sbh, Text('加载歌词中...')],
         ),
       );
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/supabase_auth_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:listen1_xuan/widgets/progress_indicator_xuan.dart';
 
 /// 设置密码对话框
@@ -81,7 +82,7 @@ class _SetPasswordDialogState extends State<SetPasswordDialog> {
                         },
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    16.sbh,
                   ],
                 ),
               // 新密码输入框
@@ -116,7 +117,7 @@ class _SetPasswordDialogState extends State<SetPasswordDialog> {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              16.sbh,
               // 确认密码输入框
               Obx(
                 () => TextFormField(
@@ -149,7 +150,7 @@ class _SetPasswordDialogState extends State<SetPasswordDialog> {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              16.sbh,
               // 错误提示
               Obx(
                 () => _authController.errorMessage.value.isNotEmpty
@@ -165,7 +166,7 @@ class _SetPasswordDialogState extends State<SetPasswordDialog> {
                           style: TextStyle(color: Colors.red.shade700),
                         ),
                       )
-                    : const SizedBox.shrink(),
+                    : SizedBox.shrink(),
               ),
             ],
           ),
@@ -183,11 +184,7 @@ class _SetPasswordDialogState extends State<SetPasswordDialog> {
           () => ElevatedButton(
             onPressed: _authController.isLoading.value ? null : _handleSubmit,
             child: _authController.isLoading.value
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? CircularProgressIndicator(strokeWidth: 2).sbs(20)
                 : Text(widget.isUpdateMode ? '修改' : '设置'),
           ),
         ),

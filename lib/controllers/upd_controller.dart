@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:install_plugin/install_plugin.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:listen1_xuan/widgets/motor_progress_indicator_xuan.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
@@ -576,18 +577,18 @@ class UpdController extends GetxController {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('应用将自动关闭并更新到最新版本，更新完成后会自动重启。'),
-            SizedBox(height: 12),
+            12.sbh,
             Text('注意：', style: TextStyle(fontWeight: FontWeight.bold)),
             Text(
               '1. 如果macOS阻止脚本运行，请前往 系统设置 -> 隐私与安全性 中手动允许运行更新脚本和新版本应用。',
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
-            SizedBox(height: 4),
+            4.sbh,
             Text(
               '2. 若更新脚本没有自动运行，请前往 下载/Listen1/ 文件夹手动运行 update_macos.command。',
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
-            SizedBox(height: 4),
+            4.sbh,
             Text(
               '3. 若更新脚本运行后仍无法启动应用,请手动移动并运行 下载/Listen1/canary 文件夹下的 新版应用程序',
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
@@ -862,20 +863,16 @@ class UpdController extends GetxController {
         }
 
         return Center(
-          child: SizedBox(
-            width: 16,
-            height: 16,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                MotorCircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: progress > 0 ? progress : null,
-                  color: Get.theme.colorScheme.onPrimary,
-                ),
-              ],
-            ),
-          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              MotorCircularProgressIndicator(
+                strokeWidth: 2,
+                value: progress > 0 ? progress : null,
+                color: Get.theme.colorScheme.onPrimary,
+              ),
+            ],
+          ).sbs(16),
         );
       });
     }

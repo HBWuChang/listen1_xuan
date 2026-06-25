@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/play.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 
 /// 播放按钮设置页面
 class PlayButtonsSettingsPage extends StatelessWidget {
@@ -21,7 +22,7 @@ class PlayButtonsSettingsPage extends StatelessWidget {
           children: [
             // 显示的两个按钮
             _buildShowButtonsSection(settingsController),
-            const SizedBox(height: 24),
+            24.sbh,
 
             // 所有按钮的顺序
             _buildAllButtonsOrderSection(settingsController),
@@ -41,7 +42,7 @@ class PlayButtonsSettingsPage extends StatelessWidget {
         Row(
           children: [
             Icon(Icons.visibility, color: Get.theme.colorScheme.primary),
-            const SizedBox(width: 8),
+            8.sbw,
             Text(
               '显示的两个按钮',
               style: Get.textTheme.titleMedium?.copyWith(
@@ -51,7 +52,7 @@ class PlayButtonsSettingsPage extends StatelessWidget {
           ],
         ),
 
-        const SizedBox(height: 16),
+        16.sbh,
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade300),
@@ -111,16 +112,14 @@ class PlayButtonsSettingsPage extends StatelessWidget {
     await Get.dialog(
       AlertDialog(
         title: Text('替换 "${currentBtn.desc}"'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
+        content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 '选择要替换的按钮',
                 style: Get.textTheme.bodyMedium?.copyWith(color: Colors.grey),
               ),
-              const SizedBox(height: 16),
+              16.sbh,
               Container(
                 constraints: BoxConstraints(maxHeight: 400),
                 child: ListView.builder(
@@ -159,8 +158,7 @@ class PlayButtonsSettingsPage extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
+          ).sbw(double.maxFinite),
         actions: [
           TextButton(onPressed: () => Get.back(), child: const Text('取消')),
         ],
@@ -178,7 +176,7 @@ class PlayButtonsSettingsPage extends StatelessWidget {
         Row(
           children: [
             Icon(Icons.reorder, color: Get.theme.colorScheme.primary),
-            const SizedBox(width: 8),
+            8.sbw,
             Text(
               '所有按钮的顺序',
               style: Get.textTheme.titleSmall?.copyWith(
@@ -188,7 +186,7 @@ class PlayButtonsSettingsPage extends StatelessWidget {
           ],
         ),
 
-        const SizedBox(height: 16),
+        16.sbh,
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade300),
@@ -243,11 +241,9 @@ class PlayButtonsSettingsPage extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        16.sbh,
         // 重置按钮
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
+        ElevatedButton.icon(
             onPressed: () async {
               final confirmed = await showConfirmDialog(
                 '确定要重置为默认顺序吗？',
@@ -276,8 +272,7 @@ class PlayButtonsSettingsPage extends StatelessWidget {
               backgroundColor: Get.theme.colorScheme.secondaryContainer,
               foregroundColor: Get.theme.colorScheme.onSecondaryContainer,
             ),
-          ),
-        ),
+          ).sbw(double.infinity),
       ],
     );
   }

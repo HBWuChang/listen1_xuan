@@ -181,7 +181,7 @@ class Playlist extends GetView<PlaylistController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.music_note_outlined, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
+              16.sbh,
               ElevatedButton.icon(
                 onPressed: () => controller.refreshData(),
                 icon: Icon(Icons.refresh),
@@ -272,54 +272,34 @@ class Playlist extends GetView<PlaylistController> {
   ) {
     return GestureDetector(
       onTap: () => controller.onPlaylistTapped(playlist),
-      child: Container(
-        width: itemWidth,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: itemWidth,
-              height: itemWidth, // Square aspect ratio
-              child: ClipSmoothRect(
-                radius: SmoothBorderRadius(
-                  cornerRadius: 16,
-                  cornerSmoothing: 1,
-                ),
-                child: ExtendedImage.network(
-                  playlist['cover_img_url'],
-                  fit: BoxFit.cover,
-                  cache: true,
-                  loadStateChanged: (ExtendedImageState state) {
-                    if (state.extendedImageLoadState == LoadState.failed) {
-                      return Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          color: Colors.grey,
-                          size: 40,
-                        ),
-                      );
-                    }
-                    if (state.extendedImageLoadState == LoadState.loading) {
-                      return globalLoadingAnimeOfExtendedImage;
-                    }
-                    return null; // Use default rendering
-                  },
-                ),
-              ),
-            ),
-            SizedBox(height: 8.0),
-            Container(
-              width: itemWidth,
-              child: Text(
-                playlist['title'],
-                style: TextStyle(fontSize: 12),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ExtendedImage.network(
+            playlist['cover_img_url'],
+            fit: BoxFit.cover,
+            cache: true,
+            loadStateChanged: (ExtendedImageState state) {
+              if (state.extendedImageLoadState == LoadState.failed) {
+                return Center(
+                  child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
+                );
+              }
+              if (state.extendedImageLoadState == LoadState.loading) {
+                return globalLoadingAnimeOfExtendedImage;
+              }
+              return null; // Use default rendering
+            },
+          ).clipSmoothRectSize(itemWidth).sbs(itemWidth),
+          8.sbh,
+          Text(
+            playlist['title'],
+            style: TextStyle(fontSize: 12),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ).sbw(itemWidth),
+        ],
+      ).sbw(itemWidth),
     );
   }
 }

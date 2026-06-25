@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 
@@ -340,7 +341,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                 await _deletePreset(name);
               },
             ),
-            const SizedBox(height: 12),
+            12.sbh,
           ],
         );
       },
@@ -411,7 +412,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          4.sbh,
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
@@ -460,10 +461,8 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
               ),
             ),
           ),
-          const SizedBox(height: 4),
-          SizedBox(
-            height: 30,
-            child: FittedBox(
+          4.sbh,
+          FittedBox(
               fit: BoxFit.scaleDown,
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<T>(
@@ -474,8 +473,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                   items: items,
                 ),
               ),
-            ),
-          ),
+            ).sbh(30),
         ],
       ),
     );
@@ -518,10 +516,8 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
               isMod2: !isMod2 ? false : true,
             ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 180,
-            child: RotatedBox(
+          16.sbh,
+          RotatedBox(
               quarterTurns: 3,
               child: Slider(
                 padding: const EdgeInsets.all(0),
@@ -537,9 +533,8 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                   );
                 },
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
+            ).sbh(180),
+          16.sbh,
           InkWell(
             borderRadius: BorderRadius.circular(8),
             onTap: () async {
@@ -559,7 +554,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
               isMod2: isMod2 ? false : true,
             ),
           ),
-          const SizedBox(height: 8),
+          8.sbh,
           _buildCompactSelectConfig<WidthType>(
             label: 't',
             value: band.t,
@@ -580,7 +575,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
               );
             },
           ),
-          const SizedBox(height: 8),
+          8.sbh,
           InkWell(
             borderRadius: BorderRadius.circular(8),
             onTap: () async {
@@ -600,7 +595,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
               isMod2: isMod2 ? false : true,
             ),
           ),
-          const SizedBox(height: 8),
+          8.sbh,
           InkWell(
             borderRadius: BorderRadius.circular(8),
             onTap: () async {
@@ -622,7 +617,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
               isMod2: !isMod2 ? false : true,
             ),
           ),
-          const SizedBox(height: 8),
+          8.sbh,
           _buildCompactSelectConfig<eq_a.Transform?>(
             label: 'a',
             value: band.a,
@@ -647,7 +642,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
               });
             },
           ),
-          const SizedBox(height: 8),
+          8.sbh,
           _buildCompactSelectConfig<eq_r.Precision?>(
             label: 'r',
             value: band.r,
@@ -672,7 +667,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
               });
             },
           ),
-          const SizedBox(height: 8),
+          8.sbh,
           IconButton.filledTonal(
             onPressed: () {
               _updateCurrentPreset((preset) {
@@ -747,7 +742,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                 margin: const EdgeInsets.only(top: 8),
                 child: Obx(() => Text(_playController.nowEq.value)),
               ),
-              const SizedBox(height: 10),
+              10.sbh,
               Text(
                 '预设',
                 style: TextStyle(
@@ -756,9 +751,9 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                   fontSize: 18,
                 ),
               ),
-              const SizedBox(height: 10),
+              10.sbh,
               _buildPresetWrap(eqSetting),
-              const SizedBox(height: 8),
+              8.sbh,
               FilledButton.tonalIcon(
                 onPressed: () {
                   final selected = eqSetting.nowSelected;
@@ -772,7 +767,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                 label: const Text('新建预设'),
               ),
               if (eqSetting.nowSelected != null) ...[
-                const SizedBox(height: 16),
+                16.sbh,
                 Row(
                   children: [
                     Expanded(
@@ -793,7 +788,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                8.sbh,
                 Builder(
                   builder: (context) {
                     final selected = eqSetting.nowSelected;
@@ -813,20 +808,17 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                       return const Text('当前选中预设不存在');
                     }
                     final sorted = _sortedBands(preset);
-                    return SizedBox(
-                      height: _bandCardHeight,
-                      child: SuperListView.builder(
+                    return SuperListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemBuilder: (context, index) {
                           final item = sorted[index];
                           return _buildBandColumn(item, isMod2: index % 2 == 0);
                         },
                         itemCount: sorted.length,
-                      ),
-                    );
+                      ).sbh(_bandCardHeight);
                   },
                 ),
-                const SizedBox(height: 16),
+                16.sbh,
                 Text(
                   '命令预览',
                   style: TextStyle(
@@ -835,7 +827,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                     fontSize: 18,
                   ),
                 ),
-                const SizedBox(height: 8),
+                8.sbh,
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(

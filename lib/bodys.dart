@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/constants/const.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:share_plus/share_plus.dart';
 import 'controllers/controllers.dart';
 import 'controllers/myPlaylist_controller.dart';
@@ -719,7 +720,7 @@ class _PlaylistInfoState extends State<PlaylistInfo> {
                               }
                             },
                           ),
-                          SizedBox(height: 8.0),
+                          8.sbh,
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [

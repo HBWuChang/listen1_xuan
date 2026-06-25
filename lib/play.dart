@@ -15,6 +15,7 @@ import 'dart:io';
 import 'package:extended_image/extended_image.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:listen1_xuan/widgets/motor_progress_indicator_xuan.dart';
 import 'package:media_kit/media_kit.dart' show Player;
 import 'package:rxdart/rxdart.dart' as rxdart;
@@ -462,9 +463,7 @@ class _PlayState extends State<Play> {
             ),
           );
         } else {
-          Widget tW = widget.horizon
-              ? SizedBox(height: 60, child: playH())
-              : playV2;
+          Widget tW = widget.horizon ? playH().sbh(60) : playV2;
           return tW;
         }
       },

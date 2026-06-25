@@ -7,6 +7,7 @@ import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/websocket_client_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:listen1_xuan/pages/qr_scanner_page.dart';
@@ -53,7 +54,7 @@ class WebSocketClientControlPanel {
 
     // 检查是否应该显示按钮
     if (!controller.wsClientBtnShowFloating) {
-      return const SizedBox.shrink();
+      return SizedBox.shrink();
     }
 
     // 根据连接状态确定图标颜色和状态
@@ -159,202 +160,194 @@ class _WebSocketClientControlContentState
   Widget build(BuildContext context) {
     final controller = Get.find<WebSocketClientController>();
 
-    return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.7,
-      child: CustomScrollView(
-        controller: _scrollController,
-        // 添加平滑滚动配置
-        scrollBehavior: const MaterialScrollBehavior().copyWith(
-          scrollbars: false,
-          // 启用平滑滚动
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          // 自定义滚动行为以获得更平滑的效果
-          dragDevices: {
-            PointerDeviceKind.touch,
-            PointerDeviceKind.mouse,
-            PointerDeviceKind.trackpad,
-          },
+    return CustomScrollView(
+      controller: _scrollController,
+      // 添加平滑滚动配置
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        scrollbars: false,
+        // 启用平滑滚动
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
         ),
-        slivers: [
-          // SliverAppBar 包含标题、状态和连接按钮
-          Obx(() {
-            final ctrl = Get.find<WebSocketClientController>();
+        // 自定义滚动行为以获得更平滑的效果
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+        },
+      ),
+      slivers: [
+        // SliverAppBar 包含标题、状态和连接按钮
+        Obx(() {
+          final ctrl = Get.find<WebSocketClientController>();
 
-            // 当连接时，使用 NotificationListener 来阻止滚动通知到达 SliverAppBar
-            return NotificationListener<ScrollNotification>(
-              onNotification: (ScrollNotification notification) {
-                // 当已连接时，拦截滚动通知，不让 SliverAppBar 响应
-                return ctrl.isConnected;
-              },
-              child: SliverAppBar(
-                // backgroundColor: Colors.transparent,
-                elevation: 0,
-                expandedHeight: 120.0,
-                floating: false,
-                pinned: true,
-                automaticallyImplyLeading: false,
-                centerTitle: true,
-                actions: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    margin: const EdgeInsets.only(right: 16),
-                    decoration: BoxDecoration(
-                      color: ctrl.isConnected ? Colors.blue : Colors.grey,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      ctrl.statusMessage,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
+          // 当连接时，使用 NotificationListener 来阻止滚动通知到达 SliverAppBar
+          return NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification notification) {
+              // 当已连接时，拦截滚动通知，不让 SliverAppBar 响应
+              return ctrl.isConnected;
+            },
+            child: SliverAppBar(
+              // backgroundColor: Colors.transparent,
+              elevation: 0,
+              expandedHeight: 120.0,
+              floating: false,
+              pinned: true,
+              automaticallyImplyLeading: false,
+              centerTitle: true,
+              actions: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                ],
-                flexibleSpace: FlexibleSpaceBar(
-                  titlePadding: EdgeInsets.zero,
-                  title: LayoutBuilder(
-                    builder: (context, constraints) {
-                      // 计算收缩比例，constraints.biggest.height从120收缩到56左右
-                      final double shrinkRatio =
-                          ((120.0 - constraints.biggest.height) /
-                                  (120.0 - 56.0))
-                              .clamp(0.0, 1.0);
+                  margin: const EdgeInsets.only(right: 16),
+                  decoration: BoxDecoration(
+                    color: ctrl.isConnected ? Colors.blue : Colors.grey,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    ctrl.statusMessage,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: EdgeInsets.zero,
+                title: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // 计算收缩比例，constraints.biggest.height从120收缩到56左右
+                    final double shrinkRatio =
+                        ((120.0 - constraints.biggest.height) / (120.0 - 56.0))
+                            .clamp(0.0, 1.0);
 
-                      // 使用动画曲线计算右侧padding，收缩时逐渐增加
-                      final double curvedRatio = Curves.easeInOut.transform(
-                        shrinkRatio,
-                      );
-                      final double rightPadding =
-                          12.0 + (curvedRatio * 80.0); // 从12增加到92
+                    // 使用动画曲线计算右侧padding，收缩时逐渐增加
+                    final double curvedRatio = Curves.easeInOut.transform(
+                      shrinkRatio,
+                    );
+                    final double rightPadding =
+                        12.0 + (curvedRatio * 80.0); // 从12增加到92
 
-                      return Container(
-                        padding: EdgeInsets.only(
-                          left: 12,
-                          bottom: isWindows || isMacOS ? 12 : 4,
-                          right: rightPadding,
-                        ),
-                        alignment: Alignment.bottomCenter,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: ctrl.isDisconnecting
-                                    ? null
+                    return Container(
+                      padding: EdgeInsets.only(
+                        left: 12,
+                        bottom: isWindows || isMacOS ? 12 : 4,
+                        right: rightPadding,
+                      ),
+                      alignment: Alignment.bottomCenter,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: ctrl.isDisconnecting
+                                  ? null
+                                  : (ctrl.isConnecting || ctrl.isReconnecting)
+                                  ? ctrl.cancelConnection
+                                  : ctrl.isConnected
+                                  ? ctrl.disconnect
+                                  : ctrl.connect,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: ctrl.isConnected
+                                    ? Colors.red.withOpacity(0.9)
                                     : (ctrl.isConnecting || ctrl.isReconnecting)
-                                    ? ctrl.cancelConnection
+                                    ? Colors.orange.withOpacity(0.9)
+                                    : Colors.blue.withOpacity(0.9),
+                                foregroundColor: Colors.white,
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                maximumSize: Size(double.infinity, 40),
+                              ),
+                              icon: Icon(
+                                (ctrl.isConnecting || ctrl.isReconnecting)
+                                    ? Icons.close
+                                    : ctrl.isDisconnecting
+                                    ? Icons.hourglass_empty
                                     : ctrl.isConnected
-                                    ? ctrl.disconnect
-                                    : ctrl.connect,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: ctrl.isConnected
-                                      ? Colors.red.withOpacity(0.9)
-                                      : (ctrl.isConnecting ||
-                                            ctrl.isReconnecting)
-                                      ? Colors.orange.withOpacity(0.9)
-                                      : Colors.blue.withOpacity(0.9),
-                                  foregroundColor: Colors.white,
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  maximumSize: Size(double.infinity, 40),
-                                ),
-                                icon: Icon(
-                                  (ctrl.isConnecting || ctrl.isReconnecting)
-                                      ? Icons.close
-                                      : ctrl.isDisconnecting
-                                      ? Icons.hourglass_empty
-                                      : ctrl.isConnected
-                                      ? Icons.link_off
-                                      : Icons.link,
-                                  size: 18,
-                                ),
-                                label: Text(
-                                  ctrl.isConnecting
-                                      ? '取消连接'
-                                      : ctrl.isReconnecting
-                                      ? '取消重连'
-                                      : ctrl.isDisconnecting
-                                      ? '断开中...'
-                                      : ctrl.isConnected
-                                      ? '断开连接'
-                                      : '连接服务器',
-                                  style: const TextStyle(fontSize: 14),
-                                ),
+                                    ? Icons.link_off
+                                    : Icons.link,
+                                size: 18,
+                              ),
+                              label: Text(
+                                ctrl.isConnecting
+                                    ? '取消连接'
+                                    : ctrl.isReconnecting
+                                    ? '取消重连'
+                                    : ctrl.isDisconnecting
+                                    ? '断开中...'
+                                    : ctrl.isConnected
+                                    ? '断开连接'
+                                    : '连接服务器',
+                                style: const TextStyle(fontSize: 14),
                               ),
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-
-                  background: Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.cast_connected,
-                              color: ctrl.isConnected
-                                  ? Colors.blue
-                                  : Colors.grey,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'WebSocket 客户端控制面板',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            const Spacer(),
-                          ],
-                        ),
-                        if (ctrl.autoReconnect && ctrl.isReconnecting) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.autorenew,
-                                color: Colors.orange,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '自动重连已启用',
-                                style: TextStyle(
-                                  color: Colors.orange[700],
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: () =>
-                                    ctrl.updateAutoReconnect(false),
-                                child: const Text(
-                                  '取消重连',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              ),
-                            ],
                           ),
                         ],
+                      ),
+                    );
+                  },
+                ),
+
+                background: Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.cast_connected,
+                            color: ctrl.isConnected ? Colors.blue : Colors.grey,
+                            size: 20,
+                          ),
+                          8.sbw,
+                          const Text(
+                            'WebSocket 客户端控制面板',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                      if (ctrl.autoReconnect && ctrl.isReconnecting) ...[
+                        8.sbh,
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.autorenew,
+                              color: Colors.orange,
+                              size: 16,
+                            ),
+                            4.sbw,
+                            Text(
+                              '自动重连已启用',
+                              style: TextStyle(
+                                color: Colors.orange[700],
+                                fontSize: 12,
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () => ctrl.updateAutoReconnect(false),
+                              child: const Text(
+                                '取消重连',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
               ),
-            );
-          }),
-          // 内容部分
-          SliverToBoxAdapter(child: _buildStatusTab(controller)),
-        ],
-      ),
-    );
+            ),
+          );
+        }),
+        // 内容部分
+        SliverToBoxAdapter(child: _buildStatusTab(controller)),
+      ],
+    ).sbh(MediaQuery.of(context).size.height * 0.7);
   }
 
   Widget _buildStatusTab(WebSocketClientController controller) {
@@ -396,7 +389,7 @@ class _WebSocketClientControlContentState
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            12.sbh,
                             Row(
                               children: [
                                 // 封面图片
@@ -424,35 +417,33 @@ class _WebSocketClientControlContentState
                                             height: 80,
                                             fit: BoxFit.cover,
                                             cache: true,
-                                            loadStateChanged:
-                                                (ExtendedImageState state) {
-                                                  switch (state
-                                                      .extendedImageLoadState) {
-                                                    case LoadState.loading:
-                                                      return globalLoadingAnimeOfExtendedImage;
+                                            loadStateChanged: (ExtendedImageState state) {
+                                              switch (state
+                                                  .extendedImageLoadState) {
+                                                case LoadState.loading:
+                                                  return globalLoadingAnimeOfExtendedImage;
 
-                                                    case LoadState.failed:
-                                                      return Container(
-                                                        width: 80,
-                                                        height: 80,
-                                                        decoration: BoxDecoration(
-                                                          color:
-                                                              Colors.grey[300],
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                8,
-                                                              ),
-                                                        ),
-                                                        child: const Icon(
-                                                          Icons.music_note,
-                                                          color: Colors.grey,
-                                                          size: 40,
-                                                        ),
-                                                      );
-                                                    case LoadState.completed:
-                                                      return null;
-                                                  }
-                                                },
+                                                case LoadState.failed:
+                                                  return Container(
+                                                    width: 80,
+                                                    height: 80,
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.grey[300],
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.music_note,
+                                                      color: Colors.grey,
+                                                      size: 40,
+                                                    ),
+                                                  );
+                                                case LoadState.completed:
+                                                  return null;
+                                              }
+                                            },
                                           ),
                                         )
                                       : Container(
@@ -471,7 +462,7 @@ class _WebSocketClientControlContentState
                                           ),
                                         ),
                                 ),
-                                const SizedBox(width: 16),
+                                16.sbw,
                                 // 歌曲信息
                                 Expanded(
                                   child: Column(
@@ -488,7 +479,7 @@ class _WebSocketClientControlContentState
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      const SizedBox(height: 4),
+                                      4.sbh,
                                       Text(
                                         playStatus.currentTrack!.artist ??
                                             '未知艺术家',
@@ -505,7 +496,7 @@ class _WebSocketClientControlContentState
                                               .currentTrack!
                                               .album!
                                               .isNotEmpty) ...[
-                                        const SizedBox(height: 4),
+                                        4.sbh,
                                         Text(
                                           playStatus.currentTrack!.album!,
                                           style: TextStyle(
@@ -521,7 +512,7 @@ class _WebSocketClientControlContentState
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
+                            12.sbh,
                             // 音源信息
                             if (playStatus.currentTrack!.source != null) ...[
                               Row(
@@ -531,7 +522,7 @@ class _WebSocketClientControlContentState
                                     size: 16,
                                     color: Colors.grey[600],
                                   ),
-                                  const SizedBox(width: 4),
+                                  4.sbw,
                                   Text(
                                     '音源: ${playStatus.currentTrack!.source}',
                                     style: TextStyle(
@@ -541,7 +532,7 @@ class _WebSocketClientControlContentState
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              8.sbh,
                             ],
                           ],
                         ),
@@ -560,7 +551,7 @@ class _WebSocketClientControlContentState
                             size: 48,
                             color: Colors.grey[400],
                           ),
-                          const SizedBox(height: 8),
+                          8.sbh,
                           Text(
                             '暂无播放曲目',
                             style: TextStyle(
@@ -568,7 +559,7 @@ class _WebSocketClientControlContentState
                               color: Colors.grey[600],
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          4.sbh,
                           Text(
                             ctrl.isConnected
                                 ? '正在获取播放状态...'
@@ -583,7 +574,7 @@ class _WebSocketClientControlContentState
                     ),
                   ),
                 ],
-                const SizedBox(height: 16),
+                16.sbh,
                 if (ctrl.isConnected)
                   // 播放控制按钮卡片
                   Card(
@@ -656,7 +647,7 @@ class _WebSocketClientControlContentState
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          16.sbh,
                           Row(
                             children: [
                               Expanded(
@@ -684,7 +675,7 @@ class _WebSocketClientControlContentState
                                   },
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              8.sbw,
                               Text(
                                 '${formatDuration(ctrl.processTime.value)}/${formatDuration(ctrl.totalTime.value)}',
                                 style: const TextStyle(fontSize: 12),
@@ -694,7 +685,7 @@ class _WebSocketClientControlContentState
                           ),
 
                           // 音量控制滑块
-                          const SizedBox(height: 16),
+                          16.sbh,
                           Row(
                             children: [
                               const Icon(Icons.volume_down),
@@ -717,15 +708,12 @@ class _WebSocketClientControlContentState
                                 ),
                               ),
                               const Icon(Icons.volume_up),
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 48,
-                                child: Text(
-                                  '${(ctrl.volume).round()}%',
-                                  style: const TextStyle(fontSize: 12),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
+                              8.sbw,
+                              Text(
+                                '${(ctrl.volume).round()}%',
+                                style: const TextStyle(fontSize: 12),
+                                textAlign: TextAlign.center,
+                              ).sbw(48),
                             ],
                           ),
                         ],
@@ -733,7 +721,7 @@ class _WebSocketClientControlContentState
                     ),
                   ),
 
-                const SizedBox(height: 16),
+                16.sbh,
               ],
             );
           }),
@@ -762,10 +750,10 @@ class _WebSocketClientControlContentState
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.orange.shade300),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(Icons.warning, color: Colors.orange),
-                        SizedBox(width: 8),
+                        8.sbw,
                         Expanded(
                           child: Text(
                             '连接时不能修改配置',
@@ -785,7 +773,7 @@ class _WebSocketClientControlContentState
                   ),
                 ]),
 
-                const SizedBox(height: 24),
+                24.sbh,
                 // 自动启动配置
                 _buildConfigSection('启动配置', [
                   Row(
@@ -802,7 +790,7 @@ class _WebSocketClientControlContentState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  16.sbh,
                   Row(
                     children: [
                       Expanded(
@@ -817,7 +805,7 @@ class _WebSocketClientControlContentState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  16.sbh,
                   Row(
                     children: [
                       Expanded(
@@ -831,7 +819,7 @@ class _WebSocketClientControlContentState
                   ),
                 ]),
 
-                const SizedBox(height: 24),
+                24.sbh,
 
                 _buildConfigSection('重连配置', [
                   Row(
@@ -845,7 +833,7 @@ class _WebSocketClientControlContentState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  16.sbh,
                   _buildTextField(
                     controller: _reconnectController,
                     label: '重连间隔 (秒)',
@@ -860,7 +848,7 @@ class _WebSocketClientControlContentState
                   ),
                 ]),
 
-                const SizedBox(height: 24),
+                24.sbh,
 
                 _buildConfigSection('心跳配置', [
                   _buildTextField(
@@ -892,7 +880,7 @@ class _WebSocketClientControlContentState
           title,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 12),
+        12.sbh,
         ...children,
       ],
     );
@@ -978,7 +966,7 @@ class _WebSocketClientControlContentState
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          12.sbh,
           Obx(() {
             final historyAddresses = controller.historyAddresses;
 
@@ -1102,24 +1090,21 @@ class _WebSocketClientControlContentState
                     ),
                   ),
                 if (!isWindows)
-                  SizedBox(
-                    width: 100,
-                    child: ElevatedButton.icon(
-                      onPressed: controller.isConnected ? null : _scanQRCode,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange.withOpacity(0.1),
-                        foregroundColor: Colors.orange,
-                        elevation: 0,
-                        side: BorderSide(color: Colors.orange.withOpacity(0.3)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                  ElevatedButton.icon(
+                    onPressed: controller.isConnected ? null : _scanQRCode,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.withOpacity(0.1),
+                      foregroundColor: Colors.orange,
+                      elevation: 0,
+                      side: BorderSide(color: Colors.orange.withOpacity(0.3)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      icon: const Icon(Icons.qr_code_scanner, size: 20),
-                      label: const Text('扫码'),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                  ),
+                    icon: const Icon(Icons.qr_code_scanner, size: 20),
+                    label: const Text('扫码'),
+                  ).sbw(100),
               ],
             );
           }),
@@ -1170,7 +1155,7 @@ class _WebSocketClientControlContentState
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      8.sbh,
                       Container(
                         constraints: const BoxConstraints(maxHeight: 200),
                         decoration: BoxDecoration(
@@ -1205,9 +1190,9 @@ class _WebSocketClientControlContentState
                                     .toList(),
                               ),
                       ),
-                      const SizedBox(height: 16),
+                      16.sbh,
                       const Divider(),
-                      const SizedBox(height: 8),
+                      8.sbh,
                       const Text(
                         '手动输入',
                         style: TextStyle(
@@ -1215,12 +1200,12 @@ class _WebSocketClientControlContentState
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      8.sbh,
                     ],
                   ),
                 );
               } else {
-                return const SizedBox.shrink();
+                return SizedBox.shrink();
               }
             }),
 
@@ -1233,7 +1218,7 @@ class _WebSocketClientControlContentState
               ),
               autofocus: true,
             ),
-            const SizedBox(height: 8),
+            8.sbh,
             const Text(
               '格式: IP地址:端口号 或 域名:端口号',
               style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -1269,7 +1254,7 @@ class _WebSocketClientControlContentState
               ),
               autofocus: true,
             ),
-            const SizedBox(height: 8),
+            8.sbh,
             const Text(
               '格式: IP地址:端口号 或 域名:端口号',
               style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -1464,7 +1449,7 @@ class _ServerAddressEditDialogState extends State<_ServerAddressEditDialog> {
             keyboardType: TextInputType.text,
             autofocus: true,
           ),
-          const SizedBox(height: 8),
+          8.sbh,
           const Text(
             '格式: IP地址:端口号',
             style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -1544,7 +1529,7 @@ class WebSocketClientHelper {
 
       // 检查是否应该显示按钮
       if (inMainPage && !controller.wsClientBtnShow) {
-        return const SizedBox.shrink();
+        return SizedBox.shrink();
       }
 
       // 根据连接状态确定图标颜色和状态

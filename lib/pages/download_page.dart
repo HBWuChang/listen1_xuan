@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import '../controllers/WsDownloadController.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/cache_controller.dart';
@@ -26,11 +27,7 @@ class DownloadPage extends StatelessWidget {
                   ? null
                   : () => _fetchServerCacheList(downloadController),
               icon: downloadController.isLoading.value
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                  ? CircularProgressIndicator(strokeWidth: 2).sbs(20)
                   : const Icon(Icons.cloud_download),
               tooltip: '获取服务器已缓存的当前播放列表',
             ),
@@ -214,7 +211,7 @@ class DownloadPage extends StatelessWidget {
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
             if (showProgress) ...[
-              const SizedBox(height: 8.0),
+              8.0.sbh,
               Obx(() {
                 final progress = downloadController.downloadProcess[key];
                 if (progress != null &&
@@ -234,7 +231,7 @@ class DownloadPage extends StatelessWidget {
                           Theme.of(context).primaryColor,
                         ),
                       ),
-                      const SizedBox(height: 4.0),
+                      4.0.sbh,
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

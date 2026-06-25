@@ -134,7 +134,7 @@ dependencies:
   expressive_loading_indicator: ^0.0.1
   motor: ^1.1.0
   figma_squircle: ^0.6.3
-
+  heroine: ^0.7.2
 
 dev_dependencies:
   flutter_test:

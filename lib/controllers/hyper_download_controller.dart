@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hyper_thread_downloader/hyper_thread_downloader.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 
 /// 下载进度信息
 class DownloadProgressInfo {
@@ -79,7 +80,7 @@ class HyperDownloadController extends GetxController {
 
       // 使用 Completer 等待下载完成或失败
       final completer = Completer<bool>();
-      
+
       try {
         _hyperDownload.startDownload(
           url: proxyUrl,
@@ -134,10 +135,10 @@ class HyperDownloadController extends GetxController {
             debugPrint('Working merge: $ret');
           },
         );
-        
+
         // 等待代理下载完成或失败
         final proxySuccess = await completer.future;
-        
+
         // 如果代理下载成功，直接返回
         if (proxySuccess) {
           return;
@@ -151,7 +152,7 @@ class HyperDownloadController extends GetxController {
       if (isDownloading.value) {
         debugPrint('Proxy download failed, attempting regular download: $url');
         final regularCompleter = Completer<void>();
-        
+
         try {
           _hyperDownload.startDownload(
             url: url,
@@ -209,7 +210,7 @@ class HyperDownloadController extends GetxController {
               debugPrint('Working merge: $ret');
             },
           );
-          
+
           // 等待普通下载完成
           await regularCompleter.future;
         } catch (e) {
@@ -239,15 +240,15 @@ class HyperDownloadController extends GetxController {
               mainAxisSize: MainAxisSize.min,
               children: [
                 LinearProgressIndicator(value: downloadProgress.value),
-                const SizedBox(height: 16),
+                16.sbh,
                 Text(
                   '进度: ${(downloadProgress.value * 100).toStringAsFixed(2)}%',
                 ),
-                const SizedBox(height: 8),
+                8.sbh,
                 Text('速度: ${_formatSpeed(downloadSpeed.value)}'),
-                const SizedBox(height: 8),
+                8.sbh,
                 Text('剩余时间: ${_formatTime(remainTime.value)}'),
-                const SizedBox(height: 8),
+                8.sbh,
                 Text('已下载: ${currentCount.value} / ${totalCount.value}'),
               ],
             ),

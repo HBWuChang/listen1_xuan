@@ -7,6 +7,7 @@ import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/settings.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import '../global_settings_animations.dart';
 import '../packages/circular_theme_reveal/src/circular_theme_reveal_overlay.dart';
 import 'settings_controller.dart';
@@ -597,7 +598,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  16.sbh,
 
                   // 主题模式选择
                   Text(
@@ -606,7 +607,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  8.sbh,
                   Row(
                     children: [
                       _buildThemeModeChip(
@@ -632,7 +633,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  24.sbh,
 
                   // 主题颜色选择
                   Text(
@@ -641,7 +642,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 8), // 动态颜色开关
+                  8.sbh, // 动态颜色开关
                   Obx(
                     () => SwitchListTile(
                       title: Text('使用动态颜色'),
@@ -658,7 +659,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  16.sbh,
                   Obx(
                     () => IgnorePointer(
                       ignoring: themeController.useDynamicColor.value,
@@ -708,7 +709,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  24.sbh,
 
                   // 自定义颜色
                   Text(
@@ -717,7 +718,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  8.sbh,
 
                   Obx(
                     () => IgnorePointer(
@@ -758,7 +759,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                               maxLength: 6,
                               onSubmitted: _setColorFromCode,
                             ),
-                            const SizedBox(height: 16),
+                            16.sbh,
 
                             // RGB滑块
                             Column(
@@ -766,16 +767,13 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                                 // Red
                                 Row(
                                   children: [
-                                    SizedBox(
-                                      width: 30,
-                                      child: Text(
-                                        'R',
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                    Text(
+                                      'R',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                    ),
+                                    ).sbw(30),
                                     Expanded(
                                       child: Slider(
                                         value: themeController.customColorR,
@@ -796,30 +794,24 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                                         },
                                       ),
                                     ),
-                                    SizedBox(
-                                      width: 40,
-                                      child: Text(
-                                        themeController.customColorR
-                                            .toInt()
-                                            .toString(),
-                                        textAlign: TextAlign.right,
-                                      ),
-                                    ),
+                                    Text(
+                                      themeController.customColorR
+                                          .toInt()
+                                          .toString(),
+                                      textAlign: TextAlign.right,
+                                    ).sbw(40),
                                   ],
                                 ),
                                 // Green
                                 Row(
                                   children: [
-                                    SizedBox(
-                                      width: 30,
-                                      child: Text(
-                                        'G',
-                                        style: TextStyle(
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                    Text(
+                                      'G',
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                    ),
+                                    ).sbw(30),
                                     Expanded(
                                       child: Slider(
                                         value: themeController.customColorG,
@@ -840,30 +832,24 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                                         },
                                       ),
                                     ),
-                                    SizedBox(
-                                      width: 40,
-                                      child: Text(
-                                        themeController.customColorG
-                                            .toInt()
-                                            .toString(),
-                                        textAlign: TextAlign.right,
-                                      ),
-                                    ),
+                                    Text(
+                                      themeController.customColorG
+                                          .toInt()
+                                          .toString(),
+                                      textAlign: TextAlign.right,
+                                    ).sbw(40),
                                   ],
                                 ),
                                 // Blue
                                 Row(
                                   children: [
-                                    SizedBox(
-                                      width: 30,
-                                      child: Text(
-                                        'B',
-                                        style: TextStyle(
-                                          color: Colors.blue,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                    Text(
+                                      'B',
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                    ),
+                                    ).sbw(30),
                                     Expanded(
                                       child: Slider(
                                         value: themeController.customColorB,
@@ -884,15 +870,12 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                                         },
                                       ),
                                     ),
-                                    SizedBox(
-                                      width: 40,
-                                      child: Text(
-                                        themeController.customColorB
-                                            .toInt()
-                                            .toString(),
-                                        textAlign: TextAlign.right,
-                                      ),
-                                    ),
+                                    Text(
+                                      themeController.customColorB
+                                          .toInt()
+                                          .toString(),
+                                      textAlign: TextAlign.right,
+                                    ).sbw(40),
                                   ],
                                 ),
                               ],
@@ -924,7 +907,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
     return FilterChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [Icon(icon, size: 16), const SizedBox(width: 4), Text(label)],
+        children: [Icon(icon, size: 16), 4.sbw, Text(label)],
       ),
       selected: isSelected,
       onSelected: (selected) {

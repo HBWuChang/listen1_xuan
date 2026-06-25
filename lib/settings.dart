@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:listen1_xuan/bl.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -269,23 +270,20 @@ class _LoginWebviewState extends State<LoginWebview> {
     return Scaffold(
       appBar: AppBar(
         // title: const Text('请登录后，点击右上角保存cooke按钮'),
-        title: SizedBox(
-          height: 30,
-          child: Marquee(
-            text: '请登录后，点击右上角保存cookie按钮',
-            style: const TextStyle(fontSize: 20),
-            scrollAxis: Axis.horizontal,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            blankSpace: 20.0,
-            velocity: 100.0,
-            pauseAfterRound: const Duration(seconds: 1),
-            startPadding: 10.0,
-            accelerationDuration: const Duration(seconds: 1),
-            accelerationCurve: Curves.linear,
-            decelerationDuration: const Duration(milliseconds: 500),
-            decelerationCurve: Curves.easeOut,
-          ),
-        ),
+        title: Marquee(
+          text: '请登录后，点击右上角保存cookie按钮',
+          style: const TextStyle(fontSize: 20),
+          scrollAxis: Axis.horizontal,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          blankSpace: 20.0,
+          velocity: 100.0,
+          pauseAfterRound: const Duration(seconds: 1),
+          startPadding: 10.0,
+          accelerationDuration: const Duration(seconds: 1),
+          accelerationCurve: Curves.linear,
+          decelerationDuration: const Duration(milliseconds: 500),
+          decelerationCurve: Curves.easeOut,
+        ).sbh(30),
 
         actions: [
           Obx(
@@ -966,7 +964,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     Get.toNamed(RouteName.settingsReadmePage, id: 1);
                   },
                 ),
-                SizedBox(height: 0.3.sh),
+                0.3.sh.sbh,
               ],
             ),
           ),

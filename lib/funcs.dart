@@ -5,6 +5,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/settings.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import '../widgets/progress_indicator_xuan.dart';
 
 import 'controllers/appLinksController.dart';
@@ -45,7 +46,7 @@ Widget _buildCustomToast({
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(icon, color: iconColor, size: 24),
-                const SizedBox(width: 12),
+                12.sbw,
                 Flexible(
                   child: Text(
                     "${title ?? ''}${(!isEmpty(title) && !isEmpty(message)) ? '：' : ''}${message ?? ''}",
@@ -221,7 +222,7 @@ void showLoadingDialog(RxString message) {
           mainAxisSize: MainAxisSize.min,
           children: [
             globalLoadingAnime,
-            const SizedBox(width: 20),
+            20.sbw,
             Obx(
               () => Text(message.value, style: const TextStyle(fontSize: 16)),
             ),
@@ -401,7 +402,7 @@ class _InputDialogWidgetState extends State<_InputDialogWidget> {
                   color: Get.theme.textTheme.bodySmall?.color,
                 ),
               ),
-              const SizedBox(height: 16),
+              16.sbh,
             ],
             Obx(
               () => TextField(
@@ -453,16 +454,12 @@ class _InputDialogWidgetState extends State<_InputDialogWidget> {
                       await _handleConfirm();
                     },
               child: _isProcessing.value
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Get.theme.colorScheme.onPrimary,
-                        ),
+                  ? CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Get.theme.colorScheme.onPrimary,
                       ),
-                    )
+                    ).sbs(16)
                   : Text(widget.confirmText),
             ),
           ),
@@ -647,7 +644,7 @@ Future<bool?> showTriStateConfirmDialog({
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(message),
-          const SizedBox(height: 16),
+          16.sbh,
           Obx(
             () => CheckboxListTile(
               title: Text(rememberText),

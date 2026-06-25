@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:get/get.dart';
 
@@ -163,7 +164,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  8.sbh,
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -253,7 +254,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 8),
+            8.sbh,
             const Text(
               '格式: IP地址:端口号',
               style: TextStyle(fontSize: 12, color: Colors.grey),

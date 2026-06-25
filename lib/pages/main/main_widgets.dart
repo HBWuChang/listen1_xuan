@@ -3,7 +3,7 @@ part of '../../main.dart';
 Widget get _leftBar => Scaffold(
   body: Column(
     children: [
-      SizedBox(height: 10),
+      10.sbh,
       isDesktop
           ? Listener(
               onPointerDown: (event) {
@@ -19,78 +19,67 @@ Widget get _leftBar => Scaffold(
               },
               child: Tooltip(
                 message: '右键以最小化,中键以关闭',
-                child: SizedBox(
-                  height: 34,
-                  width: double.infinity,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text('Listen1', style: TextStyle(fontSize: 24)),
-                      );
-                    },
-                  ),
-                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Listen1', style: TextStyle(fontSize: 24)),
+                    );
+                  },
+                ).sbwh(double.infinity, 34),
               ),
             )
-          : SizedBox(
-              height: 34,
-              width: double.infinity,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Listen1', style: TextStyle(fontSize: 24)),
-                  );
-                },
-              ),
-            ),
-      SizedBox(
-        height: 56,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            XSearchController searchController = Get.find<XSearchController>();
-            bool useFocusNode = !searchController.showSearchArea.value;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              searchController.leftBarWidth.value = constraints.maxWidth;
-            });
-            if (constraints.maxWidth > 200) {
-              if (searchController.showSearchArea.value) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  searchController.showSearchArea.value = false;
-                });
-              }
-            } else {
-              if (!searchController.showSearchArea.value) {
-                useFocusNode = false;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  searchController.showSearchArea.value = true;
-                });
-              }
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                return FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Listen1', style: TextStyle(fontSize: 24)),
+                );
+              },
+            ).sbwh(double.infinity, 34),
+      LayoutBuilder(
+        builder: (context, constraints) {
+          XSearchController searchController = Get.find<XSearchController>();
+          bool useFocusNode = !searchController.showSearchArea.value;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            searchController.leftBarWidth.value = constraints.maxWidth;
+          });
+          if (constraints.maxWidth > 200) {
+            if (searchController.showSearchArea.value) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                searchController.showSearchArea.value = false;
+              });
             }
-            final inputFontSize = (constraints.maxWidth / 6)
-                .clamp(12.0, 16.0)
-                .toDouble();
-            return TextField(
-              focusNode: useFocusNode ? searchController.focusNode : null,
-              decoration: InputDecoration(
-                labelText: '请输入歌曲名，歌手或专辑',
-                labelStyle: TextStyle(fontSize: inputFontSize),
-                border: InputBorder.none,
-              ),
-              style: TextStyle(fontSize: inputFontSize),
-              controller: input_text_Controller,
-              readOnly: searchController.showSearchArea.value,
-              onSubmitted: (value) => searchController.performSearch(),
-              onTap: searchController.showSearchArea.value
-                  ? () async {
-                      Get.toNamed(RouteName.searchPage, id: 1);
-                    }
-                  : null,
-            );
-          },
-        ),
-      ),
+          } else {
+            if (!searchController.showSearchArea.value) {
+              useFocusNode = false;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                searchController.showSearchArea.value = true;
+              });
+            }
+          }
+          final inputFontSize = (constraints.maxWidth / 6)
+              .clamp(12.0, 16.0)
+              .toDouble();
+          return TextField(
+            focusNode: useFocusNode ? searchController.focusNode : null,
+            decoration: InputDecoration(
+              labelText: '请输入歌曲名，歌手或专辑',
+              labelStyle: TextStyle(fontSize: inputFontSize),
+              border: InputBorder.none,
+            ),
+            style: TextStyle(fontSize: inputFontSize),
+            controller: input_text_Controller,
+            readOnly: searchController.showSearchArea.value,
+            onSubmitted: (value) => searchController.performSearch(),
+            onTap: searchController.showSearchArea.value
+                ? () async {
+                    Get.toNamed(RouteName.searchPage, id: 1);
+                  }
+                : null,
+          );
+        },
+      ).sbh(56),
       Expanded(child: MyPlaylist()),
 
       // SizedBox(),
@@ -143,69 +132,66 @@ Listener _mainContent() => Listener(
     body: Column(
       children: [
         if (isWindows)
-          SizedBox(
-            height: 25,
-            child: DragToMoveArea(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    tooltip: "返回",
-                    onPressed: () {
-                      router_pop();
-                    },
-                    icon: Icon(Icons.arrow_back_ios_new, size: 13),
-                  ),
-                  Obx(
-                    () => Container(
-                      width:
-                          Get.find<SettingsController>()
-                                  .windowsCloseBtnCloseOrHideApp ==
-                              false
-                          ? 80
-                          : 120,
-                      child: Row(
-                        children: [
-                          if (Get.find<SettingsController>()
-                                  .windowsCloseBtnCloseOrHideApp !=
-                              false)
-                            IconButton(
-                              tooltip: "隐藏到托盘",
-                              icon: Icon(
-                                Icons.close_fullscreen_rounded,
-                                size: 13,
-                              ),
-                              onPressed: () {
-                                windowManager.hide();
-                                windowManager.setSkipTaskbar(true);
-                              },
-                            ),
+          DragToMoveArea(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  tooltip: "返回",
+                  onPressed: () {
+                    router_pop();
+                  },
+                  icon: Icon(Icons.arrow_back_ios_new, size: 13),
+                ),
+                Obx(
+                  () => Container(
+                    width:
+                        Get.find<SettingsController>()
+                                .windowsCloseBtnCloseOrHideApp ==
+                            false
+                        ? 80
+                        : 120,
+                    child: Row(
+                      children: [
+                        if (Get.find<SettingsController>()
+                                .windowsCloseBtnCloseOrHideApp !=
+                            false)
                           IconButton(
-                            tooltip: "最小化",
-                            icon: Icon(Icons.minimize, size: 13),
+                            tooltip: "隐藏到托盘",
+                            icon: Icon(
+                              Icons.close_fullscreen_rounded,
+                              size: 13,
+                            ),
                             onPressed: () {
-                              windowManager.minimize();
-                              windowManager.setSkipTaskbar(false);
+                              windowManager.hide();
+                              windowManager.setSkipTaskbar(true);
                             },
                           ),
-                          IconButton(
-                            tooltip:
-                                (Get.find<SettingsController>()
-                                        .windowsCloseBtnCloseOrHideApp !=
-                                    false)
-                                ? "关闭"
-                                : "隐藏到托盘",
-                            icon: Icon(Icons.close, size: 13),
-                            onPressed: _clickCloseBtn,
-                          ),
-                        ],
-                      ),
+                        IconButton(
+                          tooltip: "最小化",
+                          icon: Icon(Icons.minimize, size: 13),
+                          onPressed: () {
+                            windowManager.minimize();
+                            windowManager.setSkipTaskbar(false);
+                          },
+                        ),
+                        IconButton(
+                          tooltip:
+                              (Get.find<SettingsController>()
+                                      .windowsCloseBtnCloseOrHideApp !=
+                                  false)
+                              ? "关闭"
+                              : "隐藏到托盘",
+                          icon: Icon(Icons.close, size: 13),
+                          onPressed: _clickCloseBtn,
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
+          ).sbh(25),
         Expanded(
           child: Navigator(
             key: Get.nestedKey(1),
@@ -351,7 +337,7 @@ Listener _mainContent() => Listener(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text('Listen1'),
-                              SizedBox(width: 10),
+                              10.sbw,
                               Expanded(
                                 child: TextField(
                                   decoration: InputDecoration(

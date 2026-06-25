@@ -5,32 +5,25 @@ Widget buildCoverImage(double size, {double? borderRadius}) {
   final radius = borderRadius ?? 8.0;
   return GestureDetector(
     onTap: () => _openLyricPage(),
-    child: SizedBox(
-      width: size,
-      height: size,
-      child: ClipSmoothRect(
-        radius: SmoothBorderRadius(cornerRadius: radius, cornerSmoothing: 1),
-        child: Obx(() {
-          Track? mediaItem = _playController.nowPlayingTrackRx.value;
-          return isEmpty(mediaItem?.img_url)
-              ? Container(color: Get.theme.cardColor)
-              : ExtendedImage.network(
-                  mediaItem!.img_url!,
-                  fit: BoxFit.cover,
-                  cache: true,
-                  loadStateChanged: (state) {
-                    if (state.extendedImageLoadState == LoadState.failed) {
-                      return Icon(Icons.music_note, size: size);
-                    }
-                    if (state.extendedImageLoadState == LoadState.loading) {
-                      return globalLoadingAnimeOfExtendedImage;
-                    }
-                    return null;
-                  },
-                );
-        }),
-      ),
-    ),
+    child: Obx(() {
+      Track? mediaItem = _playController.nowPlayingTrackRx.value;
+      return isEmpty(mediaItem?.img_url)
+          ? Container(color: Get.theme.cardColor)
+          : ExtendedImage.network(
+              mediaItem!.img_url!,
+              fit: BoxFit.cover,
+              cache: true,
+              loadStateChanged: (state) {
+                if (state.extendedImageLoadState == LoadState.failed) {
+                  return Icon(Icons.music_note, size: size);
+                }
+                if (state.extendedImageLoadState == LoadState.loading) {
+                  return globalLoadingAnimeOfExtendedImage;
+                }
+                return null;
+              },
+            );
+    }).clipSmoothRectSize(size).sbs(size),
   );
 }
 
@@ -137,7 +130,7 @@ Widget buildSongInfo({
                   textAlign: TextAlign.center,
                   maxLines: 1,
                 ),
-              SizedBox(height: 4),
+              4.sbh,
               if (isCollapsed)
                 Text(
                   mediaItem?.artist ?? '',
@@ -364,54 +357,50 @@ Widget get positionSlider => StreamBuilder<MediaState>(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 120.w,
-            child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Obx(
-                  () => AnimatedSwitcher(
-                    duration: Duration(milliseconds: 200),
-                    transitionBuilder: horTitleTextTra,
-                    child: _playController.loading
-                        ? Text(
-                            key: ValueKey('slider-loading-position'),
-                            _playController
-                                    .bootStraping[_playController
-                                        .nowPlayingTrackRx
-                                        .value
-                                        ?.id]
-                                    ?.split('/')
-                                    .first ??
-                                '',
-                            style: TextStyle(fontSize: 48.0.w),
-                          )
-                        : KeyedSubtree(
-                            key: ValueKey('slider-playing-position'),
-                            child: _buildDurationBySplitStreams(
-                              hourStream: _mediaPositionHourStream,
-                              minuteStream: _mediaPositionMinuteStream,
-                              secondStream: _mediaPositionSecondStream,
-                              initialHour:
-                                  (mediaState?.position ?? Duration.zero)
-                                      .inHours,
-                              initialMinute:
-                                  (mediaState?.position ?? Duration.zero)
-                                      .inMinutes
-                                      .remainder(60),
-                              initialSecond:
-                                  (mediaState?.position ?? Duration.zero)
-                                      .inSeconds
-                                      .remainder(60),
-                              textStyle: TextStyle(fontSize: 48.0.w),
-                              keyPrefix: 'slider-pos',
-                            ),
+          Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Obx(
+                () => AnimatedSwitcher(
+                  duration: Duration(milliseconds: 200),
+                  transitionBuilder: horTitleTextTra,
+                  child: _playController.loading
+                      ? Text(
+                          key: ValueKey('slider-loading-position'),
+                          _playController
+                                  .bootStraping[_playController
+                                      .nowPlayingTrackRx
+                                      .value
+                                      ?.id]
+                                  ?.split('/')
+                                  .first ??
+                              '',
+                          style: TextStyle(fontSize: 48.0.w),
+                        )
+                      : KeyedSubtree(
+                          key: ValueKey('slider-playing-position'),
+                          child: _buildDurationBySplitStreams(
+                            hourStream: _mediaPositionHourStream,
+                            minuteStream: _mediaPositionMinuteStream,
+                            secondStream: _mediaPositionSecondStream,
+                            initialHour:
+                                (mediaState?.position ?? Duration.zero).inHours,
+                            initialMinute:
+                                (mediaState?.position ?? Duration.zero)
+                                    .inMinutes
+                                    .remainder(60),
+                            initialSecond:
+                                (mediaState?.position ?? Duration.zero)
+                                    .inSeconds
+                                    .remainder(60),
+                            textStyle: TextStyle(fontSize: 48.0.w),
+                            keyPrefix: 'slider-pos',
                           ),
-                  ),
+                        ),
                 ),
               ),
             ),
-          ),
+          ).wsbw(120),
           Expanded(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -463,54 +452,50 @@ Widget get positionSlider => StreamBuilder<MediaState>(
               ),
             ),
           ),
-          SizedBox(
-            width: 120.w,
-            child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Obx(
-                  () => AnimatedSwitcher(
-                    duration: Duration(milliseconds: 200),
-                    transitionBuilder: horTitleTextTra,
-                    child: _playController.loading
-                        ? Text(
-                            key: ValueKey('slider-loading-duration'),
-                            _playController
-                                    .bootStraping[_playController
-                                        .nowPlayingTrackRx
-                                        .value
-                                        ?.id]
-                                    ?.split('/')
-                                    .last ??
-                                '',
-                            style: TextStyle(fontSize: 48.0.w),
-                          )
-                        : KeyedSubtree(
-                            key: ValueKey('slider-playing-duration'),
-                            child: _buildDurationBySplitStreams(
-                              hourStream: _mediaDurationHourStream,
-                              minuteStream: _mediaDurationMinuteStream,
-                              secondStream: _mediaDurationSecondStream,
-                              initialHour:
-                                  (mediaState?.duration ?? Duration.zero)
-                                      .inHours,
-                              initialMinute:
-                                  (mediaState?.duration ?? Duration.zero)
-                                      .inMinutes
-                                      .remainder(60),
-                              initialSecond:
-                                  (mediaState?.duration ?? Duration.zero)
-                                      .inSeconds
-                                      .remainder(60),
-                              textStyle: TextStyle(fontSize: 48.0.w),
-                              keyPrefix: 'slider-dur',
-                            ),
+          Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Obx(
+                () => AnimatedSwitcher(
+                  duration: Duration(milliseconds: 200),
+                  transitionBuilder: horTitleTextTra,
+                  child: _playController.loading
+                      ? Text(
+                          key: ValueKey('slider-loading-duration'),
+                          _playController
+                                  .bootStraping[_playController
+                                      .nowPlayingTrackRx
+                                      .value
+                                      ?.id]
+                                  ?.split('/')
+                                  .last ??
+                              '',
+                          style: TextStyle(fontSize: 48.0.w),
+                        )
+                      : KeyedSubtree(
+                          key: ValueKey('slider-playing-duration'),
+                          child: _buildDurationBySplitStreams(
+                            hourStream: _mediaDurationHourStream,
+                            minuteStream: _mediaDurationMinuteStream,
+                            secondStream: _mediaDurationSecondStream,
+                            initialHour:
+                                (mediaState?.duration ?? Duration.zero).inHours,
+                            initialMinute:
+                                (mediaState?.duration ?? Duration.zero)
+                                    .inMinutes
+                                    .remainder(60),
+                            initialSecond:
+                                (mediaState?.duration ?? Duration.zero)
+                                    .inSeconds
+                                    .remainder(60),
+                            textStyle: TextStyle(fontSize: 48.0.w),
+                            keyPrefix: 'slider-dur',
                           ),
-                  ),
+                        ),
                 ),
               ),
             ),
-          ),
+          ).wsbw(120),
         ],
       ),
     );
@@ -549,22 +534,18 @@ class SizedBoxWithOverflow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      height: height,
-      child: OverflowBox(
-        fit: OverflowBoxFit.deferToChild,
-        maxWidth: maxWidth,
-        maxHeight: maxHeight,
-        child: Opacity(
-          opacity: min(
-            (width ?? maxWidth) / maxWidth,
-            (height ?? maxHeight) / maxHeight,
-          ).clamp(0, 1.0),
-          child: child,
-        ),
+    return OverflowBox(
+      fit: OverflowBoxFit.deferToChild,
+      maxWidth: maxWidth,
+      maxHeight: maxHeight,
+      child: Opacity(
+        opacity: min(
+          (width ?? maxWidth) / maxWidth,
+          (height ?? maxHeight) / maxHeight,
+        ).clamp(0, 1.0),
+        child: child,
       ),
-    );
+    ).sbwh(width, height);
   }
 }
 

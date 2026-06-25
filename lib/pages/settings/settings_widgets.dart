@@ -100,7 +100,7 @@ Widget _buildSupabasePanel() {
                 ),
               ],
             ),
-            SizedBox(height: 16),
+            16.sbh,
             Wrap(
               alignment: WrapAlignment.spaceEvenly,
               runAlignment: WrapAlignment.center,
@@ -208,7 +208,7 @@ Widget _buildSupabasePanel() {
               '使用 Supabase 账号可以同步您的数据',
               style: TextStyle(color: Colors.grey),
             ),
-            SizedBox(height: 16),
+            16.sbh,
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -222,7 +222,7 @@ Widget _buildSupabasePanel() {
                     style: ElevatedButton.styleFrom(minimumSize: Size(0, 45)),
                   ),
                 ),
-                SizedBox(width: 12),
+                12.sbw,
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
@@ -465,7 +465,7 @@ void _showPasswordManagementDialog(SupabaseAuthController authController) {
                 style: TextStyle(fontSize: 13, color: Colors.grey),
               ),
             ),
-          const SizedBox(height: 8),
+          8.sbh,
         ],
       ),
       actions: [
@@ -506,7 +506,7 @@ void _showOpacityDialog() {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(height: 16),
+              16.sbh,
               Row(
                 children: [
                   Text('透明'),
@@ -527,7 +527,7 @@ void _showOpacityDialog() {
                   Text('不透明'),
                 ],
               ),
-              SizedBox(height: 8),
+              8.sbh,
               Text(
                 '提示: 255为完全不透明，0为完全透明',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -1178,7 +1178,7 @@ class _SupabaseTokenManagementContent extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              12.sbw,
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: _downloadAllTokens,
@@ -1192,9 +1192,9 @@ class _SupabaseTokenManagementContent extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        16.sbh,
         const Divider(),
-        const SizedBox(height: 8),
+        8.sbh,
         // 各平台操作列表
         ListView.builder(
           shrinkWrap: true,
@@ -1268,7 +1268,7 @@ class _SupabaseTokenManagementContent extends StatelessWidget {
             });
           },
         ),
-        const SizedBox(height: 16),
+        16.sbh,
       ],
     );
   }

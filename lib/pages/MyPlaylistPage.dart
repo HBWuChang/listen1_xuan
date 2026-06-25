@@ -114,9 +114,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
       message: title,
       child: InkWell(
         onTap: () => _openPlaylist(playlist, isMy: isMy),
-        child: SizedBox(
-          height: sizeHeight,
-          child: AnimatedPadding(
+        child: AnimatedPadding(
             duration: duration,
             curve: Curves.easeInOut,
             padding: EdgeInsets.symmetric(
@@ -131,10 +129,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                     alignment: iconOnly
                         ? Alignment.center
                         : Alignment.centerLeft,
-                    child: SizedBox(
-                      width: sizeHeight,
-                      child: Center(child: cover),
-                    ),
+                    child: Center(child: cover).sbw(sizeHeight),
                   ),
                 ),
                 Positioned.fill(
@@ -158,8 +153,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                 ),
               ],
             ),
-          ),
-        ),
+          ).sbh(sizeHeight),
       ),
     );
   }
@@ -185,9 +179,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
       message: title,
       child: InkWell(
         onTap: onTap,
-        child: SizedBox(
-          height: compact ? 44 : 56,
-          child: AnimatedPadding(
+        child: AnimatedPadding(
             duration: duration,
             curve: Curves.easeInOut,
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -200,10 +192,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                     alignment: shouldCenterLeading
                         ? Alignment.center
                         : Alignment.centerLeft,
-                    child: SizedBox(
-                      width: leadingWidth,
-                      child: Center(child: leading),
-                    ),
+                    child: Center(child: leading).sbw(leadingWidth),
                   ),
                 ),
                 Positioned.fill(
@@ -230,8 +219,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                 ),
               ],
             ),
-          ),
-        ),
+          ).sbh(compact ? 44 : 56),
       ),
     );
   }
@@ -406,7 +394,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                 onExpandedChanged(nextExpanded);
               },
             ),
-            collapsed: const SizedBox.shrink(),
+            collapsed: SizedBox.shrink(),
             expanded: body,
           );
         },

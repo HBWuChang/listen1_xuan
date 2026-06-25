@@ -5,6 +5,7 @@ import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 import '../constants/const.dart';
@@ -139,7 +140,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(width: 60), // 中间箭头区域的宽度
+          60.sbw, // 中间箭头区域的宽度
           Expanded(
             child: Text(
               '替换歌曲',
@@ -151,7 +152,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(width: 48), // 右侧按钮区域的宽度
+          48.sbw, // 右侧按钮区域的宽度
         ],
       ),
     );
@@ -171,7 +172,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(width: 60),
+          60.sbw,
           Expanded(
             child: Text(
               '音频数据来源',
@@ -179,7 +180,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(width: 48),
+          48.sbw,
         ],
       ),
     );
@@ -447,7 +448,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
               fontStyle: FontStyle.italic,
             ),
           ),
-          const SizedBox(height: 2),
+          2.sbh,
           Text(
             'ID: $trackId',
             textAlign: TextAlign.center,
@@ -472,7 +473,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 2),
+          2.sbh,
           Text(
             track.artist ?? '未知歌手',
             style: TextStyle(fontSize: 12, color: Colors.grey[700]),
@@ -655,7 +656,7 @@ class _FabLocationSettingsContent extends StatelessWidget {
         children: [
           // 位置选择
           Text('浮动按钮位置', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12.0),
+          12.0.sbh,
           Obx(() {
             final currentLocation = settingsController.songReplaceFabLocation;
             return Wrap(
@@ -684,10 +685,10 @@ class _FabLocationSettingsContent extends StatelessWidget {
               }).toList(),
             );
           }),
-          const SizedBox(height: 24.0),
+          24.0.sbh,
           // 大小选择
           Text('浮动按钮大小', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12.0),
+          12.0.sbh,
           Obx(() {
             final isMini = settingsController.songReplaceFabMini;
             return Row(
@@ -707,7 +708,7 @@ class _FabLocationSettingsContent extends StatelessWidget {
               ],
             );
           }),
-          const SizedBox(height: 24.0),
+          24.0.sbh,
           Obx(
             () => TriStateSettingTile(
               title: '自动替换歌单中的歌曲',

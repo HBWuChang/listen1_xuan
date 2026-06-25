@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import '../widgets/progress_indicator_xuan.dart';
 
 import 'package:listen1_xuan/play.dart';
@@ -149,16 +150,12 @@ Future<void> closeApp() async {
                 if (settingsSaved.value)
                   Icon(Icons.check_circle, color: Get.theme.colorScheme.primary)
                 else
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                SizedBox(width: 12),
+                  CircularProgressIndicator(strokeWidth: 2).sbs(24),
+                12.sbw,
                 Text('保存设置'),
               ],
             ),
-            SizedBox(height: 12),
+            12.sbh,
             Row(
               children: [
                 if (continuePlaysaved.value)
@@ -166,12 +163,8 @@ Future<void> closeApp() async {
                 else if (timeoutReached.value)
                   Icon(Icons.warning, color: Get.theme.colorScheme.error)
                 else
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                SizedBox(width: 12),
+                  CircularProgressIndicator(strokeWidth: 2).sbs(24),
+                12.sbw,
                 Text(
                   timeoutReached.value && !continuePlaysaved.value
                       ? '同步超时'

@@ -49,7 +49,7 @@ void _showFilterSelection(
                           );
                         }).toList(),
                       ),
-                      SizedBox(height: 16.0),
+                      16.0.sbh,
                     ],
                   );
                 }).toList(),

@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 
 class HoverFollowWidget extends StatefulWidget {
   final Widget child;
@@ -144,113 +145,99 @@ class AnimatedTabBarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: containerHeight!,
-      child: Column(
-        children: [
-          SizedBox(
-            height: (containerHeight! - barHeight! - spacing!),
-            child: Row(
-              children: List.generate(tabLabels.length, (index) {
-                return Expanded(
-                  child: AnimatedBuilder(
-                    animation: pageController,
-                    builder: (context, child) {
-                      double page = 0.0;
-                      try {
-                        page =
-                            pageController.hasClients &&
-                                pageController.page != null
-                            ? pageController.page!
-                            : pageController.initialPage.toDouble();
-                      } catch (_) {}
+    return Column(
+      children: [
+        Row(
+          children: List.generate(tabLabels.length, (index) {
+            return Expanded(
+              child: AnimatedBuilder(
+                animation: pageController,
+                builder: (context, child) {
+                  double page = 0.0;
+                  try {
+                    page =
+                        pageController.hasClients && pageController.page != null
+                        ? pageController.page!
+                        : pageController.initialPage.toDouble();
+                  } catch (_) {}
 
-                      // 判断当前标签是否为选中状态
-                      bool isSelected = (page.round() == index);
+                  // 判断当前标签是否为选中状态
+                  bool isSelected = (page.round() == index);
 
-                      return TextButton(
-                        onPressed: () {
-                          pageController.animateToPage(
-                            index,
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.ease,
-                          );
-                        },
-                        child: HoverFollowWidget(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text.rich(
-                              tabLabels[index],
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.normal,
-                                color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge?.color,
-                              ),
-                            ),
-                          ),
-                        ),
+                  return TextButton(
+                    onPressed: () {
+                      pageController.animateToPage(
+                        index,
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.ease,
                       );
                     },
-                  ),
-                );
-              }),
-            ),
-          ),
-          SizedBox(height: spacing!),
-          SizedBox(
-            height: barHeight!,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return AnimatedBuilder(
-                  animation: pageController,
-                  builder: (context, child) {
-                    double page = 0.0;
-                    try {
-                      page =
-                          pageController.hasClients &&
-                              pageController.page != null
-                          ? pageController.page!
-                          : pageController.initialPage.toDouble();
-                    } catch (_) {}
-
-                    double tabWidth = constraints.maxWidth / tabLabels.length;
-                    double minLine = tabWidth * barWidthMultiplier!;
-                    double maxLine = tabWidth * (barWidthMultiplier! + 0.7);
-
-                    double progress = (page - page.floor()).abs();
-                    double dist = (progress > 0.5) ? 1 - progress : progress;
-                    double lineWidth =
-                        minLine + (maxLine - minLine) * (dist * 2);
-                    double left = page * tabWidth + (tabWidth - lineWidth) / 2;
-
-                    return Stack(
-                      children: [
-                        Positioned(
-                          left: left,
-                          width: lineWidth,
-                          top: 0,
-                          bottom: 0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(2),
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            height: barHeight!,
+                    child: HoverFollowWidget(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text.rich(
+                          tabLabels[index],
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.normal,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                           ),
                         ),
-                      ],
-                    );
-                  },
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          }),
+        ).sbh((containerHeight! - barHeight! - spacing!)),
+        (spacing!).sbh,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return AnimatedBuilder(
+              animation: pageController,
+              builder: (context, child) {
+                double page = 0.0;
+                try {
+                  page =
+                      pageController.hasClients && pageController.page != null
+                      ? pageController.page!
+                      : pageController.initialPage.toDouble();
+                } catch (_) {}
+
+                double tabWidth = constraints.maxWidth / tabLabels.length;
+                double minLine = tabWidth * barWidthMultiplier!;
+                double maxLine = tabWidth * (barWidthMultiplier! + 0.7);
+
+                double progress = (page - page.floor()).abs();
+                double dist = (progress > 0.5) ? 1 - progress : progress;
+                double lineWidth = minLine + (maxLine - minLine) * (dist * 2);
+                double left = page * tabWidth + (tabWidth - lineWidth) / 2;
+
+                return Stack(
+                  children: [
+                    Positioned(
+                      left: left,
+                      width: lineWidth,
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        height: barHeight!,
+                      ),
+                    ),
+                  ],
                 );
               },
-            ),
-          ),
-        ],
-      ),
-    );
+            );
+          },
+        ).sbh(barHeight!),
+      ],
+    ).sbh(containerHeight!);
   }
 }

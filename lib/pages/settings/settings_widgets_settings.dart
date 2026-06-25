@@ -14,7 +14,7 @@ Widget settingsWidget(BuildContext context) {
                 label: Text('保存配置到文件'),
               ),
             ),
-            SizedBox(width: 10),
+            10.sbw,
             Expanded(
               child: ElevatedButtonIcon(
                 onPressed: importSettingsFromFile,
@@ -24,7 +24,7 @@ Widget settingsWidget(BuildContext context) {
             ),
           ],
         ),
-        SizedBox(height: 10),
+        10.sbh,
         Row(
           children: [
             Expanded(
@@ -34,7 +34,7 @@ Widget settingsWidget(BuildContext context) {
                 label: Text('导出歌单到Github Gist'),
               ),
             ),
-            SizedBox(width: 10),
+            10.sbw,
             Expanded(
               child: ElevatedButtonIcon(
                 onPressed: () async {
@@ -119,7 +119,7 @@ Widget settingsWidget(BuildContext context) {
             ),
           ],
         ),
-        SizedBox(height: 10),
+        10.sbh,
         ElevatedButton.icon(
           onPressed: Get.find<SupabaseAuthController>().isLoggedIn.value
               ? () {
@@ -187,65 +187,60 @@ void _showSponsorDialog(BuildContext context) {
 
   Get.dialog(
     AlertDialog(
-      title: Row(
-        children: [Icon(Icons.lock_open), SizedBox(width: 8), Text('解锁受限功能')],
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              MarkdownBody(data: markdownContent),
-              // 用户 ID 展示框
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Get.theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Get.theme.colorScheme.outline.withOpacity(0.3),
-                  ),
+      title: Row(children: [Icon(Icons.lock_open), 8.sbw, Text('解锁受限功能')]),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MarkdownBody(data: markdownContent),
+            // 用户 ID 展示框
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Get.theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Get.theme.colorScheme.outline.withOpacity(0.3),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SelectableText(
-                        userId,
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Get.theme.colorScheme.primary,
-                        ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SelectableText(
+                      userId,
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Get.theme.colorScheme.primary,
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.copy, size: 20),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: userId));
-                        showSuccessSnackbar('已复制', '用户ID已复制到剪贴板');
-                      },
-                      tooltip: '复制ID',
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.copy, size: 20),
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: userId));
+                      showSuccessSnackbar('已复制', '用户ID已复制到剪贴板');
+                    },
+                    tooltip: '复制ID',
+                  ),
+                ],
               ),
-              SizedBox(height: 8),
-              MarkdownBody(
-                data: markdownContent2,
-                selectable: true,
-                onTapLink: (text, href, title) {
-                  if (href != null) {
-                    g_launchURL(Uri.parse(href));
-                  }
-                },
-              ),
-            ],
-          ),
+            ),
+            8.sbh,
+            MarkdownBody(
+              data: markdownContent2,
+              selectable: true,
+              onTapLink: (text, href, title) {
+                if (href != null) {
+                  g_launchURL(Uri.parse(href));
+                }
+              },
+            ),
+          ],
         ),
-      ),
+      ).sbw(double.maxFinite),
       actions: [
         TextButton(
           onPressed: () {
@@ -372,17 +367,14 @@ class _SupabasePlaylistContent extends StatelessWidget {
         // 新建按钮
         Padding(
           padding: EdgeInsets.all(16),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _createNewPlaylist,
-              icon: Icon(Icons.add),
-              label: Text('新建歌单'),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 12),
-              ),
+          child: ElevatedButton.icon(
+            onPressed: _createNewPlaylist,
+            icon: Icon(Icons.add),
+            label: Text('新建歌单'),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(vertical: 12),
             ),
-          ),
+          ).sbw(double.infinity),
         ),
       ],
     );
@@ -392,25 +384,23 @@ class _SupabasePlaylistContent extends StatelessWidget {
     if (isLoading.value)
       return Container(height: 300, child: Center(child: globalLoadingAnime));
 
-    if (playlists.isEmpty)
-      return Container(
-        height: 300,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.cloud_off, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
-              Text('暂无歌单', style: TextStyle(fontSize: 16, color: Colors.grey)),
-              SizedBox(height: 8),
-              Text(
-                '点击下方按钮新建歌单',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-            ],
-          ),
+    if (playlists.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_off, size: 64, color: Colors.grey),
+            16.sbh,
+            Text('暂无歌单', style: TextStyle(fontSize: 16, color: Colors.grey)),
+            8.sbh,
+            Text(
+              '点击下方按钮新建歌单',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
         ),
-      );
+      ).sbh(300);
+    }
 
     return ListView.builder(
       shrinkWrap: true,
@@ -440,7 +430,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
                       '创建于: ${playlist.createdAt?.toString().substring(0, 19) ?? "未知"}\n'
                       '更新于: ${playlist.updatedAt?.toString().substring(0, 19) ?? "未知"}',
                     ),
-                    SizedBox(height: 4),
+                    4.sbh,
                     // 订阅开关
                     Obx(() {
                       final isSubscribed = isPlaylistSubscribed(playlist.id);
@@ -457,7 +447,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
                                 ? Get.theme.colorScheme.primary
                                 : Colors.grey,
                           ),
-                          SizedBox(width: 4),
+                          4.sbw,
                           Text(
                             isSubscribed ? '已订阅' : '未订阅',
                             style: TextStyle(
@@ -467,7 +457,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
                                   : Colors.grey,
                             ),
                           ),
-                          SizedBox(width: 8),
+                          8.sbw,
                           Transform.scale(
                             scale: 0.8,
                             child: Switch(
@@ -510,7 +500,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
                       child: Row(
                         children: [
                           Icon(Icons.download, size: 20),
-                          SizedBox(width: 8),
+                          8.sbw,
                           Text('下载'),
                         ],
                       ),
@@ -520,7 +510,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
                       child: Row(
                         children: [
                           Icon(Icons.upload, size: 20),
-                          SizedBox(width: 8),
+                          8.sbw,
                           Text('覆盖'),
                         ],
                       ),
@@ -530,7 +520,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
                       child: Row(
                         children: [
                           Icon(Icons.edit, size: 20),
-                          SizedBox(width: 8),
+                          8.sbw,
                           Text('重命名'),
                         ],
                       ),
@@ -545,7 +535,7 @@ class _SupabasePlaylistContent extends StatelessWidget {
                             size: 20,
                             color: Get.theme.colorScheme.error,
                           ),
-                          SizedBox(width: 8),
+                          8.sbw,
                           Text(
                             '删除',
                             style: TextStyle(

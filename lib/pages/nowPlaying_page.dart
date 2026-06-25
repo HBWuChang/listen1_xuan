@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import '../bodys.dart';
@@ -326,7 +327,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                   context,
                 ).textTheme.bodyMedium?.color?.withOpacity(0.5),
               ),
-              SizedBox(height: 16),
+              16.sbh,
               Text(
                 controller.isSearching.value &&
                         controller.searchQuery.value.isNotEmpty
@@ -432,7 +433,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
             // 拖拽手柄 - 在搜索状态下隐藏
             Obx(
               () => controller.isSearching.value
-                  ? SizedBox(width: 20) // 占位符保持布局一致
+                  ? 20.sbw // 占位符保持布局一致
                   : Icon(
                       reorderEnabled ? Icons.drag_handle : Icons.more_horiz,
                       color: theme.textTheme.bodyMedium?.color?.withOpacity(
@@ -441,7 +442,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                       size: 20,
                     ),
             ),
-            SizedBox(width: 8),
+            8.sbw,
             // 当前播放指示器
             if (isCurrentTrack) ...[
               Icon(
@@ -449,9 +450,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                 size: 20,
                 color: theme.colorScheme.primary,
               ),
-              SizedBox(width: 8),
+              8.sbw,
             ] else
-              SizedBox(width: 28), // 占位符保持对齐
+              28.sbw, // 占位符保持对齐
           ],
         ),
         title: Row(

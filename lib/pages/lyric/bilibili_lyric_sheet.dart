@@ -3,6 +3,7 @@ import 'package:listen1_xuan/controllers/lyric_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/generated/dm.pb.dart';
 import 'package:listen1_xuan/models/SubtitleDetail.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 import 'package:listen1_xuan/models/Subtitle.dart';
@@ -319,102 +320,81 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text('从弹幕生成歌词', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
+            12.sbh,
             Text('字幕列表', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
+            8.sbh,
             if (_isSubtitleLoading)
-              const SizedBox(
-                height: 36,
-                child: Center(child: CircularProgressIndicator()),
-              )
+              Center(child: CircularProgressIndicator()).sbh(36)
             else if (_loadSubtitleError != null)
-              SizedBox(
-                height: 36,
-                child: TextButton(
-                  onPressed: _loadSubtitleGroups,
-                  child: Text('字幕获取失败，点击重试：$_loadSubtitleError'),
-                ),
-              )
+              TextButton(
+                onPressed: _loadSubtitleGroups,
+                child: Text('字幕获取失败，点击重试：$_loadSubtitleError'),
+              ).sbh(36)
             else if (_subtitleGroups.isEmpty)
-              SizedBox(
-                height: 36,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '无可用字幕',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '无可用字幕',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
-              )
+              ).sbh(36)
             else
-              SizedBox(
-                height: 36,
-                child: SuperListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _subtitleGroups.length,
-                  itemBuilder: (context, subtitleIndex) {
-                    final subtitle = _subtitleGroups[subtitleIndex];
-                    final isSelected = _selectedSubtitleIndex == subtitleIndex;
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        right: subtitleIndex == _subtitleGroups.length - 1
-                            ? 0
-                            : 8,
-                      ),
-                      child: ChoiceChip(
-                        label: Text(_subtitleDisplayName(subtitle)),
-                        selected: isSelected,
-                        onSelected: (_) => _onSubtitleSelected(subtitleIndex),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            const SizedBox(height: 12),
+              SuperListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _subtitleGroups.length,
+                itemBuilder: (context, subtitleIndex) {
+                  final subtitle = _subtitleGroups[subtitleIndex];
+                  final isSelected = _selectedSubtitleIndex == subtitleIndex;
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      right: subtitleIndex == _subtitleGroups.length - 1
+                          ? 0
+                          : 8,
+                    ),
+                    child: ChoiceChip(
+                      label: Text(_subtitleDisplayName(subtitle)),
+                      selected: isSelected,
+                      onSelected: (_) => _onSubtitleSelected(subtitleIndex),
+                    ),
+                  );
+                },
+              ).sbh(36),
+            12.sbh,
             Text('弹幕分组', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
+            8.sbh,
             if (_isLoading)
-              const SizedBox(
-                height: 36,
-                child: Center(child: CircularProgressIndicator()),
-              )
+              Center(child: CircularProgressIndicator()).sbh(36)
             else if (_loadError != null)
-              SizedBox(
-                height: 36,
-                child: TextButton(
-                  onPressed: _loadDanmuGroups,
-                  child: Text('弹幕获取失败，点击重试：$_loadError'),
-                ),
-              )
+              TextButton(
+                onPressed: _loadDanmuGroups,
+                child: Text('弹幕获取失败，点击重试：$_loadError'),
+              ).sbh(36)
             else
-              SizedBox(
-                height: 36,
-                child: SuperListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _groupEntries.length,
-                  itemBuilder: (context, groupIndex) {
-                    final count = _groupEntries[groupIndex].value.length;
-                    final isSelected = _selectedGroupIndex == groupIndex;
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        right: groupIndex == _groupEntries.length - 1 ? 0 : 8,
-                      ),
-                      child: ChoiceChip(
-                        label: Text('#${groupIndex + 1} ($count)'),
-                        selected: isSelected,
-                        onSelected: (_) {
-                          setState(() {
-                            _selectedGroupIndex = groupIndex;
-                            _selectedSubtitleIndex = -1;
-                            _selectAllCurrent();
-                          });
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-            const SizedBox(height: 8),
+              SuperListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _groupEntries.length,
+                itemBuilder: (context, groupIndex) {
+                  final count = _groupEntries[groupIndex].value.length;
+                  final isSelected = _selectedGroupIndex == groupIndex;
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      right: groupIndex == _groupEntries.length - 1 ? 0 : 8,
+                    ),
+                    child: ChoiceChip(
+                      label: Text('#${groupIndex + 1} ($count)'),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedGroupIndex = groupIndex;
+                          _selectedSubtitleIndex = -1;
+                          _selectAllCurrent();
+                        });
+                      },
+                    ),
+                  );
+                },
+              ).sbh(36),
+            8.sbh,
             Expanded(
               child: usingSubtitle
                   ? (_isSubtitleDetailLoading
@@ -429,10 +409,11 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                                   style: Theme.of(context).textTheme.bodySmall,
                                   textAlign: TextAlign.center,
                                 ),
-                                const SizedBox(height: 8),
+                                8.sbh,
                                 TextButton(
-                                  onPressed: () =>
-                                      _onSubtitleSelected(_selectedSubtitleIndex),
+                                  onPressed: () => _onSubtitleSelected(
+                                    _selectedSubtitleIndex,
+                                  ),
                                   child: const Text('重试加载字幕'),
                                 ),
                               ],
@@ -445,7 +426,9 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                                 return Center(
                                   child: Text(
                                     '选中的字幕没有可用内容',
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
                                   ),
                                 );
                               }
@@ -455,10 +438,12 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                                     alignment: Alignment.centerLeft,
                                     child: Text(
                                       '已加载 ${details.length} 条字幕（整段应用）',
-                                      style: Theme.of(context).textTheme.bodyMedium,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
+                                  6.sbh,
                                   Expanded(
                                     child: SuperListView.builder(
                                       cacheExtent: 600,
@@ -466,17 +451,18 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                                       itemBuilder: (context, index) {
                                         final detail = details[index];
                                         final content =
-                                            detail.content?.trim().isNotEmpty == true
+                                            detail.content?.trim().isNotEmpty ==
+                                                true
                                             ? detail.content!.trim()
                                             : '(空文本)';
-                                        final fromMs = ((detail.from ?? 0) * 1000)
-                                            .round();
+                                        final fromMs =
+                                            ((detail.from ?? 0) * 1000).round();
                                         return ListTile(
                                           dense: true,
                                           contentPadding:
                                               const EdgeInsets.symmetric(
-                                            horizontal: 4,
-                                          ),
+                                                horizontal: 4,
+                                              ),
                                           title: Text(
                                             content,
                                             maxLines: 2,
@@ -485,11 +471,12 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                                           subtitle: Text(
                                             widget.lyricController
                                                 .formatLrcTimestamp(
-                                              Duration(
-                                                milliseconds:
-                                                    fromMs < 0 ? 0 : fromMs,
-                                              ),
-                                            ),
+                                                  Duration(
+                                                    milliseconds: fromMs < 0
+                                                        ? 0
+                                                        : fromMs,
+                                                  ),
+                                                ),
                                           ),
                                         );
                                       },
@@ -536,7 +523,7 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                             Text('已选 ${_selectedIndexes.length} 条'),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        4.sbh,
                         Expanded(
                           child: SuperListView.builder(
                             cacheExtent: 600,
@@ -599,7 +586,7 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                       ],
                     ),
             ),
-            const SizedBox(height: 12),
+            12.sbh,
             Row(
               children: [
                 Expanded(
@@ -608,15 +595,11 @@ class _BilibiliLyricSheetBodyState extends State<_BilibiliLyricSheetBody> {
                         ? null
                         : () => _saveAsLyric(isTranslation: false),
                     child: _isSaving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                        ? CircularProgressIndicator(strokeWidth: 2).sbs(16)
                         : const Text('作为歌词'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                12.sbw,
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _isSaving || !hasMainLyric

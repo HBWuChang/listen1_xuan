@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/controllers/cache_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/widgets/ext_widget.dart';
 
 class CacheNamingPage extends StatelessWidget {
   const CacheNamingPage({Key? key}) : super(key: key);
@@ -20,19 +21,19 @@ class CacheNamingPage extends StatelessWidget {
           children: [
             // 命名方法 - ReorderableListView
             _buildNamedMethodSection(settingsController),
-            const SizedBox(height: 24),
+            24.sbh,
 
             // 命名连接符
             _buildConnectionSymbolSection(settingsController),
-            const SizedBox(height: 16),
+            16.sbh,
 
             // 字段为空替换符
             _buildEmptyReplacementSection(settingsController),
-            const SizedBox(height: 16),
+            16.sbh,
 
             // 不可用字符替换符
             _buildUnusableReplacementSection(settingsController),
-            const SizedBox(height: 16),
+            16.sbh,
 
             // 防止重名方式
             _buildDedupMethodSection(settingsController),
@@ -50,7 +51,7 @@ class CacheNamingPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('命名方法', style: Get.textTheme.titleLarge),
-        const SizedBox(height: 12),
+        12.sbh,
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade300),
@@ -96,9 +97,9 @@ class CacheNamingPage extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        12.sbh,
         Text('添加更多字段', style: Get.textTheme.bodyMedium),
-        const SizedBox(height: 8),
+        8.sbh,
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -203,7 +204,7 @@ class CacheNamingPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('防止重名方式', style: Get.textTheme.titleLarge),
-        const SizedBox(height: 12),
+        12.sbh,
         ...DedupMethod.values.map((method) {
           return Obx(
             () => RadioListTile<int>(
