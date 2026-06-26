@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hyper_thread_downloader/hyper_thread_downloader.dart';
-import 'package:listen1_xuan/widgets/ext_widget.dart';
+import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 
 /// 下载进度信息
 class DownloadProgressInfo {

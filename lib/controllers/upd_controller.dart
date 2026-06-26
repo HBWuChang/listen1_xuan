@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:install_plugin/install_plugin.dart';
-import 'package:listen1_xuan/widgets/ext_widget.dart';
+import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:listen1_xuan/widgets/motor_progress_indicator_xuan.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';

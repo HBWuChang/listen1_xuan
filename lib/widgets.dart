@@ -3,7 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:listen1_xuan/widgets/ext_widget.dart';
+import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 
 class HoverFollowWidget extends StatefulWidget {
   final Widget child;

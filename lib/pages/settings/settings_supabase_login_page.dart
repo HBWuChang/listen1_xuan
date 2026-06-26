@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/supabase_auth_controller.dart';
 import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/funcs.dart';
-import 'package:listen1_xuan/widgets/ext_widget.dart';
+import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:listen1_xuan/widgets/progress_indicator_xuan.dart';
 
 import '../../global_settings_animations.dart';

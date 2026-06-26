@@ -31,6 +31,8 @@ extension WidgetExts on Widget {
   SizedBox hsbh(double height) => sbh(height.h);
   SizedBox hsbwh(double width, double height) => sbwh(width.h, height.h);
   SizedBox hsbs(double size) => sbwh(size.h, size.h);
+
+  Center get center => Center(child: this);
 }
 
 extension SizedBoxExt on num {

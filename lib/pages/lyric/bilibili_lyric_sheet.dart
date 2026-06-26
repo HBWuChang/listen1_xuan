@@ -3,7 +3,7 @@ import 'package:listen1_xuan/controllers/lyric_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/generated/dm.pb.dart';
 import 'package:listen1_xuan/models/SubtitleDetail.dart';
-import 'package:listen1_xuan/widgets/ext_widget.dart';
+import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 import 'package:listen1_xuan/models/Subtitle.dart';

@@ -111,11 +111,7 @@ class PlaylistController extends GetxController {
   }
 
   void onPlaylistTapped(Map<String, dynamic> playlist) {
-    Get.toNamed(
-      playlist['id'],
-      arguments: {'listId': playlist['id'], 'is_my': false},
-      id: 1,
-    );
+    Ro.toArg(PlaylistInfoArgs(playListInfo: PlayListInfo.fromJson(playlist)));
   }
 
   // Helper method to get controller tag
@@ -276,21 +272,28 @@ class Playlist extends GetView<PlaylistController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ExtendedImage.network(
-            playlist['cover_img_url'],
-            fit: BoxFit.cover,
-            cache: true,
-            loadStateChanged: (ExtendedImageState state) {
-              if (state.extendedImageLoadState == LoadState.failed) {
-                return Center(
-                  child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
-                );
-              }
-              if (state.extendedImageLoadState == LoadState.loading) {
-                return globalLoadingAnimeOfExtendedImage;
-              }
-              return null; // Use default rendering
-            },
-          ).clipSmoothRectSize(itemWidth).sbs(itemWidth),
+                playlist['cover_img_url'],
+                fit: BoxFit.cover,
+                cache: true,
+                loadStateChanged: (ExtendedImageState state) {
+                  if (state.extendedImageLoadState == LoadState.failed) {
+                    return Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        color: Colors.grey,
+                        size: 40,
+                      ),
+                    );
+                  }
+                  if (state.extendedImageLoadState == LoadState.loading) {
+                    return globalLoadingAnimeOfExtendedImage;
+                  }
+                  return null; // Use default rendering
+                },
+              )
+              .clipSmoothRectSize(itemWidth)
+              .sbs(itemWidth)
+              .hero4playlistItemImg(PlayListInfo.fromJson(playlist)),
           8.sbh,
           Text(
             playlist['title'],

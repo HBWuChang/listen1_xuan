@@ -52,15 +52,6 @@ Future<void> _onTap(BuildContext context) async {
   }
   final track = await getnowplayingsong();
   var ret = await song_dialog(context, track['track'], position: position);
-  if (ret != null) {
-    if (ret["push"] != null) {
-      Get.toNamed(
-        ret["push"],
-        arguments: {'listId': ret["push"], 'is_my': false},
-        id: 1,
-      );
-    }
-  }
 }
 
 Future<void> _onDoubleTap() async {
@@ -316,15 +307,6 @@ Widget get songDialogBtn {
         track['track'],
         position: position,
       );
-      if (ret != null) {
-        if (ret["push"] != null) {
-          Get.toNamed(
-            ret["push"],
-            arguments: {'listId': ret["push"], 'is_my': false},
-            id: 1,
-          );
-        }
-      }
     },
   );
 }

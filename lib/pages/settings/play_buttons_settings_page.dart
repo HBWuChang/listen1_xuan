@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/play.dart';
-import 'package:listen1_xuan/widgets/ext_widget.dart';
+import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 
 /// 播放按钮设置页面
 class PlayButtonsSettingsPage extends StatelessWidget {

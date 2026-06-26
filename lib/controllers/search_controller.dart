@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
+import 'package:listen1_xuan/models/PlayListInfo.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/models/SearchPlayListRes.dart';
 import 'package:listen1_xuan/loweb.dart';
+import 'package:listen1_xuan/pages/playlist_info/playlist_info_args.dart';
+import 'package:listen1_xuan/router/ro.dart';
 
 import '../funcs.dart';
 import 'routeController.dart';
@@ -679,9 +682,19 @@ class XSearchController extends GetxController {
   }) {
     if (!isEmpty(id)) {
       if (off) {
-        Get.offNamed(id, arguments: {'listId': id, 'is_my': is_my}, id: 1);
+        Ro.offArg(
+          PlaylistInfoArgs(
+            playListInfo: PlayListInfo(id: id),
+            isMy: is_my,
+          ),
+        );
       } else {
-        Get.toNamed(id, arguments: {'listId': id, 'is_my': is_my}, id: 1);
+        Ro.toArg(
+          PlaylistInfoArgs(
+            playListInfo: PlayListInfo(id: id),
+            isMy: is_my,
+          ),
+        );
       }
     } else {
       if (!isEmpty(search_text)) {

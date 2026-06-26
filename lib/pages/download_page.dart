@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:listen1_xuan/funcs.dart';
-import 'package:listen1_xuan/widgets/ext_widget.dart';
+import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import '../controllers/WsDownloadController.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/cache_controller.dart';

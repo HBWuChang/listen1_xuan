@@ -54,6 +54,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
   }
 
   Widget _buildPlaylistCover({
+    required PlayList playList,
     required String title,
     required String? coverUrl,
     required double size,
@@ -79,16 +80,12 @@ class _MyPlaylistState extends State<MyPlaylist> {
           }
           return null;
         },
-      ),
+      ).hero4playlistItemImg(playList.info),
     );
   }
 
   Future<void> _openPlaylist(PlayList playlist, {required bool isMy}) async {
-    final args = <String, dynamic>{'listId': playlist.info.id};
-    if (isMy) {
-      args['is_my'] = true;
-    }
-    await Get.toNamed(playlist.info.id, arguments: args, id: 1);
+    await Ro.toArg(PlaylistInfoArgs(playListInfo: playlist.info, isMy: isMy));
   }
 
   Widget _buildPlaylistTile({
@@ -100,6 +97,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
     final compact = _isCompactMode(availableWidth);
     final title = playlist.info.title ?? '';
     final cover = _buildPlaylistCover(
+      playList: playlist,
       title: title,
       coverUrl: playlist.info.cover_img_url,
       size: _coverSize(availableWidth),
@@ -115,45 +113,43 @@ class _MyPlaylistState extends State<MyPlaylist> {
       child: InkWell(
         onTap: () => _openPlaylist(playlist, isMy: isMy),
         child: AnimatedPadding(
-            duration: duration,
-            curve: Curves.easeInOut,
-            padding: EdgeInsets.symmetric(
-              horizontal: iconOnly ? 0.0 : horizontalPadding,
-            ),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: AnimatedAlign(
+          duration: duration,
+          curve: Curves.easeInOut,
+          padding: EdgeInsets.symmetric(
+            horizontal: iconOnly ? 0.0 : horizontalPadding,
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: AnimatedAlign(
+                  duration: duration,
+                  curve: Curves.easeInOut,
+                  alignment: iconOnly ? Alignment.center : Alignment.centerLeft,
+                  child: Center(child: cover).sbw(sizeHeight),
+                ),
+              ),
+              Positioned.fill(
+                left: sizeHeight + spacing,
+                child: IgnorePointer(
+                  ignoring: iconOnly,
+                  child: AnimatedOpacity(
                     duration: duration,
                     curve: Curves.easeInOut,
-                    alignment: iconOnly
-                        ? Alignment.center
-                        : Alignment.centerLeft,
-                    child: Center(child: cover).sbw(sizeHeight),
-                  ),
-                ),
-                Positioned.fill(
-                  left: sizeHeight + spacing,
-                  child: IgnorePointer(
-                    ignoring: iconOnly,
-                    child: AnimatedOpacity(
-                      duration: duration,
-                      curve: Curves.easeInOut,
-                      opacity: iconOnly ? 0.0 : 1.0,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                    opacity: iconOnly ? 0.0 : 1.0,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ).sbh(sizeHeight),
+              ),
+            ],
+          ),
+        ).sbh(sizeHeight),
       ),
     );
   }
@@ -180,46 +176,46 @@ class _MyPlaylistState extends State<MyPlaylist> {
       child: InkWell(
         onTap: onTap,
         child: AnimatedPadding(
-            duration: duration,
-            curve: Curves.easeInOut,
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: AnimatedAlign(
+          duration: duration,
+          curve: Curves.easeInOut,
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: AnimatedAlign(
+                  duration: duration,
+                  curve: Curves.easeInOut,
+                  alignment: shouldCenterLeading
+                      ? Alignment.center
+                      : Alignment.centerLeft,
+                  child: Center(child: leading).sbw(leadingWidth),
+                ),
+              ),
+              Positioned.fill(
+                left: leadingWidth + spacing,
+                child: IgnorePointer(
+                  ignoring: iconOnly,
+                  child: AnimatedOpacity(
                     duration: duration,
                     curve: Curves.easeInOut,
-                    alignment: shouldCenterLeading
-                        ? Alignment.center
-                        : Alignment.centerLeft,
-                    child: Center(child: leading).sbw(leadingWidth),
-                  ),
-                ),
-                Positioned.fill(
-                  left: leadingWidth + spacing,
-                  child: IgnorePointer(
-                    ignoring: iconOnly,
-                    child: AnimatedOpacity(
-                      duration: duration,
-                      curve: Curves.easeInOut,
-                      opacity: iconOnly ? 0.0 : 1.0,
-                      child: Align(
+                    opacity: iconOnly ? 0.0 : 1.0,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            title,
-                            style: TextStyle(fontSize: compact ? 15 : 20),
-                          ),
+                        child: Text(
+                          title,
+                          style: TextStyle(fontSize: compact ? 15 : 20),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ).sbh(compact ? 44 : 56),
+              ),
+            ],
+          ),
+        ).sbh(compact ? 44 : 56),
       ),
     );
   }

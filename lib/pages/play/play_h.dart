@@ -203,15 +203,7 @@ Widget playH() {
                   (_buttonKey.currentContext!.findRenderObject() as RenderBox)
                       .localToGlobal(Offset.zero),
             );
-            if (ret != null) {
-              if (ret["push"] != null) {
-                Get.toNamed(
-                  ret["push"],
-                  arguments: {'listId': ret["push"], 'is_my': false},
-                  id: 1,
-                );
-              }
-            }
+           
           },
         ),
         Obx(

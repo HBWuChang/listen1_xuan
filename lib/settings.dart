@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:listen1_xuan/bl.dart';
-import 'package:listen1_xuan/widgets/ext_widget.dart';
+import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';

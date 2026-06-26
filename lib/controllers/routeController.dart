@@ -8,7 +8,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
-import 'package:listen1_xuan/widgets/ext_widget.dart';
+import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import '../widgets/progress_indicator_xuan.dart';
 
 import 'package:listen1_xuan/play.dart';

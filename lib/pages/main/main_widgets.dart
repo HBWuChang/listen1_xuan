@@ -196,6 +196,7 @@ Listener _mainContent() => Listener(
           child: Navigator(
             key: Get.nestedKey(1),
             initialRoute: RouteName.defaultPage,
+            observers: [HeroineController()],
             onGenerateRoute: (RouteSettings settings) {
               WidgetBuilder builder;
               switch (settings.name) {
@@ -592,16 +593,14 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, RouteName.songReplacePage);
                   return route;
                 default:
+                  final args = settings.arguments is PlaylistInfoArgs
+                      ? settings.arguments as PlaylistInfoArgs
+                      : null;
+                  if (args == null) throw 'unknown route $settings';
                   var route = GetPageRoute(
                     settings: settings,
-                    page: () {
-                      final args =
-                          settings.arguments as Map<String, dynamic>? ?? {};
-                      return PlaylistInfo(
-                        listId: args['listId'],
-                        is_my: args['is_my'] ?? false,
-                      );
-                    },
+                    binding: PlaylistInfoBinding(args: args),
+                    page: () => PlaylistInfoPage(args: args),
                     middlewares: [ListenPopMiddleware()],
                   );
                   addAndCleanReapeatRoute(route, settings.name!);

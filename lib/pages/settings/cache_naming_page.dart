@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/controllers/cache_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
-import 'package:listen1_xuan/widgets/ext_widget.dart';
+import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 
 class CacheNamingPage extends StatelessWidget {
   const CacheNamingPage({Key? key}) : super(key: key);
