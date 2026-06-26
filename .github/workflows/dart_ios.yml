@@ -23,6 +23,10 @@ jobs:
           echo "GITHASH (前7位): $GITHASH"
       - uses: actions/checkout@v3
       
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.2'
+      
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
