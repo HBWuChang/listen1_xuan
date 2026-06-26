@@ -275,6 +275,11 @@ class XSearchController extends GetxController {
     }
   }
 
+  void onSubmitted() {
+    focusNode.requestFocus();
+    performSearch();
+  }
+
   Future<void> performSearch() async {
     final query = searchQuery.value.trim();
 

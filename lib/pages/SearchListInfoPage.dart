@@ -70,7 +70,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
                           border: InputBorder.none,
                         ),
                         controller: controller!.searchTextController,
-                        onSubmitted: (value) => controller!.performSearch(),
+                        onSubmitted: (_) => controller!.onSubmitted(),
                         autofocus: true,
                       ),
               ),
