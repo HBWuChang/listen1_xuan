@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     if: "contains(github.event.head_commit.message, 'ios')"
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - name: Output Commit Information
         run: |
@@ -22,6 +22,10 @@ jobs:
           echo "GITHASH=$GITHASH" >> $GITHUB_ENV
           echo "GITHASH (前7位): $GITHASH"
       - uses: actions/checkout@v3
+      
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.6.0'
       
       - uses: subosito/flutter-action@v2
         with:
