@@ -108,6 +108,8 @@ Widget get _leftBar => Scaffold(
   ),
 );
 
+final heroineController = HeroineController();
+
 Listener _mainContent() => Listener(
   onPointerDown: (event) {
     if (event.kind == PointerDeviceKind.mouse &&
@@ -196,7 +198,7 @@ Listener _mainContent() => Listener(
           child: Navigator(
             key: Get.nestedKey(1),
             initialRoute: RouteName.defaultPage,
-            observers: [HeroineController()],
+            observers: [heroineController],
             onGenerateRoute: (RouteSettings settings) {
               WidgetBuilder builder;
               switch (settings.name) {
