@@ -1559,7 +1559,13 @@ class WebSocketClientHelper {
         onPressed: () async {
           await showControlPanel();
         },
-        onLongPress: () => Get.find<PasteController>().trySendNowClip(),
+        onLongPress: () {
+          if (controller != null && !controller.isConnected) {
+            controller.connect();
+          } else {
+            Get.find<PasteController>().trySendNowClip();
+          }
+        },
       );
     });
   }
