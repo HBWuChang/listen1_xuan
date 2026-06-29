@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/paste_controller.dart';
 import 'package:path/path.dart' as p;
 import 'package:listen1_xuan/controllers/websocket_card_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
@@ -244,6 +245,12 @@ class WebSocketServerController extends GetxController {
             from: connection.id,
           );
           _broadcastMessage(broadcastMsg, excludeClient: connection.id);
+          break;
+        case WebSocketMessageType.sendPasteText:
+          unawaited(
+            Get.find<PasteController>().onReceivedPasteText(message.content),
+          );
+
           break;
         case WebSocketMessageType.getCookie:
           Set<String> toOpr = {};

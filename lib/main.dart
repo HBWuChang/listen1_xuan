@@ -180,6 +180,7 @@ void main() async {
   Get.put(XSearchController(), permanent: true);
   Get.put(UpdController(), permanent: true);
   Get.put(HomeController(), permanent: true);
+  Get.put(PasteController(), permanent: true);
   init_apkfilepath();
   if (isDesktop) {
     if (isWindows) {
@@ -521,6 +522,13 @@ class _MyHomePageState extends State<MyHomePage>
     return Focus(
       autofocus: true,
       onKeyEvent: (FocusNode node, KeyEvent event) {
+        // 处理粘贴快捷键 (仅Desktop)
+        if (isDesktop &&
+            Get.isRegistered<PasteController>() &&
+            Get.find<PasteController>().handleKeyEvent(event)) {
+          return KeyEventResult.handled;
+        }
+
         // 动态判断是否启用热键
         if (!enable_inapp_hotkey) {
           return KeyEventResult.ignored; // 将按键事件传递给下一个处理器

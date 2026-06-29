@@ -21,3 +21,4 @@ export 'nowplaying_controller.dart';
 export 'DioController.dart';
 export 'myPlaylist_controller.dart';
 export 'supabase_auth_controller.dart';
+export 'paste_controller.dart';

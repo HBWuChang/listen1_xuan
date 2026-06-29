@@ -71,9 +71,6 @@ class WebSocketClientController extends GetxController {
   final Rx<Duration> totalTime = Duration(minutes: 1).obs;
   final RxBool _isDraggingProcess = false.obs;
 
-  /// 消息控制器
-  final TextEditingController messageController = TextEditingController();
-
   /// 播放状态数据
   final Rx<PlayStatusData?> _lastPlayStatus = Rx<PlayStatusData?>(null);
 
@@ -244,7 +241,6 @@ class WebSocketClientController extends GetxController {
 
   @override
   void onClose() {
-    messageController.dispose();
     stopStatusPolling();
     _disconnect(manual: true);
     super.onClose();
@@ -649,31 +645,16 @@ class WebSocketClientController extends GetxController {
   }
 
   /// 发送消息
-  void sendMessage() {
+  bool sendMessage(WebSocketMessage msg) {
     if (!isConnected) {
       _showError('未连接到服务器');
-      return;
+      return false;
     }
-
-    final message = messageController.text.trim();
-    if (message.isEmpty) {
-      _showError('请输入要发送的消息');
-      return;
-    }
-
     try {
-      final messageObj = WebSocketMessageBuilder.createMessage(
-        message,
-        from: 'flutter_client',
-      );
-
-      _webSocket!.add(messageObj.toJsonString());
-      messageController.clear();
-      _showSuccess('消息已发送');
-      _logger.i('$_tag 消息已发送: $message');
+      _webSocket!.add(msg.toJsonString());
+      return true;
     } catch (e) {
-      _showError('发送消息失败: $e');
-      _logger.e('$_tag 发送消息失败', error: e);
+      return false;
     }
   }
 
@@ -858,7 +839,7 @@ class WebSocketClientController extends GetxController {
       _logger.i('$_tag 停止状态轮询');
     }
   }
-  
+
   /// 处理接收到的消息
   void _onMessage(dynamic data) {
     try {
@@ -929,7 +910,9 @@ class WebSocketClientController extends GetxController {
             }
           });
           break;
-
+        case WebSocketMessageType.sendPasteText:
+          unawaited(Get.find<PasteController>().onReceivedPasteText(message.content));
+          break;
         case WebSocketMessageType.welcome:
           // 处理欢迎消息
           if (message.content.isNotEmpty) {

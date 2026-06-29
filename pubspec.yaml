@@ -135,6 +135,7 @@ dependencies:
   motor: ^1.1.0
   figma_squircle: ^0.6.3
   heroine: ^0.7.2
+  pasteboard: ^0.5.0
 
 dev_dependencies:
   flutter_test:

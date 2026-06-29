@@ -15,6 +15,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   hotkey_manager_windows
   media_kit_libs_windows_audio
   passkeys_windows
+  pasteboard
   permission_handler_windows
   screen_retriever_windows
   share_plus
