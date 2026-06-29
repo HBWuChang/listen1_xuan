@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:flutter/services.dart';
@@ -690,4 +692,14 @@ Future<bool?> showTriStateConfirmDialog({
   );
 
   return result;
+}
+
+/// 获取粘贴文件保存目录
+Future<String> getPasteFileDownloadDir() async {
+  final dir = (await xuanGetdownloadDirectory()) as Directory;
+  final pasteDir = dir.parent;
+  if (!await pasteDir.exists()) {
+    await pasteDir.create(recursive: true);
+  }
+  return pasteDir.path;
 }

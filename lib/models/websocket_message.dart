@@ -210,6 +210,10 @@ class WebSocketMessageType {
   static const String putShareFileNameToCli = 'putShareFileName';
 
   static const String sendPasteText = 'sendPasteText';
+
+  static const String reqToGetFile = 'reqToGetFile';
+
+  static const String reqToGetImage = 'reqToGetImage';
 }
 
 /// 播放控制命令常量
@@ -353,6 +357,20 @@ class WebSocketMessageBuilder {
     return WebSocketMessage(
       type: WebSocketMessageType.sendPasteText,
       content: text,
+    );
+  }
+
+  static WebSocketMessage createReqToGetFileMessage(List<String> fileNames) {
+    return WebSocketMessage(
+      type: WebSocketMessageType.reqToGetFile,
+      content: jsonEncode(fileNames),
+    );
+  }
+
+  static WebSocketMessage createReqToGetImageMessage(String fileName) {
+    return WebSocketMessage(
+      type: WebSocketMessageType.reqToGetImage,
+      content: fileName,
     );
   }
 }

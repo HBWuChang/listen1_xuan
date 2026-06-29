@@ -913,6 +913,24 @@ class WebSocketClientController extends GetxController {
         case WebSocketMessageType.sendPasteText:
           unawaited(Get.find<PasteController>().onReceivedPasteText(message.content));
           break;
+        case WebSocketMessageType.reqToGetFile:
+          try {
+            final fileNames = (jsonDecode(message.content) as List<dynamic>)
+                .map((e) => e.toString())
+                .toList();
+            unawaited(Get.find<PasteController>().onReceivedReqToGetFile(fileNames));
+          } catch (e) {
+            _logger.e('$_tag 处理 reqToGetFile 消息失败', error: e);
+          }
+          break;
+        case WebSocketMessageType.reqToGetImage:
+          try {
+            final fileName = message.content;
+            unawaited(Get.find<PasteController>().onReceivedReqToGetImage(fileName));
+          } catch (e) {
+            _logger.e('$_tag 处理 reqToGetImage 消息失败', error: e);
+          }
+          break;
         case WebSocketMessageType.welcome:
           // 处理欢迎消息
           if (message.content.isNotEmpty) {
