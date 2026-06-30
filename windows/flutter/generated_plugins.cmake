@@ -13,12 +13,14 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_acrylic
   flutter_volume_controller
   hotkey_manager_windows
+  irondash_engine_context
   media_kit_libs_windows_audio
   passkeys_windows
   pasteboard
   permission_handler_windows
   screen_retriever_windows
   share_plus
+  super_native_extensions
   tray_manager
   url_launcher_windows
   webview_windows

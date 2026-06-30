@@ -136,6 +136,14 @@ dependencies:
   figma_squircle: ^0.6.3
   heroine: ^0.7.2
   pasteboard: ^0.5.0
+  super_drag_and_drop: 
+    git:
+      url: https://github.com/HBWuChang/super_native_extensions
+      path: super_drag_and_drop
+  super_clipboard:
+    git:
+      url: https://github.com/HBWuChang/super_native_extensions
+      path: super_clipboard
 
 dev_dependencies:
   flutter_test:

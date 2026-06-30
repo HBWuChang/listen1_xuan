@@ -413,6 +413,13 @@ class SettingsController extends GetxController {
     settings[selectAudioQualityOfBLKey] = value.code;
   }
 
+  static const String sendImgWhenOpenImgDialogKey = 'sendImgWhenOpenImgDialog';
+  final RxBool sendImgWhenOpenImgDialogRx = true.obs;
+  bool get sendImgWhenOpenImgDialog => sendImgWhenOpenImgDialogRx.value;
+  set sendImgWhenOpenImgDialog(bool value) {
+    settings[sendImgWhenOpenImgDialogKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
@@ -457,6 +464,8 @@ class SettingsController extends GetxController {
       final nextSelectAudioQualityOfBL =
           settings[selectAudioQualityOfBLKey] as int? ??
           AudioQualityOfBL.k192.code;
+      final nextSendImgWhenOpenImgDialog =
+          settings[sendImgWhenOpenImgDialogKey] as bool? ?? true;
 
       if (songReplaceFabMiniRx.value != nextMini) {
         songReplaceFabMiniRx.value = nextMini;
@@ -504,6 +513,9 @@ class SettingsController extends GetxController {
       }
       if (selectAudioQualityOfBLRx.value != nextSelectAudioQualityOfBL) {
         selectAudioQualityOfBLRx.value = nextSelectAudioQualityOfBL;
+      }
+      if (nextSendImgWhenOpenImgDialog != sendImgWhenOpenImgDialogRx.value) {
+        sendImgWhenOpenImgDialogRx.value = nextSendImgWhenOpenImgDialog;
       }
     });
 

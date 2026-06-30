@@ -2,15 +2,18 @@ import 'dart:io';
 
 import 'package:dio/dio.dart' as dio_pkg;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/models/websocket_message.dart';
+import 'package:listen1_xuan/widgets/image_preview_dialog.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:path/path.dart' as p;
 
 import '../funcs.dart';
 import '../global_settings_animations.dart';
+import '../main.dart';
 
 /// 全局粘贴控制器
 /// 监听 Ctrl+V / Cmd+V 快捷键，处理剪贴板中的文件、图片或文本
@@ -76,7 +79,12 @@ class PasteController extends GetxController {
         pastedImage.value = image;
         pastedFiles.clear();
         pastedText.value = null;
-        _onImagePasted(image);
+        if (isDesktop) {
+          // 桌面端弹出图片预览 Dialog，用户可拖出或点击发送
+          _showImagePreviewDialog(image);
+        } else {
+          _onImagePasted(image);
+        }
         return;
       }
 
@@ -338,6 +346,25 @@ class PasteController extends GetxController {
       counter++;
     }
     return filePath;
+  }
+
+  /// 桌面端显示图片预览 Dialog
+  void _showImagePreviewDialog(Uint8List imageData) {
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      // fallback: 没有 context 时直接执行
+      _onImagePasted(imageData);
+      return;
+    }
+    if (Get.find<SettingsController>().sendImgWhenOpenImgDialog) {
+      _onImagePasted(imageData);
+    }
+    ImagePreviewDialog.show(
+      context,
+      imageData: imageData,
+      fileName: 'paste_image_${DateTime.now().millisecondsSinceEpoch}.png',
+      onConfirm: () => _onImagePasted(imageData),
+    );
   }
 
   /// 图片粘贴回调
