@@ -46,8 +46,10 @@ Future<Map<String, dynamic>> outputAllSettingsToFile([
     return settings;
   }
   // 申请所有文件访问权限
-  if (await Permission.manageExternalStorage.request().isGranted ||
-      await Permission.storage.request().isGranted) {
+  if ((isAndroid &&
+          await Permission.manageExternalStorage.request().isGranted) ||
+      (isMobile && await Permission.storage.request().isGranted) ||
+      isDesktop) {
     try {
       // 确保路径存在
       final outputPath = await xuanGetdownloadDirectory(path: 'settings.json');
@@ -146,12 +148,15 @@ Future<void> importSettingsFromFile(
     return;
   }
   // 申请所有文件访问权限
-  if (await Permission.manageExternalStorage.request().isGranted ||
-      await Permission.storage.request().isGranted) {
+  if ((isAndroid &&
+          await Permission.manageExternalStorage.request().isGranted) ||
+      (isMobile && await Permission.storage.request().isGranted) ||
+      isDesktop) {
     try {
       // 弹出系统文件选择器选择文件
       FilePickerResult? result = await FilePicker.pickFiles(
-        type: FileType.any,
+        type: FileType.custom,
+        allowedExtensions: ["json"],
       );
 
       if (result != null && result.files.single.path != null) {
