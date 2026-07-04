@@ -145,10 +145,10 @@ dependencies:
       url: https://github.com/HBWuChang/super_native_extensions
       path: super_clipboard
   receive_sharing_intent:
-    path: E:\HB_WuChang\code\flutter\receive_sharing_intent
+    # path: E:\HB_WuChang\code\flutter\receive_sharing_intent
     # path: /Users/cd022/HBWuChang/code/receive_sharing_intent
-    # git:
-    #   url: https://github.com/HBWuChang/receive_sharing_intent
+    git:
+      url: https://github.com/HBWuChang/receive_sharing_intent
 
 dev_dependencies:
   flutter_test:
