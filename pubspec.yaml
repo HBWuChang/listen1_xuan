@@ -47,9 +47,9 @@ dependencies:
   preload_page_view: ^0.2.0
   system_info3: ^4.0.1
   animations: 2.1.1
-  
+
   # media_kit: ^1.2.6
-  media_kit: 
+  media_kit:
     git:
       url: https://github.com/media-kit/media-kit.git
       ref: main
@@ -71,7 +71,7 @@ dependencies:
   shelf: ^1.4.2
   shelf_web_socket: ^3.0.0
   shelf_router: ^1.1.4
-  
+
   # flutter_lyric: 3.0.2
   flutter_lyric:
     git:
@@ -136,7 +136,7 @@ dependencies:
   figma_squircle: ^0.6.3
   heroine: ^0.7.2
   pasteboard: ^0.5.0
-  super_drag_and_drop: 
+  super_drag_and_drop:
     git:
       url: https://github.com/HBWuChang/super_native_extensions
       path: super_drag_and_drop
@@ -145,9 +145,10 @@ dependencies:
       url: https://github.com/HBWuChang/super_native_extensions
       path: super_clipboard
   receive_sharing_intent:
+    path: E:\HB_WuChang\code\flutter\receive_sharing_intent
     # path: /Users/cd022/HBWuChang/code/receive_sharing_intent
-    git:
-      url: https://github.com/HBWuChang/receive_sharing_intent
+    # git:
+    #   url: https://github.com/HBWuChang/receive_sharing_intent
 
 dev_dependencies:
   flutter_test:

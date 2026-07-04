@@ -5,7 +5,6 @@ import 'package:listen1_xuan/controllers/paste_controller.dart';
 import 'package:listen1_xuan/controllers/websocket_card_controller.dart';
 import 'package:listen1_xuan/controllers/websocket_client_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
-import 'package:listen1_xuan/settings.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 class ReceiveSharingIntentController extends GetxController {
@@ -16,22 +15,28 @@ class ReceiveSharingIntentController extends GetxController {
     super.onInit();
     _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen(
       (value) {
+        if (value.isEmpty) return;
         _sharedFiles.clear();
-        _sharedFiles.addAll(value);
+        // Filter out items with empty path (from unresolvable content URIs)
+        _sharedFiles.addAll(value.where((f) => f.path.isNotEmpty));
         processFiles();
       },
       onError: (err) {
-        logger.e('ReceiveSharingIntentController getMediaStream', error: err);
+        debugPrint('[ReceiveSharingIntentController] Stream error: $err');
       },
     );
 
     // Get the media sharing coming from outside the app while the app is closed.
     ReceiveSharingIntent.instance.getInitialMedia().then((value) {
+      final valid = value.where((f) => f.path.isNotEmpty).toList();
+      if (valid.isEmpty) return;
       _sharedFiles.clear();
-      _sharedFiles.addAll(value);
+      _sharedFiles.addAll(valid);
       processFiles();
 
       ReceiveSharingIntent.instance.reset();
+    }).catchError((err) {
+      debugPrint('[ReceiveSharingIntentController] getInitialMedia error: $err');
     });
   }
 
@@ -64,7 +69,7 @@ class ReceiveSharingIntentController extends GetxController {
       todo.call();
     } else {
       call = todo;
-      showInfoSnackbar('检测到分享内容，正在等待网络连接...', null);
+      showInfoSnackbar('检测到分享内容，正在等待WebSocket连接...', null);
       regController();
     }
   }
