@@ -59,7 +59,7 @@ class WebSocketServerController extends GetxController {
   /// Getters
   bool get isRunning => _isRunning.value;
   int get clientCount => _clientCount.value;
-  String get serverUrl => 'ws://$_host:$_port/ws';
+  String get serverUrl => _host.contains(':') ? 'ws://[$_host]:$_port/ws' : 'ws://$_host:$_port/ws';
 
   WebSocketServerController({
     required String host,

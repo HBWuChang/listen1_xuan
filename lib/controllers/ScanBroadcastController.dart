@@ -25,13 +25,17 @@ class ScanBroadcastController extends GetxController {
     String? port = event.service?.attributes['port'];
     if (isEmpty(host) || isEmpty(port) || isEmpty(deviceId)) return;
 
-    String serverAddress = '$host:$port';
+    // IPv6 地址包含 ':'，需要用方括号包裹
+    final parsedPort = int.tryParse(port!);
+    String serverAddress = (parsedPort != null)
+        ? WebSocketClientController.formatAddress(host!, parsedPort)
+        : '$host:$port';
     Get.find<WebSocketClientController>().canAddAddr.add(serverAddress);
     if (Get.find<WebSocketClientController>().lastConnectedDeviceId.value ==
             deviceId &&
         Get.find<WebSocketClientController>().serverAddress != serverAddress) {
       Get.find<WebSocketClientController>().lastConnectedDeviceNewAddr.value =
-          serverAddress!;
+          serverAddress;
     }
   }
 
@@ -65,7 +69,10 @@ class ScanBroadcastController extends GetxController {
               String? port = event.service.attributes['port'];
               if (isEmpty(host) || isEmpty(port) || isEmpty(deviceId)) return;
 
-              String serverAddress = '$host:$port';
+              final parsedPort = int.tryParse(port!);
+              String serverAddress = (parsedPort != null)
+                  ? WebSocketClientController.formatAddress(host!, parsedPort)
+                  : '$host:$port';
               Get.find<WebSocketClientController>().canAddAddr.remove(
                 serverAddress,
               );

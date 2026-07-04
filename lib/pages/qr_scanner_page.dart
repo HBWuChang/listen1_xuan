@@ -220,21 +220,8 @@ class _QRScannerPageState extends State<QRScannerPage> {
     isScanned = true;
 
     // 验证扫描结果格式
-    if (_isValidServerAddress(result)) {
-      Get.back(result: result);
-    } else {
-      // 显示错误提示
-      showErrorSnackbar('扫描失败', '无效的服务器地址格式\n期望格式: IP地址:端口号');
-
-      // 重新允许扫描
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            isScanned = false;
-          });
-        }
-      });
-    }
+    _isValidServerAddress(result);
+    Get.back(result: result);
   }
 
   void _showManualInputDialog() {
@@ -266,12 +253,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
           ElevatedButton(
             onPressed: () {
               final address = inputController.text.trim();
-              if (_isValidServerAddress(address)) {
-                Get.back();
-                Get.back(result: address);
-              } else {
-                showErrorSnackbar('输入错误', '无效的服务器地址格式');
-              }
+              _isValidServerAddress(address);
+              Get.back();
+              Get.back(result: address);
             },
             child: const Text('确定'),
           ),
@@ -285,7 +269,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
     final RegExp addressRegex = RegExp(
       r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$',
     );
-    return addressRegex.hasMatch(address);
+    final res = addressRegex.hasMatch(address);
+    if (!res) showWarningSnackbar('当前地址未通过正则匹配,可能无效', null);
+    return res;
   }
 
   @override

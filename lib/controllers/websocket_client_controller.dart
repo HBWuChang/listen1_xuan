@@ -327,20 +327,11 @@ class WebSocketClientController extends GetxController {
       throw '地址不能为空';
     }
 
-    // 验证地址格式
-    if (!_isValidAddress(address)) {
-      // _showError('地址格式不正确，应为 "IP:端口" 格式');
-      // return;
-      throw '地址格式不正确，应为 "IP:端口" 格式';
-    }
-
     _addToHistoryAddresses(address);
 
     // 自动选中新添加的地址
     _serverAddress.value = address;
     saveWebSocketClientSettings();
-
-    _showSuccess('地址已添加并选中');
   }
 
   /// 编辑历史地址
@@ -352,12 +343,6 @@ class WebSocketClientController extends GetxController {
 
     if (newAddress.isEmpty) {
       _showError('地址不能为空');
-      return;
-    }
-
-    // 验证地址格式
-    if (!_isValidAddress(newAddress)) {
-      _showError('地址格式不正确，应为 "IP:端口" 格式');
       return;
     }
 
@@ -381,7 +366,6 @@ class WebSocketClientController extends GetxController {
     // 保存到设置
     saveWebSocketClientSettings();
     _logger.i('$_tag 历史地址已更新: $oldAddress -> $newAddress');
-    _showSuccess('地址已更新');
   }
 
   /// 删除历史地址
@@ -398,23 +382,6 @@ class WebSocketClientController extends GetxController {
     saveWebSocketClientSettings();
     _logger.i('$_tag 历史地址已删除: $address');
     _showSuccess('地址已删除');
-  }
-
-  /// 验证地址格式
-  bool _isValidAddress(String address) {
-    return true;
-    if (address.isEmpty) return false;
-
-    final RegExp addressRegex = RegExp(
-      r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):(?:[0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$',
-    );
-
-    // 也支持主机名格式
-    final RegExp hostnameRegex = RegExp(
-      r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*:[0-9]{1,5}$',
-    );
-
-    return addressRegex.hasMatch(address) || hostnameRegex.hasMatch(address);
   }
 
   /// 开始拖动进度
@@ -491,6 +458,54 @@ class WebSocketClientController extends GetxController {
     }
   }
 
+  /// 从地址字符串解析出 host 和 port
+  /// 支持格式: "host:port", "[IPv6]:port"
+  static (String host, int port) parseAddress(String address) {
+    if (address.startsWith('[')) {
+      // IPv6 格式: [host]:port
+      final closeBracket = address.indexOf(']');
+      if (closeBracket == -1 || closeBracket + 2 >= address.length || address[closeBracket + 1] != ':') {
+        throw Exception('IPv6 地址格式错误，应为 "[IPv6地址]:端口"');
+      }
+      final host = address.substring(1, closeBracket);
+      final port = int.tryParse(address.substring(closeBracket + 2));
+      if (port == null || port < 1 || port > 65535) {
+        throw Exception('端口号无效');
+      }
+      return (host, port);
+    } else {
+      // IPv4/hostname 格式: host:port
+      final lastColon = address.lastIndexOf(':');
+      if (lastColon == -1) {
+        throw Exception('地址格式错误，应为 "IP:端口" 或 "[IPv6地址]:端口"');
+      }
+      final host = address.substring(0, lastColon);
+      final port = int.tryParse(address.substring(lastColon + 1));
+      if (port == null || port < 1 || port > 65535) {
+        throw Exception('端口号无效');
+      }
+      return (host, port);
+    }
+  }
+
+  /// 格式化 host 和 port 为存储地址格式
+  /// IPv6 地址自动加方括号
+  static String formatAddress(String host, int port) {
+    if (host.contains(':')) {
+      // IPv6 地址需要方括号
+      return '[$host]:$port';
+    }
+    return '$host:$port';
+  }
+
+  /// 构建 WebSocket URI（IPv6 自动加方括号）
+  static String _buildWsUri(String host, int port) {
+    if (host.contains(':')) {
+      return 'ws://[$host]:$port';
+    }
+    return 'ws://$host:$port';
+  }
+
   /// 连接到WebSocket服务器
   Future<void> connect() async {
     if (isConnected || _isConnecting.value) return;
@@ -500,17 +515,11 @@ class WebSocketClientController extends GetxController {
       _connectionCancelled = false; // 重置取消标志
       _updateStatusMessage('正在连接...');
 
-      // 解析服务器地址
-      final addressParts = _serverAddress.value.split(':');
-      if (addressParts.length != 2) {
-        throw Exception('服务器地址格式错误，应为 "IP:端口"');
-      }
+      // 解析服务器地址（支持 IPv4/IPv6）
+      final (parsedHost, parsedPort) = parseAddress(_serverAddress.value);
 
-      String host = addressParts[0];
-      final port = int.tryParse(addressParts[1]);
-      if (port == null || port < 1 || port > 65535) {
-        throw Exception('端口号无效');
-      }
+      String host = parsedHost;
+      final port = parsedPort;
 
       // 如果主机名包含非 ASCII 字符，转换为 Punycode 编码
       if (_containsNonAscii(host)) {
@@ -519,7 +528,7 @@ class WebSocketClientController extends GetxController {
         _logger.i('$_tag 检测到非 ASCII 主机名，转换为 Punycode: $originalHost -> $host');
       }
 
-      final uri = 'ws://$host:$port';
+      final uri = _buildWsUri(host, port);
       _serverUrl.value = uri;
 
       // 检查是否已取消连接
@@ -911,14 +920,18 @@ class WebSocketClientController extends GetxController {
           });
           break;
         case WebSocketMessageType.sendPasteText:
-          unawaited(Get.find<PasteController>().onReceivedPasteText(message.content));
+          unawaited(
+            Get.find<PasteController>().onReceivedPasteText(message.content),
+          );
           break;
         case WebSocketMessageType.reqToGetFile:
           try {
             final fileNames = (jsonDecode(message.content) as List<dynamic>)
                 .map((e) => e.toString())
                 .toList();
-            unawaited(Get.find<PasteController>().onReceivedReqToGetFile(fileNames));
+            unawaited(
+              Get.find<PasteController>().onReceivedReqToGetFile(fileNames),
+            );
           } catch (e) {
             _logger.e('$_tag 处理 reqToGetFile 消息失败', error: e);
           }
@@ -926,7 +939,9 @@ class WebSocketClientController extends GetxController {
         case WebSocketMessageType.reqToGetImage:
           try {
             final fileName = message.content;
-            unawaited(Get.find<PasteController>().onReceivedReqToGetImage(fileName));
+            unawaited(
+              Get.find<PasteController>().onReceivedReqToGetImage(fileName),
+            );
           } catch (e) {
             _logger.e('$_tag 处理 reqToGetImage 消息失败', error: e);
           }
