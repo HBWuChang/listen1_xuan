@@ -31,6 +31,7 @@ jobs:
           channel: "stable"
           flutter-version: "3.38.10"
       - run: flutter --version
+      - run: flutter config --enable-swift-package-manager
       - run: flutter pub get
 
       - name: 解码生成 jks
