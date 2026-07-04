@@ -162,11 +162,12 @@ flutter:
 
   # Enable generation of localized Strings from arb files.
   generate: true
-
   assets:
     # Add assets from the images directory to the application.
     - assets/images/
     - assets/help/
+  config:
+    enable-swift-package-manager: true
 msix_config:
   display_name: listen1_xuan
   identity_name: com.xiebian.listen1_xuan
