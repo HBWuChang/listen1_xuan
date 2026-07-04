@@ -239,59 +239,54 @@ class PasteController extends GetxController {
   }
 
   /// 解析 multipart/mixed 响应体
+  /// 按 RFC 2046 处理：首分隔符为 `--boundary`，后续分隔符为 `\r\n--boundary`。
+  /// 旧实现直接用 `--boundary` 搜索二进制数据，大文件中极易误匹配导致截断。
   List<Map<String, dynamic>> _parseMultipartResponse(
     List<int> bytes,
     String boundary,
   ) {
     final parts = <Map<String, dynamic>>[];
-    final boundaryBytes = '--$boundary'.codeUnits;
+    final firstBoundaryBytes = '--$boundary'.codeUnits;
+    final delimiterBytes = '\r\n--$boundary'.codeUnits;
+    const crlfCrlf = <int>[13, 10, 13, 10];
 
-    int searchFrom = 0;
-    List<List<int>> rawParts = [];
+    // 找到第一个 boundary（不带前置 \r\n）
+    int pos = _indexOfBytes(bytes, firstBoundaryBytes, 0);
+    if (pos == -1) return parts;
 
     while (true) {
-      final start = _indexOfBytes(bytes, boundaryBytes, searchFrom);
-      if (start == -1) break;
-
-      final contentStart = start + boundaryBytes.length;
-      int dataStart = contentStart;
-      // 跳过 \r\n
-      if (dataStart < bytes.length - 1 &&
-          bytes[dataStart] == 13 &&
-          bytes[dataStart + 1] == 10) {
-        dataStart += 2;
+      // 跳过 --boundary\r\n
+      pos += firstBoundaryBytes.length;
+      if (pos < bytes.length - 1 &&
+          bytes[pos] == 13 &&
+          bytes[pos + 1] == 10) {
+        pos += 2;
       }
 
-      // 找到下一个 boundary
-      final nextBoundary = _indexOfBytes(bytes, boundaryBytes, dataStart);
-      if (nextBoundary == -1) break;
+      // 查找下一个分隔符：\r\n--boundary（带前置 \r\n）
+      final nextDelim = _indexOfBytes(bytes, delimiterBytes, pos);
+      if (nextDelim == -1) break;
 
-      int dataEnd = nextBoundary;
+      // 去掉数据末尾的 \r\n
+      int dataEnd = nextDelim;
       if (dataEnd >= 2 &&
           bytes[dataEnd - 2] == 13 &&
           bytes[dataEnd - 1] == 10) {
         dataEnd -= 2;
       }
 
-      rawParts.add(bytes.sublist(dataStart, dataEnd));
-      searchFrom = nextBoundary;
-
-      // 检查是否为结束 boundary (--boundary--)
-      if (nextBoundary + boundaryBytes.length + 2 <= bytes.length &&
-          bytes[nextBoundary + boundaryBytes.length] == 45 &&
-          bytes[nextBoundary + boundaryBytes.length + 1] == 45) {
-        break;
+      // 从 part 中分离 headers 与 body
+      final partBytes = bytes.sublist(pos, dataEnd);
+      final headerEnd = _indexOfBytes(partBytes, crlfCrlf, 0);
+      if (headerEnd == -1) {
+        pos = nextDelim;
+        continue;
       }
-    }
-
-    for (final partBytes in rawParts) {
-      // 找到 \r\n\r\n 分隔 headers 和 body
-      final headerEnd = _indexOfBytes(partBytes, [13, 10, 13, 10], 0);
-      if (headerEnd == -1) continue;
 
       final headerStr = String.fromCharCodes(partBytes.sublist(0, headerEnd));
       final bodyBytes = partBytes.sublist(headerEnd + 4);
 
+      // 从 Content-Disposition 解析文件名
       String? fileName;
       for (final line in headerStr.split('\r\n')) {
         if (line.toLowerCase().startsWith('content-disposition:')) {
@@ -312,6 +307,14 @@ class PasteController extends GetxController {
 
       if (fileName != null && bodyBytes.isNotEmpty) {
         parts.add({'filename': fileName, 'data': bodyBytes});
+      }
+
+      // 检查是否结束：\r\n--boundary--
+      pos = nextDelim;
+      if (nextDelim + delimiterBytes.length + 2 <= bytes.length &&
+          bytes[nextDelim + delimiterBytes.length] == 45 &&
+          bytes[nextDelim + delimiterBytes.length + 1] == 45) {
+        break;
       }
     }
 

@@ -22,7 +22,6 @@ import macos_window_utils
 import media_kit_libs_macos_audio
 import mobile_scanner
 import package_info_plus
-import passkeys_darwin
 import pasteboard
 import path_provider_foundation
 import screen_retriever_macos
@@ -31,7 +30,6 @@ import shared_preferences_foundation
 import sqflite_darwin
 import super_native_extensions
 import tray_manager
-import ua_client_hints
 import url_launcher_macos
 import webview_cookie_manager
 import webview_flutter_wkwebview
@@ -55,7 +53,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   MediaKitLibsMacosAudioPlugin.register(with: registry.registrar(forPlugin: "MediaKitLibsMacosAudioPlugin"))
   MobileScannerPlugin.register(with: registry.registrar(forPlugin: "MobileScannerPlugin"))
   FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
-  PasskeysPlugin.register(with: registry.registrar(forPlugin: "PasskeysPlugin"))
   PasteboardPlugin.register(with: registry.registrar(forPlugin: "PasteboardPlugin"))
   PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
   ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
@@ -64,7 +61,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   SqflitePlugin.register(with: registry.registrar(forPlugin: "SqflitePlugin"))
   SuperNativeExtensionsPlugin.register(with: registry.registrar(forPlugin: "SuperNativeExtensionsPlugin"))
   TrayManagerPlugin.register(with: registry.registrar(forPlugin: "TrayManagerPlugin"))
-  UAClientHintsPlugin.register(with: registry.registrar(forPlugin: "UAClientHintsPlugin"))
   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
   WebviewCookieManagerPlugin.register(with: registry.registrar(forPlugin: "WebviewCookieManagerPlugin"))
   WebViewFlutterPlugin.register(with: registry.registrar(forPlugin: "WebViewFlutterPlugin"))
