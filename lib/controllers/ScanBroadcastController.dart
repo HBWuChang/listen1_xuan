@@ -78,7 +78,6 @@ class ScanBroadcastController extends GetxController {
               );
               break;
             default:
-              // print('Another event occurred : $event.');
               break;
           }
         } catch (e) {
