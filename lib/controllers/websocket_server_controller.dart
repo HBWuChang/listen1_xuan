@@ -836,7 +836,7 @@ class WebSocketServerController extends GetxController {
 
       // 读取整个请求体
       final bytes = await _collectRequestBytes(request);
-      final parts = _parseMultipartBody(bytes, boundary);
+      final parts = PasteController.parseMultipartResponse(bytes, boundary);
 
       int savedCount = 0;
       for (final part in parts) {
@@ -1047,105 +1047,6 @@ class WebSocketServerController extends GetxController {
       onError: completer.completeError,
     );
     return completer.future;
-  }
-
-  /// 解析 multipart body，返回 [{filename, data}]
-  List<Map<String, dynamic>> _parseMultipartBody(
-    List<int> bytes,
-    String boundary,
-  ) {
-    final parts = <Map<String, dynamic>>[];
-    final boundaryBytes = utf8.encode('--$boundary');
-    final endBoundaryBytes = utf8.encode('--$boundary--');
-
-    // 按 boundary 分割
-    int searchFrom = 0;
-
-    List<List<int>> rawParts = [];
-    while (true) {
-      final start = _indexOf(bytes, boundaryBytes, searchFrom);
-      if (start == -1) break;
-
-      final contentStart = start + boundaryBytes.length;
-      // 跳过 \r\n
-      int dataStart = contentStart;
-      if (dataStart < bytes.length - 1 &&
-          bytes[dataStart] == 13 &&
-          bytes[dataStart + 1] == 10) {
-        dataStart += 2;
-      }
-
-      // 找到下一个 boundary
-      final nextBoundary = _indexOf(bytes, boundaryBytes, dataStart);
-      if (nextBoundary == -1) break;
-
-      // 去掉末尾的 \r\n
-      int dataEnd = nextBoundary;
-      if (dataEnd >= 2 &&
-          bytes[dataEnd - 2] == 13 &&
-          bytes[dataEnd - 1] == 10) {
-        dataEnd -= 2;
-      }
-
-      rawParts.add(bytes.sublist(dataStart, dataEnd));
-      searchFrom = nextBoundary;
-
-      // 检查是否为结束 boundary
-      if (_indexOf(bytes, endBoundaryBytes, nextBoundary) == nextBoundary) {
-        break;
-      }
-    }
-
-    // 解析每个 part
-    for (final partBytes in rawParts) {
-      // 找到 headers 和 body 之间的空行 (\r\n\r\n)
-      final headerEnd = _indexOf(partBytes, [13, 10, 13, 10], 0);
-      if (headerEnd == -1) continue;
-
-      final headerStr = utf8.decode(partBytes.sublist(0, headerEnd));
-      final bodyBytes = partBytes.sublist(headerEnd + 4);
-
-      // 解析 Content-Disposition 获取文件名
-      String? fileName;
-      for (final line in headerStr.split('\r\n')) {
-        if (line.toLowerCase().startsWith('content-disposition:')) {
-          // 检查 filename*=UTF-8''xxx
-          final utf8Match = RegExp(
-            r"filename\*=UTF-8''(.+?)(\s|;|$)",
-          ).firstMatch(line);
-          if (utf8Match != null) {
-            fileName = Uri.decodeComponent(utf8Match.group(1)!);
-          } else {
-            // 检查 filename="xxx"
-            final match = RegExp(r'filename="?([^";]+)"?').firstMatch(line);
-            if (match != null) {
-              fileName = match.group(1);
-            }
-          }
-        }
-      }
-
-      if (fileName != null && bodyBytes.isNotEmpty) {
-        parts.add({'filename': fileName, 'data': bodyBytes});
-      }
-    }
-
-    return parts;
-  }
-
-  /// 在字节数组中查找子数组的位置
-  int _indexOf(List<int> data, List<int> pattern, int start) {
-    for (int i = start; i <= data.length - pattern.length; i++) {
-      bool found = true;
-      for (int j = 0; j < pattern.length; j++) {
-        if (data[i + j] != pattern[j]) {
-          found = false;
-          break;
-        }
-      }
-      if (found) return i;
-    }
-    return -1;
   }
 
   /// 处理根据 ID 下载文件的请求

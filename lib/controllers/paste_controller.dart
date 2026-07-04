@@ -215,7 +215,7 @@ class PasteController extends GetxController {
       // 获取保存目录
       final saveDir = await getPasteFileDownloadDir();
 
-      final parts = _parseMultipartResponse(response.data!, boundary);
+      final parts = parseMultipartResponse(response.data!, boundary);
       int savedCount = 0;
 
       for (final part in parts) {
@@ -241,7 +241,7 @@ class PasteController extends GetxController {
   /// 解析 multipart/mixed 响应体
   /// 按 RFC 2046 处理：首分隔符为 `--boundary`，后续分隔符为 `\r\n--boundary`。
   /// 旧实现直接用 `--boundary` 搜索二进制数据，大文件中极易误匹配导致截断。
-  List<Map<String, dynamic>> _parseMultipartResponse(
+  static List<Map<String, dynamic>> parseMultipartResponse(
     List<int> bytes,
     String boundary,
   ) {
@@ -251,7 +251,7 @@ class PasteController extends GetxController {
     const crlfCrlf = <int>[13, 10, 13, 10];
 
     // 找到第一个 boundary（不带前置 \r\n）
-    int pos = _indexOfBytes(bytes, firstBoundaryBytes, 0);
+    int pos = _indexOfBytesStatic(bytes, firstBoundaryBytes, 0);
     if (pos == -1) return parts;
 
     while (true) {
@@ -264,7 +264,7 @@ class PasteController extends GetxController {
       }
 
       // 查找下一个分隔符：\r\n--boundary（带前置 \r\n）
-      final nextDelim = _indexOfBytes(bytes, delimiterBytes, pos);
+      final nextDelim = _indexOfBytesStatic(bytes, delimiterBytes, pos);
       if (nextDelim == -1) break;
 
       // 去掉数据末尾的 \r\n
@@ -277,7 +277,7 @@ class PasteController extends GetxController {
 
       // 从 part 中分离 headers 与 body
       final partBytes = bytes.sublist(pos, dataEnd);
-      final headerEnd = _indexOfBytes(partBytes, crlfCrlf, 0);
+      final headerEnd = _indexOfBytesStatic(partBytes, crlfCrlf, 0);
       if (headerEnd == -1) {
         pos = nextDelim;
         continue;
@@ -322,7 +322,7 @@ class PasteController extends GetxController {
   }
 
   /// 在字节数组中查找子数组
-  int _indexOfBytes(List<int> data, List<int> pattern, int start) {
+  static int _indexOfBytesStatic(List<int> data, List<int> pattern, int start) {
     for (int i = start; i <= data.length - pattern.length; i++) {
       bool found = true;
       for (int j = 0; j < pattern.length; j++) {
