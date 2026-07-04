@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:heroine/heroine.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
+import 'package:listen1_xuan/controllers/receiveSharingIntentController.dart';
 import 'package:listen1_xuan/controllers/search_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
@@ -181,6 +182,7 @@ void main() async {
   Get.put(UpdController(), permanent: true);
   Get.put(HomeController(), permanent: true);
   Get.put(PasteController(), permanent: true);
+  if (isAndroid) Get.put(ReceiveSharingIntentController(), permanent: true);
   init_apkfilepath();
   if (isDesktop) {
     if (isWindows) {

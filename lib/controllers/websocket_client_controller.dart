@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/receiveSharingIntentController.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/widgets/motor_progress_indicator_xuan.dart';
@@ -29,9 +30,9 @@ class WebSocketClientController extends GetxController {
   /// UI状态
   final RxBool _isExpanded = false.obs;
   final RxString _statusMessage = '未连接'.obs;
-  final RxBool _isConnecting = false.obs;
+  final RxBool i_isConnecting = false.obs;
   final RxBool _isDisconnecting = false.obs;
-  final RxBool _isConnected = false.obs;
+  final RxBool i_isConnected = false.obs;
   final RxString _serverUrl = ''.obs;
 
   /// WebSocket客户端是否自动启动的标志位
@@ -77,13 +78,13 @@ class WebSocketClientController extends GetxController {
   /// Getters (返回响应式值)
   RxBool get isExpandedRx => _isExpanded;
   RxString get statusMessageRx => _statusMessage;
-  RxBool get isConnectingRx => _isConnecting;
+  RxBool get isConnectingRx => i_isConnecting;
   RxBool get isDisconnectingRx => _isDisconnecting;
   RxString get serverAddressRx => _serverAddress;
   RxBool get autoReconnectRx => _autoReconnect;
   RxInt get reconnectIntervalRx => _reconnectInterval;
   RxInt get heartbeatIntervalRx => _heartbeatInterval;
-  RxBool get isConnectedRx => _isConnected;
+  RxBool get isConnectedRx => i_isConnected;
   RxString get serverUrlRx => _serverUrl;
   RxBool get wsClientAutoStartRx => _wsClientAutoStart;
   RxBool get wsClientBtnShowRx => _wsClientBtnShow;
@@ -97,13 +98,13 @@ class WebSocketClientController extends GetxController {
   // 保留原有的getter用于非响应式访问
   bool get isExpanded => _isExpanded.value;
   String get statusMessage => _statusMessage.value;
-  bool get isConnecting => _isConnecting.value;
+  bool get isConnecting => i_isConnecting.value;
   bool get isDisconnecting => _isDisconnecting.value;
   String get serverAddress => _serverAddress.value;
   bool get autoReconnect => _autoReconnect.value;
   int get reconnectInterval => _reconnectInterval.value;
   int get heartbeatInterval => _heartbeatInterval.value;
-  bool get isConnected => _isConnected.value;
+  bool get isConnected => i_isConnected.value;
   String get serverUrl => _serverUrl.value;
   bool get wsClientAutoStart => _wsClientAutoStart.value;
   bool get wsClientBtnShow => _wsClientBtnShow.value;
@@ -211,6 +212,7 @@ class WebSocketClientController extends GetxController {
 
   /// 如果设置了自动启动，则连接WebSocket服务器
   Future<void> autoConnectIfNeeded() async {
+    if (isAndroid) Get.find<ReceiveSharingIntentController>().regController();
     if (_wsClientAutoStart.value) {
       _logger.i('$_tag 自动连接WebSocket服务器');
       await connect();
@@ -221,7 +223,6 @@ class WebSocketClientController extends GetxController {
   void onInit() {
     super.onInit();
     // 加载设置
-    loadWebSocketClientSettings();
     _updateStatusMessage();
     _logger.i('$_tag 初始化完成');
     interval(_volume, (value) {
@@ -464,7 +465,9 @@ class WebSocketClientController extends GetxController {
     if (address.startsWith('[')) {
       // IPv6 格式: [host]:port
       final closeBracket = address.indexOf(']');
-      if (closeBracket == -1 || closeBracket + 2 >= address.length || address[closeBracket + 1] != ':') {
+      if (closeBracket == -1 ||
+          closeBracket + 2 >= address.length ||
+          address[closeBracket + 1] != ':') {
         throw Exception('IPv6 地址格式错误，应为 "[IPv6地址]:端口"');
       }
       final host = address.substring(1, closeBracket);
@@ -508,10 +511,10 @@ class WebSocketClientController extends GetxController {
 
   /// 连接到WebSocket服务器
   Future<void> connect() async {
-    if (isConnected || _isConnecting.value) return;
+    if (isConnected || i_isConnecting.value) return;
 
     try {
-      _isConnecting.value = true;
+      i_isConnecting.value = true;
       _connectionCancelled = false; // 重置取消标志
       _updateStatusMessage('正在连接...');
 
@@ -548,7 +551,7 @@ class WebSocketClientController extends GetxController {
         return;
       }
 
-      _isConnected.value = true;
+      i_isConnected.value = true;
       _updateStatusMessage('已连接');
       _showSuccess('WebSocket 客户端连接成功');
       _logger.i('$_tag WebSocket客户端连接成功: $uri');
@@ -575,7 +578,7 @@ class WebSocketClientController extends GetxController {
         onError: _onError,
       );
     } catch (e) {
-      _isConnected.value = false;
+      i_isConnected.value = false;
       _serverUrl.value = '';
 
       if (_connectionCancelled) {
@@ -591,7 +594,7 @@ class WebSocketClientController extends GetxController {
         }
       }
     } finally {
-      _isConnecting.value = false;
+      i_isConnecting.value = false;
     }
   }
 
@@ -602,7 +605,7 @@ class WebSocketClientController extends GetxController {
 
   /// 取消正在进行的连接
   void cancelConnection() {
-    if (_isConnecting.value) {
+    if (i_isConnecting.value) {
       _connectionCancelled = true;
       _logger.i('$_tag 用户取消连接');
       _showInfo('正在取消连接...');
@@ -637,7 +640,7 @@ class WebSocketClientController extends GetxController {
       await _webSocket?.close();
       _webSocket = null;
 
-      _isConnected.value = false;
+      i_isConnected.value = false;
       _serverUrl.value = '';
       _updateStatusMessage(manual ? '已断开' : '连接中断');
 
@@ -975,7 +978,7 @@ class WebSocketClientController extends GetxController {
   /// 处理连接断开
   void _onDisconnected() {
     _logger.i('$_tag WebSocket连接已断开');
-    _isConnected.value = false;
+    i_isConnected.value = false;
     _serverUrl.value = '';
     _stopHeartbeatTimer();
     stopStatusPolling();
@@ -991,7 +994,7 @@ class WebSocketClientController extends GetxController {
   /// 处理连接错误
   void _onError(dynamic error) {
     _logger.e('$_tag WebSocket连接错误', error: error);
-    _isConnected.value = false;
+    i_isConnected.value = false;
     _serverUrl.value = '';
     _stopHeartbeatTimer();
     stopStatusPolling();
@@ -1013,7 +1016,7 @@ class WebSocketClientController extends GetxController {
       Duration(seconds: _reconnectInterval.value),
       () async {
         if (_autoReconnect.value &&
-            !_isConnected.value &&
+            !i_isConnected.value &&
             !_connectionCancelled) {
           _logger.i('$_tag 尝试自动重连...');
           await connect();
@@ -1035,7 +1038,7 @@ class WebSocketClientController extends GetxController {
     _heartbeatTimer = Timer.periodic(
       Duration(seconds: _heartbeatInterval.value),
       (timer) {
-        if (_isConnected.value) {
+        if (i_isConnected.value) {
           try {
             final pingMessage = WebSocketMessageBuilder.createPingMessage();
             _webSocket!.add(pingMessage.toJsonString());

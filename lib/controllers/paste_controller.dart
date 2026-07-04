@@ -69,7 +69,7 @@ class PasteController extends GetxController {
         pastedFiles.value = files;
         pastedText.value = null;
         pastedImage.value = null;
-        _onFilesPasted(files);
+        onFilesPasted(files);
         return;
       }
 
@@ -94,7 +94,7 @@ class PasteController extends GetxController {
         pastedText.value = text;
         pastedFiles.clear();
         pastedImage.value = null;
-        _onTextPasted(text);
+        onTextPasted(text);
         return;
       }
 
@@ -108,7 +108,7 @@ class PasteController extends GetxController {
   }
 
   /// 文件粘贴回调
-  void _onFilesPasted(List<String> files) {
+  void onFilesPasted(List<String> files) {
     debugPrint('[PasteController] 粘贴了 ${files.length} 个文件');
     for (final f in files) {
       debugPrint('  -> $f');
@@ -478,7 +478,7 @@ class PasteController extends GetxController {
   }
 
   /// 文本粘贴回调
-  void _onTextPasted(String text) {
+  void onTextPasted(String text) {
     final wsc = Get.isRegistered<WebSocketClientController>()
         ? Get.find<WebSocketClientController>()
         : null;
@@ -517,7 +517,7 @@ class PasteController extends GetxController {
   Future<void> trySendNowClip() async {
     final res = await Clipboard.getData('text/plain');
     if (res != null && res.text != null) {
-      _onTextPasted(res.text!);
+      onTextPasted(res.text!);
     }
   }
 }

@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/receiveSharingIntentController.dart';
 import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
@@ -33,7 +35,7 @@ class WebSocketCardController extends GetxController {
   final RxBool _isStarting = false.obs;
   final RxBool _isStopping = false.obs;
   final RxBool _isServerRunning = false.obs;
-  final RxInt _clientCount = 0.obs;
+  final RxInt i_clientCount = 0.obs;
   final RxString _serverUrl = ''.obs;
 
   /// WebSocket服务器是否自动启动的标志位
@@ -59,7 +61,7 @@ class WebSocketCardController extends GetxController {
   RxInt get pingIntervalRx => _pingInterval;
   RxInt get pongTimeoutRx => _pongTimeout;
   RxBool get isServerRunningRx => _isServerRunning;
-  RxInt get clientCountRx => _clientCount;
+  RxInt get clientCountRx => i_clientCount;
   RxString get serverUrlRx => _serverUrl;
   RxBool get wsServerAutoStartRx => _wsServerAutoStart;
   RxBool get wsServerBtnShowRx => _wsServerBtnShow;
@@ -75,7 +77,7 @@ class WebSocketCardController extends GetxController {
   int get pongTimeout => _pongTimeout.value;
 
   bool get isServerRunning => _isServerRunning.value;
-  int get clientCount => _clientCount.value;
+  int get clientCount => i_clientCount.value;
   String get serverUrl => _serverUrl.value;
   bool get wsServerAutoStart => _wsServerAutoStart.value;
   bool get wsServerBtnShow => _wsServerBtnShow.value;
@@ -230,6 +232,7 @@ class WebSocketCardController extends GetxController {
 
   /// 尝试启动服务器的内部方法
   Future<bool> _tryStartServer() async {
+    if (isAndroid) Get.find<ReceiveSharingIntentController>().regController();
     if (isServerRunning || _isStarting.value) return true;
 
     try {
@@ -260,7 +263,7 @@ class WebSocketCardController extends GetxController {
         wsServerController = null;
         _isServerRunning.value = false;
         _serverUrl.value = '';
-        _clientCount.value = 0;
+        i_clientCount.value = 0;
         _updateStatusMessage('启动失败');
         _showError('服务器启动失败，请检查端口 $_port 是否被占用或其他资源冲突');
         _logger.e('$_tag 启动服务器失败: 服务器返回 false');
@@ -270,7 +273,7 @@ class WebSocketCardController extends GetxController {
       wsServerController = null;
       _isServerRunning.value = false;
       _serverUrl.value = '';
-      _clientCount.value = 0;
+      i_clientCount.value = 0;
       _updateStatusMessage('启动失败');
       final errorMsg = '启动服务器异常: $e';
       _showError(errorMsg);
@@ -285,7 +288,6 @@ class WebSocketCardController extends GetxController {
   void onInit() {
     super.onInit();
     // 加载设置
-    loadWebSocketSettings();
     _updateStatusMessage();
     // 初始化时加载IP地址列表
     _logger.i('$_tag 初始化完成');
@@ -365,7 +367,7 @@ class WebSocketCardController extends GetxController {
 
       _isServerRunning.value = false;
       _serverUrl.value = '';
-      _clientCount.value = 0;
+      i_clientCount.value = 0;
       _updateStatusMessage('已停止');
       _showSuccess('WebSocket 服务器已停止');
       _logger.i('$_tag WebSocket服务器已停止');
@@ -441,7 +443,7 @@ class WebSocketCardController extends GetxController {
       }
       // 更新响应式状态
       _isServerRunning.value = wsServerController!.isRunning;
-      _clientCount.value = wsServerController!.clientCount;
+      i_clientCount.value = wsServerController!.clientCount;
       _serverUrl.value = wsServerController!.serverUrl;
       _updateStatusMessage();
     });
