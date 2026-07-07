@@ -335,16 +335,16 @@ class _InputDialogWidgetState extends State<_InputDialogWidget> {
 
   void _focusListener() {
     if (_focusNode.hasFocus) {
-      set_inapp_hotkey(false);
+      setInAppHotKeyEnable(false);
     } else {
-      set_inapp_hotkey(true);
+      setInAppHotKeyEnable(true);
     }
   }
 
   @override
   void dispose() {
     _focusNode.removeListener(_focusListener);
-    set_inapp_hotkey(true);
+    setInAppHotKeyEnable(true);
     _controller.dispose();
     _focusNode.dispose();
     _errorMessage.close();

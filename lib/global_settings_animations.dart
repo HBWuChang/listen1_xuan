@@ -132,7 +132,7 @@ Map<LogicalKeyboardKey, dynamic> inappShortcuts = {
   LogicalKeyboardKey.period: globalSkipToNext,
 };
 bool enable_inapp_hotkey = true;
-void set_inapp_hotkey(enable) {
+void setInAppHotKeyEnable(enable) {
   enable_inapp_hotkey = enable;
 }
 

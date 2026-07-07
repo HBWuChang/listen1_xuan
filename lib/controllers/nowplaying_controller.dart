@@ -25,9 +25,9 @@ class NowPlayingPageController extends GetxController {
     searchController = TextEditingController();
     searchFocusNode.addListener(() {
       if (searchFocusNode.hasFocus) {
-        set_inapp_hotkey(false);
+        setInAppHotKeyEnable(false);
       } else {
-        set_inapp_hotkey(true);
+        setInAppHotKeyEnable(true);
       }
     });
     // 监听搜索框变化

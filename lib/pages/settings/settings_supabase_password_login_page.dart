@@ -59,23 +59,23 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
 
     _emailFocusNode.addListener(() {
       if (_emailFocusNode.hasFocus) {
-        set_inapp_hotkey(false);
+        setInAppHotKeyEnable(false);
       } else {
-        set_inapp_hotkey(true);
+        setInAppHotKeyEnable(true);
       }
     });
     _passwordFocusNode.addListener(() {
       if (_passwordFocusNode.hasFocus) {
-        set_inapp_hotkey(false);
+        setInAppHotKeyEnable(false);
       } else {
-        set_inapp_hotkey(true);
+        setInAppHotKeyEnable(true);
       }
     });
     _confirmPasswordFocusNode.addListener(() {
       if (_confirmPasswordFocusNode.hasFocus) {
-        set_inapp_hotkey(false);
+        setInAppHotKeyEnable(false);
       } else {
-        set_inapp_hotkey(true);
+        setInAppHotKeyEnable(true);
       }
     });
   }

@@ -524,16 +524,15 @@ class _MyHomePageState extends State<MyHomePage>
     return Focus(
       autofocus: true,
       onKeyEvent: (FocusNode node, KeyEvent event) {
+        // 动态判断是否启用热键
+        if (!enable_inapp_hotkey) {
+          return KeyEventResult.ignored; // 将按键事件传递给下一个处理器
+        }
         // 处理粘贴快捷键 (仅Desktop)
         if (isDesktop &&
             Get.isRegistered<PasteController>() &&
             Get.find<PasteController>().handleKeyEvent(event)) {
           return KeyEventResult.handled;
-        }
-
-        // 动态判断是否启用热键
-        if (!enable_inapp_hotkey) {
-          return KeyEventResult.ignored; // 将按键事件传递给下一个处理器
         }
 
         bool flag = false;

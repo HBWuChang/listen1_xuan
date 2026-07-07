@@ -232,7 +232,7 @@ class PlaylistInfoPage extends StatelessWidget {
           ? IconButton(
               icon: Icon(Icons.edit),
               onPressed: () async {
-                set_inapp_hotkey(false);
+                setInAppHotKeyEnable(false);
                 await showDialog(
                   context: context,
                   builder: (BuildContext contextDialog) {
@@ -279,7 +279,7 @@ class PlaylistInfoPage extends StatelessWidget {
                     );
                   },
                 );
-                set_inapp_hotkey(true);
+                setInAppHotKeyEnable(true);
               },
             )
           : Obx(

@@ -56,9 +56,9 @@ class PlaylistInfoController extends GetxController {
     innerScrollController.addListener(onInnerScroll);
     searchFocusNode.addListener(() {
       if (searchFocusNode.hasFocus) {
-        set_inapp_hotkey(false);
+        setInAppHotKeyEnable(false);
       } else {
-        set_inapp_hotkey(true);
+        setInAppHotKeyEnable(true);
       }
     });
   }

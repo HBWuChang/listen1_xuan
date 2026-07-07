@@ -164,9 +164,9 @@ class XSearchController extends GetxController {
       if (!Get.find<RouteController>().inSearchPage.value) {
         Get.toNamed(RouteName.searchPage, id: 1);
       }
-      set_inapp_hotkey(false);
+      setInAppHotKeyEnable(false);
     } else {
-      set_inapp_hotkey(true);
+      setInAppHotKeyEnable(true);
     }
   }
 

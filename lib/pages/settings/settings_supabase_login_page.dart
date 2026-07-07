@@ -49,16 +49,16 @@ class _SupabaseLoginPageState extends State<SupabaseLoginPage> {
 
     _focusNode.addListener(() {
       if (_focusNode.hasFocus) {
-        set_inapp_hotkey(false);
+        setInAppHotKeyEnable(false);
       } else {
-        set_inapp_hotkey(true);
+        setInAppHotKeyEnable(true);
       }
     });
     _focusNode2.addListener(() {
       if (_focusNode2.hasFocus) {
-        set_inapp_hotkey(false);
+        setInAppHotKeyEnable(false);
       } else {
-        set_inapp_hotkey(true);
+        setInAppHotKeyEnable(true);
       }
     });
   }
