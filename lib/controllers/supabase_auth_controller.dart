@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
+import 'package:listen1_xuan/widgets/draggable_toast/draggable_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'package:listen1_xuan/models/UserProfile.dart';
@@ -1173,8 +1173,8 @@ class SupabaseAuthController extends GetxController {
     RxBool loading = false.obs;
     String dateStr = newData['updated_at'] ?? '';
     dateStr = dateStr.replaceAll('T', ' ').split('.').first;
-    smoothSheetToast.showToast(
-      inLockMode:true,
+    draggableToastManager.show(
+      inLockMode: true,
       icon: Obx(
         () => loading.value
             ? Center(
@@ -1187,16 +1187,24 @@ class SupabaseAuthController extends GetxController {
                   ),
                 ),
               )
-            : Icon(Icons.playlist_play_rounded),
+            : Icon(Icons.playlist_play_rounded, color: Colors.white),
+      ),
+      config: DraggableToastConfig(
+        areaPadding: EdgeInsets.fromLTRB(8, 100, 8, 80),
+        snapEdges: const {ToastSnapEdge.left, ToastSnapEdge.right},
+        snapThreshold: 60,
+        expandedWidth: 300,
+        expandedHeight: 114,
+        collapsedSize: 46,
       ),
       onDismiss: () {
         inupdateProcess.remove(playlistId);
       },
-      builder: (context, controller) {
+      builder: (context, state, controller) {
         return Padding(
           padding: EdgeInsets.all(8),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               ListTile(

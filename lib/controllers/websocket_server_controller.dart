@@ -76,15 +76,6 @@ class WebSocketServerController extends GetxController {
   void onInit() {
     super.onInit();
     _logger.i('$_tag 初始化完成');
-    ever(Get.find<WebSocketCardController>().shareFilePath, (path) {
-      if (isNotEmpty(path.isNotEmpty)) {
-        final message =
-            WebSocketMessageBuilder.createPutShareFileNameToCliMessage(
-              p.basename(path),
-            );
-        _broadcastMessage(message);
-      }
-    });
   }
 
   /// 启动 WebSocket 服务器
@@ -184,14 +175,6 @@ class WebSocketServerController extends GetxController {
       connection.id,
     );
     _sendMessage(connection, welcomeMessage);
-    String path = Get.find<WebSocketCardController>().shareFilePath.value;
-    if (isNotEmpty(path.isNotEmpty)) {
-      final message =
-          WebSocketMessageBuilder.createPutShareFileNameToCliMessage(
-            p.basename(path),
-          );
-      _sendMessage(connection, message);
-    }
     // 监听消息
     webSocket.listen(
       (data) => _handleMessage(connection, data),

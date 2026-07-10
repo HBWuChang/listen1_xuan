@@ -13,10 +13,10 @@ import '../widgets/progress_indicator_xuan.dart';
 import 'controllers/appLinksController.dart';
 import 'controllers/settings_controller.dart';
 import 'global_settings_animations.dart';
-import 'widgets/smooth_sheet_toast.dart';
+import 'widgets/draggable_toast/draggable_toast.dart';
 
 late FToast fToast;
-late SmoothSheetToast smoothSheetToast;
+late ToastOverlayManager draggableToastManager;
 
 /// 创建统一的自定义 Toast 组件
 Widget _buildCustomToast({

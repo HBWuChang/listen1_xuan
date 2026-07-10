@@ -207,8 +207,6 @@ class WebSocketMessageType {
   /// 设置 Cookie 消息
   static const String setCookie = 'setCookie';
 
-  static const String putShareFileNameToCli = 'putShareFileName';
-
   static const String sendPasteText = 'sendPasteText';
 
   static const String reqToGetFile = 'reqToGetFile';
@@ -343,13 +341,6 @@ class WebSocketMessageBuilder {
     return WebSocketMessage(
       type: WebSocketMessageType.trackNext,
       content: trackJson,
-    );
-  }
-
-  static WebSocketMessage createPutShareFileNameToCliMessage(String name) {
-    return WebSocketMessage(
-      type: WebSocketMessageType.putShareFileNameToCli,
-      content: name,
     );
   }
 

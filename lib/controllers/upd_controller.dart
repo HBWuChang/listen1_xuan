@@ -19,6 +19,7 @@ import '../settings.dart';
 import '../models/GitHubRelease.dart';
 import '../models/ReleaseAsset.dart';
 import '../widgets/progress_indicator_xuan.dart';
+import '../widgets/draggable_toast/draggable_toast.dart';
 import 'DioController.dart';
 import 'hyper_download_controller.dart';
 import 'routeController.dart';
@@ -845,13 +846,16 @@ class UpdController extends GetxController {
     RxString progressText = '准备下载'.obs;
 
     // 构建进度指示器 widget，支持显示百分比
-    Widget _buildProgressIcon() {
+    Widget _buildProgressIcon({bool isPeekIcon = false}) {
       return Obx(() {
         if (!isUpdating.value) {
-          return Icon(Icons.system_update_rounded);
+          return Icon(
+            Icons.system_update_rounded,
+            color: isPeekIcon ? Get.theme.colorScheme.onPrimary : null,
+          );
         }
 
-        // 从 progressText 中提取百分比
+        // 从 progressText 中提取百分比Ï
         double progress = 0.0;
         if (progressText.value.contains('%')) {
           try {
@@ -877,11 +881,19 @@ class UpdController extends GetxController {
       });
     }
 
-    smoothSheetToast.showToast(
+    draggableToastManager.show(
       inLockMode: true,
-      icon: _buildProgressIcon(),
+      icon: _buildProgressIcon(isPeekIcon: true),
+      config: DraggableToastConfig(
+        areaPadding: EdgeInsets.fromLTRB(16, 100, 16, 80),
+        snapThreshold: 60,
+        expandedWidth: 300,
+        expandedHeight: 133,
+        collapsedSize: 46,
+        snapEdges: {ToastSnapEdge.left, ToastSnapEdge.right},
+      ),
       onDismiss: () {},
-      builder: (context, controller) {
+      builder: (context, state, controller) {
         return Padding(
           padding: EdgeInsets.all(8),
           child: Column(

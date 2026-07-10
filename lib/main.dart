@@ -12,6 +12,7 @@ import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_page.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_binding.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_args.dart';
+import 'package:listen1_xuan/widgets/draggable_toast/toast_overlay_manager.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:media_kit/media_kit.dart' show MediaKit;
 import 'package:resizable_widget/resizable_widget.dart';
@@ -36,7 +37,6 @@ import 'play.dart';
 import 'global_settings_animations.dart';
 import 'widgets.dart';
 import 'widgets/priority_responsive_action_row.dart';
-import 'widgets/smooth_sheet_toast.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:cookie_jar/cookie_jar.dart';
@@ -418,8 +418,8 @@ class _MyHomePageState extends State<MyHomePage>
     // if you want to use context from globally instead of content we need to pass navigatorKey.currentContext!
     fToast.init(navigatorKey.currentContext!);
 
-    smoothSheetToast = SmoothSheetToast();
-    smoothSheetToast.init(navigatorKey.currentContext!);
+    draggableToastManager = ToastOverlayManager.instance;
+    draggableToastManager.init(navigatorKey.currentContext!);
   }
 
   @override
