@@ -121,6 +121,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           alignment: 0.5,
           duration: (_) => Duration(milliseconds: 300),
           curve: (_) => Curves.fastLinearToSlowEaseIn,
+          teleport: true,
         );
       } else {
         _listController.jumpToItem(
@@ -433,7 +434,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
             // 拖拽手柄 - 在搜索状态下隐藏
             Obx(
               () => controller.isSearching.value
-                  ? 20.sbw // 占位符保持布局一致
+                  ? 20
+                        .sbw // 占位符保持布局一致
                   : Icon(
                       reorderEnabled ? Icons.drag_handle : Icons.more_horiz,
                       color: theme.textTheme.bodyMedium?.color?.withOpacity(
