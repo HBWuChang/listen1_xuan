@@ -61,11 +61,6 @@ class NowPlayingPageController extends GetxController {
     super.onClose();
   }
 
-  // 获取单个项目的实际高度（根据平台调整）
-  double get itemHeight {
-    return 44.0; // 默认值
-  }
-
   void playTrack(Track track) {
     playsong(track, isByClick: true);
     HapticFeedback.lightImpact();

@@ -78,24 +78,18 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   }
 
   void _onScroll() {
-    // 检查当前播放的歌曲是否在可视区域内
-    if (scrollController.hasClients) {
-      final playingList = controller.filteredPlayingList; // 使用过滤后的列表
+    // 使用 SuperSliverList 的 visibleRange API 判断当前播放歌曲是否在可视区域内
+    if (scrollController.hasClients && _listController.isAttached) {
+      final playingList = controller.filteredPlayingList;
       final currentTrackId = controller.currentTrackId;
       final currentIndex = playingList.indexWhere(
         (track) => track.id == currentTrackId,
       );
 
       if (currentIndex != -1) {
-        final currentItemOffset = currentIndex * controller.itemHeight;
-        final viewportTop = scrollController.offset;
-        final viewportBottom =
-            viewportTop + scrollController.position.viewportDimension;
-
-        // 判断当前播放项目是否在可视区域内
+        final range = _listController.visibleRange;
         final isCurrentVisible =
-            currentItemOffset >= viewportTop &&
-            currentItemOffset <= viewportBottom;
+            range != null && currentIndex >= range.$1 && currentIndex <= range.$2;
 
         controller.showScrollButton.value = !isCurrentVisible;
       }
@@ -120,8 +114,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           scrollController: scrollController,
           alignment: 0.5,
           duration: (_) => Duration(milliseconds: 500),
-          curve: (_) => Curves.fastOutSlowIn,
+          curve: (_) => Curves.easeInOutSine,
           teleport: true,
+          teleportThreshold: 1.2,
+          approachFactor: 1.2,
         );
       } else {
         _listController.jumpToItem(
