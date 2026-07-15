@@ -116,11 +116,11 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         _listController.isAttached) {
       if (animated) {
         _listController.animateToItem(
-          index: currentIndex,
+          index: () => currentIndex,
           scrollController: scrollController,
           alignment: 0.5,
-          duration: (_) => Duration(milliseconds: 300),
-          curve: (_) => Curves.fastLinearToSlowEaseIn,
+          duration: (_) => Duration(milliseconds: 500),
+          curve: (_) => Curves.fastOutSlowIn,
           teleport: true,
         );
       } else {
