@@ -492,7 +492,9 @@ class UpdController extends GetxController {
 
       // 无论是否下载，都进行解压和更新操作
       if (await File(filePath).exists()) {
-        await _performMacosExtractAndUpdate(tempPath, filePath);
+        // 先解压 canary.zip，取出内部的实际 zip 文件（如 listen1_xuan-2.5.3+45-macos-260c32f.zip）
+        final actualFilePath = await _extractInnerMacosZip(tempPath, filePath);
+        await _performMacosExtractAndUpdate(tempPath, actualFilePath);
       } else {
         showErrorSnackbar('安装包文件不存在', null);
       }
@@ -500,6 +502,47 @@ class UpdController extends GetxController {
       _closeProgressDialog();
       showErrorSnackbar('下载失败', e.toString());
     }
+  }
+
+  /// 从 artifact 的 canary.zip 中解压出实际的 macos zip 文件，
+  /// 删除原 canary.zip，并将内部文件重命名为 canary.zip
+  Future<String> _extractInnerMacosZip(String tempPath, String filePath) async {
+    final bytes = File(filePath).readAsBytesSync();
+    final archive = ZipDecoder().decodeBytes(bytes);
+
+    String? innerZipPath;
+    for (final file in archive) {
+      if (file.isFile) {
+        final filename = file.name;
+        final data = file.content as List<int>;
+        final extractPath = p.join(tempPath, filename);
+        File(extractPath)
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(data);
+
+        // 匹配类似 listen1_xuan-2.5.3+45-macos-260c32f.zip 的文件
+        if (filename.endsWith('.zip')) {
+          innerZipPath = extractPath;
+        }
+      }
+    }
+
+    if (innerZipPath == null) {
+      // 没有找到内部 zip，直接返回原文件路径
+      debugPrint('未找到内部 zip 文件，直接使用原 canary.zip');
+      return filePath;
+    }
+
+    // 删除原 canary.zip
+    await File(filePath).delete();
+    debugPrint('已删除原 canary.zip');
+
+    // 将内部 zip 重命名为 canary.zip
+    final newFilePath = p.join(tempPath, 'canary.zip');
+    await File(innerZipPath).rename(newFilePath);
+    debugPrint('已将 ${p.basename(innerZipPath)} 重命名为 canary.zip');
+
+    return newFilePath;
   }
 
   /// macOS 平台的解压和更新
