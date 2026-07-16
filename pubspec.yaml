@@ -122,9 +122,8 @@ dependencies:
   expandable: ^5.0.1
   flutter_rust_bridge: 2.11.1
   # super_sliver_list: ^0.4.1
-  # super_sliver_list:
-  #   path: /Users/cd022/HBWuChang/code/super_sliver_list
   super_sliver_list:
+    # path: /Users/cd022/HBWuChang/code/super_sliver_list
     git:
       url: https://github.com/HBWuChang/super_sliver_list
   webview_flutter_android: 4.11.0
