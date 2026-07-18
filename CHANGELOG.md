@@ -1,5 +1,10 @@
 
 ---
+## 2.5.3+45
+- 解决macos下载最新测试版无法安装问题@zmcmcc
+- 正在播放列表实现类tg的消息的动画滚动到目标效果（在[这个仓库](https://github.com/HBWuChang/super_sliver_list)
+- 修改更新弹窗
+- websocket可在安卓调起分享文件了（还是我自己要用
 ## 2.5.2+44
 - 处理mac上导入导出配置问题@llllllizili
 - 使用了heroine库完成一些切换动画
