@@ -931,7 +931,6 @@ class UpdController extends GetxController {
         areaPadding: EdgeInsets.fromLTRB(16, 100, 16, 80),
         snapThreshold: 60,
         expandedWidth: 300,
-        expandedHeight: 133,
         collapsedSize: 46,
         snapEdges: {ToastSnapEdge.left, ToastSnapEdge.right},
       ),

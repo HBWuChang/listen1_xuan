@@ -23,7 +23,7 @@ class DraggableToastConfig {
   final double snapThreshold;
   final Set<ToastSnapEdge> snapEdges;
   final double expandedWidth;
-  final double expandedHeight;
+  final double? expandedHeight;
   final double collapsedSize;
   final double borderRadius;
   final double collapsedBorderRadius;
@@ -38,7 +38,7 @@ class DraggableToastConfig {
       ToastSnapEdge.bottom,
     },
     this.expandedWidth = 280,
-    this.expandedHeight = 160,
+    this.expandedHeight,
     this.collapsedSize = 48,
     this.borderRadius = 16,
     this.collapsedBorderRadius = 24,
@@ -97,6 +97,14 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
   Size? _cachedAreaSize;
   bool _needsInitialCentering = false;
 
+  // Auto height measurement
+  double? _measuredHeight;
+  bool _isMeasuring = false;
+  final GlobalKey _measureKey = GlobalKey();
+
+  double get _effectiveExpandedHeight =>
+      widget.config.expandedHeight ?? _measuredHeight ?? widget.config.collapsedSize;
+
   @override
   void initState() {
     super.initState();
@@ -119,12 +127,26 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
       initialValue: 1.0,
     );
 
-    _expandController = MotionController<double>(
-      motion: widget.motion,
-      vsync: this,
-      converter: const SingleMotionConverter(),
-      initialValue: 1.0,
-    );
+    // Auto height measurement mode
+    if (widget.config.expandedHeight == null) {
+      _isMeasuring = true;
+      _expandController = MotionController<double>(
+        motion: widget.motion,
+        vsync: this,
+        converter: const SingleMotionConverter(),
+        initialValue: 0.0, // Start collapsed during measurement
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _performMeasurement();
+      });
+    } else {
+      _expandController = MotionController<double>(
+        motion: widget.motion,
+        vsync: this,
+        converter: const SingleMotionConverter(),
+        initialValue: 1.0,
+      );
+    }
 
     _currentPosition = initialPos;
 
@@ -138,7 +160,9 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
       widget.controller?.enterLockedMode();
     }
 
-    _startAutoPeekTimer();
+    if (!_isMeasuring) {
+      _startAutoPeekTimer();
+    }
   }
 
   @override
@@ -177,6 +201,19 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
     _autoDismissTimer = null;
   }
 
+  void _performMeasurement() {
+    final renderBox = _measureKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null && renderBox.hasSize) {
+      setState(() {
+        _measuredHeight = renderBox.size.height;
+        _isMeasuring = false;
+      });
+      // Now trigger the expand animation
+      _expandController.animateTo(1.0);
+      _startAutoPeekTimer();
+    }
+  }
+
   void _controllerExpand() {
     if (_state == ToastState.collapsed || _state == ToastState.dragging) {
       _performExpand();
@@ -205,7 +242,7 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
     final config = widget.config;
     final center = Offset(
       _currentPosition.dx + config.expandedWidth / 2,
-      _currentPosition.dy + config.expandedHeight / 2,
+      _currentPosition.dy + _effectiveExpandedHeight / 2,
     );
 
     final distances = <ToastSnapEdge, double>{};
@@ -248,11 +285,11 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
     if (_snappedEdge == ToastSnapEdge.right) {
       newX = areaSize.width - config.expandedWidth;
     } else if (_snappedEdge == ToastSnapEdge.bottom) {
-      newY = areaSize.height - config.expandedHeight;
+      newY = areaSize.height - _effectiveExpandedHeight;
     }
 
     newX = newX.clamp(0.0, areaSize.width - config.expandedWidth);
-    newY = newY.clamp(0.0, areaSize.height - config.expandedHeight);
+    newY = newY.clamp(0.0, areaSize.height - _effectiveExpandedHeight);
 
     _currentPosition = Offset(newX, newY);
     _snappedEdge = null;
@@ -279,7 +316,7 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
         : config.expandedWidth;
     final currentHeight = _state == ToastState.collapsed
         ? config.collapsedSize
-        : config.expandedHeight;
+        : _effectiveExpandedHeight;
 
     if (config.snapEdges.contains(ToastSnapEdge.left) &&
         position.dx < threshold) {
@@ -339,7 +376,7 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
     final newX = (_currentPosition.dx + details.delta.dx)
         .clamp(0.0, areaSize.width - config.expandedWidth);
     final newY = (_currentPosition.dy + details.delta.dy)
-        .clamp(0.0, areaSize.height - config.expandedHeight);
+        .clamp(0.0, areaSize.height - _effectiveExpandedHeight);
     _currentPosition = Offset(newX, newY);
     _positionController.value = _currentPosition;
   }
@@ -354,7 +391,7 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
     final projectedX = (_currentPosition.dx + velocity.dx * decelerationFactor)
         .clamp(0.0, areaSize.width - config.expandedWidth);
     final projectedY = (_currentPosition.dy + velocity.dy * decelerationFactor)
-        .clamp(0.0, areaSize.height - config.expandedHeight);
+        .clamp(0.0, areaSize.height - _effectiveExpandedHeight);
     final projectedPosition = Offset(projectedX, projectedY);
 
     final snapEdge = _getSnapEdge(projectedPosition, areaSize);
@@ -401,10 +438,10 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
           final centeredX =
               (areaSize.width - widget.config.expandedWidth) / 2;
           final centeredY =
-              (areaSize.height - widget.config.expandedHeight) / 3;
+              (areaSize.height - _effectiveExpandedHeight) / 3;
           _currentPosition = Offset(
             centeredX.clamp(0.0, areaSize.width - widget.config.expandedWidth),
-            centeredY.clamp(0.0, areaSize.height - widget.config.expandedHeight),
+            centeredY.clamp(0.0, areaSize.height - _effectiveExpandedHeight),
           );
           _positionController.value = _currentPosition;
         }
@@ -417,6 +454,18 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
             child: Stack(
               clipBehavior: Clip.none,
               children: [
+                // Offstage measurement widget (only during measurement)
+                if (_isMeasuring)
+                  Offstage(
+                    child: SizedBox(
+                      key: _measureKey,
+                      width: config.expandedWidth,
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: widget.builder(context, ToastState.expanded),
+                      ),
+                    ),
+                  ),
                 ListenableBuilder(
                   listenable: Listenable.merge([
                     _positionController,
@@ -431,7 +480,7 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
                     final currentWidth = config.collapsedSize +
                         (config.expandedWidth - config.collapsedSize) * expand;
                     final currentHeight = config.collapsedSize +
-                        (config.expandedHeight - config.collapsedSize) * expand;
+                        (_effectiveExpandedHeight - config.collapsedSize) * expand;
                     final currentRadius = config.collapsedBorderRadius +
                         (config.borderRadius - config.collapsedBorderRadius) *
                             expand;
@@ -477,9 +526,9 @@ class _DraggableMotorToastState extends State<DraggableMotorToast>
                                       child: OverflowBox(
                                         alignment: Alignment.topLeft,
                                         maxWidth: config.expandedWidth,
-                                        maxHeight: config.expandedHeight,
+                                        maxHeight: _effectiveExpandedHeight,
                                         minWidth: config.expandedWidth,
-                                        minHeight: config.expandedHeight,
+                                        minHeight: _effectiveExpandedHeight,
                                         child: Material(
                                           type: MaterialType.transparency,
                                           child: widget.builder(context, _state),

@@ -1194,7 +1194,6 @@ class SupabaseAuthController extends GetxController {
         snapEdges: const {ToastSnapEdge.left, ToastSnapEdge.right},
         snapThreshold: 60,
         expandedWidth: 300,
-        expandedHeight: 114,
         collapsedSize: 46,
       ),
       onDismiss: () {
@@ -1204,7 +1203,7 @@ class SupabaseAuthController extends GetxController {
         return Padding(
           padding: EdgeInsets.all(8),
           child: Column(
-            mainAxisSize: MainAxisSize.max,
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               ListTile(
