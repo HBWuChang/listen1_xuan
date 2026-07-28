@@ -215,7 +215,7 @@ void g_launchURL(Uri url) async {
   }
 }
 
-Map<String, dynamic> settings_getsettings() {
+Map<String, dynamic> lengcyGetSettings() {
   return Get.find<SettingsController>().settings;
 }
 
@@ -228,31 +228,23 @@ Future<String?> outputPlatformToken(String platform) async {
 }
 
 Future<void> savePlatformToken(
-  String platform,
-  String token, {
+  PlatformCredentials credentials, {
   bool saveRightNow = true,
 }) async {
   try {
-    if (platform == PlantformCodes.github) {
+    if (credentials.platform == PlantformCodes.github) {
       final s = Get.find<SettingsController>();
-      await s.setString('githubOauthAccessKey', token);
+      await s.setString('githubOauthAccessKey', credentials.token);
       return;
     }
     final settings = Get.find<SettingsController>().settings;
-    settings[platform] = token;
+    settings[credentials.platform] = credentials.token;
+    // debugPrint('Saved platform token for ${credentials.platform}: ${credentials.token}');
     if (saveRightNow) Get.find<SettingsController>().saveSettings();
-    List<Cookie> cookies = [];
-    for (var item in token.split(';')) {
-      // 除去两端空格
-      var cookie = item.trim().split('=');
-      var cookieName = cookie[0].trim();
-      var cookieValue = cookie[1].trim();
-      cookies.add(Cookie(cookieName, cookieValue));
-    }
 
-    if (_cookieUrls.containsKey(platform)) {
-      for (var url in _cookieUrls[platform]!) {
-        await setSaveCookie(url: url, cookies: cookies);
+    if (_cookieUrls.containsKey(credentials.platform)) {
+      for (var url in _cookieUrls[credentials.platform]!) {
+        await setSaveCookie(url: url, cookies: credentials.prcdCookies);
       }
     }
     await Get.find<DioController>().reloadCookie();

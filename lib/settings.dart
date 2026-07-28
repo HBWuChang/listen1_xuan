@@ -60,6 +60,7 @@ import 'package:iconify_flutter_plus/icons/mdi.dart';
 import 'package:iconify_flutter_plus/icons/fa_solid.dart';
 import 'package:path/path.dart' as p;
 import 'utils/curve_utils.dart';
+import 'utils/platform_credentials.dart';
 import 'widgets/curve_selector_dialog.dart';
 import 'package:flutter/material.dart' hide SearchController;
 import 'widgets/elevated_button_icon.dart';
@@ -123,25 +124,29 @@ class _LoginWebviewState extends State<LoginWebview> {
       default:
         if (isWindows) {
           var t = jsonDecode(await widget.controller.getCookies())["cookies"];
-          String cookies = t
-              .map<String>(
+          final cookies = t
+              .map<Cookie>(
                 (item) =>
-                    "${item['name']}=${Uri.encodeComponent(item['value'])}",
+                    Cookie(item['name'] as String, item['value'] as String),
               )
-              .join(';');
-          await savePlatformToken(widget.config_key, cookies);
+              .toList();
+          await savePlatformToken(
+            PlatformCredentials(
+              platform: widget.config_key,
+              credentials: cookies,
+            ),
+          );
           showSuccessSnackbar('设置成功', null);
         } else {
           final cookieManager = WebviewCookieManager();
 
           final gotCookies = await cookieManager.getCookies(widget.open_url);
-          String cookies = gotCookies
-              .map(
-                (cookie) =>
-                    "${cookie.name}=${Uri.encodeComponent(cookie.value)}",
-              )
-              .join('; ');
-          await savePlatformToken(widget.config_key, cookies);
+          await savePlatformToken(
+            PlatformCredentials(
+              platform: widget.config_key,
+              credentials: gotCookies,
+            ),
+          );
           showSuccessSnackbar('设置成功', null);
         }
     }
@@ -345,7 +350,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void open_bl_login() async {
     TextEditingController blCookieController = TextEditingController();
-    Map<String, dynamic> settings = settings_getsettings();
+    Map<String, dynamic> settings = lengcyGetSettings();
     if (settings.containsKey('bl')) {
       blCookieController.text = settings['bl'];
     }
@@ -385,13 +390,23 @@ class _SettingsPageState extends State<SettingsPage> {
                     focusNode: _focusNode,
                     decoration: const InputDecoration(labelText: '请输入B站cookie'),
                     onSubmitted: (String value) async {
-                      await savePlatformToken(PlantformCodes.bl, value);
+                      await savePlatformToken(
+                        PlatformCredentials(
+                          platform: PlantformCodes.bl,
+                          credentials: value,
+                        ),
+                      );
                       showSuccessSnackbar('设置成功', null);
                       Navigator.pop(context);
                       setState(() {});
                     },
                     onChanged: (value) async {
-                      await savePlatformToken(PlantformCodes.bl, value);
+                      await savePlatformToken(
+                        PlatformCredentials(
+                          platform: PlantformCodes.bl,
+                          credentials: value,
+                        ),
+                      );
                     },
                     controller: blCookieController,
                   ),
@@ -504,7 +519,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void get_useHttpOverrides() async {
-    Map<String, dynamic> settings = settings_getsettings();
+    Map<String, dynamic> settings = lengcyGetSettings();
     if (settings["useHttpOverrides"] != null) {
       useHttpOverrides.value = settings["useHttpOverrides"];
     }

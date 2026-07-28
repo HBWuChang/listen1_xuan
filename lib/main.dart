@@ -242,7 +242,7 @@ void main() async {
   // 如果设置了自动连接，则连接WebSocket服务器
   wsClientController.autoConnectIfNeeded();
 
-  Map<String, dynamic> settings = settings_getsettings();
+  Map<String, dynamic> settings = lengcyGetSettings();
   bool useHttpOverrides = false;
   if (settings["useHttpOverrides"] == null) {
     settings["useHttpOverrides"] = false;

@@ -30,20 +30,21 @@ class DioController extends GetxController {
   }
 
   void _applyDefaultHeaders() {
-    dioWithCookieManager.options.headers['user-agent'] = kGlobalDefaultUserAgent;
+    dioWithCookieManager.options.headers['user-agent'] =
+        kGlobalDefaultUserAgent;
     dioWithProxyAdapter.options.headers['user-agent'] = kGlobalDefaultUserAgent;
   }
 
   void loadProxy() {
-    // dioWithCookieManager.httpClientAdapter = IOHttpClientAdapter(
-    //   createHttpClient: () {
-    //     final client = HttpClient();
-    //     client.findProxy = (uri) {
-    //       return 'PROXY 192.168.31.42:9000';
-    //     };
-    //     return client;
-    //   },
-    // );
+    dioWithCookieManager.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.findProxy = (uri) {
+          return 'PROXY 172.16.1.99:9000';
+        };
+        return client;
+      },
+    );
     if (isMobile) {
       dioWithProxyAdapter.httpClientAdapter = NativeAdapter(
         createCupertinoConfiguration: () =>
@@ -78,6 +79,7 @@ class DioController extends GetxController {
             cookiePath(await getApplicationDocumentsDirectory()),
           ),
         ),
+        ignoreInvalidCookies: true,
       ),
     );
   }

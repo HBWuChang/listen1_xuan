@@ -74,7 +74,7 @@ class Bilibili {
     var bilibiliData = {};
     var bilibiliData2 = [];
     String url = 'https://api.bilibili.com/x/v3/fav/folder/list4navigate';
-    final settings = settings_getsettings();
+    final settings = lengcyGetSettings();
     final cookie = settings['bl'];
 
     var headers = {'content-type': 'application/json'};

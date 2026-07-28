@@ -37,7 +37,7 @@ enum NeTrackType {
 }
 
 Future<String> get_csrf() async {
-  final tokens = settings_getsettings();
+  final tokens = lengcyGetSettings();
   try {
     String _cookies = tokens['ne'];
     return _cookies
@@ -56,7 +56,7 @@ class CookieInterceptors extends InterceptorsWrapper {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final tokens = settings_getsettings();
+    final tokens = lengcyGetSettings();
     final _cookies = tokens['ne'];
     dynamic tcookies = _cookies.split(';');
     dynamic cookies = [];
@@ -76,7 +76,7 @@ class Netease {
   static String get sourceName => PlatformSource.netease.toString();
 
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
-    final tokens = settings_getsettings();
+    final tokens = lengcyGetSettings();
     try {
       final _cookies = tokens['ne'];
       final _csrf = _cookies
@@ -99,7 +99,7 @@ class Netease {
     String url,
     dynamic data,
   ) async {
-    final tokens = settings_getsettings();
+    final tokens = lengcyGetSettings();
     try {
       final _cookies = tokens['ne'];
 
@@ -1099,7 +1099,7 @@ class Netease {
       const url = 'https://music.163.com/weapi/w/nuser/account/get';
 
       // final encryptReqData = weapi({});
-      final tokens = settings_getsettings();
+      final tokens = lengcyGetSettings();
       final _cookies = tokens[PlantformCodes.ne] ?? '';
 
       final _csrf = _cookies

@@ -20,6 +20,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'global_settings_animations.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'utils/cookie_utils.dart';
 
 final qq = QQ();
 
@@ -58,14 +59,6 @@ class QQ {
         },
       ),
     );
-  }
-
-  Future<dynamic> dio_post_with_cookie_and_csrf(
-    String url,
-    dynamic data,
-  ) async {
-    print("dio_post_with_cookie_and_csrf");
-    return await dioWithCookieManager.post(url, data: data);
   }
 
   Future<Map<String, dynamic>> qq_show_toplist([int offset = 0]) async {
@@ -441,7 +434,10 @@ class QQ {
               },
             },
           };
-          var response = await dio_post_with_cookie_and_csrf(target_url, query);
+          var response = await dioWithCookieManager.post(
+            target_url,
+            data: query,
+          );
           var data = jsonDecode(response.data);
           var result = [];
           var total = 0;
@@ -499,7 +495,7 @@ class QQ {
     Function success,
     Function failure,
   ) async {
-    Map<String, dynamic> settings = settings_getsettings();
+    Map<String, dynamic> settings = lengcyGetSettings();
     String qqcookie = settings['qq'] ?? '';
     // print(qqcookie);
 
@@ -546,7 +542,7 @@ class QQ {
       'loginUin': uin,
       'comm': {'uin': uin, 'format': 'json', 'ct': 24, 'cv': 0},
     };
-    var response = await dio_post_with_cookie_and_csrf(target_url, reqData);
+    var response = await dioWithCookieManager.post(target_url, data: reqData);
     var data = jsonDecode(response.data);
     var purl = data['req_1']['data']['midurlinfo'][0]['purl'];
     if (purl == '') {
@@ -937,6 +933,7 @@ class QQ {
       // callback({'status': 'success', 'data': result});
       return {'status': 'success', 'data': result};
     } catch (e) {
+      logger.e('get_user_by_uin error: $e');
       return {'status': 'fail', 'data': {}};
     }
   }
@@ -1345,19 +1342,18 @@ class QQ {
   //   };
   // }
   Future<Map<String, dynamic>> get_user() async {
-    final settings = settings_getsettings();
+    final settings = lengcyGetSettings();
     if (settings['qq'] == null) {
       return {'status': 'fail', 'data': {}};
     }
-    for (var cookie in settings['qq'].split(';')) {
-      var cookieParts = cookie.split('=');
-      if (cookieParts[0] == 'uin') {
-        return get_user_by_uin(cookieParts[1]);
-      }
-      if (cookieParts[0] == 'wxuin') {
-        var uin = '1${cookieParts[1].substring('o'.length)}';
-        return get_user_by_uin(uin);
-      }
+    final cookies = CookieUtils.parseCookieString(settings['qq']);
+    final uin = CookieUtils.getCookieValue(cookies, 'uin');
+    if (uin != null) {
+      return get_user_by_uin(uin);
+    }
+    final wxuin = CookieUtils.getCookieValue(cookies, 'wxuin');
+    if (wxuin != null) {
+      return get_user_by_uin('1${wxuin.substring('o'.length)}');
     }
     return {'status': 'fail', 'data': {}};
   }

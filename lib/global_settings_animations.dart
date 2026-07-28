@@ -77,7 +77,7 @@ final bool isDesktop =
 final bool isMobile =
     universal_io.Platform.isIOS || universal_io.Platform.isAndroid;
 void init_hotkeys() async {
-  var settings = settings_getsettings();
+  var settings = lengcyGetSettings();
   var hotskeys = settings["hotkeys"];
   if (hotskeys == null) {
     hotskeys = {
@@ -206,7 +206,7 @@ List<Widget> create_hotkey_btns(context) {
           value: enable_hotkey,
           onChanged: (bool value) async {
             enable_hotkey = value;
-            var settings = settings_getsettings();
+            var settings = lengcyGetSettings();
             var hotkeys = settings['hotkeys'];
             hotkeys['enable'] = value;
             settings['hotkeys'] = hotkeys;
@@ -223,7 +223,7 @@ List<Widget> create_hotkey_btns(context) {
     ...s_hotkeys.map((_hotkey) {
       return TextButton(
         onPressed: () async {
-          var settings = settings_getsettings();
+          var settings = lengcyGetSettings();
           var hotkeys = settings['hotkeys'];
           var hotkeyData = hotkeys[_hotkey['hotkey']];
           var hotkey = hotkeyData == null ? null : HotKey.fromJson(hotkeyData);

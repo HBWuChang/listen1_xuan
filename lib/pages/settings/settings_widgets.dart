@@ -1084,7 +1084,9 @@ class _SupabaseTokenManagementContent extends StatelessWidget {
         platformCode,
       );
       if (cloudToken != null && cloudToken.isNotEmpty) {
-        await savePlatformToken(platformCode, cloudToken);
+        await savePlatformToken(
+          PlatformCredentials(platform: platformCode, credentials: cloudToken),
+        );
         showSuccessSnackbar('下载成功', null);
       } else {
         showErrorSnackbar('下载失败', '云端 Token 为空');

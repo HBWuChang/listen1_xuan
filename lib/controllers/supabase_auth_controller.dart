@@ -15,6 +15,7 @@ import '../widgets/progress_indicator_xuan.dart';
 
 import '../funcs.dart';
 import '../settings.dart';
+import '../utils/platform_credentials.dart';
 
 /// Supabase 认证控制器
 /// 管理用户登录、登出、会话状态等
@@ -1039,8 +1040,10 @@ class SupabaseAuthController extends GetxController {
       for (var entry in cloudTokens.entries) {
         if (entry.value != null && entry.value!.isNotEmpty) {
           await settings.savePlatformToken(
-            entry.key,
-            entry.value!,
+            PlatformCredentials(
+              platform: entry.key,
+              credentials: entry.value!,
+            ),
             saveRightNow: false,
           );
         }

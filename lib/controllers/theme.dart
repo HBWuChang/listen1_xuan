@@ -147,7 +147,7 @@ class ThemeController extends GetxController {
 
   // 加载主题设置
   Future<void> loadThemeSettings() async {
-    final settings = settings_getsettings();
+    final settings = lengcyGetSettings();
     // 加载主题颜色
     final colorValue = settings['theme_color'];
     if (colorValue != null && colorValue is int) {

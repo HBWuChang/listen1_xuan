@@ -16,6 +16,7 @@ import 'package:punycode/punycode.dart';
 import '../global_settings_animations.dart';
 import '../models/websocket_message.dart';
 import '../settings.dart';
+import '../utils/platform_credentials.dart';
 import 'controllers.dart';
 
 /// WebSocket 客户端控制器
@@ -899,8 +900,10 @@ class WebSocketClientController extends GetxController {
                 for (var k in PlantformCodes.values) {
                   if (contentMap.containsKey(k)) {
                     await savePlatformToken(
-                      k,
-                      contentMap[k]!,
+                      PlatformCredentials(
+                        platform: k,
+                        credentials: contentMap[k]!,
+                      ),
                       saveRightNow: false,
                     );
                   }
