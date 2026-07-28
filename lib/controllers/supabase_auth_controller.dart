@@ -977,6 +977,7 @@ class SupabaseAuthController extends GetxController {
       final tokens = <String, String?>{};
       for (var platform in ['bl', 'ne', 'qq', 'github']) {
         final token = await settings.outputPlatformToken(platform);
+        logger.d('本地 token - $platform: $token');
         if (token != null && token.isNotEmpty) {
           tokens[platform] = token;
         }

@@ -1066,6 +1066,7 @@ class _SupabaseTokenManagementContent extends StatelessWidget {
         platformCode,
         localToken,
       );
+      logger.d('上传 $platformName Token $localToken');
       if (success) {
         showSuccessSnackbar('上传成功', null);
         await _loadCloudTokens();
