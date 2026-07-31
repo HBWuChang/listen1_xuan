@@ -207,198 +207,50 @@ Listener _mainContent() => Listener(
                   if (globalHorizon) {
                     builder = (context_in_1) {
                       return Scaffold(
-                        body: Column(
-                          children: [
-                            Container(
-                              height: 40,
-                              child: Stack(
-                                children: [
-                                  Positioned(
-                                    top: 0,
-                                    right: 100,
-                                    left: 0,
-                                    child: Container(
-                                      height: 40,
-                                      child: AnimatedTabBarWidget(
-                                        pageController: homeController
-                                            .pageControllerHorizon,
-                                        tabLabels: platforms
-                                            .sublist(1)
-                                            .map(
-                                              (platform) =>
-                                                  TextSpan(text: platform),
-                                            )
-                                            .toList(),
-                                        containerHeight: 40,
-                                        spacing: 0,
-                                      ),
-                                    ),
-                                  ),
-
-                                  Positioned(
-                                    top: isWindows || isMacOS ? 5 : -5,
-                                    right: 20,
-                                    child: Obx(
-                                      () => AnimatedOpacity(
-                                        opacity:
-                                            homeController.show_filter.value
-                                            ? 1.0
-                                            : 0.0,
-                                        duration: const Duration(
-                                          milliseconds: 300,
-                                        ),
-                                        child: TextButton(
-                                          child: Obx(
-                                            () => Text(
-                                              homeController
-                                                  .filters[HomeController
-                                                  .sources
-                                                  .indexOf(
-                                                    homeController.source.value,
-                                                  )]['name'],
-                                            ),
-                                          ),
-                                          onPressed:
-                                              homeController.show_filter.value
-                                              ? () {
-                                                  Map<String, dynamic> tfilter =
-                                                      {};
-                                                  tfilter["推荐"] =
-                                                      homeController
-                                                          .filter_details[homeController
-                                                          .selectedIndex
-                                                          .value]["recommend"];
-                                                  for (var item
-                                                      in homeController
-                                                          .filter_details[homeController
-                                                          .selectedIndex
-                                                          .value]["all"]) {
-                                                    tfilter[item["category"]] =
-                                                        item["filters"];
-                                                  }
-                                                  _showFilterSelection(
-                                                    context_in_1,
-                                                    tfilter,
-                                                    homeController
-                                                        .filters[HomeController
-                                                        .sources
-                                                        .indexOf(
-                                                          homeController
-                                                              .source
-                                                              .value,
-                                                        )]['id'],
-                                                    homeController
-                                                        .change_fliter,
-                                                  );
-                                                }
-                                              : null,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: PreloadPageView.builder(
-                                physics: BouncingScrollPhysics(),
-                                controller: homeController
-                                    .pageControllerHorizon, // 使用 PageController
-                                itemCount:
-                                    HomeController.sources.length - 1, // 页面数量
-                                preloadPagesCount:
-                                    HomeController.sources.length - 1,
-
-                                itemBuilder: (context, index) {
-                                  index = index + 1;
-                                  // 其他页面：动态生成
-                                  return Obx(() {
-                                    return Playlist(
-                                      source: HomeController.sources[index],
-                                      offset: homeController.offsets[index],
-                                      filter: homeController.filters[index],
-                                      key: Key(
-                                        homeController.filters[index]
-                                            .toString(),
-                                      ),
-                                    );
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    };
-                    break;
-                  } else {
-                    //竖屏
-                    builder = (context_in_1) {
-                      return Scaffold(
-                        appBar: AppBar(
-                          title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        body: OverHeroineScope(
+                          child: Column(
                             children: [
-                              Text('Listen1'),
-                              10.sbw,
-                              Expanded(
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    hintText: '请输入歌曲名，歌手或专辑',
-                                    border: InputBorder.none,
-                                  ),
-                                  controller: input_text_Controller,
-                                  readOnly: true,
-                                  onTap: () async {
-                                    Get.toNamed(RouteName.searchPage, id: 1);
-                                  },
-                                ),
-                              ),
-                              WebSocketHelper.buildReactiveButton(
-                                tooltip: "WebSocket服务器",
-                                inMainPage: true,
-                              ),
-                              WebSocketClientHelper.buildReactiveButton(
-                                tooltip: "WebSocket客户端",
-                                inMainPage: true,
-                              ),
-                              IconButton(
-                                tooltip: "设置",
-                                icon: Icon(Icons.settings),
-                                onPressed: () {
-                                  Get.toNamed(RouteName.settingsPage, id: 1);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        body: Column(
-                          children: [
-                            Container(
-                              height: 45,
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: AnimatedTabBarWidget(
-                                      pageController:
-                                          homeController.pageControllerPortrait,
-                                      tabLabels: platforms
-                                          .map(
-                                            (platform) =>
-                                                TextSpan(text: platform),
-                                          )
-                                          .toList(),
-                                      containerHeight: 45,
-                                      spacing: 0,
-                                    ),
-                                  ),
-                                  Obx(
-                                    () => AnimatedSize(
-                                      duration: const Duration(
-                                        milliseconds: 300,
+                              OverHeroine(
+                                keepDir: KeepDir.bottom,
+                                child: Container(
+                                  height: 40,
+                                  child: Stack(
+                                    children: [
+                                      Positioned(
+                                        top: 0,
+                                        right: 100,
+                                        left: 0,
+                                        child: Container(
+                                          height: 40,
+                                          child: AnimatedTabBarWidget(
+                                            pageController: homeController
+                                                .pageControllerHorizon,
+                                            tabLabels: platforms
+                                                .sublist(1)
+                                                .map(
+                                                  (platform) =>
+                                                      TextSpan(text: platform),
+                                                )
+                                                .toList(),
+                                            containerHeight: 40,
+                                            spacing: 0,
+                                          ),
+                                        ),
                                       ),
-                                      child: homeController.show_filter.value
-                                          ? TextButton(
+
+                                      Positioned(
+                                        top: isWindows || isMacOS ? 5 : -5,
+                                        right: 20,
+                                        child: Obx(
+                                          () => AnimatedOpacity(
+                                            opacity:
+                                                homeController.show_filter.value
+                                                ? 1.0
+                                                : 0.0,
+                                            duration: const Duration(
+                                              milliseconds: 300,
+                                            ),
+                                            child: TextButton(
                                               child: Obx(
                                                 () => Text(
                                                   homeController
@@ -447,30 +299,26 @@ Listener _mainContent() => Listener(
                                                       );
                                                     }
                                                   : null,
-                                            )
-                                          : SizedBox.shrink(),
-                                    ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                            // 长灰色细分割线
-                            Divider(height: 1, color: Colors.grey[300]),
-                            Expanded(
-                              child: PreloadPageView.builder(
-                                physics: BouncingScrollPhysics(),
-                                controller: homeController
-                                    .pageControllerPortrait, // 使用 PageController
-                                itemCount:
-                                    HomeController.sources.length, // 页面数量
-                                preloadPagesCount:
-                                    HomeController.sources.length,
+                              Expanded(
+                                child: PreloadPageView.builder(
+                                  physics: BouncingScrollPhysics(),
+                                  controller: homeController
+                                      .pageControllerHorizon, // 使用 PageController
+                                  itemCount:
+                                      HomeController.sources.length - 1, // 页面数量
+                                  preloadPagesCount:
+                                      HomeController.sources.length - 1,
 
-                                itemBuilder: (context, index) {
-                                  if (index == 0) {
-                                    // 第一个页面：我的歌单
-                                    return MyPlaylist();
-                                  } else {
+                                  itemBuilder: (context, index) {
+                                    index = index + 1;
                                     // 其他页面：动态生成
                                     return Obx(() {
                                       return Playlist(
@@ -483,11 +331,180 @@ Listener _mainContent() => Listener(
                                         ),
                                       );
                                     });
-                                  }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    };
+                    break;
+                  } else {
+                    //竖屏
+                    builder = (context_in_1) {
+                      return Scaffold(
+                        appBar: AppBar(
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Listen1'),
+                              10.sbw,
+                              Expanded(
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                    hintText: '请输入歌曲名，歌手或专辑',
+                                    border: InputBorder.none,
+                                  ),
+                                  controller: input_text_Controller,
+                                  readOnly: true,
+                                  onTap: () async {
+                                    Get.toNamed(RouteName.searchPage, id: 1);
+                                  },
+                                ),
+                              ),
+                              WebSocketHelper.buildReactiveButton(
+                                tooltip: "WebSocket服务器",
+                                inMainPage: true,
+                              ),
+                              WebSocketClientHelper.buildReactiveButton(
+                                tooltip: "WebSocket客户端",
+                                inMainPage: true,
+                              ),
+                              IconButton(
+                                tooltip: "设置",
+                                icon: Icon(Icons.settings),
+                                onPressed: () {
+                                  Get.toNamed(RouteName.settingsPage, id: 1);
                                 },
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                        ),
+                        body: OverHeroineScope(
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: 45,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: AnimatedTabBarWidget(
+                                        pageController: homeController
+                                            .pageControllerPortrait,
+                                        tabLabels: platforms
+                                            .map(
+                                              (platform) =>
+                                                  TextSpan(text: platform),
+                                            )
+                                            .toList(),
+                                        containerHeight: 45,
+                                        spacing: 0,
+                                      ),
+                                    ),
+                                    Obx(
+                                      () => AnimatedSize(
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        child: homeController.show_filter.value
+                                            ? TextButton(
+                                                child: Obx(
+                                                  () => Text(
+                                                    homeController
+                                                        .filters[HomeController
+                                                        .sources
+                                                        .indexOf(
+                                                          homeController
+                                                              .source
+                                                              .value,
+                                                        )]['name'],
+                                                  ),
+                                                ),
+                                                onPressed:
+                                                    homeController
+                                                        .show_filter
+                                                        .value
+                                                    ? () {
+                                                        Map<String, dynamic>
+                                                        tfilter = {};
+                                                        tfilter["推荐"] =
+                                                            homeController
+                                                                .filter_details[homeController
+                                                                .selectedIndex
+                                                                .value]["recommend"];
+                                                        for (var item
+                                                            in homeController
+                                                                .filter_details[homeController
+                                                                .selectedIndex
+                                                                .value]["all"]) {
+                                                          tfilter[item["category"]] =
+                                                              item["filters"];
+                                                        }
+                                                        _showFilterSelection(
+                                                          context_in_1,
+                                                          tfilter,
+                                                          homeController
+                                                              .filters[HomeController
+                                                              .sources
+                                                              .indexOf(
+                                                                homeController
+                                                                    .source
+                                                                    .value,
+                                                              )]['id'],
+                                                          homeController
+                                                              .change_fliter,
+                                                        );
+                                                      }
+                                                    : null,
+                                              )
+                                            : SizedBox.shrink(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // 长灰色细分割线
+                              OverHeroine(
+                                keepDir: KeepDir.bottom,
+                                child: Divider(
+                                  height: 1,
+                                  color: Colors.grey[300],
+                                ),
+                              ),
+                              Expanded(
+                                child: PreloadPageView.builder(
+                                  physics: BouncingScrollPhysics(),
+                                  controller: homeController
+                                      .pageControllerPortrait, // 使用 PageController
+                                  itemCount:
+                                      HomeController.sources.length, // 页面数量
+                                  preloadPagesCount:
+                                      HomeController.sources.length,
+
+                                  itemBuilder: (context, index) {
+                                    if (index == 0) {
+                                      // 第一个页面：我的歌单
+                                      return MyPlaylist();
+                                    } else {
+                                      // 其他页面：动态生成
+                                      return Obx(() {
+                                        return Playlist(
+                                          source: HomeController.sources[index],
+                                          offset: homeController.offsets[index],
+                                          filter: homeController.filters[index],
+                                          key: Key(
+                                            homeController.filters[index]
+                                                .toString(),
+                                          ),
+                                        );
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     };

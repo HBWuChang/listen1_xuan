@@ -10,6 +10,9 @@ extension HeroineExts on Widget {
     tag: tag,
     motion: Motion.smoothSpring(duration: Duration(milliseconds: 300)),
     pauseTickersDuringFlight: true,
+    flightShuttleBuilder: const ClippingShuttleBuilder(
+      inner: FadeShuttleBuilder(),
+    ),
     child: this,
   );
 }

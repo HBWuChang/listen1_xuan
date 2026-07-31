@@ -138,7 +138,11 @@ dependencies:
   expressive_loading_indicator: ^0.0.1
   motor: ^1.1.0
   figma_squircle: ^0.6.3
-  heroine: ^0.7.2
+  heroine:
+    git:
+      url: https://github.com/HBWuChang/rivership
+      path: packages/heroine
+
   pasteboard: ^0.5.0
   super_drag_and_drop:
     git:
