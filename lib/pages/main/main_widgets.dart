@@ -110,11 +110,13 @@ Widget get _leftBar => Scaffold(
 
 final heroineController = HeroineController();
 
+final innerKey = Get.nestedKey(1);
+
 Listener _mainContent() => Listener(
   onPointerDown: (event) {
     if (event.kind == PointerDeviceKind.mouse &&
         event.buttons == kSecondaryMouseButton) {
-      router_pop();
+      routerPop();
     }
     if (event.kind == PointerDeviceKind.mouse &&
         event.buttons == kMiddleMouseButton) {
@@ -141,7 +143,7 @@ Listener _mainContent() => Listener(
                 IconButton(
                   tooltip: "返回",
                   onPressed: () {
-                    router_pop();
+                    routerPop();
                   },
                   icon: Icon(Icons.arrow_back_ios_new, size: 13),
                 ),
@@ -196,7 +198,7 @@ Listener _mainContent() => Listener(
           ).sbh(25),
         Expanded(
           child: Navigator(
-            key: Get.nestedKey(1),
+            key: innerKey,
             initialRoute: RouteName.defaultPage,
             observers: [heroineController],
             onGenerateRoute: (RouteSettings settings) {

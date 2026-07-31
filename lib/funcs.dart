@@ -217,8 +217,9 @@ void showDebugSnackbar(
 
 void showLoadingDialog(RxString message) {
   Get.dialog(
-    WillPopScope(
-      onWillPop: () async => false, // 禁止关闭对话框
+    PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async => false, // 禁止关闭对话框
       child: AlertDialog(
         content: Row(
           mainAxisSize: MainAxisSize.min,
@@ -387,9 +388,9 @@ class _InputDialogWidgetState extends State<_InputDialogWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // ignore: deprecated_member_use
-    return WillPopScope(
-      onWillPop: () async => !_isProcessing.value,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async => false,
       child: AlertDialog(
         title: Text(widget.title),
         content: Column(

@@ -68,7 +68,7 @@ class ListenPopMiddleware extends GetMiddleware {
 }
 
 int last_pop_time = 0;
-void router_pop() {
+void routerPop() {
   debugPrint("didPop: didPop,");
   if (Get.find<PlayController>().tryCollapseSheet()) return;
   if (top_routeWithName.isNotEmpty) {

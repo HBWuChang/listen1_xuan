@@ -49,29 +49,23 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     // 获取主题
     final theme = Theme.of(context);
 
-    return WillPopScope(
-      onWillPop: () async {
-        Get.back(id: 1);
-        return false;
-      },
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        floatingActionButton: _buildScrollToCurrentButton(context, controller),
-        body: Container(
-          decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor.withOpacity(0.95),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: _buildScrollToCurrentButton(context, controller),
+      body: Container(
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor.withOpacity(0.95),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
           ),
-          child: Column(
-            children: [
-              _buildHeader(context, controller),
-              _buildSearchBar(context, controller),
-              Expanded(child: _buildPlayingList(context, controller)),
-            ],
-          ),
+        ),
+        child: Column(
+          children: [
+            _buildHeader(context, controller),
+            _buildSearchBar(context, controller),
+            Expanded(child: _buildPlayingList(context, controller)),
+          ],
         ),
       ),
     );
@@ -89,7 +83,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       if (currentIndex != -1) {
         final range = _listController.visibleRange;
         final isCurrentVisible =
-            range != null && currentIndex >= range.$1 && currentIndex <= range.$2;
+            range != null &&
+            currentIndex >= range.$1 &&
+            currentIndex <= range.$2;
 
         controller.showScrollButton.value = !isCurrentVisible;
       }

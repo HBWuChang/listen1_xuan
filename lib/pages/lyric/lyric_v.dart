@@ -9,15 +9,9 @@ class _LyricVPageState extends State<LyricVPage>
     with TickerProviderStateMixin, LyricFormattingMixin {
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        playController.sheetController.animateTo(
-          playController.sheetMidOffset,
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-        return false;
-      },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) => routerPop(),
       child: Column(
         children: [
           Expanded(child: RepaintBoundary(child: _buildLyricContent(context))),

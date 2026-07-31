@@ -680,9 +680,7 @@ class _MyHomePageState extends State<MyHomePage>
 
             return PopScope(
               canPop: false,
-              onPopInvokedWithResult: (didPop, result) {
-                router_pop();
-              },
+              onPopInvokedWithResult: (didPop, result) => routerPop(),
               child: isDesktop && globalHorizon ? Obx(() => con()) : con(),
             );
           },

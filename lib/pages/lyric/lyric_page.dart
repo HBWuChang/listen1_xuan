@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/constants/const.dart';
+import 'package:listen1_xuan/controllers/routeController.dart';
 import 'dart:ui' as ui;
 
 import 'package:listen1_xuan/funcs.dart';
@@ -82,51 +83,45 @@ class _LyricPageState extends State<LyricPage>
       end: theme.scaffoldBackgroundColor.withOpacity(isDark ? 0.8 : 0.9),
     ).animate(_backgroundController);
 
-    return WillPopScope(
-      onWillPop: () async {
-        Get.back(id: 1);
-        return false;
-      },
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: AnimatedBuilder(
-          animation: _backgroundAnimation,
-          builder: (context, child) {
-            return Container(
-              color: _backgroundAnimation.value,
-              child: Stack(
-                children: [
-                  // 背景封面和高斯模糊
-                  _buildBackgroundCover(context),
-                  // 前景内容
-                  Container(
-                    decoration: BoxDecoration(
-                      color: theme.scaffoldBackgroundColor.withOpacity(
-                        isDark ? 0.15 : 0.25,
-                      ),
-                    ),
-                    child: _buildLyricContent(context),
-                  ),
-                  // 翻译开关按钮
-                  _buildTranslationToggle(context),
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.keyboard_arrow_down,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
-                        size: 28,
-                      ),
-                      onPressed: () {
-                        Get.back(id: 1);
-                      },
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: AnimatedBuilder(
+        animation: _backgroundAnimation,
+        builder: (context, child) {
+          return Container(
+            color: _backgroundAnimation.value,
+            child: Stack(
+              children: [
+                // 背景封面和高斯模糊
+                _buildBackgroundCover(context),
+                // 前景内容
+                Container(
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor.withOpacity(
+                      isDark ? 0.15 : 0.25,
                     ),
                   ),
-                ],
-              ),
-            );
-          },
-        ),
+                  child: _buildLyricContent(context),
+                ),
+                // 翻译开关按钮
+                _buildTranslationToggle(context),
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      size: 28,
+                    ),
+                    onPressed: () {
+                      Get.back(id: 1);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
