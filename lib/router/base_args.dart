@@ -1,4 +1,4 @@
 abstract class BaseArgs {
   String get path;
-  String? controllerTag;
+  String? get controllerTag;
 }
