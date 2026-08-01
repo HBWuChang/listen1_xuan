@@ -627,7 +627,15 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, settings.name!);
                   return route;
               }
-              return MaterialPageRoute(builder: builder);
+              return MaterialPageRoute(
+                builder: (context) => PopScope(
+                  // The default route must stay in the nested navigator. This
+                  // passive scope also keeps Android back dispatch in Flutter
+                  // so the root scope can forward it to routerPop().
+                  canPop: false,
+                  child: builder(context),
+                ),
+              );
             },
           ),
         ),

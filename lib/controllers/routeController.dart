@@ -49,11 +49,29 @@ void addAndCleanReapeatRoute(Route route, String name) {
   top_routeWithName.add(routeWithName(route, name));
 }
 
+class _SheetAwareInnerRoutePopScope extends StatelessWidget {
+  const _SheetAwareInnerRoutePopScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final playController = Get.find<PlayController>();
+    return ListenableBuilder(
+      listenable: playController.sheetController,
+      child: child,
+      builder: (context, child) =>
+          PopScope(canPop: playController.canPopInnerRoute, child: child!),
+    );
+  }
+}
+
 class ListenPopMiddleware extends GetMiddleware {
   @override
   Widget onPageBuilt(Widget page) {
-    Get.find<PlayController>().collapseSheet();
-    return page;
+    final playController = Get.find<PlayController>();
+    playController.collapseSheet();
+    return _SheetAwareInnerRoutePopScope(child: page);
   }
 
   @override

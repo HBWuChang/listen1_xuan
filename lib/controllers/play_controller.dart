@@ -1026,6 +1026,22 @@ class PlayController extends GetxController
     );
   }
 
+  /// Whether a route below the play sheet may handle a back gesture directly.
+  ///
+  /// The play sheet is stacked above the nested navigator instead of being a
+  /// route in it. While the sheet is raised, nested routes must not claim the
+  /// Android predictive-back gesture before the root back coordinator can
+  /// collapse the sheet.
+  bool get canPopInnerRoute {
+    if (globalHorizon) return true;
+
+    final metrics = sheetController.metrics;
+    if (metrics == null) return true;
+
+    const precisionTolerance = 1.0;
+    return metrics.offset <= metrics.minOffset + precisionTolerance;
+  }
+
   bool tryCollapseSheet() {
     if (globalHorizon) return false;
     if ((sheetController.metrics?.offset ?? sheetMinHeight) >

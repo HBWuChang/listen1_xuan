@@ -11,7 +11,6 @@ class _LyricVPageState extends State<LyricVPage>
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) => routerPop(),
       child: Column(
         children: [
           Expanded(child: RepaintBoundary(child: _buildLyricContent(context))),
