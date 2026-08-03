@@ -12,6 +12,7 @@ import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_page.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_binding.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_args.dart';
+import 'package:listen1_xuan/router/image_toolbox_predictive_transitions.dart';
 import 'package:listen1_xuan/widgets/draggable_toast/toast_overlay_manager.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:media_kit/media_kit.dart' show MediaKit;
@@ -343,18 +344,12 @@ class MyApp extends StatelessWidget {
               );
             },
             navigatorKey: navigatorKey,
-            theme: theme,
-            //TODO 预测性返回功能待完善
-
-            // .copyWith(
-            //   pageTransitionsTheme: const PageTransitionsTheme(
-            //     builders: <TargetPlatform, PageTransitionsBuilder>{
-            //       TargetPlatform.android:
-            //           PredictiveBackPageTransitionsBuilder(),
-            //     },
-            //   ),
-            // )
-            darkTheme: darkTheme,
+            theme: theme.copyWith(
+              pageTransitionsTheme: imageToolboxPageTransitionsTheme,
+            ),
+            darkTheme: darkTheme.copyWith(
+              pageTransitionsTheme: imageToolboxPageTransitionsTheme,
+            ),
             localizationsDelegates: [
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,

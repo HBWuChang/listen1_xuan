@@ -142,6 +142,7 @@ dependencies:
     git:
       url: https://github.com/HBWuChang/rivership
       path: packages/heroine
+    # path: ../rivership/packages/heroine
 
   pasteboard: ^0.5.0
   super_drag_and_drop:

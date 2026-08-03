@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:heroine/heroine.dart';
 import 'package:listen1_xuan/models/PlayListInfo.dart';
-import 'package:motor/motor.dart';
 
 extension HeroineExts on Widget {
   Heroine hero4playlistItemImg(PlayListInfo playListInfo) =>
@@ -9,6 +8,7 @@ extension HeroineExts on Widget {
   Heroine hero(Object tag) => Heroine(
     tag: tag,
     motion: Motion.smoothSpring(duration: Duration(milliseconds: 300)),
+    // transitionOnUserGestures: true,
     pauseTickersDuringFlight: true,
     flightShuttleBuilder: const ClippingShuttleBuilder(
       inner: FadeShuttleBuilder(),

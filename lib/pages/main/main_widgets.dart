@@ -513,7 +513,7 @@ Listener _mainContent() => Listener(
                     break;
                   }
                 case RouteName.searchPage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     page: () => Searchlistinfo(),
                     transition: Transition.upToDown,
@@ -522,7 +522,7 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, RouteName.searchPage);
                   return route;
                 case RouteName.settingsPage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     page: () => SettingsPage(),
                     middlewares: [ListenPopMiddleware()],
@@ -530,7 +530,7 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, RouteName.settingsPage);
                   return route;
                 case RouteName.nowPlayingPage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     transition: Transition.downToUp,
                     // Transition.noTransition,
@@ -540,7 +540,7 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, RouteName.nowPlayingPage);
                   return route;
                 case RouteName.lyricPage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     transition: Transition.downToUp,
                     page: () => LyricPage(),
@@ -549,7 +549,7 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, RouteName.lyricPage);
                   return route;
                 case RouteName.settingsReadmePage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     transition: Transition.rightToLeftWithFade,
                     page: () => SettingsReadmePage(),
@@ -558,7 +558,7 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, RouteName.settingsReadmePage);
                   return route;
                 case RouteName.downloadPage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     transition: Transition.rightToLeftWithFade,
                     page: () => DownloadPage(),
@@ -567,7 +567,7 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, RouteName.downloadPage);
                   return route;
                 case RouteName.supabaseLoginPage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     transition: Transition.rightToLeftWithFade,
                     page: () => SupabaseLoginPage(),
@@ -576,7 +576,7 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, RouteName.supabaseLoginPage);
                   return route;
                 case RouteName.supabasePasswordLoginPage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     transition: Transition.rightToLeftWithFade,
                     page: () => SupabasePasswordLoginPage(),
@@ -588,7 +588,7 @@ Listener _mainContent() => Listener(
                   );
                   return route;
                 case RouteName.cacheNamingPage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     transition: Transition.rightToLeftWithFade,
                     page: () => CacheNamingPage(),
@@ -597,7 +597,7 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, RouteName.cacheNamingPage);
                   return route;
                 case RouteName.equalizerPage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     transition: Transition.rightToLeftWithFade,
                     page: () => AndroidEqualizerPage(),
@@ -606,7 +606,7 @@ Listener _mainContent() => Listener(
                   addAndCleanReapeatRoute(route, RouteName.equalizerPage);
                   return route;
                 case RouteName.songReplacePage:
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     page: () => SongReplacePage(),
                     middlewares: [ListenPopMiddleware()],
@@ -618,7 +618,7 @@ Listener _mainContent() => Listener(
                       ? settings.arguments as PlaylistInfoArgs
                       : null;
                   if (args == null) throw 'unknown route $settings';
-                  var route = GetPageRoute(
+                  var route = ThemedGetPageRoute(
                     settings: settings,
                     binding: PlaylistInfoBinding(args: args),
                     page: () => PlaylistInfoPage(args: args),
