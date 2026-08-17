@@ -127,7 +127,10 @@ class _LoginWebviewState extends State<LoginWebview> {
           final cookies = t
               .map<Cookie>(
                 (item) =>
-                    Cookie(item['name'] as String, item['value'] as String),
+                    Cookie(
+                      item['name'] as String,
+                      Uri.encodeComponent(item['value'] as String),
+                    ),
               )
               .toList();
           await savePlatformToken(
