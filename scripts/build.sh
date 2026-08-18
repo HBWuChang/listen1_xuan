@@ -1,106 +1,104 @@
 #!/usr/bin/env bash
 #
-# 双版本构建脚本（带/不带 FFmpeg）
+# 双版本构建配置切换脚本（带/不带 FFmpeg）
 #
 # 用法:
-#   scripts/build.sh <with|without> <platform> [flutter build 参数...]
-#
-# 平台:
-#   apk      flutter build apk --release
-#   split    flutter build apk --release --split-per-abi
-#   windows  flutter build windows --release
-#   ios      flutter build ios --release --no-codesign
-#   macos    fastforge release --name prod   (见下方说明)
+#   scripts/build.sh with                   # 带 FFmpeg（线上包，默认配置）
+#   scripts/build.sh without                # 无 FFmpeg（stub 包 override）
+#   scripts/build.sh check                  # 打印当前模式
+#   scripts/build.sh <mode> --no-pub-get    # 跳过 flutter pub get（CI 已有该步骤时）
 #
 # 说明:
-#   - with    带 FFmpeg（默认）: 使用 pub.dev 线上包 ffmpeg_kit_flutter_new_audio ^2.5.2
-#   - without 精简版: 注入 dependency_overrides 指向本地 stub 包
-#             packages/ffmpeg_kit_flutter_new_audio，并以
-#             --dart-define=ENABLE_FFMPEG=false 构建，功能开关同步关闭。
-#   - 构建结束后 pubspec.yaml 自动还原；stub 包仅影响本次构建。
-#   - macos 平台使用 fastforge（项目现有发布链路），暂未接入本脚本，
-#     请手动在无 FFmpeg 场景调整 pubspec 后再执行 fastforge。
+#   - 本脚本只负责切换 pubspec 依赖配置并执行 flutter pub get，
+#     **不执行平台构建**。构建请沿用各平台原有命令或 workflow。
+#   - with    使用 pub.dev 线上包 ffmpeg_kit_flutter_new_audio ^2.5.2。
+#   - without 注入 dependency_overrides 指向本地 stub 包
+#             packages/ffmpeg_kit_flutter_new_audio；构建时还需以
+#             --dart-define=ENABLE_FFMPEG=false 关闭对应功能（见 check）。
+#   - 切换成功后配置保持生效，直到下次切换；命令中途失败会自动回滚。
+#   - 注意: 切换后请勿再执行 flutter pub get，否则会按当前 pubspec 重解析。
 #
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-MODE="${1:-with}"
-PLATFORM="${2:-apk}"
-shift 2 || true
-
-case "$MODE" in
-  with)    ENABLE_FFMPEG=true ;;
-  without) ENABLE_FFMPEG=false ;;
-  *) echo "用法: $0 <with|without> <platform>"; exit 1 ;;
-esac
+MODE="${1:-}"
+SKIP_PUB_GET=0
+[ "${2:-}" = "--no-pub-get" ] && SKIP_PUB_GET=1
 
 PUBSPEC="pubspec.yaml"
+BEGIN_MARK="BEGIN: no-ffmpeg override"
+END_MARK="END: no-ffmpeg override"
 BACKUP="$(mktemp)"
 cp "$PUBSPEC" "$BACKUP"
 
-restore() {
-  cp "$BACKUP" "$PUBSPEC"
+usage() {
+  echo "用法: scripts/build.sh <with|without|check> [--no-pub-get]"
+  echo "  with     带 FFmpeg（线上包，默认配置）"
+  echo "  without  无 FFmpeg（stub 包 override）"
+  echo "  check    打印当前模式与 ENABLE_FFMPEG 值"
+  exit 1
+}
+
+# 移除注入的 override 块（幂等：不存在也不报错）
+strip_override() {
+  awk -v b="$BEGIN_MARK" -v e="$END_MARK" '
+    index($0, b) {inblock=1; next}
+    index($0, e) {inblock=0; next}
+    !inblock {print}
+  ' "$PUBSPEC" > "$PUBSPEC.tmp" && mv "$PUBSPEC.tmp" "$PUBSPEC"
+}
+
+# 回滚：命令中途失败（退出码非 0）时恢复进入前的 pubspec；
+# 成功完成则保持目标配置。
+rollback() {
+  if [ "${1:-0}" -ne 0 ]; then
+    cp "$BACKUP" "$PUBSPEC" 2>/dev/null || true
+  fi
   rm -f "$BACKUP"
 }
-# 同时捕获中断信号，避免被 Ctrl-C / CI 取消时 pubspec 残留 override
-trap restore EXIT INT TERM
+trap 'rollback $?' EXIT INT TERM
 
-if [ "$MODE" = "without" ]; then
-  echo "==> 切换到精简版(无 FFmpeg)配置"
-  cat >> "$PUBSPEC" << 'EOF'
+case "$MODE" in
+  with)
+    strip_override
+    echo "==> 配置: 带 FFmpeg（线上包 ffmpeg_kit_flutter_new_audio ^2.5.2）"
+    ;;
+  without)
+    strip_override
+    cat >> "$PUBSPEC" << EOF
 
-# BEGIN: no-ffmpeg override (injected by scripts/build.sh)
+# $BEGIN_MARK
 dependency_overrides:
   ffmpeg_kit_flutter_new_audio:
     path: packages/ffmpeg_kit_flutter_new_audio
-# END: no-ffmpeg override
+# $END_MARK
 EOF
-else
-  echo "==> 使用带 FFmpeg 配置（线上包 ffmpeg_kit_flutter_new_audio ^2.5.2）"
-fi
-
-echo "==> flutter pub get"
-flutter pub get
-
-SUFFIX=""
-[ "$MODE" = "without" ] && SUFFIX="-lite"
-
-# 用户未显式指定构建模式时默认 --release
-if ! printf '%s\n' "$@" | grep -qE '^--(debug|profile|release|jit-release)$'; then
-  set -- --release "$@"
-fi
-
-case "$PLATFORM" in
-  apk)
-    flutter build apk --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
+    echo "==> 配置: 无 FFmpeg（stub 包 packages/ffmpeg_kit_flutter_new_audio）"
     ;;
-  split)
-    flutter build apk --split-per-abi --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
-    ;;
-  windows)
-    flutter build windows --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
-    ;;
-  ios)
-    flutter build ios --no-codesign --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
-    ;;
-  macos)
-    echo "警告: macOS 走 fastforge 发布链路，本脚本不直接构建。"
-    echo "      如需精简版，请先执行:  scripts/build.sh without macos-prepare"
-    ;;
-  macos-prepare)
-    # 仅切换 pubspec（供后续手动 fastforge 使用），构建完成后自动还原。
-    echo "==> pubspec 已切换为 ${MODE}，退出时自动还原"
+  check)
+    if grep -q "$BEGIN_MARK" "$PUBSPEC"; then
+      echo "MODE=without"
+      echo "ENABLE_FFMPEG=false"
+    else
+      echo "MODE=with"
+      echo "ENABLE_FFMPEG=true"
+    fi
+    rm -f "$BACKUP"
     exit 0
     ;;
   *)
-    echo "未知平台: $PLATFORM"; exit 1 ;;
+    usage ;;
 esac
 
-if [ -n "$SUFFIX" ]; then
-  echo
-  echo "=================================================="
-  echo " 精简版构建完成（无 FFmpeg）。"
-  echo " 产物请手动重命名（例如追加 $SUFFIX 后缀）以与完整版区分。"
-  echo "=================================================="
+if [ "$SKIP_PUB_GET" -eq 0 ]; then
+  echo "==> flutter pub get"
+  flutter pub get
+else
+  echo "==> 跳过 flutter pub get（--no-pub-get）"
 fi
+
+echo
+echo "配置切换完成。请随后执行平台构建（勿再 flutter pub get），"
+echo "构建时同步注入开关:"
+echo "  flutter build ... --dart-define=ENABLE_FFMPEG=$([ "$MODE" = without ] && echo false || echo true)"
