@@ -21,7 +21,7 @@ import 'package:expressive_loading_indicator/expressive_loading_indicator.dart';
 import 'package:material_new_shapes/material_new_shapes.dart';
 
 Future<Directory> xuanGetdataDirectory() async {
-  if (isAndroid || isIos) {
+  if (isAndroid) {
     if (!(await Permission.manageExternalStorage.request().isGranted ||
         await Permission.storage.request().isGranted)) {
       showInfoSnackbar('请务必授予存储权限以下载歌曲及读取配置文件等操作', '本应用不会访问您的个人数据');
@@ -31,6 +31,21 @@ Future<Directory> xuanGetdataDirectory() async {
     }
   }
 
+  final configuredPath = Get.isRegistered<SettingsController>()
+      ? Get.find<SettingsController>().cacheDirectoryPath
+      : '';
+  if (configuredPath.isEmpty) {
+    return await xuanGetdownloadDirectory();
+  }
+
+  final cacheDirectory = Directory(configuredPath);
+  if (!await cacheDirectory.exists()) {
+    await cacheDirectory.create(recursive: true);
+  }
+  return cacheDirectory;
+}
+
+Future<Directory> xuanGetDefaultCacheDirectory() async {
   return await xuanGetdownloadDirectory();
 }
 

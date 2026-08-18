@@ -61,6 +61,22 @@ class SettingsController extends GetxController {
   static const String cacheNamedIfEmptyRepKey = 'cache_if_empty';
   static const String cacheNamedConKey = 'cache_named_connection';
   static const String cacheNamedUnUseableRepKey = 'cache_unuseable_rep';
+  static const String cacheDirectoryPathKey = 'cache_directory_path';
+  static const String cacheRetainMetadataKey = 'cache_retain_metadata';
+
+  String get cacheDirectoryPath =>
+      (settings[cacheDirectoryPathKey] as String? ?? '').trim();
+
+  set cacheDirectoryPath(String value) {
+    settings[cacheDirectoryPathKey] = value.trim();
+  }
+
+  bool get cacheRetainMetadata =>
+      settings[cacheRetainMetadataKey] as bool? ?? false;
+
+  set cacheRetainMetadata(bool value) {
+    settings[cacheRetainMetadataKey] = value;
+  }
 
   List<int> get cacheNamedMethod =>
       List<int>.from(settings[cacheNamedMethodKey] ?? [1, 2]);

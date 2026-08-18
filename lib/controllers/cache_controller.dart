@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
@@ -6,31 +6,33 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/lyric_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/models/OnlineCacheItem.dart';
+import 'package:listen1_xuan/services/bilibili_mp3_transcoder.dart';
+import 'package:listen1_xuan/services/cache_audio_metadata.dart';
+import 'package:listen1_xuan/services/cache_file_naming.dart';
+import 'package:listen1_xuan/services/ffmpeg_config.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:convert';
 import '../constants/const.dart';
 import '../constants/network_defaults.dart';
 import '../global_settings_animations.dart';
-import '../main.dart';
 import 'DioController.dart';
 import 'myPlaylist_controller.dart';
 import 'play_controller.dart';
 import 'settings_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';
-import 'package:path/path.dart';
-import 'package:uuid/uuid.dart';
 
 class CacheController extends GetxController {
+  static const int _maxCoverArtBytes = 20 * 1024 * 1024;
+
   final Logger _logger = Logger();
   final String _localCacheListKey = 'local-cache-list';
   final _localCacheList = <String, String>{}.obs;
   final _onlineCacheList = <String, OnlineCacheItem>{}.obs;
   final _toDelFiles = <String>{}.obs;
-  SettingsController _settingsController = Get.find<SettingsController>();
+  final Set<String> _activeDownloadFileNames = {};
+  final SettingsController _settingsController = Get.find<SettingsController>();
   PlayController get _playController => Get.find<PlayController>();
   Future<Map<String, String>> localCacheList() async {
     Map<String, String> res = Map<String, String>.fromEntries(
@@ -42,7 +44,7 @@ class CacheController extends GetxController {
     Set<String> files = {};
     for (var element in (await downDir.list().toList())) {
       if (element is File) {
-        files.add(basename(element.path));
+        files.add(p.basename(element.path));
       }
     }
     res.removeWhere((key, value) => !files.contains(value));
@@ -84,6 +86,85 @@ class CacheController extends GetxController {
     );
   }
 
+  Future<Directory> changeCacheDirectory(String? customPath) async {
+    if (_playController.bootStrapDownloading.isNotEmpty) {
+      throw StateError('有歌曲正在缓存，请等待下载完成后再更改路径');
+    }
+
+    final oldDirectory = await xuanGetdataDirectory();
+    final newDirectory = customPath == null || customPath.trim().isEmpty
+        ? await xuanGetDefaultCacheDirectory()
+        : Directory(customPath.trim());
+
+    if (!await newDirectory.exists()) {
+      await newDirectory.create(recursive: true);
+    }
+    await _verifyDirectoryWritable(newDirectory);
+
+    if (p.equals(
+      p.normalize(oldDirectory.absolute.path),
+      p.normalize(newDirectory.absolute.path),
+    )) {
+      _settingsController.cacheDirectoryPath = customPath?.trim() ?? '';
+      return newDirectory;
+    }
+
+    final createdFiles = <File>[];
+    final filesToDelete = <File>[];
+    try {
+      for (final fileName in _localCacheList.values.toSet()) {
+        final source = File(p.join(oldDirectory.path, fileName));
+        if (!await source.exists()) continue;
+
+        final destination = File(p.join(newDirectory.path, fileName));
+        if (await destination.exists()) {
+          if (await source.length() != await destination.length()) {
+            throw FileSystemException('目标目录存在同名缓存文件', destination.path);
+          }
+        } else {
+          final partial = File('${destination.path}.listen1-moving');
+          if (await partial.exists()) await partial.delete();
+          await source.copy(partial.path);
+          await partial.rename(destination.path);
+          createdFiles.add(destination);
+        }
+        filesToDelete.add(source);
+      }
+
+      _settingsController.cacheDirectoryPath = customPath?.trim() ?? '';
+    } catch (_) {
+      for (final file in createdFiles.reversed) {
+        try {
+          if (await file.exists()) await file.delete();
+        } catch (_) {}
+      }
+      rethrow;
+    }
+
+    for (final file in filesToDelete) {
+      try {
+        if (await file.exists()) await file.delete();
+      } catch (e) {
+        _logger.w('旧缓存文件删除失败', error: e);
+      }
+    }
+    return newDirectory;
+  }
+
+  Future<void> _verifyDirectoryWritable(Directory directory) async {
+    final probe = File(
+      p.join(
+        directory.path,
+        '.listen1-write-test-${DateTime.now().microsecondsSinceEpoch}',
+      ),
+    );
+    try {
+      await probe.writeAsString('');
+    } finally {
+      if (await probe.exists()) await probe.delete();
+    }
+  }
+
   Future<void> downloadAndCacheFile(
     dynamic res,
     Track track, {
@@ -97,92 +178,254 @@ class CacheController extends GetxController {
 
     if (_playController.bootStrapDownloading.containsKey(
       sTrack?.id ?? track.id,
-    ))
+    )) {
       return;
+    }
 
-    final downDir = await xuanGetdownloadDirectory();
+    final downDir = await xuanGetdataDirectory();
     String downPath = downDir.path;
-    String fileName = getDownloadNamed(track, res['url']);
+    final isBilibili = res['platform'] == PlatformSource.bilibili.name;
+    final existingFileNames = await listExistingCacheFileNames(downDir)
+      ..addAll(_activeDownloadFileNames);
+    String fileName = getDownloadNamed(
+      track,
+      res['url'],
+      extensionOverride: isFfmpegEnabled && isBilibili ? '.mp3' : null,
+      existingFileNames: existingFileNames,
+    );
     final filePath = p.join(downPath, fileName);
-    _playController.bootStrapDownloading[sTrack?.id ?? track.id] = fileName;
+    final downloadId = sTrack?.id ?? track.id;
+    _activeDownloadFileNames.add(fileName);
+    _playController.bootStrapDownloading[downloadId] = fileName;
     void onReceiveProgress(int count, int total) {
-      if (_playController.bootStrapDownloading.containsKey(
-        sTrack?.id ?? track.id,
-      )) {
-        _playController.bootStrapDownloading[sTrack?.id ?? track.id] =
-            '${formatBytes(count)}/${formatBytes(total)}';
+      if (_playController.bootStrapDownloading.containsKey(downloadId)) {
+        _playController.bootStrapDownloading[downloadId] = total > 0
+            ? '${formatBytes(count)}/${formatBytes(total)}'
+            : formatBytes(count);
       }
     }
 
-    void onSuccess(res) {
+    void onSuccess() {
       showDebugSnackbar('$fileName 下载完成', null);
+      _activeDownloadFileNames.remove(fileName);
       setLocalCache(track.id, fileName);
+      if (downloadId != track.id) {
+        _playController.bootStrapDownloading.remove(downloadId);
+      }
     }
 
-    void onError(e) async {
-      _logger.e('下载文件失败: $e');
-      _playController.bootStrapDownloading.remove(sTrack?.id ?? track.id);
-      showErrorSnackbar('下载文件失败', e.toString());
+    void onError(Object error) {
+      _logger.e('下载文件失败: $error');
+      _activeDownloadFileNames.remove(fileName);
+      _playController.bootStrapDownloading.remove(downloadId);
+      showErrorSnackbar('下载文件失败', error.toString());
     }
 
-    switch (res["platform"]) {
-      case "bilibili":
-        dioWithCookieManager
-            .download(
-              res['url'],
-              filePath,
-              options: Options(
-                headers: {
-                  "user-agent":
-                      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
-                  "accept": "*/*",
-                  "accept-encoding": "identity;q=1, *;q=0",
-                  "accept-language": "zh-CN",
-                  "referer": "https://www.bilibili.com/",
-                  "sec-fetch-dest": "audio",
-                  "sec-fetch-mode": "no-cors",
-                  "sec-fetch-site": "cross-site",
-                  "range": "bytes=0-",
-                },
-              ),
-              onReceiveProgress: onReceiveProgress,
-            )
-            .then((value) {
-              onSuccess(value);
-            })
-            .catchError((e) {
-              onError(e);
-            });
-      case "netease":
-        dioWithCookieManager
-            .download(
-              res['url'],
-              onReceiveProgress: onReceiveProgress,
-              filePath,
-            )
-            .then((value) {
-              onSuccess(value);
-            })
-            .catchError((e) {
-              onError(e);
-            });
-      default:
-        dioWithCookieManager
-            .download(
-              res['url'],
-              onReceiveProgress: onReceiveProgress,
-              filePath,
-            )
-            .then((value) {
-              onSuccess(value);
-            })
-            .catchError((e) {
-              onError(e);
-            });
+    Future<void> runCacheOperation(Future<void> Function() operation) async {
+      try {
+        await operation();
+        onSuccess();
+      } catch (error) {
+        onError(error);
+      }
+    }
+
+    if (isFfmpegEnabled && isBilibili && !_isMp3Url(res['url'])) {
+      unawaited(
+        runCacheOperation(
+          () => _transcodeBilibiliToMp3(
+            sourceUrl: res['url'],
+            filePath: filePath,
+            track: track,
+            onReceiveProgress: onReceiveProgress,
+          ),
+        ),
+      );
+      return;
+    }
+
+    unawaited(
+      runCacheOperation(() async {
+        final partialFile = File(
+          CacheAudioMetadata.temporaryDownloadPath(filePath),
+        );
+        try {
+          if (await partialFile.exists()) await partialFile.delete();
+          await dioWithCookieManager.download(
+            res['url'],
+            partialFile.path,
+            options: isBilibili ? Options(headers: kBilibiliPlayHeader) : null,
+            onReceiveProgress: onReceiveProgress,
+          );
+          await finalizeCacheFile(
+            inputPath: partialFile.path,
+            outputPath: filePath,
+            track: track,
+          );
+        } finally {
+          if (await partialFile.exists()) await partialFile.delete();
+        }
+      }),
+    );
+  }
+
+  Future<void> _transcodeBilibiliToMp3({
+    required String sourceUrl,
+    required String filePath,
+    required Track track,
+    required void Function(int count, int total) onReceiveProgress,
+  }) async {
+    final partialFile = File('$filePath.listen1-part.mp3');
+    final retainMetadata = _settingsController.cacheRetainMetadata;
+    File? coverFile;
+    try {
+      if (await partialFile.exists()) await partialFile.delete();
+      coverFile = await _downloadCoverArt(
+        track: track,
+        outputPath: partialFile.path,
+        retainMetadata: retainMetadata,
+      );
+      await const BilibiliMp3Transcoder().transcode(
+        dio: dioWithCookieManager,
+        sourceUrl: sourceUrl,
+        outputPath: partialFile.path,
+        retainMetadata: retainMetadata,
+        metadata: _metadataForTrack(track),
+        coverPath: coverFile?.path,
+        onDownloadProgress: onReceiveProgress,
+      );
+      final outputFile = File(filePath);
+      if (await outputFile.exists()) await outputFile.delete();
+      await partialFile.rename(filePath);
+    } catch (_) {
+      if (await partialFile.exists()) await partialFile.delete();
+      rethrow;
+    } finally {
+      await _deleteTemporaryCover(coverFile);
     }
   }
 
-  String getDownloadNamed(Track track, String url) {
+  bool _isMp3Url(String url) {
+    return p.extension(Uri.parse(url).path).toLowerCase() == '.mp3';
+  }
+
+  Future<void> finalizeCacheFile({
+    required String inputPath,
+    required String outputPath,
+    Track? track,
+  }) async {
+    // 无 FFmpeg 的精简版直接落盘，不做元数据写入。
+    if (!isFfmpegEnabled) {
+      final outputFile = File(outputPath);
+      if (await outputFile.exists()) await outputFile.delete();
+      await File(inputPath).rename(outputPath);
+      return;
+    }
+
+    final metadataOutput = File(
+      CacheAudioMetadata.temporaryOutputPath(outputPath),
+    );
+    final retainMetadata = _settingsController.cacheRetainMetadata;
+    File? coverFile;
+    try {
+      if (await metadataOutput.exists()) await metadataOutput.delete();
+      if (track != null) {
+        coverFile = await _downloadCoverArt(
+          track: track,
+          outputPath: metadataOutput.path,
+          retainMetadata: retainMetadata,
+        );
+      }
+      await const CacheAudioMetadata().rewrite(
+        inputPath: inputPath,
+        outputPath: metadataOutput.path,
+        retainMetadata: retainMetadata,
+        metadata: track == null ? null : _metadataForTrack(track),
+        coverPath: coverFile?.path,
+      );
+
+      final outputFile = File(outputPath);
+      if (await outputFile.exists()) await outputFile.delete();
+      await metadataOutput.rename(outputPath);
+    } catch (_) {
+      if (await metadataOutput.exists()) await metadataOutput.delete();
+      rethrow;
+    } finally {
+      await _deleteTemporaryCover(coverFile);
+    }
+  }
+
+  Future<File?> _downloadCoverArt({
+    required Track track,
+    required String outputPath,
+    required bool retainMetadata,
+  }) async {
+    if (!retainMetadata ||
+        !CacheAudioMetadata.supportsEmbeddedCover(outputPath)) {
+      return null;
+    }
+
+    var coverUrl = track.img_url?.trim() ?? '';
+    if (coverUrl.isEmpty) return null;
+    coverUrl = coverUrl.replaceAll('{size}', '500');
+    if (coverUrl.startsWith('//')) coverUrl = 'https:$coverUrl';
+    final uri = Uri.tryParse(coverUrl);
+    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+      return null;
+    }
+
+    final coverFile = File(CacheAudioMetadata.temporaryCoverPath(outputPath));
+    try {
+      if (await coverFile.exists()) await coverFile.delete();
+      final isBilibiliCover =
+          track.source == PlatformSource.bilibili.name ||
+          track.id.startsWith('bi');
+      Map<String, String>? headers;
+      if (isBilibiliCover) {
+        headers = Map<String, String>.from(kBilibiliPlayHeader)
+          ..remove(HttpHeaders.rangeHeader);
+      }
+      await dioWithCookieManager.download(
+        uri.toString(),
+        coverFile.path,
+        options: headers == null ? null : Options(headers: headers),
+      );
+      final length = await coverFile.length();
+      if (length == 0 || length > _maxCoverArtBytes) {
+        throw const FormatException('歌曲封面为空或超过 20MB');
+      }
+      return coverFile;
+    } catch (error) {
+      _logger.w('下载歌曲封面失败: $coverUrl', error: error);
+      if (await coverFile.exists()) await coverFile.delete();
+      return null;
+    }
+  }
+
+  Future<void> _deleteTemporaryCover(File? coverFile) async {
+    if (coverFile == null) return;
+    try {
+      if (await coverFile.exists()) await coverFile.delete();
+    } catch (error) {
+      _logger.w('临时歌曲封面删除失败: ${coverFile.path}', error: error);
+    }
+  }
+
+  CacheTrackMetadata _metadataForTrack(Track track) {
+    return CacheTrackMetadata(
+      title: track.title,
+      artist: track.artist,
+      album: track.album,
+      albumArtist: track.artist,
+    );
+  }
+
+  String getDownloadNamed(
+    Track track,
+    String url, {
+    String? extensionOverride,
+    required Set<String> existingFileNames,
+  }) {
     String fileName = '';
     List<int> namedMethod = _settingsController.cacheNamedMethod;
     String namedConnection = _settingsController.cacheNamedConnection;
@@ -234,32 +477,15 @@ class CacheController extends GetxController {
     for (var char in cacheUnUseableRepUnUseable.split('')) {
       fileName = fileName.replaceAll(char, unUseableRep);
     }
-    String ext = extension(Uri.parse(url).pathSegments.last);
-    // 处理重名
-    Set<String> existingFileNames = _localCacheList.values.toSet().union(
-      Get.find<PlayController>().bootStrapDownloading.values.toSet(),
+    final ext =
+        extensionOverride ?? p.extension(Uri.parse(url).pathSegments.last);
+    return deduplicateCacheFileName(
+      baseName: fileName,
+      extension: ext,
+      existingFileNames: existingFileNames,
+      useNumberSuffix: dedupMethod == DedupMethod.number.index,
+      separator: namedConnection,
     );
-
-    // 检查不带后缀的情况下是否有重名
-    if (existingFileNames.contains(fileName + ext)) {
-      if (dedupMethod == DedupMethod.number.index) {
-        int count = 1;
-        String baseFileName = fileName;
-        while (existingFileNames.contains(fileName + ext)) {
-          fileName = '$baseFileName($count)';
-          count++;
-        }
-      } else {
-        String randomStr = Uuid().v4().substring(0, 6);
-        String baseFileName = fileName;
-        while (existingFileNames.contains(fileName + ext)) {
-          fileName = '$baseFileName$namedConnection$randomStr';
-          randomStr = Uuid().v4().substring(0, 6);
-        }
-      }
-    }
-    fileName += ext;
-    return fileName;
   }
 
   Future<void> tryDelFiles() async {
