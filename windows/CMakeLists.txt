@@ -50,6 +50,23 @@ endfunction()
 
 # Flutter library and tool build rules.
 set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
+
+# Cargokit resolves Flutter plugin symlinks with Windows PowerShell. AppData
+# is hidden by default, so Get-Item needs -Force when traversing the Pub cache.
+if(WIN32)
+  file(GLOB _cargokit_resolvers
+    "${FLUTTER_MANAGED_DIR}/ephemeral/.plugin_symlinks/*/cargokit/cmake/resolve_symlinks.ps1")
+  foreach(_cargokit_resolver IN LISTS _cargokit_resolvers)
+    file(READ "${_cargokit_resolver}" _cargokit_script)
+    string(FIND "${_cargokit_script}" "Get-Item $realPath" _cargokit_get_item)
+    if(NOT _cargokit_get_item EQUAL -1)
+      string(REPLACE "Get-Item $realPath" "Get-Item -Force $realPath"
+        _cargokit_script "${_cargokit_script}")
+      file(WRITE "${_cargokit_resolver}" "${_cargokit_script}")
+    endif()
+  endforeach()
+endif()
+
 add_subdirectory(${FLUTTER_MANAGED_DIR})
 
 # Application build; see runner/CMakeLists.txt.
