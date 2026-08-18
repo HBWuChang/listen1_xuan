@@ -43,7 +43,8 @@ restore() {
   cp "$BACKUP" "$PUBSPEC"
   rm -f "$BACKUP"
 }
-trap restore EXIT
+# 同时捕获中断信号，避免被 Ctrl-C / CI 取消时 pubspec 残留 override
+trap restore EXIT INT TERM
 
 if [ "$MODE" = "without" ]; then
   echo "==> 切换到精简版(无 FFmpeg)配置"
@@ -65,18 +66,23 @@ flutter pub get
 SUFFIX=""
 [ "$MODE" = "without" ] && SUFFIX="-lite"
 
+# 用户未显式指定构建模式时默认 --release
+if ! printf '%s\n' "$@" | grep -qE '^--(debug|profile|release|jit-release)$'; then
+  set -- --release "$@"
+fi
+
 case "$PLATFORM" in
   apk)
-    flutter build apk --release --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
+    flutter build apk --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
     ;;
   split)
-    flutter build apk --release --split-per-abi --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
+    flutter build apk --split-per-abi --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
     ;;
   windows)
-    flutter build windows --release --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
+    flutter build windows --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
     ;;
   ios)
-    flutter build ios --release --no-codesign --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
+    flutter build ios --no-codesign --dart-define=ENABLE_FFMPEG=$ENABLE_FFMPEG "$@"
     ;;
   macos)
     echo "警告: macOS 走 fastforge 发布链路，本脚本不直接构建。"
