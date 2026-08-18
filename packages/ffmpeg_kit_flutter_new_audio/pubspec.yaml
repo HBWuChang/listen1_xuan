@@ -1,0 +1,10 @@
+name: ffmpeg_kit_flutter_new_audio
+description: >-
+  Stub implementation of ffmpeg_kit_flutter_new_audio for builds without FFmpeg.
+  All APIs are no-ops returning failure. Only used when building the lite
+  (no-FFmpeg) variant; do NOT use at runtime with ENABLE_FFMPEG=true.
+version: 2.5.2
+publish_to: none
+
+environment:
+  sdk: ^3.8.1

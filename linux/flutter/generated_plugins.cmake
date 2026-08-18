@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   charset_converter
   desktop_drop
   dynamic_color
+  ffmpeg_kit_flutter_new_audio
   flutter_acrylic
   flutter_volume_controller
   gtk

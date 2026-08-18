@@ -10,6 +10,7 @@
 #include <charset_converter/charset_converter_plugin.h>
 #include <desktop_drop/desktop_drop_plugin.h>
 #include <dynamic_color/dynamic_color_plugin.h>
+#include <ffmpeg_kit_flutter_new_audio/f_fmpeg_kit_flutter_plugin.h>
 #include <flutter_acrylic/flutter_acrylic_plugin.h>
 #include <flutter_volume_controller/flutter_volume_controller_plugin.h>
 #include <gtk/gtk_plugin.h>
@@ -36,6 +37,9 @@ void fl_register_plugins(FlPluginRegistry* registry) {
   g_autoptr(FlPluginRegistrar) dynamic_color_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "DynamicColorPlugin");
   dynamic_color_plugin_register_with_registrar(dynamic_color_registrar);
+  g_autoptr(FlPluginRegistrar) ffmpeg_kit_flutter_new_audio_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "FFmpegKitFlutterPlugin");
+  f_fmpeg_kit_flutter_plugin_register_with_registrar(ffmpeg_kit_flutter_new_audio_registrar);
   g_autoptr(FlPluginRegistrar) flutter_acrylic_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "FlutterAcrylicPlugin");
   flutter_acrylic_plugin_register_with_registrar(flutter_acrylic_registrar);
