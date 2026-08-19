@@ -130,6 +130,10 @@ class CacheController extends GetxController {
     try {
       // 歌曲缓存
       for (final fileName in _localCacheList.values.toSet()) {
+        if (!_isValidCacheFileName(fileName)) {
+          _logger.w('跳过非法缓存文件名: $fileName');
+          continue;
+        }
         await moveOneFile(
           File(p.join(oldDirectory.path, fileName)),
           File(p.join(newDirectory.path, fileName)),
@@ -164,6 +168,17 @@ class CacheController extends GetxController {
       }
     }
     return newDirectory;
+  }
+
+  /// 检查缓存文件名是否为合法的单个文件名（不含路径分隔符）。
+  ///
+  /// 使用 path 库判断：`basename` 与原始值不同说明名称中包含目录部分
+  /// （如 `/`、`\`），此类名称不可作为目标目录下的普通文件处理，直接跳过。
+  bool _isValidCacheFileName(String fileName) {
+    if (fileName.isEmpty) return false;
+    return p.basename(fileName) == fileName &&
+        !fileName.contains('/') &&
+        !fileName.contains('\\');
   }
 
   Future<void> _verifyDirectoryWritable(Directory directory) async {
