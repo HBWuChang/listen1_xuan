@@ -669,14 +669,31 @@ class _CacheDirectoryTileState extends State<_CacheDirectoryTile> {
   Future<void> _changeDirectory(String? path) async {
     if (_isChanging) return;
     setState(() => _isChanging = true);
+
+    // 暂停播放，避免迁移期间文件被占用；完成后恢复
+    final playController = Get.find<PlayController>();
+    final wasPlaying = playController.music_player.state.playing;
+    if (wasPlaying) {
+      await globalPause();
+    }
+
+    // 显示不可关闭的加载对话框，展示迁移过程
+    final loadingMessage = '正在准备切换缓存路径...'.obs;
+    showLoadingDialog(loadingMessage);
     try {
       final directory = await Get.find<CacheController>().changeCacheDirectory(
         path,
+        onProgress: (message) => loadingMessage.value = message,
       );
       if (!mounted) return;
+      Get.back(); // 关闭加载对话框
       showSuccessSnackbar('缓存路径已设置', directory.path);
+      if (wasPlaying) {
+        await playController.music_player.play();
+      }
     } catch (e) {
       if (!mounted) return;
+      if (Get.isDialogOpen ?? false) Get.back();
       showErrorSnackbar('设置缓存路径失败', e.toString());
     } finally {
       if (mounted) setState(() => _isChanging = false);

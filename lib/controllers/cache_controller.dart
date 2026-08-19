@@ -86,11 +86,15 @@ class CacheController extends GetxController {
     );
   }
 
-  Future<Directory> changeCacheDirectory(String? customPath) async {
+  Future<Directory> changeCacheDirectory(
+    String? customPath, {
+    void Function(String message)? onProgress,
+  }) async {
     if (_playController.bootStrapDownloading.isNotEmpty) {
       throw StateError('有歌曲正在缓存，请等待下载完成后再更改路径');
     }
 
+    onProgress?.call('正在准备缓存目录...');
     final oldDirectory = await xuanGetdataDirectory();
     final newDirectory = customPath == null || customPath.trim().isEmpty
         ? await xuanGetDefaultCacheDirectory()
@@ -99,6 +103,7 @@ class CacheController extends GetxController {
     if (!await newDirectory.exists()) {
       await newDirectory.create(recursive: true);
     }
+    onProgress?.call('正在校验目标目录可写...');
     await _verifyDirectoryWritable(newDirectory);
 
     if (p.equals(
@@ -129,20 +134,27 @@ class CacheController extends GetxController {
 
     try {
       // 歌曲缓存
-      for (final fileName in _localCacheList.values.toSet()) {
+      final songFileNames = _localCacheList.values.toSet();
+      var songIndex = 0;
+      for (final fileName in songFileNames) {
         if (!_isValidCacheFileName(fileName)) {
           _logger.w('跳过非法缓存文件名: $fileName');
           continue;
         }
+        songIndex++;
+        onProgress?.call('正在迁移歌曲缓存 ($songIndex/${songFileNames.length})');
         await moveOneFile(
           File(p.join(oldDirectory.path, fileName)),
           File(p.join(newDirectory.path, fileName)),
         );
       }
       // 歌词缓存：迁移旧目录中的所有 .lrc 文件
+      var lyricCount = 0;
       await for (final entity in oldDirectory.list(followLinks: false)) {
         if (entity is File &&
             p.extension(entity.path).toLowerCase() == '.lrc') {
+          lyricCount++;
+          onProgress?.call('正在迁移歌词缓存 ($lyricCount)');
           await moveOneFile(
             entity,
             File(p.join(newDirectory.path, p.basename(entity.path))),
@@ -150,6 +162,7 @@ class CacheController extends GetxController {
         }
       }
 
+      onProgress?.call('正在更新缓存路径配置...');
       _settingsController.cacheDirectoryPath = customPath?.trim() ?? '';
     } catch (_) {
       for (final file in createdFiles.reversed) {
@@ -160,6 +173,7 @@ class CacheController extends GetxController {
       rethrow;
     }
 
+    onProgress?.call('正在清理旧目录文件...');
     for (final file in filesToDelete) {
       try {
         if (await file.exists()) await file.delete();
