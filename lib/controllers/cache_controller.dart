@@ -111,24 +111,39 @@ class CacheController extends GetxController {
 
     final createdFiles = <File>[];
     final filesToDelete = <File>[];
-    try {
-      for (final fileName in _localCacheList.values.toSet()) {
-        final source = File(p.join(oldDirectory.path, fileName));
-        if (!await source.exists()) continue;
-
-        final destination = File(p.join(newDirectory.path, fileName));
-        if (await destination.exists()) {
-          if (await source.length() != await destination.length()) {
-            throw FileSystemException('目标目录存在同名缓存文件', destination.path);
-          }
-        } else {
-          final partial = File('${destination.path}.listen1-moving');
-          if (await partial.exists()) await partial.delete();
-          await source.copy(partial.path);
-          await partial.rename(destination.path);
-          createdFiles.add(destination);
+    Future<void> moveOneFile(File source, File destination) async {
+      if (!await source.exists()) return;
+      if (await destination.exists()) {
+        if (await source.length() != await destination.length()) {
+          throw FileSystemException('目标目录存在同名文件', destination.path);
         }
-        filesToDelete.add(source);
+      } else {
+        final partial = File('${destination.path}.listen1-moving');
+        if (await partial.exists()) await partial.delete();
+        await source.copy(partial.path);
+        await partial.rename(destination.path);
+        createdFiles.add(destination);
+      }
+      filesToDelete.add(source);
+    }
+
+    try {
+      // 歌曲缓存
+      for (final fileName in _localCacheList.values.toSet()) {
+        await moveOneFile(
+          File(p.join(oldDirectory.path, fileName)),
+          File(p.join(newDirectory.path, fileName)),
+        );
+      }
+      // 歌词缓存：迁移旧目录中的所有 .lrc 文件
+      await for (final entity in oldDirectory.list(followLinks: false)) {
+        if (entity is File &&
+            p.extension(entity.path).toLowerCase() == '.lrc') {
+          await moveOneFile(
+            entity,
+            File(p.join(newDirectory.path, p.basename(entity.path))),
+          );
+        }
       }
 
       _settingsController.cacheDirectoryPath = customPath?.trim() ?? '';
