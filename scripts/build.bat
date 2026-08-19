@@ -3,16 +3,13 @@ setlocal enabledelayedexpansion
 chcp 65001 >nul 2>&1
 
 rem ============================================================
-rem  Dual-build config switch script (with/without FFmpeg) - Windows
+rem  Switch FFmpeg dependency config in pubspec.yaml (Windows).
+rem  Does NOT run `flutter pub get` and does NOT build anything.
 rem
 rem  Usage:
-rem    scripts\build.bat with                   FFmpeg-enabled (default)
-rem    scripts\build.bat without                FFmpeg-free (stub override)
-rem    scripts\build.bat check                  Print current mode
-rem    scripts\build.bat <mode> --no-pub-get    Skip flutter pub get
-rem
-rem  Only switches the pubspec dependency config; it does NOT build.
-rem  Windows equivalent of scripts/build.sh
+rem    scripts\build.bat with      FFmpeg-enabled (remove override, default)
+rem    scripts\build.bat without   FFmpeg-free (add stub package override)
+rem    scripts\build.bat check     Print current mode
 rem ============================================================
 
 set "SCRIPT_DIR=%~dp0"
@@ -20,8 +17,6 @@ pushd "%SCRIPT_DIR%.."
 if errorlevel 1 goto :error
 
 set "MODE=%~1"
-set "SKIP_PUB_GET=0"
-if /i "%~2"=="--no-pub-get" set "SKIP_PUB_GET=1"
 
 if "%MODE%"=="" goto :usage
 if /i "%MODE%"=="check" goto :check
@@ -31,15 +26,11 @@ goto :usage
 
 :switch
 set "PUBSPEC=pubspec.yaml"
-set "BACKUP=%TEMP%\pubspec.build.bak"
 set "BEGIN_MARK=BEGIN: no-ffmpeg override"
 set "END_MARK=END: no-ffmpeg override"
 
-copy /y "%PUBSPEC%" "%BACKUP%" >nul
-if errorlevel 1 goto :error
-
 call :strip_override
-if errorlevel 1 goto :rollback
+if errorlevel 1 goto :error
 
 if /i "%MODE%"=="without" (
   >>"%PUBSPEC%" echo(
@@ -48,27 +39,9 @@ if /i "%MODE%"=="without" (
   >>"%PUBSPEC%" echo   ffmpeg_kit_flutter_new_audio:
   >>"%PUBSPEC%" echo     path: packages/ffmpeg_kit_flutter_new_audio
   >>"%PUBSPEC%" echo # %END_MARK%
-  echo ==^> Config: FFmpeg-free ^(stub package packages\ffmpeg_kit_flutter_new_audio^)
+  echo MODE=without
 ) else (
-  echo ==^> Config: FFmpeg-enabled ^(pub.dev ffmpeg_kit_flutter_new_audio ^^2.5.2^)
-)
-
-if "%SKIP_PUB_GET%"=="1" (
-  echo ==^> Skipping flutter pub get ^(--no-pub-get^)
-) else (
-  echo ==^> flutter pub get
-  call flutter pub get
-  if errorlevel 1 goto :rollback
-)
-
-del "%BACKUP%" >nul 2>&1
-
-echo.
-echo Config switch done. Run your platform build now ^(do NOT run flutter pub get again^),
-if /i "%MODE%"=="without" (
-  echo and pass: flutter build ... --dart-define=ENABLE_FFMPEG=false
-) else (
-  echo and pass: flutter build ... --dart-define=ENABLE_FFMPEG=true
+  echo MODE=with
 )
 goto :eof
 
@@ -77,10 +50,8 @@ set "PUBSPEC=pubspec.yaml"
 findstr /c:"BEGIN: no-ffmpeg override" "%PUBSPEC%" >nul 2>&1
 if errorlevel 1 (
   echo MODE=with
-  echo ENABLE_FFMPEG=true
 ) else (
   echo MODE=without
-  echo ENABLE_FFMPEG=false
 )
 goto :eof
 
@@ -95,19 +66,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "[System.IO.File]::WriteAllLines($p, $out, (New-Object System.Text.UTF8Encoding $false))"
 exit /b %errorlevel%
 
-:rollback
-copy /y "%BACKUP%" "%PUBSPEC%" >nul 2>&1
-del "%BACKUP%" >nul 2>&1
-echo ==^> FAILED: reverted pubspec.yaml to previous state. 1>&2
-exit /b 1
-
 :error
 echo ==^> ERROR: failed to run scripts\build.bat. 1>&2
 exit /b 1
 
 :usage
-echo Usage: scripts\build.bat ^<with^|without^|check^> [--no-pub-get]
+echo Usage: scripts\build.bat ^<with^|without^|check^>
 echo   with     FFmpeg-enabled ^(pub.dev package, default config^)
 echo   without  FFmpeg-free ^(stub package override^)
-echo   check    Print current mode and ENABLE_FFMPEG value
+echo   check    Print current mode
 exit /b 1
