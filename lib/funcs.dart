@@ -226,8 +226,10 @@ void showLoadingDialog(RxString message) {
           children: [
             globalLoadingAnime,
             20.sbw,
-            Obx(
-              () => Text(message.value, style: const TextStyle(fontSize: 16)),
+            Flexible(
+              child: Obx(
+                () => Text(message.value, style: const TextStyle(fontSize: 16)),
+              ),
             ),
           ],
         ),

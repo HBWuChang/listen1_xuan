@@ -3,7 +3,8 @@ setlocal enabledelayedexpansion
 chcp 65001 >nul 2>&1
 
 rem ============================================================
-rem  Switch FFmpeg dependency config in pubspec.yaml (Windows).
+rem  Switch FFmpeg dependency config in pubspec.yaml and regenerate
+rem  lib\services\ffmpeg_config.dart (Windows).
 rem  Does NOT run `flutter pub get` and does NOT build anything.
 rem
 rem  Usage:
@@ -26,6 +27,7 @@ goto :usage
 
 :switch
 set "PUBSPEC=pubspec.yaml"
+set "FFMPEG_CONFIG=lib\services\ffmpeg_config.dart"
 set "BEGIN_MARK=BEGIN: no-ffmpeg override"
 set "END_MARK=END: no-ffmpeg override"
 
@@ -39,21 +41,37 @@ if /i "%MODE%"=="without" (
   >>"%PUBSPEC%" echo   ffmpeg_kit_flutter_new_audio:
   >>"%PUBSPEC%" echo     path: packages/ffmpeg_kit_flutter_new_audio
   >>"%PUBSPEC%" echo # %END_MARK%
+  call :write_ffmpeg_config false
   echo MODE=without
 ) else (
+  call :write_ffmpeg_config true
   echo MODE=with
 )
 goto :eof
 
 :check
-set "PUBSPEC=pubspec.yaml"
-findstr /c:"BEGIN: no-ffmpeg override" "%PUBSPEC%" >nul 2>&1
+set "FFMPEG_CONFIG=lib\services\ffmpeg_config.dart"
+findstr /c:"isFfmpegEnabled = false" "%FFMPEG_CONFIG%" >nul 2>&1
 if errorlevel 1 (
   echo MODE=with
 ) else (
   echo MODE=without
 )
 goto :eof
+
+rem Delete and regenerate lib\services\ffmpeg_config.dart with given value.
+:write_ffmpeg_config
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$p='%FFMPEG_CONFIG%'; $v='%~1'; " ^
+  "$content='// GENERATED FILE - DO NOT EDIT MANUALLY.' + [Environment]::NewLine + " ^
+  "'// 本文件由 scripts/build.sh / scripts/build.bat 自动生成，' + [Environment]::NewLine + " ^
+  "'// 手动修改会在下次切换时被覆盖。' + [Environment]::NewLine + [Environment]::NewLine + " ^
+  "'// Whether FFmpeg-dependent features are enabled' + [Environment]::NewLine + " ^
+  "'// (bilibili transcode, cache metadata writing).' + [Environment]::NewLine + [Environment]::NewLine + " ^
+  "'// Switch with:  scripts/build.sh with|without' + [Environment]::NewLine + " ^
+  "'const bool isFfmpegEnabled = ' + $v + ';' + [Environment]::NewLine; " ^
+  "[System.IO.File]::WriteAllText($p, $content, (New-Object System.Text.UTF8Encoding $false))"
+exit /b %errorlevel%
 
 rem Remove the injected override block (idempotent), then trim any trailing
 rem blank lines so the pubspec is restored byte-identical.

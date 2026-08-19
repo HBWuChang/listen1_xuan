@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# Switch FFmpeg dependency config in pubspec.yaml.
-# Does NOT run `flutter pub get` and does NOT build anything.
+# Switch FFmpeg dependency config in pubspec.yaml and regenerate
+# lib/services/ffmpeg_config.dart. Does NOT run `flutter pub get`
+# and does NOT build anything.
 #
 # Usage:
 #   scripts/build.sh with      FFmpeg-enabled (remove override, default)
@@ -14,6 +15,7 @@ cd "$(dirname "$0")/.."
 
 MODE="${1:-}"
 PUBSPEC="pubspec.yaml"
+FFMPEG_CONFIG="lib/services/ffmpeg_config.dart"
 BEGIN_MARK="BEGIN: no-ffmpeg override"
 END_MARK="END: no-ffmpeg override"
 
@@ -45,9 +47,27 @@ strip_override() {
   rm -f "$PUBSPEC.tmp"
 }
 
+# Regenerate lib/services/ffmpeg_config.dart (delete first, then write).
+write_ffmpeg_config() {
+  local enabled="$1"
+  rm -f "$FFMPEG_CONFIG"
+  cat > "$FFMPEG_CONFIG" << EOF
+// GENERATED FILE - DO NOT EDIT MANUALLY.
+// 本文件由 scripts/build.sh / scripts/build.bat 自动生成，
+// 手动修改会在下次切换时被覆盖。
+//
+// Whether FFmpeg-dependent features are enabled
+// (bilibili transcode, cache metadata writing).
+//
+// Switch with:  scripts/build.sh with|without
+const bool isFfmpegEnabled = $enabled;
+EOF
+}
+
 case "$MODE" in
   with)
     strip_override
+    write_ffmpeg_config true
     echo "MODE=with"
     ;;
   without)
@@ -60,10 +80,11 @@ dependency_overrides:
     path: packages/ffmpeg_kit_flutter_new_audio
 # $END_MARK
 EOF
+    write_ffmpeg_config false
     echo "MODE=without"
     ;;
   check)
-    if grep -q "$BEGIN_MARK" "$PUBSPEC"; then
+    if grep -q 'isFfmpegEnabled = false' "$FFMPEG_CONFIG" 2>/dev/null; then
       echo "MODE=without"
     else
       echo "MODE=with"

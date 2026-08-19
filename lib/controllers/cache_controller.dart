@@ -142,7 +142,7 @@ class CacheController extends GetxController {
           continue;
         }
         songIndex++;
-        onProgress?.call('正在迁移歌曲缓存 ($songIndex/${songFileNames.length})');
+        onProgress?.call('正在迁移歌曲缓存($songIndex/${songFileNames.length})');
         await moveOneFile(
           File(p.join(oldDirectory.path, fileName)),
           File(p.join(newDirectory.path, fileName)),
