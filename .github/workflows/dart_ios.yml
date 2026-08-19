@@ -35,18 +35,58 @@ jobs:
       - run: flutter --version
       - run: flutter pub get
       
+      # ============ 第一遍: 带 FFmpeg 版本 ============
+      # 切换为带 FFmpeg 配置（默认，幂等）
+      - name: Switch to FFmpeg-enabled config
+        run: bash scripts/build.sh with
+        
+      - run: flutter pub get
+      
       # 安装 CocoaPods 依赖
-      - name: Install CocoaPods dependencies
+      - name: Install CocoaPods dependencies (ffmpeg)
         run: |
           cd ios
           pod install
         
       # 构建 iOS app (无签名版本，用于测试)
-      - name: Build iOS app (no codesign)
+      - name: Build iOS app (no codesign, ffmpeg)
         run: flutter build ios --release --no-codesign --dart-define=gitHash=${{ env.GITHASH }}
         
       # 打包为 .app 文件
-      - name: Create .app archive
+      - name: Create .app archive (ffmpeg)
+        run: |
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -r Runner.app.zip Payload
+          mv Runner.app.zip ../../../listen1_xuan-ios-ffmpeg-${GITHASH}.app.zip
+          cd ../../..
+          
+      # 上传 .app 文件
+      - name: Upload .app artifact (ffmpeg)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-artifact-ffmpeg
+          path: listen1_xuan-ios-ffmpeg-${{ env.GITHASH }}.app.zip
+
+      # ============ 第二遍: 无 FFmpeg 精简版 ============
+      - name: Switch to FFmpeg-free config
+        run: bash scripts/build.sh without
+        
+      - run: flutter pub get
+        
+      # 安装 CocoaPods 依赖（无 ffmpeg 原生库）
+      - name: Install CocoaPods dependencies (lite)
+        run: |
+          cd ios
+          pod install
+        
+      # 构建 iOS app (无签名版本，用于测试)
+      - name: Build iOS app (no codesign, lite)
+        run: flutter build ios --release --no-codesign --dart-define=gitHash=${{ env.GITHASH }}
+        
+      # 打包为 .app 文件
+      - name: Create .app archive (lite)
         run: |
           cd build/ios/iphoneos
           mkdir -p Payload
@@ -56,7 +96,7 @@ jobs:
           cd ../../..
           
       # 上传 .app 文件
-      - name: Upload .app artifact
+      - name: Upload .app artifact (lite)
         uses: actions/upload-artifact@v4
         with:
           name: ios-app-artifact
@@ -84,12 +124,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
         
-      # 上传到 Release
+      # 上传到 Release（带 FFmpeg 版 + 精简版）
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ env.VERSION }}
-          files: listen1_xuan-ios-${{ env.GITHASH }}.app.zip
+          files: |
+            listen1_xuan-ios-ffmpeg-${{ env.GITHASH }}.app.zip
+            listen1_xuan-ios-${{ env.GITHASH }}.app.zip
           prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

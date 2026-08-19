@@ -31,6 +31,13 @@ jobs:
       - run: flutter --version
       - run: flutter pub get
       
+      # ============ 第一遍: 带 FFmpeg 版本 ============
+      # 切换为带 FFmpeg 配置（默认，幂等）
+      - name: Switch to FFmpeg-enabled config
+        run: bash scripts/build.sh with
+        
+      - run: flutter pub get
+      
       # 安装 CocoaPods 依赖
       - name: Install CocoaPods dependencies
         run: |
@@ -44,7 +51,7 @@ jobs:
         shell: bash
         
       # 构建 macOS app
-      - name: Build macOS app
+      - name: Build macOS app (ffmpeg)
         run: |
           dart pub global activate fastforge
           fastforge release --name prod
@@ -71,25 +78,57 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
       
-      # 重命名文件以包含 GITHASH
-      - name: Rename macOS artifact
+      # 重命名文件以包含 GITHASH（ffmpeg 版）
+      - name: Rename macOS artifact (ffmpeg)
+        run: |
+          mv "dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos.zip" "dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-ffmpeg-${GITHASH}.zip"
+        shell: bash
+          
+      # 上传 .app 文件
+      - name: Upload .app artifact (ffmpeg)
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-app-artifact-ffmpeg
+          path: dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-ffmpeg-${{ env.GITHASH }}.zip
+
+      # ============ 第二遍: 无 FFmpeg 精简版 ============
+      - name: Switch to FFmpeg-free config
+        run: bash scripts/build.sh without
+        
+      - run: flutter pub get
+        
+      # 安装 CocoaPods 依赖
+      - name: Install CocoaPods dependencies (lite)
+        run: |
+          cd macos
+          pod install
+      
+      # 构建 macOS app
+      - name: Build macOS app (lite)
+        run: |
+          fastforge release --name prod
+        
+      # 重命名文件以包含 GITHASH（lite 版）
+      - name: Rename macOS artifact (lite)
         run: |
           mv "dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos.zip" "dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-${GITHASH}.zip"
         shell: bash
           
-          # 上传 .app 文件
-      - name: Upload .app artifact
+      # 上传 .app 文件
+      - name: Upload .app artifact (lite)
         uses: actions/upload-artifact@v4
         with:
           name: macos-app-artifact
           path: dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-${{ env.GITHASH }}.zip
           
-      # 上传到 Release
+      # 上传到 Release（带 FFmpeg 版 + 精简版）
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ env.VERSION }}
-          files: dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-${{ env.GITHASH }}.zip
+          files: |
+            dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-ffmpeg-${{ env.GITHASH }}.zip
+            dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-${{ env.GITHASH }}.zip
           prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

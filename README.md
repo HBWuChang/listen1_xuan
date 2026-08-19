@@ -6,15 +6,17 @@ flutter version 3.38.10
 
 ## Releases说明
 
-- Windows：下载 `windows-build-artifact-<commit>.zip`
-- macOS：下载 `listen1_xuan-<version>-macos-<commit>.zip`
-- iOS：下载 `listen1_xuan-ios-<commit>.app.zip`
+> 每个版本会发布**两个变体**：文件名含 `ffmpeg` 的为完整版（支持 Bilibili 转码、缓存写入元数据，体积较大）；不含的为精简版（无 FFmpeg，体积更小）。App 内的更新检查会自动匹配当前版本的对应变体，无需手动区分。
+
+- Windows：下载 `windows-build-artifact[-ffmpeg]-<commit>.zip`
+- macOS：下载 `listen1_xuan-<version>-macos[-ffmpeg]-<commit>.zip`
+- iOS：下载 `listen1_xuan-ios[-ffmpeg]-<commit>.app.zip`
 - Android：按设备CPU架构选 APK（推荐优先选择单架构包，体积更小）
   - 安卓务必授予全部存储访问权限！！！
-  - `app-arm64-v8a-release-<commit>.apk`：大多数近年真机（64位ARM）
-  - `app-armeabi-v7a-release-<commit>.apk`：老旧32位ARM设备
-  - `app-x86_64-release-<commit>.apk`：x86_64模拟器/少数设备
-  - `app-release-<commit>.apk`：通用包（包含多架构，体积最大）
+  - `app-arm64-v8a-release[-ffmpeg]-<commit>.apk`：大多数近年真机（64位ARM）
+  - `app-armeabi-v7a-release[-ffmpeg]-<commit>.apk`：老旧32位ARM设备
+  - `app-x86_64-release[-ffmpeg]-<commit>.apk`：x86_64模拟器/少数设备
+  - `app-release[-ffmpeg]-<commit>.apk`：通用包（包含多架构，体积最大）
   - 若你的`安卓`设备`没有`GooglePlay服务，请考虑优先下载`不带有`without.embedded.Cronet后缀的安装包，否则可能会导致部分github相关请求不成功
 - 请在设置页面登录各平台账号(尤其`网易云账号`，否则无法搜索、查看网易云相关歌曲)以确保相应平台可用
 - `播放即下载`，安卓在Download/Listen1,win与mac在`默认下载文件夹/Listen1`,ios在`文件`中`listen1Xuan`（可在`2.4.1+38`及之后版本关闭默认下载功能
