@@ -716,8 +716,18 @@ class _SettingsPageState extends State<SettingsPage> {
                             leading: Icon(Icons.system_update),
                             title: Text('更新版本'),
                             trailing: Text(
-                              '当前构建hash：${UpdController.buildGitHash}\n${isAndroid ? 'cronetHttpNoPlay：${UpdController.cronetHttpNoPlay.toString()}；' : ''}${isFfmpegEnabled ? 'FFmpeg已启用' : 'FFmpeg未启用'}',
+                              '当前构建hash：${UpdController.buildGitHash}\n${isAndroid ? 'cronetHttpNoPlay：${UpdController.cronetHttpNoPlay.toString()}；' : ''}${isFfmpegEnabled ? 'FFmpeg已启用' : '无FFmpeg'}',
                             ),
+                            onTap: () {
+                              if (settingsController.settingsPageExpansion
+                                  .contains(5)) {
+                                settingsController.settingsPageExpansion.remove(
+                                  5,
+                                );
+                              } else {
+                                settingsController.settingsPageExpansion.add(5);
+                              }
+                            },
                             onLongPress: () {
                               showInfoSnackbar(
                                 '@DustDot',
