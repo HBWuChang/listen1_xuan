@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 #
-# 双版本构建配置切换脚本（带/不带 FFmpeg）
+# Dual-build config switch script (with/without FFmpeg)
 #
-# 用法:
-#   scripts/build.sh with                   # 带 FFmpeg（线上包，默认配置）
-#   scripts/build.sh without                # 无 FFmpeg（stub 包 override）
-#   scripts/build.sh check                  # 打印当前模式
-#   scripts/build.sh <mode> --no-pub-get    # 跳过 flutter pub get（CI 已有该步骤时）
+# Usage:
+#   scripts/build.sh with                   # FFmpeg-enabled (pub.dev package, default)
+#   scripts/build.sh without                # FFmpeg-free (stub package override)
+#   scripts/build.sh check                  # Print current mode + ENABLE_FFMPEG value
+#   scripts/build.sh <mode> --no-pub-get    # Skip `flutter pub get` (CI already runs it)
 #
-# 说明:
-#   - 本脚本只负责切换 pubspec 依赖配置并执行 flutter pub get，
-#     **不执行平台构建**。构建请沿用各平台原有命令或 workflow。
-#   - with    使用 pub.dev 线上包 ffmpeg_kit_flutter_new_audio ^2.5.2。
-#   - without 注入 dependency_overrides 指向本地 stub 包
-#             packages/ffmpeg_kit_flutter_new_audio；构建时还需以
-#             --dart-define=ENABLE_FFMPEG=false 关闭对应功能（见 check）。
-#   - 切换成功后配置保持生效，直到下次切换；命令中途失败会自动回滚。
-#   - 注意: 切换后请勿再执行 flutter pub get，否则会按当前 pubspec 重解析。
+# This script ONLY switches the pubspec dependency config (and optionally runs
+# `flutter pub get`). It does NOT build any platform artifact - keep using your
+# existing build commands / workflows.
+#
+# The switched config stays in effect until the next switch. If the command
+# fails midway (pub get error / Ctrl-C / CI cancellation) it rolls back.
+# Do NOT run `flutter pub get` again after switching - it would re-resolve
+# against the current pubspec (i.e. drop the "without" override).
 #
 set -euo pipefail
 
@@ -33,24 +32,34 @@ BACKUP="$(mktemp)"
 cp "$PUBSPEC" "$BACKUP"
 
 usage() {
-  echo "用法: scripts/build.sh <with|without|check> [--no-pub-get]"
-  echo "  with     带 FFmpeg（线上包，默认配置）"
-  echo "  without  无 FFmpeg（stub 包 override）"
-  echo "  check    打印当前模式与 ENABLE_FFMPEG 值"
+  echo "Usage: scripts/build.sh <with|without|check> [--no-pub-get]"
+  echo "  with     FFmpeg-enabled (pub.dev package, default config)"
+  echo "  without  FFmpeg-free (stub package override)"
+  echo "  check    Print current mode and ENABLE_FFMPEG value"
   exit 1
 }
 
-# 移除注入的 override 块（幂等：不存在也不报错）
+# Remove any previously injected override block (idempotent), then trim any
+# trailing blank lines left behind so the pubspec is restored byte-identical.
 strip_override() {
   awk -v b="$BEGIN_MARK" -v e="$END_MARK" '
     index($0, b) {inblock=1; next}
     index($0, e) {inblock=0; next}
     !inblock {print}
-  ' "$PUBSPEC" > "$PUBSPEC.tmp" && mv "$PUBSPEC.tmp" "$PUBSPEC"
+  ' "$PUBSPEC" > "$PUBSPEC.tmp"
+  awk '
+    { lines[NR] = $0 }
+    END {
+      last = NR
+      while (last > 0 && lines[last] == "") last--
+      for (i = 1; i <= last; i++) print lines[i]
+    }
+  ' "$PUBSPEC.tmp" > "$PUBSPEC.tmp2"
+  mv "$PUBSPEC.tmp2" "$PUBSPEC"
+  rm -f "$PUBSPEC.tmp"
 }
 
-# 回滚：命令中途失败（退出码非 0）时恢复进入前的 pubspec；
-# 成功完成则保持目标配置。
+# Roll back to the pre-invocation pubspec on failure; keep target config on success
 rollback() {
   if [ "${1:-0}" -ne 0 ]; then
     cp "$BACKUP" "$PUBSPEC" 2>/dev/null || true
@@ -62,7 +71,7 @@ trap 'rollback $?' EXIT INT TERM
 case "$MODE" in
   with)
     strip_override
-    echo "==> 配置: 带 FFmpeg（线上包 ffmpeg_kit_flutter_new_audio ^2.5.2）"
+    echo "==> Config: FFmpeg-enabled (pub.dev ffmpeg_kit_flutter_new_audio ^2.5.2)"
     ;;
   without)
     strip_override
@@ -74,7 +83,7 @@ dependency_overrides:
     path: packages/ffmpeg_kit_flutter_new_audio
 # $END_MARK
 EOF
-    echo "==> 配置: 无 FFmpeg（stub 包 packages/ffmpeg_kit_flutter_new_audio）"
+    echo "==> Config: FFmpeg-free (stub package packages/ffmpeg_kit_flutter_new_audio)"
     ;;
   check)
     if grep -q "$BEGIN_MARK" "$PUBSPEC"; then
@@ -95,10 +104,10 @@ if [ "$SKIP_PUB_GET" -eq 0 ]; then
   echo "==> flutter pub get"
   flutter pub get
 else
-  echo "==> 跳过 flutter pub get（--no-pub-get）"
+  echo "==> Skipping flutter pub get (--no-pub-get)"
 fi
 
 echo
-echo "配置切换完成。请随后执行平台构建（勿再 flutter pub get），"
-echo "构建时同步注入开关:"
+echo "Config switch done. Run your platform build now (do NOT run flutter pub get again),"
+echo "and pass the matching switch:"
 echo "  flutter build ... --dart-define=ENABLE_FFMPEG=$([ "$MODE" = without ] && echo false || echo true)"
