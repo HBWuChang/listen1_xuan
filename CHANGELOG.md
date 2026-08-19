@@ -1,5 +1,9 @@
 
 ---
+## 2.5.4+46
+- 优化了Hero动画
+- 统一安卓返回手势、优化安卓的预测式返回动画（需要你的安卓设备自身支持
+- 处理QQ的cookie会出现空value问题
 ## 2.5.3+45
 - 解决macos下载最新测试版无法安装问题@zmcmcc
 - 正在播放列表实现类tg的消息的动画滚动到目标效果（在[这个仓库](https://github.com/HBWuChang/super_sliver_list)
