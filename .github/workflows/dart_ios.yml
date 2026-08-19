@@ -73,6 +73,7 @@ jobs:
       - name: Switch to FFmpeg-free config
         run: bash scripts/build.sh without
         
+      - run: flutter clean
       - run: flutter pub get
         
       # 安装 CocoaPods 依赖（无 ffmpeg 原生库）

@@ -55,6 +55,7 @@ jobs:
         shell: bash
         run: bash scripts/build.sh without
 
+      - run: flutter clean
       - run: flutter pub get
 
       - run: flutter build windows --dart-define=gitHash=${{ env.GITHASH }}

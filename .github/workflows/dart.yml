@@ -138,6 +138,7 @@ jobs:
       - name: Switch to FFmpeg-free config
         run: bash scripts/build.sh without
 
+      - run: flutter clean
       - run: flutter pub get
 
       - name: flutter build apk --split-per-abi (lite)
