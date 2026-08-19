@@ -159,12 +159,11 @@ dependencies:
     # path: /Users/cd022/HBWuChang/code/receive_sharing_intent
     git:
       url: https://github.com/HBWuChang/receive_sharing_intent
-      
+
   ffmpeg_kit_flutter_new_audio: ^2.5.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
   build_runner: ^2.10.4
   json_serializable: ^6.11.3
