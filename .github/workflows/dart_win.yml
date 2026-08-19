@@ -45,10 +45,12 @@ jobs:
         with:
               name: windows-build-artifact-ffmpeg
               path: build/windows/x64/runner/Release/**
-         # 打包构建产物为 ZIP 文件
+         # 打包构建产物为 ZIP 文件（输出到 release_artifacts/，避免被
+         # 第二遍的 flutter clean 清理 build/ 时删除）
       - name: Compress Build Artifacts (ffmpeg)
         run: |
-          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact-ffmpeg-${{ env.GITHASH }}.zip
+          mkdir -p release_artifacts
+          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath release_artifacts/windows-build-artifact-ffmpeg-${{ env.GITHASH }}.zip
 
       # ============ 第二遍: 无 FFmpeg 精简版 ============
       - name: Switch to FFmpeg-free config
@@ -64,10 +66,10 @@ jobs:
         with:
               name: windows-build-artifact
               path: build/windows/x64/runner/Release/**
-         # 打包构建产物为 ZIP 文件
+         # 打包构建产物为 ZIP 文件（同样输出到 release_artifacts/）
       - name: Compress Build Artifacts (lite)
         run: |
-          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact-${{ env.GITHASH }}.zip
+          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath release_artifacts/windows-build-artifact-${{ env.GITHASH }}.zip
 
       # 从 pubspec.yaml 提取版本号
       - name: Extract Version from pubspec.yaml
@@ -98,8 +100,8 @@ jobs:
         with:
           tag_name: ${{ env.VERSION }}
           files: |
-            build/windows-build-artifact-ffmpeg-${{ env.GITHASH }}.zip
-            build/windows-build-artifact-${{ env.GITHASH }}.zip
+            release_artifacts/windows-build-artifact-ffmpeg-${{ env.GITHASH }}.zip
+            release_artifacts/windows-build-artifact-${{ env.GITHASH }}.zip
           prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
