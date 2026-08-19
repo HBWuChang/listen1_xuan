@@ -3,7 +3,7 @@ description: "Rewrite From listen1"
 
 publish_to: "none"
 
-version: 2.5.4+46
+version: 2.6.0+47
 
 environment:
   sdk: ^3.8.1

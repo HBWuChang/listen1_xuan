@@ -20,11 +20,6 @@ PODS:
     - FlutterMacOS
   - dynamic_color (0.0.2):
     - FlutterMacOS
-  - ffmpeg_kit_flutter_new_audio (8.1.2):
-    - ffmpeg_kit_flutter_new_audio/audio (= 8.1.2)
-    - FlutterMacOS
-  - ffmpeg_kit_flutter_new_audio/audio (8.1.2):
-    - FlutterMacOS
   - file_picker (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -87,7 +82,6 @@ DEPENDENCIES:
   - desktop_drop (from `Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos`)
   - device_info_plus (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos`)
   - dynamic_color (from `Flutter/ephemeral/.symlinks/plugins/dynamic_color/macos`)
-  - ffmpeg_kit_flutter_new_audio (from `Flutter/ephemeral/.symlinks/plugins/ffmpeg_kit_flutter_new_audio/macos`)
   - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/darwin`)
   - flutter_volume_controller (from `Flutter/ephemeral/.symlinks/plugins/flutter_volume_controller/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
@@ -134,8 +128,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos
   dynamic_color:
     :path: Flutter/ephemeral/.symlinks/plugins/dynamic_color/macos
-  ffmpeg_kit_flutter_new_audio:
-    :path: Flutter/ephemeral/.symlinks/plugins/ffmpeg_kit_flutter_new_audio/macos
   file_picker:
     :path: Flutter/ephemeral/.symlinks/plugins/file_picker/darwin
   flutter_volume_controller:
@@ -191,7 +183,6 @@ SPEC CHECKSUMS:
   desktop_drop: 10a3e6a7fa9dbe350541f2574092fecfa345a07b
   device_info_plus: 4fb280989f669696856f8b129e4a5e3cd6c48f76
   dynamic_color: cb7c2a300ee67ed3bd96c3e852df3af0300bf610
-  ffmpeg_kit_flutter_new_audio: d2b7d9509af916173733f7e5aeaa477c6c266d7c
   file_picker: 70164d9778c42c47218d6cd79ce435de0856b11a
   flutter_volume_controller: ae08bf0838e4901f299781c3ab5056dfab0c2f74
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
