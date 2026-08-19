@@ -1,18 +1,18 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:listen1_xuan/controllers/cache_controller.dart';
+import 'package:listen1_xuan/controllers/play_controller.dart';
+import 'package:listen1_xuan/models/Track.dart';
+import 'package:listen1_xuan/services/cache_audio_metadata.dart';
 import 'package:logger/logger.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/websocket_client_controller.dart';
 import 'package:path/path.dart';
 import '../global_settings_animations.dart';
-import '../play.dart';
 import 'settings_controller.dart';
 
 class WsDownloadController extends GetxController {
-  static const String _tag = 'WsDownloadController';
   final Logger _logger = Logger();
 
   static const String _settingsKeyPrefix = 'DownloadController_';
@@ -38,13 +38,13 @@ class WsDownloadController extends GetxController {
     loadSettings();
   }
 
-  late Directory appDocDir;
   Future<void> _download(String key) async {
     _logger.d('Try download for $key');
     if (downloadingList.containsKey(key)) return;
     if (!toDownloadList.containsKey(key)) return;
     _logger.d('Starting download for $key');
     MapEntry<String, String> entry = MapEntry(key, toDownloadList[key]!);
+    File? partialFile;
     void onFail(e) {
       _logger.e('Download failed for $key', error: e);
       failedList[key] = entry.value;
@@ -56,7 +56,10 @@ class WsDownloadController extends GetxController {
     try {
       downloadingList[key] = toDownloadList[key]!;
       toDownloadList.remove(key);
-      String filePath = join(appDocDir.path, entry.value);
+      final cacheDirectory = await xuanGetdataDirectory();
+      String filePath = join(cacheDirectory.path, entry.value);
+      partialFile = File(CacheAudioMetadata.temporaryDownloadPath(filePath));
+      if (await partialFile.exists()) await partialFile.delete();
       String serverAddress =
           Get.find<WebSocketClientController>().serverAddress;
       Uri uri = Uri(
@@ -66,27 +69,39 @@ class WsDownloadController extends GetxController {
         path: '/downloadById/${entry.key}',
       );
 
-      Dio()
-          .download(
-            uri.toString(),
-            filePath,
-            onReceiveProgress: (received, total) {
-              if (total != -1) {
-                downloadProcess[key] = [received, total];
-              }
-            },
-          )
-          .then((_) {
-            Get.find<CacheController>().setLocalCache(entry.key, entry.value);
-            downloadedList[key] = entry.value;
-            downloadingList.remove(key);
-            downloadProcess.remove(key);
-          })
-          .catchError((e) {
-            onFail(e);
-          });
+      await Dio().download(
+        uri.toString(),
+        partialFile.path,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            downloadProcess[key] = [received, total];
+          }
+        },
+      );
+
+      Track? track;
+      for (final candidate in Get.find<PlayController>().current_playing) {
+        if (candidate.id == entry.key) {
+          track = candidate;
+          break;
+        }
+      }
+      final cacheController = Get.find<CacheController>();
+      await cacheController.finalizeCacheFile(
+        inputPath: partialFile.path,
+        outputPath: filePath,
+        track: track,
+      );
+      cacheController.setLocalCache(entry.key, entry.value);
+      downloadedList[key] = entry.value;
+      downloadingList.remove(key);
+      downloadProcess.remove(key);
     } catch (e) {
       onFail(e);
+    } finally {
+      if (partialFile != null && await partialFile.exists()) {
+        await partialFile.delete();
+      }
     }
   }
 
@@ -97,7 +112,6 @@ class WsDownloadController extends GetxController {
   }
 
   void loadSettings() async {
-    appDocDir = await xuanGetdataDirectory();
     final settings = Get.find<SettingsController>().settings;
     toDownloadList.value = Map<String, String>.from(
       settings[toDownloadListKey] ?? {},

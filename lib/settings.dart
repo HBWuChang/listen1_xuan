@@ -23,6 +23,7 @@ import 'controllers/cache_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
+import 'services/ffmpeg_config.dart';
 import 'controllers/routeController.dart';
 import 'controllers/supabase_auth_controller.dart';
 import 'controllers/websocket_client_controller.dart';
@@ -126,8 +127,10 @@ class _LoginWebviewState extends State<LoginWebview> {
           var t = jsonDecode(await widget.controller.getCookies())["cookies"];
           final cookies = t
               .map<Cookie>(
-                (item) =>
-                    Cookie(item['name'] as String, item['value'] as String),
+                (item) => Cookie(
+                  item['name'] as String,
+                  Uri.encodeComponent(item['value'] as String),
+                ),
               )
               .toList();
           await savePlatformToken(
@@ -712,6 +715,32 @@ class _SettingsPageState extends State<SettingsPage> {
                           return ListTile(
                             leading: Icon(Icons.system_update),
                             title: Text('更新版本'),
+                            trailing: Text(
+                              '当前构建hash：${UpdController.buildGitHash}\n${isAndroid ? 'cronetHttpNoPlay：${UpdController.cronetHttpNoPlay.toString()}；' : ''}${isFfmpegEnabled ? 'FFmpeg已启用' : '无FFmpeg'}',
+                            ),
+                            onTap: () {
+                              if (settingsController.settingsPageExpansion
+                                  .contains(5)) {
+                                settingsController.settingsPageExpansion.remove(
+                                  5,
+                                );
+                              } else {
+                                settingsController.settingsPageExpansion.add(5);
+                              }
+                            },
+                            onLongPress: () {
+                              showInfoSnackbar(
+                                '@DustDot',
+                                'https://github.com/HBWuChang/listen1_xuan/pull/43',
+                                onTap: () {
+                                  g_launchURL(
+                                    Uri.parse(
+                                      'https://github.com/HBWuChang/listen1_xuan/pull/43',
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           );
                         },
                         canTapOnHeader: true,

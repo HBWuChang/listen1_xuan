@@ -2,7 +2,7 @@ name: win
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" , "feat/dual-build-ffmpeg"]
     paths:
       - '**/*.dart'
       - 'pubspec.yaml'
@@ -31,17 +31,46 @@ jobs:
           flutter-version: '3.38.10'
       - run: flutter --version
       - run: flutter pub get
-      
+
+      # ============ 第一遍: 带 FFmpeg 版本 ============
+      - name: Switch to FFmpeg-enabled config
+        shell: bash
+        run: bash scripts/build.sh with
+
+      - run: flutter pub get
+
       - run: flutter build windows --dart-define=gitHash=${{ env.GITHASH }}
-      - name: Upload Build Artifact
+      - name: Upload Build Artifact (ffmpeg)
+        uses: actions/upload-artifact@v4
+        with:
+              name: windows-build-artifact-ffmpeg
+              path: build/windows/x64/runner/Release/**
+         # 打包构建产物为 ZIP 文件（输出到 release_artifacts/，避免被
+         # 第二遍的 flutter clean 清理 build/ 时删除）
+      - name: Compress Build Artifacts (ffmpeg)
+        run: |
+          mkdir -p release_artifacts
+          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath release_artifacts/windows-build-artifact-ffmpeg-${{ env.GITHASH }}.zip
+
+      # ============ 第二遍: 无 FFmpeg 精简版 ============
+      - name: Switch to FFmpeg-free config
+        shell: bash
+        run: bash scripts/build.sh without
+
+      - run: flutter clean
+      - run: flutter pub get
+
+      - run: flutter build windows --dart-define=gitHash=${{ env.GITHASH }}
+      - name: Upload Build Artifact (lite)
         uses: actions/upload-artifact@v4
         with:
               name: windows-build-artifact
               path: build/windows/x64/runner/Release/**
-         # 打包构建产物为 ZIP 文件
-      - name: Compress Build Artifacts
+         # 打包构建产物为 ZIP 文件（同样输出到 release_artifacts/）
+      - name: Compress Build Artifacts (lite)
         run: |
-          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows-build-artifact-${{ env.GITHASH }}.zip
+          powershell Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath release_artifacts/windows-build-artifact-${{ env.GITHASH }}.zip
+
       # 从 pubspec.yaml 提取版本号
       - name: Extract Version from pubspec.yaml
         id: extract_version
@@ -65,12 +94,14 @@ jobs:
         continue-on-error: true
         shell: pwsh
         
-      # 上传新的资产到最新 Release
+      # 上传新的资产到最新 Release（带 FFmpeg 版 + 精简版）
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ env.VERSION }}
-          files: build/windows-build-artifact-${{ env.GITHASH }}.zip
+          files: |
+            release_artifacts/windows-build-artifact-ffmpeg-${{ env.GITHASH }}.zip
+            release_artifacts/windows-build-artifact-${{ env.GITHASH }}.zip
           prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

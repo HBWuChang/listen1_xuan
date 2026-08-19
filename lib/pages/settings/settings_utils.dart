@@ -154,14 +154,13 @@ Future<void> importSettingsFromFile(
       isDesktop) {
     try {
       // 弹出系统文件选择器选择文件
-      FilePickerResult? result = await FilePicker.pickFiles(
+      final result = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ["json"],
       );
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        final content = await file.readAsString();
+      if (result != null) {
+        final content = utf8.decode(await result.readAsBytes());
         final settings = jsonDecode(content) as Map<String, dynamic>;
 
         await _sets(settings);

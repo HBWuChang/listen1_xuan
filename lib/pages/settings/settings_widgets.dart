@@ -542,22 +542,23 @@ void _showOpacityDialog() {
   );
 }
 
-List<Widget> get cacheSettingsTiles => [
-  Obx(() {
-    WebSocketClientController wscc = Get.find<WebSocketClientController>();
-    return ElevatedButton(
-      onPressed: !wscc.isConnected
-          ? null
-          : () {
-              Get.toNamed(RouteName.downloadPage, id: 1);
-            },
-      child: Text('从WebSocket服务器获取缓存文件'),
-    );
-  }),
-  ElevatedButton(
-    onPressed: () => clean_local_cache(),
-    child: const Text('清除未在配置文件中的歌曲缓存'),
-  ),
+List<Widget> get cacheSettingsTiles {
+  final tiles = <Widget>[
+    Obx(() {
+      WebSocketClientController wscc = Get.find<WebSocketClientController>();
+      return ElevatedButton(
+        onPressed: !wscc.isConnected
+            ? null
+            : () {
+                Get.toNamed(RouteName.downloadPage, id: 1);
+              },
+        child: Text('从WebSocket服务器获取缓存文件'),
+      );
+    }),
+    ElevatedButton(
+      onPressed: () => clean_local_cache(),
+      child: const Text('清除未在配置文件中的歌曲缓存'),
+    ),
   ElevatedButton(
     onPressed: () async {
       final result = await showConfirmDialog(
@@ -590,32 +591,149 @@ List<Widget> get cacheSettingsTiles => [
       },
     ),
   ),
-  ListTile(
-    leading: Icon(Icons.edit),
-    title: const Text('缓存命名方式'),
-    subtitle: Obx(() {
-      return Text(
-        Get.find<SettingsController>().cacheNamedMethod.fold<String>('', (
-          previousValue,
-          element,
-        ) {
-          final method = NamedMethod.values.firstWhere(
-            (m) => m.index == element,
-            orElse: () => NamedMethod.id,
-          );
-          if (previousValue.isEmpty) {
-            return method.name;
-          } else {
-            return '$previousValue${Get.find<SettingsController>().cacheNamedConnection}${method.name}';
-          }
-        }),
-        style: TextStyle(fontSize: 12),
+  ];
+  if (isFfmpegEnabled) {
+    tiles.add(
+      Obx(
+        () => SwitchListTile(
+          title: const Text('缓存保留元数据'),
+          subtitle: const Text('开启后将写入歌曲信息'),
+          value: Get.find<SettingsController>().cacheRetainMetadata,
+          onChanged: (bool value) {
+            Get.find<SettingsController>().cacheRetainMetadata = value;
+          },
+        ),
+      ),
+    );
+  }
+  tiles.addAll([
+    ListTile(
+      leading: Icon(Icons.edit),
+      title: const Text('缓存命名方式'),
+      subtitle: Obx(() {
+        return Text(
+          Get.find<SettingsController>().cacheNamedMethod.fold<String>('', (
+            previousValue,
+            element,
+          ) {
+            final method = NamedMethod.values.firstWhere(
+              (m) => m.index == element,
+              orElse: () => NamedMethod.id,
+            );
+            if (previousValue.isEmpty) {
+              return method.name;
+            } else {
+              return '$previousValue${Get.find<SettingsController>().cacheNamedConnection}${method.name}';
+            }
+          }),
+          style: TextStyle(fontSize: 12),
+        );
+      }),
+      trailing: Icon(Icons.chevron_right),
+      onTap: () => Get.toNamed(RouteName.cacheNamingPage, id: 1),
+    ),
+    const _CacheDirectoryTile(),
+  ]);
+  return tiles
+      .map((e) => Padding(padding: EdgeInsets.all(8.0), child: e))
+      .toList();
+}
+
+class _CacheDirectoryTile extends StatefulWidget {
+  const _CacheDirectoryTile();
+
+  @override
+  State<_CacheDirectoryTile> createState() => _CacheDirectoryTileState();
+}
+
+class _CacheDirectoryTileState extends State<_CacheDirectoryTile> {
+  late final Future<Directory> _defaultDirectory;
+  bool _isChanging = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _defaultDirectory = xuanGetDefaultCacheDirectory();
+  }
+
+  Future<void> _selectDirectory() async {
+    final currentDirectory = await xuanGetdataDirectory();
+    final selectedPath = await FilePicker.getDirectoryPath(
+      dialogTitle: '选择缓存目录',
+      initialDirectory: currentDirectory.path,
+    );
+    if (selectedPath == null || selectedPath.trim().isEmpty) return;
+    await _changeDirectory(selectedPath);
+  }
+
+  Future<void> _changeDirectory(String? path) async {
+    if (_isChanging) return;
+    setState(() => _isChanging = true);
+
+    // 暂停播放，避免迁移期间文件被占用；完成后恢复
+    final playController = Get.find<PlayController>();
+    final wasPlaying = playController.music_player.state.playing;
+    if (wasPlaying) {
+      await globalPause();
+    }
+
+    // 显示不可关闭的加载对话框，展示迁移过程
+    final loadingMessage = '正在准备切换缓存路径...'.obs;
+    showLoadingDialog(loadingMessage);
+    try {
+      final directory = await Get.find<CacheController>().changeCacheDirectory(
+        path,
+        onProgress: (message) => loadingMessage.value = message,
       );
-    }),
-    trailing: Icon(Icons.chevron_right),
-    onTap: () => Get.toNamed(RouteName.cacheNamingPage, id: 1),
-  ),
-].map((e) => Padding(padding: EdgeInsets.all(8.0), child: e)).toList();
+      if (!mounted) return;
+      Get.back(); // 关闭加载对话框
+      showSuccessSnackbar('缓存路径已设置', directory.path);
+      if (wasPlaying) {
+        await playController.music_player.play();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      if (Get.isDialogOpen ?? false) Get.back();
+      showErrorSnackbar('设置缓存路径失败', e.toString());
+    } finally {
+      if (mounted) setState(() => _isChanging = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settingsController = Get.find<SettingsController>();
+    return Obx(() {
+      final customPath = settingsController.cacheDirectoryPath;
+      return FutureBuilder<Directory>(
+        future: _defaultDirectory,
+        builder: (context, snapshot) {
+          final path = customPath.isNotEmpty
+              ? customPath
+              : snapshot.data?.path ?? '正在获取默认路径...';
+          return ListTile(
+            leading: const Icon(Icons.folder_outlined),
+            title: const Text('设置缓存路径'),
+            subtitle: Text(path, maxLines: 2, overflow: TextOverflow.ellipsis),
+            onTap: _isChanging ? null : _selectDirectory,
+            trailing: _isChanging
+                ? const SizedBox.square(
+                    dimension: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : customPath.isEmpty
+                ? const Icon(Icons.chevron_right)
+                : IconButton(
+                    tooltip: '恢复默认路径',
+                    onPressed: () => _changeDirectory(null),
+                    icon: const Icon(Icons.restore),
+                  ),
+          );
+        },
+      );
+    });
+  }
+}
 
 Widget desktopSettingsTiles(
   BuildContext context,

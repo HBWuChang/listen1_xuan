@@ -15,6 +15,7 @@ import 'package:system_info3/system_info3.dart';
 
 import '../funcs.dart';
 import '../global_settings_animations.dart';
+import '../services/ffmpeg_config.dart';
 import '../settings.dart';
 import '../models/GitHubRelease.dart';
 import '../models/ReleaseAsset.dart';
@@ -79,10 +80,19 @@ class UpdController extends GetxController {
     return response.data["artifacts"];
   }
 
-  /// 查找匹配平台的 artifact
+  /// 文件名是否匹配当前构建的 FFmpeg 变体。
+  ///
+  /// 命名约定：带 FFmpeg 的产物在 hash 前带 `-ffmpeg`（如
+  /// `app-release-ffmpeg-<hash>.apk`），精简版不带（如
+  /// `app-release-<hash>.apk`）。
+  bool _matchesFfmpegVariant(String name) {
+    return isFfmpegEnabled == name.contains('ffmpeg');
+  }
+
+  /// 查找匹配平台和 FFmpeg 变体的 artifact（精确匹配 name）。
   dynamic _findArtifactByPlatform(List<dynamic> artifacts, String platform) {
     for (var artifact in artifacts) {
-      if (artifact['name'].toString().contains(platform)) {
+      if (artifact['name'].toString() == platform) {
         return artifact;
       }
     }
@@ -191,7 +201,12 @@ class UpdController extends GetxController {
       final filePath = p.join(tempPath, 'canary.zip');
 
       final artifacts = await _fetchArtifacts(token);
-      final art = _findArtifactByPlatform(artifacts, 'windows');
+      final art = _findArtifactByPlatform(
+        artifacts,
+        isFfmpegEnabled
+            ? 'windows-build-artifact-ffmpeg'
+            : 'windows-build-artifact',
+      );
       if (art == null) {
         showErrorSnackbar('未找到 Windows 版本', null);
         return;
@@ -342,6 +357,11 @@ class UpdController extends GetxController {
         filteredArt = artifacts;
     }
 
+    // 按当前构建的 FFmpeg 变体过滤 artifact
+    filteredArt = filteredArt
+        .where((i) => _matchesFfmpegVariant(i['name'].toString()))
+        .toList();
+
     return await Get.dialog(
       AlertDialog(
         title: Text('选择适合您设备的版本'),
@@ -459,7 +479,10 @@ class UpdController extends GetxController {
       final filePath = p.join(tempPath, 'canary.zip');
 
       final artifacts = await _fetchArtifacts(token);
-      final art = _findArtifactByPlatform(artifacts, 'macos');
+      final art = _findArtifactByPlatform(
+        artifacts,
+        isFfmpegEnabled ? 'macos-app-artifact-ffmpeg' : 'macos-app-artifact',
+      );
       if (art == null) {
         showErrorSnackbar('未找到 macOS 版本', null);
         return;
@@ -577,7 +600,8 @@ class UpdController extends GetxController {
               ..createSync(recursive: true)
               ..writeAsBytesSync(data);
 
-            if (filename.endsWith('macos.zip')) {
+            if (filename.endsWith('.zip') &&
+                filename.contains('macos')) {
               innerZipPath = extractPath;
             }
           } else {
@@ -1145,6 +1169,13 @@ class UpdController extends GetxController {
 
     List<ReleaseAsset> assets = release.assets;
     assets.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    // 先按当前构建的 FFmpeg 变体过滤（带 FFmpeg 的产物名含 `ffmpeg`）
+    assets = assets
+        .where((asset) => _matchesFfmpegVariant(asset.name))
+        .toList();
+    if (assets.isEmpty) {
+      return null;
+    }
     if (isWindows) {
       for (var asset in assets) {
         if (asset.name.toLowerCase().contains('windows') &&
@@ -1184,6 +1215,8 @@ class UpdController extends GetxController {
             apkAssets = apkAssets;
         }
         apkAssets.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        // GitHub release 上传时会把文件名中的空格替换为 `.`，
+        // 因此这里用点号匹配 "without.embedded.Cronet"。
         if (cronetHttpNoPlay) {
           apkAssets.removeWhere(
             (asset) => asset.name.contains("without.embedded.Cronet"),

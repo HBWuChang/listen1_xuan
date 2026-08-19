@@ -3,7 +3,7 @@ description: "Rewrite From listen1"
 
 publish_to: "none"
 
-version: 2.5.4+46
+version: 2.6.0+47
 
 environment:
   sdk: ^3.8.1
@@ -34,6 +34,7 @@ dependencies:
   dio_cookie_manager: ^3.5.0
   fluttertoast: ^9.0.0
   file_picker: 12.0.0-beta.7
+  
   permission_handler: ^11.3.1
   vibration: ^3.1.8
   logger: ^2.5.0
@@ -159,10 +160,10 @@ dependencies:
     git:
       url: https://github.com/HBWuChang/receive_sharing_intent
 
+  ffmpeg_kit_flutter_new_audio: ^2.5.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
   build_runner: ^2.10.4
   json_serializable: ^6.11.3
