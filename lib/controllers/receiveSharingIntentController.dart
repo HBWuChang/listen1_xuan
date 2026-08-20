@@ -52,6 +52,7 @@ class ReceiveSharingIntentController extends GetxController {
     if (_sharedFiles.isNotEmpty) {
       final file = _sharedFiles.first;
       if (file.type == SharedMediaType.text ||
+          file.type == SharedMediaType.edit ||
           file.type == SharedMediaType.url) {
         _sendText = file.path;
         reg(sendText);
