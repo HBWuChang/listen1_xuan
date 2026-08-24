@@ -558,7 +558,7 @@ class PlayController extends GetxController
       final tdir = await Get.find<CacheController>().getLocalCache(track.id);
 
       debugPrint('playsong');
-      debugPrint(track.toString());
+      debugPrint(track.toJson().toString());
       debugPrint(tdir);
       if (tdir == "") {
         // 无本地文件，引导播放

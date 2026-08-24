@@ -380,7 +380,8 @@ class MediaService {
     provider.bootstrap_track(
       track,
       successCallback,
-      (track) => _playController.bootstrapTrackFail(track, start: start),
+      (track) =>
+          _playController.bootstrapTrackFail(sTrack ?? track, start: start),
     );
   }
 

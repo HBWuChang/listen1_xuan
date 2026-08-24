@@ -119,7 +119,7 @@ class _LoginWebviewState extends State<LoginWebview> {
           showErrorSnackbar('获取code失败', '请确认已跳转到Github授权成功页面再点击按钮');
           return;
         }
-        final code = url?.split('code=')[1];
+        final code =Uri.parse(url).queryParameters['code'];
         await Github.handleCallback(code ?? '', context);
         break;
       default:
