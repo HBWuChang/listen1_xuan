@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/routeController.dart';
+import 'package:listen1_xuan/play.dart';
 import 'package:stop_watch_timer/stop_watch_timer.dart';
 
 class SleepTimerController extends GetxController {
@@ -62,6 +63,7 @@ class SleepTimerController extends GetxController {
   void _handleEnded() {
     if (!isEnabled) return;
     endsAt.value = null;
+    globalPause();
     unawaited(closeApp());
   }
 
