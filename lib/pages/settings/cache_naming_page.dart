@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/controllers/cache_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
@@ -13,7 +14,11 @@ class CacheNamingPage extends StatelessWidget {
     final settingsController = Get.find<SettingsController>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('缓存命名方式'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('缓存命名方式'),
+        leading: BackButton(onPressed: routerPop),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

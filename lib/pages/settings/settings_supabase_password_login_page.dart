@@ -85,10 +85,8 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
     return Scaffold(
       appBar: AppBar(
         title: Obx(() => Text(_isSignUpMode.value ? '注册账户' : '邮箱密码登录')),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Get.back(id: 1),
-        ),
+                leading: BackButton(onPressed: routerPop),
+
       ),
       body: _buildPasswordLoginTab(),
     );

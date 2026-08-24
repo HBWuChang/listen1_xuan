@@ -73,24 +73,6 @@ String supabaseKey =
 int last_dir = 0;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-class MyHttpOverrides extends HttpOverrides {
-  MyHttpOverrides({required this.trustBadCertificates, this.userAgent});
-
-  final bool trustBadCertificates;
-  final String? userAgent;
-
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    final client = super.createHttpClient(context);
-    client.userAgent = userAgent;
-    if (trustBadCertificates) {
-      client.badCertificateCallback =
-          (X509Certificate cert, String host, int port) => true;
-    }
-    return client;
-  }
-}
-
 void enableThumbnailToolbar() async {
   int retryCount = 0;
   const maxRetries = 10; // 最多重试10次
@@ -200,7 +182,7 @@ void main() async {
       windowOptions = WindowOptions(
         size: Size(bounds.width, bounds.height),
         minimumSize: Size(400, 700),
-        center: true,
+        center: settingsController.centerWindowOnStart,
         backgroundColor: Colors.transparent,
         skipTaskbar: false,
         titleBarStyle: TitleBarStyle.hidden,
@@ -209,7 +191,7 @@ void main() async {
       windowOptions = WindowOptions(
         size: Size(1000, 700),
         minimumSize: Size(400, 700),
-        center: true,
+        center: settingsController.centerWindowOnStart,
         backgroundColor: Colors.transparent,
         skipTaskbar: false,
         titleBarStyle: TitleBarStyle.hidden,
@@ -275,15 +257,6 @@ void main() async {
   if (settingsController.settingsPageExpansion.contains(0)) {
     settingsController.refreshLoginData();
   }
-  // dioWithCookieManager.httpClientAdapter = IOHttpClientAdapter(
-  //   createHttpClient: () {
-  //     final client = HttpClient();
-  //     client.findProxy = (uri) {
-  //       return 'PROXY 192.168.1.15:9000';
-  //     };
-  //     return client;
-  //   },
-  // );
 
   initDeepLinks();
   runApp(MyApp());

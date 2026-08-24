@@ -5,6 +5,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/bodys.dart';
+import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:listen1_xuan/models/Track.dart';
@@ -44,9 +45,7 @@ class PlaylistInfoPage extends StatelessWidget {
               pinned: true,
               leading: IconButton(
                 icon: Icon(Icons.arrow_back),
-                onPressed: () {
-                  Get.back(id: 1);
-                },
+                onPressed: () => routerPop(),
               ),
               title: Obx(
                 () => Skeletonizer(

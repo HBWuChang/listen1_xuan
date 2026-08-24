@@ -559,38 +559,38 @@ List<Widget> get cacheSettingsTiles {
       onPressed: () => clean_local_cache(),
       child: const Text('清除未在配置文件中的歌曲缓存'),
     ),
-  ElevatedButton(
-    onPressed: () async {
-      final result = await showConfirmDialog(
-        '确认清除所有歌曲缓存？此操作不可恢复',
-        '清除所有缓存',
-        confirmLevel: ConfirmLevel.danger,
-      );
-      if (!result) return;
-      clean_local_cache(true);
-    },
-    child: const Text('清除所有歌曲缓存'),
-  ),
-  Obx(
-    () => SwitchListTile(
-      title: const Text('禁用歌曲缓存下载'),
-      subtitle: Text('开启后将不再下载歌曲缓存，已下载的缓存仍可使用'),
-      value: Get.find<SettingsController>().disableSongDownload,
-      onChanged: (bool value) {
-        Get.find<SettingsController>().disableSongDownload = value;
+    ElevatedButton(
+      onPressed: () async {
+        final result = await showConfirmDialog(
+          '确认清除所有歌曲缓存？此操作不可恢复',
+          '清除所有缓存',
+          confirmLevel: ConfirmLevel.danger,
+        );
+        if (!result) return;
+        clean_local_cache(true);
       },
+      child: const Text('清除所有歌曲缓存'),
     ),
-  ),
-  Obx(
-    () => SwitchListTile(
-      title: const Text('禁用歌词缓存下载'),
-      subtitle: Text('开启后将不再下载歌词缓存，已下载的缓存仍可使用'),
-      value: Get.find<SettingsController>().disableLyricDownload,
-      onChanged: (bool value) {
-        Get.find<SettingsController>().disableLyricDownload = value;
-      },
+    Obx(
+      () => SwitchListTile(
+        title: const Text('禁用歌曲缓存下载'),
+        subtitle: Text('开启后将不再下载歌曲缓存，已下载的缓存仍可使用'),
+        value: Get.find<SettingsController>().disableSongDownload,
+        onChanged: (bool value) {
+          Get.find<SettingsController>().disableSongDownload = value;
+        },
+      ),
     ),
-  ),
+    Obx(
+      () => SwitchListTile(
+        title: const Text('禁用歌词缓存下载'),
+        subtitle: Text('开启后将不再下载歌词缓存，已下载的缓存仍可使用'),
+        value: Get.find<SettingsController>().disableLyricDownload,
+        onChanged: (bool value) {
+          Get.find<SettingsController>().disableLyricDownload = value;
+        },
+      ),
+    ),
   ];
   if (isFfmpegEnabled) {
     tiles.add(
@@ -805,6 +805,15 @@ Widget desktopSettingsTiles(
                   },
                 ),
               ),
+              Obx(
+                () => SwitchListTile(
+                  title: const Text('启动时将窗口居中'),
+                  value: Get.find<SettingsController>().centerWindowOnStart,
+                  onChanged: (bool value) {
+                    Get.find<SettingsController>().centerWindowOnStart = value;
+                  },
+                ),
+              ),
               ...notificationSettingsTiles,
             ]
             .map(
@@ -891,7 +900,10 @@ Widget get androidSettingsTiles => Column(
       openBuilder: (context, _) {
         final settingsController = Get.find<SettingsController>();
         return Scaffold(
-          appBar: AppBar(title: const Text('通知按钮顺序调整')),
+          appBar: AppBar(
+            title: const Text('通知按钮顺序调整'),
+            leading: BackButton(onPressed: routerPop),
+          ),
           body: Obx(
             () => ReorderableListView(
               onReorder: (oldIndex, newIndex) {

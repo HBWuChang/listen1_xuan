@@ -463,17 +463,17 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
           ),
           4.sbh,
           FittedBox(
-              fit: BoxFit.scaleDown,
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<T>(
-                  value: value,
-                  isDense: true,
-                  iconSize: 16,
-                  onChanged: onChanged,
-                  items: items,
-                ),
+            fit: BoxFit.scaleDown,
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<T>(
+                value: value,
+                isDense: true,
+                iconSize: 16,
+                onChanged: onChanged,
+                items: items,
               ),
-            ).sbh(30),
+            ),
+          ).sbh(30),
         ],
       ),
     );
@@ -518,22 +518,22 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
           ),
           16.sbh,
           RotatedBox(
-              quarterTurns: 3,
-              child: Slider(
-                padding: const EdgeInsets.all(0),
-                activeColor: colorScheme.secondaryContainer,
-                inactiveColor: colorScheme.surfaceContainer,
-                value: band.g.clamp(-12.0, 12.0),
-                min: -12,
-                max: 12,
-                onChanged: (v) {
-                  _updateBandByActualIndex(
-                    item.index,
-                    (old) => old.copyWith(g: v),
-                  );
-                },
-              ),
-            ).sbh(180),
+            quarterTurns: 3,
+            child: Slider(
+              padding: const EdgeInsets.all(0),
+              activeColor: colorScheme.secondaryContainer,
+              inactiveColor: colorScheme.surfaceContainer,
+              value: band.g.clamp(-12.0, 12.0),
+              min: -12,
+              max: 12,
+              onChanged: (v) {
+                _updateBandByActualIndex(
+                  item.index,
+                  (old) => old.copyWith(g: v),
+                );
+              },
+            ),
+          ).sbh(180),
           16.sbh,
           InkWell(
             borderRadius: BorderRadius.circular(8),
@@ -690,6 +690,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('均衡器设置'),
+        leading: BackButton(onPressed: routerPop),
         actions: [
           IconButton(
             onPressed: () {
@@ -809,13 +810,13 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                     }
                     final sorted = _sortedBands(preset);
                     return SuperListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (context, index) {
-                          final item = sorted[index];
-                          return _buildBandColumn(item, isMod2: index % 2 == 0);
-                        },
-                        itemCount: sorted.length,
-                      ).sbh(_bandCardHeight);
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (context, index) {
+                        final item = sorted[index];
+                        return _buildBandColumn(item, isMod2: index % 2 == 0);
+                      },
+                      itemCount: sorted.length,
+                    ).sbh(_bandCardHeight);
                   },
                 ),
                 16.sbh,

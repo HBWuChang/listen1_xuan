@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
@@ -21,6 +22,7 @@ class SettingsReadmePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('README'),
+        leading: BackButton(onPressed: routerPop),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),

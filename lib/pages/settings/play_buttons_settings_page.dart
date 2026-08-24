@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/play.dart';
@@ -14,7 +15,11 @@ class PlayButtonsSettingsPage extends StatelessWidget {
     final settingsController = Get.find<SettingsController>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('播放按钮设置'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('播放按钮设置'),
+        leading: BackButton(onPressed: routerPop),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -113,52 +118,52 @@ class PlayButtonsSettingsPage extends StatelessWidget {
       AlertDialog(
         title: Text('替换 "${currentBtn.desc}"'),
         content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '选择要替换的按钮',
-                style: Get.textTheme.bodyMedium?.copyWith(color: Colors.grey),
-              ),
-              16.sbh,
-              Container(
-                constraints: BoxConstraints(maxHeight: 400),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: hiddenButtons.length,
-                  itemBuilder: (context, index) {
-                    final btn = hiddenButtons[index];
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '选择要替换的按钮',
+              style: Get.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            ),
+            16.sbh,
+            Container(
+              constraints: BoxConstraints(maxHeight: 400),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: hiddenButtons.length,
+                itemBuilder: (context, index) {
+                  final btn = hiddenButtons[index];
 
-                    return ListTile(
-                      leading: Icon(
-                        Icons.radio_button_unchecked,
-                        color: Get.theme.colorScheme.primary,
-                      ),
-                      title: Text(btn.desc),
-                      subtitle: Text('索引: ${btn.index}'),
-                      onTap: () {
-                        final newSet = Set<int>.from(showBtns);
-                        newSet.remove(currentBtnIndex);
-                        newSet.add(btn.index);
+                  return ListTile(
+                    leading: Icon(
+                      Icons.radio_button_unchecked,
+                      color: Get.theme.colorScheme.primary,
+                    ),
+                    title: Text(btn.desc),
+                    subtitle: Text('索引: ${btn.index}'),
+                    onTap: () {
+                      final newSet = Set<int>.from(showBtns);
+                      newSet.remove(currentBtnIndex);
+                      newSet.add(btn.index);
 
-                        try {
-                          settingsController.playVShowBtns = newSet;
-                          showBtns.clear();
-                          showBtns.addAll(newSet);
-                          Get.back();
-                          showSuccessSnackbar(
-                            '已替换',
-                            '"${currentBtn.desc}" → "${btn.desc}"',
-                          );
-                        } catch (e) {
-                          showErrorSnackbar('替换失败', e.toString());
-                        }
-                      },
-                    );
-                  },
-                ),
+                      try {
+                        settingsController.playVShowBtns = newSet;
+                        showBtns.clear();
+                        showBtns.addAll(newSet);
+                        Get.back();
+                        showSuccessSnackbar(
+                          '已替换',
+                          '"${currentBtn.desc}" → "${btn.desc}"',
+                        );
+                      } catch (e) {
+                        showErrorSnackbar('替换失败', e.toString());
+                      }
+                    },
+                  );
+                },
               ),
-            ],
-          ).sbw(double.maxFinite),
+            ),
+          ],
+        ).sbw(double.maxFinite),
         actions: [
           TextButton(onPressed: () => Get.back(), child: const Text('取消')),
         ],
@@ -244,35 +249,35 @@ class PlayButtonsSettingsPage extends StatelessWidget {
         16.sbh,
         // 重置按钮
         ElevatedButton.icon(
-            onPressed: () async {
-              final confirmed = await showConfirmDialog(
-                '确定要重置为默认顺序吗？',
-                '重置按钮顺序',
-                confirmLevel: ConfirmLevel.warning,
-              );
+          onPressed: () async {
+            final confirmed = await showConfirmDialog(
+              '确定要重置为默认顺序吗？',
+              '重置按钮顺序',
+              confirmLevel: ConfirmLevel.warning,
+            );
 
-              if (confirmed) {
-                final defaultOrder = List.generate(
-                  PlayVBtns.values.length,
-                  (index) => index,
-                );
-                try {
-                  settingsController.playVBtns = defaultOrder;
-                  btnOrder.value = defaultOrder;
-                  showSuccessSnackbar('已重置为默认顺序', null);
-                } catch (e) {
-                  showErrorSnackbar('重置失败', e.toString());
-                }
+            if (confirmed) {
+              final defaultOrder = List.generate(
+                PlayVBtns.values.length,
+                (index) => index,
+              );
+              try {
+                settingsController.playVBtns = defaultOrder;
+                btnOrder.value = defaultOrder;
+                showSuccessSnackbar('已重置为默认顺序', null);
+              } catch (e) {
+                showErrorSnackbar('重置失败', e.toString());
               }
-            },
-            icon: const Icon(Icons.refresh),
-            label: const Text('重置为默认顺序'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              backgroundColor: Get.theme.colorScheme.secondaryContainer,
-              foregroundColor: Get.theme.colorScheme.onSecondaryContainer,
-            ),
-          ).sbw(double.infinity),
+            }
+          },
+          icon: const Icon(Icons.refresh),
+          label: const Text('重置为默认顺序'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            backgroundColor: Get.theme.colorScheme.secondaryContainer,
+            foregroundColor: Get.theme.colorScheme.onSecondaryContainer,
+          ),
+        ).sbw(double.infinity),
       ],
     );
   }

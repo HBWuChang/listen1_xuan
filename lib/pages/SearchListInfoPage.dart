@@ -49,6 +49,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: BackButton(onPressed: routerPop),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

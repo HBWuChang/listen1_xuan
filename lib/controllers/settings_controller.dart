@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:hive/hive.dart';
 
 import 'package:path/path.dart' as p;
@@ -436,6 +437,13 @@ class SettingsController extends GetxController {
     settings[sendImgWhenOpenImgDialogKey] = value;
   }
 
+  static const String centerWindowOnStartKey = 'centerWindowOnStart';
+  final RxBool centerWindowOnStartRx = false.obs;
+  bool get centerWindowOnStart => centerWindowOnStartRx.value;
+  set centerWindowOnStart(bool value) {
+    settings[centerWindowOnStartKey] = value;
+  }
+
   final String CacheController_localCacheListKey = 'local-cache-list';
   final CacheController_localCacheList = <String, String>{};
   var PlayController_player_settings = <String, dynamic>{};
@@ -482,6 +490,8 @@ class SettingsController extends GetxController {
           AudioQualityOfBL.k192.code;
       final nextSendImgWhenOpenImgDialog =
           settings[sendImgWhenOpenImgDialogKey] as bool? ?? true;
+      final nextCenterWindowOnStart =
+          settings[centerWindowOnStartKey] as bool? ?? false;
 
       if (songReplaceFabMiniRx.value != nextMini) {
         songReplaceFabMiniRx.value = nextMini;
@@ -532,6 +542,9 @@ class SettingsController extends GetxController {
       }
       if (nextSendImgWhenOpenImgDialog != sendImgWhenOpenImgDialogRx.value) {
         sendImgWhenOpenImgDialogRx.value = nextSendImgWhenOpenImgDialog;
+      }
+      if (nextCenterWindowOnStart != centerWindowOnStartRx.value) {
+        centerWindowOnStartRx.value = nextCenterWindowOnStart;
       }
     });
 

@@ -195,6 +195,7 @@ class _WebSocketClientControlContentState
               pinned: true,
               automaticallyImplyLeading: false,
               centerTitle: true,
+              leading: BackButton(onPressed: routerPop),
               actions: [
                 Container(
                   padding: const EdgeInsets.symmetric(

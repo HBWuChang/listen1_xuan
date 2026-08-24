@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -29,6 +30,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
       appBar: AppBar(
         title: const Text('扫描服务器二维码'),
         backgroundColor: Colors.black,
+        leading: BackButton(onPressed: routerPop),
         foregroundColor: Colors.white,
         actions: [
           // 闪光灯切换按钮

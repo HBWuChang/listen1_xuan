@@ -68,10 +68,7 @@ class _SupabaseLoginPageState extends State<SupabaseLoginPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('邮箱登录'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Get.back(id: 1),
-        ),
+        leading: BackButton(onPressed: routerPop),
       ),
       body: _buildEmailLoginTab(),
     );

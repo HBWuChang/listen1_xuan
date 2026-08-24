@@ -119,7 +119,7 @@ class _LoginWebviewState extends State<LoginWebview> {
           showErrorSnackbar('获取code失败', '请确认已跳转到Github授权成功页面再点击按钮');
           return;
         }
-        final code =Uri.parse(url).queryParameters['code'];
+        final code = Uri.parse(url).queryParameters['code'];
         await Github.handleCallback(code ?? '', context);
         break;
       default:
@@ -292,7 +292,7 @@ class _LoginWebviewState extends State<LoginWebview> {
           decelerationDuration: const Duration(milliseconds: 500),
           decelerationCurve: Curves.easeOut,
         ).sbh(30),
-
+        leading: BackButton(onPressed: routerPop),
         actions: [
           Obx(
             () => IconButton(
@@ -571,6 +571,7 @@ class _SettingsPageState extends State<SettingsPage> {
           SliverAppBar(
             floating: true,
             pinned: true,
+            leading: BackButton(onPressed: routerPop),
             actions: [
               WebSocketHelper.buildReactiveButton(tooltip: "WebSocket服务器"),
               WebSocketClientHelper.buildReactiveButton(

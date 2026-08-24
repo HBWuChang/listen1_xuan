@@ -17,6 +17,24 @@ import 'package:cookie_jar/cookie_jar.dart';
 Dio get dioWithCookieManager => Get.find<DioController>().dioWithCookieManager;
 Dio get dioWithProxyAdapter => Get.find<DioController>().dioWithProxyAdapter;
 
+class MyHttpOverrides extends HttpOverrides {
+  MyHttpOverrides({required this.trustBadCertificates, this.userAgent});
+
+  final bool trustBadCertificates;
+  final String? userAgent;
+
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    final client = super.createHttpClient(context);
+    client.userAgent = userAgent;
+    if (trustBadCertificates) {
+      client.badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+    }
+    return client;
+  }
+}
+
 class DioController extends GetxController {
   static const String _tag = 'DioController';
   Logger _logger = Logger();

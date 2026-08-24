@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
+import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import '../controllers/WsDownloadController.dart';
@@ -20,6 +21,7 @@ class DownloadPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('下载管理'),
+        leading: BackButton(onPressed: routerPop),
         actions: [
           Obx(
             () => IconButton(

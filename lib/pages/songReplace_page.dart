@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/bodys.dart';
 import 'package:listen1_xuan/controllers/play_controller.dart';
+import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
@@ -33,6 +34,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: BackButton(onPressed: routerPop),
         title: const Text('歌曲替换设置'),
         actions: [
           Card(
