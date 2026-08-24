@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/constants/const.dart';
 import 'package:listen1_xuan/controllers/routeController.dart';
+import 'package:listen1_xuan/controllers/sleep_timer_controller.dart';
 import 'dart:ui' as ui;
 
 import 'package:listen1_xuan/funcs.dart';
@@ -14,6 +15,7 @@ import 'package:listen1_xuan/loweb.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/models/OnlineCacheItem.dart';
 import 'package:listen1_xuan/pages/settings/select_audio_quality_of_bl_dialog.dart';
+import 'package:listen1_xuan/pages/lyric/sleep_timer_sheet.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:listen1_xuan/widgets/fade_box.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';

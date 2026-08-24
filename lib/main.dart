@@ -7,6 +7,7 @@ import 'package:heroine/heroine.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/receiveSharingIntentController.dart';
 import 'package:listen1_xuan/controllers/search_controller.dart';
+import 'package:listen1_xuan/controllers/sleep_timer_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_page.dart';
@@ -144,6 +145,7 @@ void main() async {
   );
   await settingsController.init();
   Get.put(RouteController(), permanent: true);
+  Get.put(SleepTimerController(), permanent: true);
   DioController dioController = Get.put(DioController(), permanent: true);
   await dioController.loadConfig();
   settingsController.completeDioInit();

@@ -159,6 +159,7 @@ dependencies:
     # path: /Users/cd022/HBWuChang/code/receive_sharing_intent
     git:
       url: https://github.com/HBWuChang/receive_sharing_intent
+  stop_watch_timer: ^3.2.2
 
   ffmpeg_kit_flutter_new_audio: ^2.5.2
 dev_dependencies:

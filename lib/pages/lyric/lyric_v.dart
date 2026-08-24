@@ -92,6 +92,20 @@ Widget traBtn(
                 icon: Icon(Icons.manage_search_rounded),
               ),
       ),
+      IconButton(
+        tooltip: '定时关闭',
+        onPressed: () => SleepTimerSheet.show(context),
+        padding: EdgeInsets.zero,
+        icon: Obx(() {
+          final controller = Get.find<SleepTimerController>();
+          return Icon(
+            Icons.bedtime_outlined,
+            color: controller.isEnabled
+                ? Theme.of(context).colorScheme.primary
+                : null,
+          );
+        }),
+      ),
       _ExpandableMoreMenu(lyricController: lyricController),
     ],
   ),
