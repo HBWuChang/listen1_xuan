@@ -347,7 +347,6 @@ Listener _mainContent() => Listener(
                     builder = (context_in_1) {
                       return Scaffold(
                         appBar: AppBar(
-                          leading: BackButton(onPressed: routerPop),
                           title: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
