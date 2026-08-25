@@ -419,7 +419,14 @@ Widget get playV2 => LayoutBuilder(
                                         ),
                                       ),
                                     ),
-
+                                    Positioned(
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      child: withHorDragDetector(
+                                        SizedBox(height: totalHeight),
+                                      ),
+                                    ),
                                     // 进度条
                                     Positioned(
                                       top: sliderTop,

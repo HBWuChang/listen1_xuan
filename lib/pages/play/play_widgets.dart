@@ -37,12 +37,19 @@ Widget withDragDetector({required Widget child, required bool isCollapsed}) {
       onTap: () => _onTap(context),
       onDoubleTap: _onDoubleTap,
       onLongPress: isCollapsed ? _onLongPress : null,
-      onHorizontalDragStart: (details) {
-        _dragStartDetails = details;
-      },
-      onHorizontalDragEnd: _onHorizontalDragEnd,
       child: child,
     ),
+  );
+}
+
+Widget withHorDragDetector(Widget child) {
+  return GestureDetector(
+    behavior: HitTestBehavior.translucent,
+    onHorizontalDragStart: (details) {
+      _dragStartDetails = details;
+    },
+    onHorizontalDragEnd: _onHorizontalDragEnd,
+    child: child,
   );
 }
 
