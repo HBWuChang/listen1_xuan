@@ -1,6 +1,8 @@
 part of 'lyric_page.dart';
 
 class LyricVPage extends StatefulWidget {
+  const LyricVPage({super.key});
+
   @override
   _LyricVPageState createState() => _LyricVPageState();
 }
@@ -96,15 +98,17 @@ Widget traBtn(
         tooltip: '定时关闭',
         onPressed: () => SleepTimerSheet.show(context),
         padding: EdgeInsets.zero,
-        icon: Obx(() {
-          final controller = Get.find<SleepTimerController>();
-          return Icon(
-            Icons.bedtime_outlined,
-            color: controller.isEnabled
-                ? Theme.of(context).colorScheme.primary
-                : null,
-          );
-        }),
+        icon: Builder(
+          builder: (iconContext) => Obx(() {
+            final controller = Get.find<SleepTimerController>();
+            return Iconify(
+              MaterialSymbols.bedtime_outline_rounded,
+              color: controller.isEnabled
+                  ? Theme.of(iconContext).colorScheme.primary
+                  : IconTheme.of(iconContext).color,
+            );
+          }),
+        ),
       ),
       _ExpandableMoreMenu(lyricController: lyricController),
     ],

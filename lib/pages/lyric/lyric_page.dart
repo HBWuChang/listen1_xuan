@@ -1,17 +1,15 @@
-import 'dart:convert';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/constants/const.dart';
-import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/controllers/sleep_timer_controller.dart';
 import 'dart:ui' as ui;
+import 'package:iconify_flutter_plus/iconify_flutter_plus.dart';
+import 'package:iconify_flutter_plus/icons/material_symbols.dart';
 
 import 'package:listen1_xuan/funcs.dart';
-import 'package:listen1_xuan/loweb.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/models/OnlineCacheItem.dart';
 import 'package:listen1_xuan/pages/settings/select_audio_quality_of_bl_dialog.dart';
