@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
@@ -1254,11 +1253,11 @@ class UpdController extends GetxController {
   }
 
   /// 处理 Release 更新
-  Future<void> processFileUpdate(DropDoneDetails detail) async {
+  Future<void> processFileUpdate(List<String> filePaths) async {
     try {
-      if (detail.files.isEmpty) return;
-      if (detail.files.length == 1 && isWindows) {
-        String filePath = detail.files[0].path;
+      if (filePaths.isEmpty) return;
+      if (filePaths.length == 1 && isWindows) {
+        String filePath = filePaths.first;
         final basename = p.basename(filePath);
         if (basename.endsWith('.zip') &&
             basename.startsWith('windows-build-artifact')) {
@@ -1277,9 +1276,7 @@ class UpdController extends GetxController {
           return;
         }
       }
-      Get.find<PasteController>().onFilesPasted(
-        detail.files.map((e) => e.path).toList(),
-      );
+      Get.find<PasteController>().onFilesPasted(filePaths);
     } catch (e) {
       debugPrint('处理文件更新失败: $e');
       showErrorSnackbar('处理文件更新失败', e.toString());

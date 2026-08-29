@@ -739,6 +739,7 @@ Widget desktopSettingsTiles(
   BuildContext context,
   FocusNode _focusNode2,
   FocusNode _focusNode3,
+  TextEditingController windowsProxyAddrController,
 ) {
   return Column(
     mainAxisSize: MainAxisSize.min,
@@ -752,9 +753,7 @@ Widget desktopSettingsTiles(
               ),
               TextField(
                 focusNode: _focusNode2,
-                controller: TextEditingController(
-                  text: Get.find<SettingsController>().windowsProxyAddr,
-                ),
+                controller: windowsProxyAddrController,
                 decoration: InputDecoration(
                   labelText: '代理地址,仅适用于Github,例如：localhost:7890,留空表示不使用,回车以保存',
                 ),

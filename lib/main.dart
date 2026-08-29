@@ -16,6 +16,7 @@ import 'package:listen1_xuan/pages/playlist_info/playlist_info_args.dart';
 import 'package:listen1_xuan/router/image_toolbox_predictive_transitions.dart';
 import 'package:listen1_xuan/widgets/draggable_toast/toast_overlay_manager.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
+import 'package:listen1_xuan/widgets/native_file_drop_region.dart';
 import 'package:media_kit/media_kit.dart' show MediaKit;
 import 'package:resizable_widget/resizable_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -61,7 +62,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
 import 'package:listen1_xuan/constants/network_defaults.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 part 'main_testBtn.dart';
 part 'pages/main/main_widgets.dart';
 part 'pages/main/main_utils.dart';
@@ -517,14 +517,11 @@ class _MyHomePageState extends State<MyHomePage>
         if (flag) return KeyEventResult.handled;
         return KeyEventResult.ignored;
       },
-      child: DropTarget(
-        enable: isDesktop,
-        onDragDone: (detail) =>
-            Get.find<UpdController>().processFileUpdate(detail),
-
-        onDragEntered: (detail) {
-          showInfoSnackbar('松开以确认', null);
-        },
+      child: NativeFileDropRegion(
+        enabled: isDesktop,
+        onFilesDropped: Get.find<UpdController>().processFileUpdate,
+        onTextDropped: Get.find<PasteController>().onTextPasted,
+        onDropEnter: () => showInfoSnackbar('松开以确认', null),
         child: OrientationBuilder(
           builder: (context, orientation) {
             globalHorizon = orientation == Orientation.landscape;

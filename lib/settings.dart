@@ -343,11 +343,13 @@ class _SettingsPageState extends State<SettingsPage> {
   final FocusNode _focusNode = FocusNode();
   final FocusNode _focusNode2 = FocusNode();
   final FocusNode _focusNode3 = FocusNode();
+  late final TextEditingController _windowsProxyAddrController;
   @override
   void dispose() {
     _focusNode.dispose(); // 释放 FocusNode
     _focusNode2.dispose(); // 释放 FocusNode
     _focusNode3.dispose(); // 释放 FocusNode
+    _windowsProxyAddrController.dispose();
     super.dispose();
   }
 
@@ -536,6 +538,9 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
+    _windowsProxyAddrController = TextEditingController(
+      text: Get.find<SettingsController>().windowsProxyAddr,
+    );
     get_useHttpOverrides();
     // 监听焦点变化
     _focusNode.addListener(() {
@@ -703,6 +708,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 context,
                                 _focusNode2,
                                 _focusNode3,
+                                _windowsProxyAddrController,
                               )
                             : isAndroid
                             ? androidSettingsTiles
