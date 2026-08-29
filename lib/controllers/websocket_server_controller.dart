@@ -11,6 +11,7 @@ import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/websocket_message.dart';
 import '../settings.dart';
@@ -59,7 +60,8 @@ class WebSocketServerController extends GetxController {
   /// Getters
   bool get isRunning => _isRunning.value;
   int get clientCount => _clientCount.value;
-  String get serverUrl => _host.contains(':') ? 'ws://[$_host]:$_port/ws' : 'ws://$_host:$_port/ws';
+  String get serverUrl =>
+      _host.contains(':') ? 'ws://[$_host]:$_port/ws' : 'ws://$_host:$_port/ws';
 
   WebSocketServerController({
     required String host,
@@ -821,14 +823,14 @@ class WebSocketServerController extends GetxController {
       final bytes = await _collectRequestBytes(request);
       final parts = PasteController.parseMultipartResponse(bytes, boundary);
 
-      int savedCount = 0;
+      List<String> savedFiles = [];
       for (final part in parts) {
         final fileName = part['filename'] as String?;
         final data = part['data'] as List<int>?;
         if (fileName != null && data != null) {
           final savePath = _getUniqueFilePath(downloadDir, fileName);
           await File(savePath).writeAsBytes(data);
-          savedCount++;
+          savedFiles.add(savePath);
           _logger.i('$_tag 保存粘贴文件: $savePath');
         }
       }
@@ -836,11 +838,13 @@ class WebSocketServerController extends GetxController {
       request.response
         ..statusCode = HttpStatus.ok
         ..headers.contentType = ContentType.json
-        ..write(json.encode({'saved': savedCount}));
+        ..write(json.encode({'saved': savedFiles.length}));
       request.response.close();
-
-      if (savedCount > 0) {
-        showSuccessSnackbar('收到 $savedCount 个粘贴文件', '已保存到下载目录');
+      if (savedFiles.isNotEmpty) {
+        showSuccessSnackbar('收到 ${savedFiles.length} 个粘贴文件', '已保存到下载目录');
+        SharePlus.instance.share(
+          ShareParams(files: savedFiles.map((f) => XFile(f)).toList()),
+        );
       }
     } catch (e) {
       _logger.e('$_tag 处理 /onPasteFile 请求失败', error: e);
@@ -923,7 +927,8 @@ class WebSocketServerController extends GetxController {
       }
 
       // 从请求头中获取文件名
-      final fileName = request.headers.value('x-filename') ??
+      final fileName =
+          request.headers.value('x-filename') ??
           'paste_image_${DateTime.now().millisecondsSinceEpoch}.png';
       final decodedFileName = Uri.decodeComponent(fileName);
 
@@ -974,7 +979,8 @@ class WebSocketServerController extends GetxController {
         return;
       }
 
-      final fileName = nowPasteImageFileName ??
+      final fileName =
+          nowPasteImageFileName ??
           'paste_image_${DateTime.now().millisecondsSinceEpoch}.png';
       final encodedFileName = Uri.encodeComponent(fileName);
 

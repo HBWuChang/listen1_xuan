@@ -10,6 +10,7 @@ import 'package:listen1_xuan/models/websocket_message.dart';
 import 'package:listen1_xuan/widgets/image_preview_dialog.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:path/path.dart' as p;
+import 'package:share_plus/share_plus.dart';
 
 import '../funcs.dart';
 import '../global_settings_animations.dart';
@@ -217,13 +218,14 @@ class PasteController extends GetxController {
 
       final parts = parseMultipartResponse(response.data!, boundary);
       int savedCount = 0;
-
+      List<String> savedFiles = [];
       for (final part in parts) {
         final fileName = part['filename'] as String?;
         final data = part['data'] as List<int>?;
         if (fileName != null && data != null) {
           final savePath = _getUniqueFilePath(saveDir, fileName);
           await File(savePath).writeAsBytes(data);
+          savedFiles.add(savePath);
           savedCount++;
           debugPrint('[PasteController] 保存文件: $savePath');
         }
@@ -231,6 +233,9 @@ class PasteController extends GetxController {
 
       if (savedCount > 0) {
         showSuccessSnackbar('已下载 $savedCount 个粘贴文件', '保存到 $saveDir');
+        SharePlus.instance.share(
+          ShareParams(files: savedFiles.map((f) => XFile(f)).toList()),
+        );
       }
     } catch (e) {
       debugPrint('[PasteController] 下载粘贴文件失败: $e');
@@ -257,9 +262,7 @@ class PasteController extends GetxController {
     while (true) {
       // 跳过 --boundary\r\n
       pos += firstBoundaryBytes.length;
-      if (pos < bytes.length - 1 &&
-          bytes[pos] == 13 &&
-          bytes[pos + 1] == 10) {
+      if (pos < bytes.length - 1 && bytes[pos] == 13 && bytes[pos + 1] == 10) {
         pos += 2;
       }
 
@@ -473,6 +476,7 @@ class PasteController extends GetxController {
       await File(savePath).writeAsBytes(response.data!);
 
       showSuccessSnackbar('已下载粘贴图片', '保存到 ${p.basename(savePath)}');
+      SharePlus.instance.share(ShareParams(files: [XFile(savePath)]));
       debugPrint('[PasteController] 保存图片: $savePath');
     } catch (e) {
       debugPrint('[PasteController] 下载粘贴图片失败: $e');

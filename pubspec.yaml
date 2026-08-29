@@ -117,7 +117,7 @@ dependencies:
       url: https://github.com/HBWuChang/resizable_widget.git
   # resizable_widget:
   #   path: E:\HB_WuChang\code\flutter\resizable_wcidget
-  desktop_drop: ^0.7.0
+  desktop_drop: 0.8.2
   protobuf: ^6.0.0
   fixnum: ^1.1.1
   expandable: ^5.0.1

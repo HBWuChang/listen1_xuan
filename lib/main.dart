@@ -518,7 +518,7 @@ class _MyHomePageState extends State<MyHomePage>
         return KeyEventResult.ignored;
       },
       child: DropTarget(
-        enable: isWindows,
+        enable: isDesktop,
         onDragDone: (detail) =>
             Get.find<UpdController>().processFileUpdate(detail),
 

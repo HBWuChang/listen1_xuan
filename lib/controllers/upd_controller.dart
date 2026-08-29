@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:install_plugin/install_plugin.dart';
+import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:listen1_xuan/widgets/motor_progress_indicator_xuan.dart';
 import 'package:path/path.dart' as p;
@@ -600,8 +601,7 @@ class UpdController extends GetxController {
               ..createSync(recursive: true)
               ..writeAsBytesSync(data);
 
-            if (filename.endsWith('.zip') &&
-                filename.contains('macos')) {
+            if (filename.endsWith('.zip') && filename.contains('macos')) {
               innerZipPath = extractPath;
             }
           } else {
@@ -1257,33 +1257,29 @@ class UpdController extends GetxController {
   Future<void> processFileUpdate(DropDoneDetails detail) async {
     try {
       if (detail.files.isEmpty) return;
-      if (detail.files.length > 1) {
-        showInfoSnackbar('请一次只拖入一个文件', null);
-        return;
-      }
-      String filePath = detail.files[0].path;
-      final basename = p.basename(filePath);
-      if (!basename.endsWith('.zip') ||
-          !basename.startsWith('windows-build-artifact')) {
-        showInfoSnackbar('拖入windows-build-artifact*.zip文件以安装更新', null);
-        return;
-      }
-      showInfoSnackbar('正在安装更新...', null);
-      if (isWindows) {
-        final downDir = (await xuanGetdownloadDirectory()).path;
-        // 移动文件到下载目录
-        final newFilePath = p.join(downDir, 'canary.zip');
-        if (filePath != newFilePath) {
-          await File(filePath).copy(newFilePath);
-          File(filePath).delete().catchError((e) {
-            showDebugSnackbar('删除原文件失败', '请手动删除 $filePath');
-          });
-          filePath = newFilePath;
+      if (detail.files.length == 1 && isWindows) {
+        String filePath = detail.files[0].path;
+        final basename = p.basename(filePath);
+        if (basename.endsWith('.zip') &&
+            basename.startsWith('windows-build-artifact')) {
+          showInfoSnackbar('正在安装更新...', null);
+          final downDir = (await xuanGetdownloadDirectory()).path;
+          // 移动文件到下载目录
+          final newFilePath = p.join(downDir, 'canary.zip');
+          if (filePath != newFilePath) {
+            await File(filePath).copy(newFilePath);
+            File(filePath).delete().catchError((e) {
+              showDebugSnackbar('删除原文件失败', '请手动删除 $filePath');
+            });
+            filePath = newFilePath;
+          }
+          await _performWindowsExtractAndUpdate(downDir, filePath);
+          return;
         }
-        await _performWindowsExtractAndUpdate(downDir, filePath);
-      } else {
-        showWarningSnackbar('当前平台暂不支持传入文件更新', null);
       }
+      Get.find<PasteController>().onFilesPasted(
+        detail.files.map((e) => e.path).toList(),
+      );
     } catch (e) {
       debugPrint('处理文件更新失败: $e');
       showErrorSnackbar('处理文件更新失败', e.toString());
