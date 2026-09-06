@@ -11,7 +11,10 @@ class Github {
   static String username = '';
   static bool usedefault = false;
 
-  static Future<void> handleCallback(String code, BuildContext context) async {
+  static Future<void> handleCallback(
+    String code, {
+    VoidCallback? onCompleted,
+  }) async {
     // _msg('正在向Github请求信息', context, 1.0);
     showInfoSnackbar('正在向Github请求信息', '');
     String res = "";
@@ -47,46 +50,18 @@ class Github {
       await s.setString('githubOauthAccessKey', accessToken);
 
       showInfoSnackbar('设置成功', null);
+      onCompleted?.call();
     } catch (e) {
       Clipboard.setData(ClipboardData(text: e.toString() + res));
       showInfoSnackbar('设置失败，错误信息已复制到剪切板$e\n网络请求返回值：$res', null);
     }
   }
 
-  static void openAuthUrl(BuildContext context) {
+  static void openAuthUrl() {
     status = 1;
     final url =
         '$OAUTH_URL/authorize?client_id=$clientId&scope=gist,public_repo';
-
-    var controller;
-    if (isWindows) {
-      controller = WebviewController();
-    } else {
-      controller = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onProgress: (int progress) {
-              // Update loading bar.
-            },
-            onPageStarted: (String url) {},
-            onPageFinished: (String url) {},
-            onHttpError: (HttpResponseError error) {},
-            onWebResourceError: (WebResourceError error) {},
-          ),
-        )
-        ..loadRequest(Uri.parse(url));
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LoginWebview(
-          controller: controller,
-          config_key: 'github',
-          open_url: url,
-        ),
-      ),
-    );
+    Get.dialog(GithubAuthDialog(url: url));
   }
 
   static int getStatus() => status;
@@ -324,5 +299,82 @@ class Github {
         .map((releaseJson) => GitHubRelease.fromJson(releaseJson))
         .toList();
     return releases;
+  }
+}
+
+/// Github 授权对话框
+class GithubAuthDialog extends StatefulWidget {
+  /// 授权页面地址
+  final String url;
+
+  const GithubAuthDialog({super.key, required this.url});
+
+  @override
+  State<GithubAuthDialog> createState() => _GithubAuthDialogState();
+}
+
+class _GithubAuthDialogState extends State<GithubAuthDialog> {
+  final TextEditingController _codeController = TextEditingController();
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  void _submit(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.queryParameters['code'] == null) {
+      showInfoSnackbar('无效的URL，请确保输入正确的授权网页地址', null);
+      return;
+    }
+    Github.handleCallback(
+      uri.queryParameters['code']!,
+      onCompleted: () {
+        Get.back();
+        Get.find<SettingsController>().refreshLoginData();
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Github授权'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SelectableText(
+            '请打开授权网页，授权后将显示“Listen1 -> Github授权成功”字样的网页的地址复制到下面的输入框中。',
+          ),
+          TextField(
+            controller: _codeController,
+            decoration: const InputDecoration(
+              labelText: '网页地址',
+              hintText: '请输入显示“Listen1 -> Github授权成功”字样的网页的地址',
+            ),
+            onSubmitted: _submit,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Get.back(), child: const Text('取消')),
+        TextButton(
+          onPressed: () => g_launchURL(Uri.parse(widget.url)),
+          child: const Text('打开授权网页'),
+        ),
+        TextButton(
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: widget.url));
+            showInfoSnackbar('已复制到剪切板', null);
+          },
+          child: const Text('复制授权网页地址'),
+        ),
+        TextButton(
+          onPressed: () => _submit(_codeController.text),
+          child: const Text('我已输入'),
+        ),
+      ],
+    );
   }
 }

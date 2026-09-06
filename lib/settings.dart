@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:ui';
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -106,52 +107,31 @@ class _LoginWebviewState extends State<LoginWebview> {
   final List<StreamSubscription> _subscriptions = [];
   late String nowurl;
   Future<void> get__cookie() async {
-    switch (widget.config_key) {
-      case 'github':
-        final url = isWindows ? nowurl : await widget.controller.currentUrl();
-        if (url == null) {
-          // _msg('获取cookie失败', 3.0);
-          showErrorSnackbar('获取cookie失败', null);
-          return;
-        }
-        if (!url.contains('code=')) {
-          // _msg('获取code失败', 3.0);
-          showErrorSnackbar('获取code失败', '请确认已跳转到Github授权成功页面再点击按钮');
-          return;
-        }
-        final code = Uri.parse(url).queryParameters['code'];
-        await Github.handleCallback(code ?? '', context);
-        break;
-      default:
-        if (isWindows) {
-          var t = jsonDecode(await widget.controller.getCookies())["cookies"];
-          final cookies = t
-              .map<Cookie>(
-                (item) => Cookie(
-                  item['name'] as String,
-                  Uri.encodeComponent(item['value'] as String),
-                ),
-              )
-              .toList();
-          await savePlatformToken(
-            PlatformCredentials(
-              platform: widget.config_key,
-              credentials: cookies,
+    if (isWindows) {
+      var t = jsonDecode(await widget.controller.getCookies())["cookies"];
+      final cookies = t
+          .map<Cookie>(
+            (item) => Cookie(
+              item['name'] as String,
+              Uri.encodeComponent(item['value'] as String),
             ),
-          );
-          showSuccessSnackbar('设置成功', null);
-        } else {
-          final cookieManager = WebviewCookieManager();
+          )
+          .toList();
+      await savePlatformToken(
+        PlatformCredentials(platform: widget.config_key, credentials: cookies),
+      );
+      showSuccessSnackbar('设置成功', null);
+    } else {
+      final cookieManager = WebviewCookieManager();
 
-          final gotCookies = await cookieManager.getCookies(widget.open_url);
-          await savePlatformToken(
-            PlatformCredentials(
-              platform: widget.config_key,
-              credentials: gotCookies,
-            ),
-          );
-          showSuccessSnackbar('设置成功', null);
-        }
+      final gotCookies = await cookieManager.getCookies(widget.open_url);
+      await savePlatformToken(
+        PlatformCredentials(
+          platform: widget.config_key,
+          credentials: gotCookies,
+        ),
+      );
+      showSuccessSnackbar('设置成功', null);
     }
   }
 
@@ -163,17 +143,16 @@ class _LoginWebviewState extends State<LoginWebview> {
 
   Future<void> initPlatformState() async {
     try {
-      await widget.controller.initialize();
+      final ctr = widget.controller as WebviewController;
+      await ctr.initialize();
       _subscriptions.add(
-        widget.controller.url.listen((url) {
+        ctr.url.listen((url) {
           nowurl = url;
         }),
       );
-      await widget.controller.setBackgroundColor(Colors.transparent);
-      await widget.controller.setPopupWindowPolicy(
-        WebviewPopupWindowPolicy.deny,
-      );
-      await widget.controller.loadUrl(widget.open_url);
+      await ctr.setBackgroundColor(Colors.transparent);
+      await ctr.setPopupWindowPolicy(WebviewPopupWindowPolicy.sameWindow);
+      await ctr.loadUrl(widget.open_url);
 
       if (!mounted) return;
       setState(() {});

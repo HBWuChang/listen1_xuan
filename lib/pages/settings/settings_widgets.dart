@@ -369,7 +369,7 @@ Widget _buildThirdPartyLoginPanel(
                           child: const Text('登录QQ音乐'),
                         ),
                         ElevatedButton(
-                          onPressed: () => Github.openAuthUrl(context),
+                          onPressed: () => Github.openAuthUrl(),
                           child: const Text('登录Github(建议使用魔法'),
                         ),
                       ]
