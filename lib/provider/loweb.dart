@@ -55,234 +55,178 @@ String queryStringify(Map<String, dynamic> options) {
   return options.entries.map((e) => '${e.key}=${e.value}').join('&');
 }
 
-   List<BaseProvider> getLoginProviders() {
-    return providers.where((i) => i.hidden != true && i.supportLogin).toList();
-  }
+List<BaseProvider> getLoginProviders() {
+  return providers.where((i) => i.hidden != true && i.supportLogin).toList();
+}
 
-  static Future<dynamic> showPlaylistArray(
-    String source,
-    int offset,
-    dynamic filterId,
-  ) {
-    final provider = getProviderByName(source);
-    final url =
-        '/show_playlist?${queryStringify({'offset': offset, 'filter_id': filterId})}';
-    return provider.show_playlist(url);
-  }
+dynamic queryPlaylist(String listId, String type) {
+  final result = myplaylist.myPlaylistContainers(type, listId);
+  return result;
+}
 
-  static Future<dynamic> getPlaylistFilters(String source) {
-    final provider = getProviderByName(source);
-    return provider.get_playlist_filters();
-  }
+dynamic removeMyPlaylist(String id, String type) {
+  return myplaylist.removeMyPlaylist(type, id);
+}
 
-  static Future<dynamic> getLyric(
-    String trackId, {
-    String? albumId,
-    String? lyricUrl,
-    String? tlyricUrl,
-  }) {
-    final provider = getProviderByItemId(trackId);
-    final url =
-        '/lyric?${queryStringify({'track_id': trackId, 'album_id': albumId, 'lyric_url': lyricUrl, 'tlyric_url': tlyricUrl})}';
-    return provider.lyric(url);
-  }
+dynamic addMyPlaylist(String id, dynamic track) {
+  return myplaylist.addTrackToMyPlaylist(id, track);
+}
 
-  static dynamic queryPlaylist(String listId, String type) {
-    final result = myplaylist.myPlaylistContainers(type, listId);
-    return result;
-  }
+dynamic insertTrackToMyPlaylist(
+  String id,
+  dynamic track,
+  dynamic toTrack,
+  String direction,
+) {
+  return myplaylist.insertTrackToMyPlaylist(id, track, toTrack, direction);
+}
 
-  static dynamic getPlaylist(String listId, {bool useCache = true}) async {
-    final provider = getProviderByItemId(listId);
-    final url = '/playlist?list_id=$listId';
-    var hit;
-    // if (useCache) {
-    //   hit = await playlistCache.get(listId);
-    // }
+Future<dynamic> addPlaylist(String id, List<dynamic> tracks) {
+  final provider = getProviderByItemId(id);
+  return provider.addPlaylist(id, tracks);
+}
 
-    // if (hit != null) {
-    //   return hit;
-    // }
-    // return {
-    //   'success': (Function fn) {
-    //     provider.getPlaylist(url).then((playlist) {
-    //       if (provider != myplaylist && provider != localmusic) {
-    //         playlistCache.set(listId, playlist);
-    //       }
-    //       fn(playlist);
-    //     });
-    //   },
-    // };
-    dynamic playlist = await provider.get_playlist(url);
-    print('playlist: $playlist');
-    return playlist;
-    // return provider.getPlaylist(url);
-  }
+dynamic removeTrackFromMyPlaylist(String id, dynamic track) {
+  return myplaylist.removeTrackFromMyPlaylist(id, track);
+}
 
-  static dynamic removeMyPlaylist(String id, String type) {
-    return myplaylist.removeMyPlaylist(type, id);
-  }
+Future<dynamic> removeTrackFromPlaylist(String id, dynamic track) {
+  final provider = getProviderByItemId(id);
+  return provider.removeFromPlaylist(id, track);
+}
 
-  static dynamic addMyPlaylist(String id, dynamic track) {
-    return myplaylist.addTrackToMyPlaylist(id, track);
-  }
+dynamic editMyPlaylist(String id, String title, String coverImgUrl) {
+  return myplaylist.editMyPlaylist(id, title, coverImgUrl);
+}
 
-  static dynamic insertTrackToMyPlaylist(
-    String id,
-    dynamic track,
-    dynamic toTrack,
-    String direction,
-  ) {
-    return myplaylist.insertTrackToMyPlaylist(id, track, toTrack, direction);
-  }
-
-  static Future<dynamic> addPlaylist(String id, List<dynamic> tracks) {
-    final provider = getProviderByItemId(id);
-    return provider.addPlaylist(id, tracks);
-  }
-
-  static dynamic removeTrackFromMyPlaylist(String id, dynamic track) {
-    return myplaylist.removeTrackFromMyPlaylist(id, track);
-  }
-
-  static Future<dynamic> removeTrackFromPlaylist(String id, dynamic track) {
-    final provider = getProviderByItemId(id);
-    return provider.removeFromPlaylist(id, track);
-  }
-
-  static dynamic editMyPlaylist(String id, String title, String coverImgUrl) {
-    return myplaylist.editMyPlaylist(id, title, coverImgUrl);
-  }
-
-  // static Future<Map< parseURL(String url) {
-  static Future<Map<String, dynamic>> parseUrl(String url) {
-    // return {
-    //   'success': (Function fn) {
-    //     final providers = getAllProviders();
-    //     Future.wait(providers.map((provider) {
-    //       return provider.parseUrl(url).then((r) {
-    //         if (r != null) {
-    //           throw r;
-    //         }
-    //       });
-    //     })).then((_) {
-    //       fn({});
-    //     }).catchError((result) {
-    //       fn({'result': result});
-    //     });
-    //   },
-    // };
-    final providers = getAllProviders();
-    for (var provider in providers) {
-      final result = provider.parseUrl(url);
-      if (result != null) {
-        return result;
-      }
-    }
-    return Future.value(<String, dynamic>{});
-  }
-
-  static Future<dynamic> mergePlaylist(String source, String target) async {
-    // final tarData = localStorage.getObject(target)['tracks'];
-    // final srcData = localStorage.getObject(source)['tracks'];
-    // for (var tarTrack in tarData) {
-    //   if (!srcData.any((srcTrack) => srcTrack['id'] == tarTrack['id'])) {
-    //     myplaylist.addTrackToMyPlaylist(source, tarTrack);
-    //   }
-    // }
-    // return {
-    //   'success': (Function fn) => fn(),
-    // };
-    // shared_preferences
-    final SettingsController settingsController =
-        Get.find<SettingsController>();
-    final tarData = jsonDecode(
-      (await settingsController.getString(target))!,
-    )['tracks'];
-    final srcData = jsonDecode(
-      (await settingsController.getString(source))!,
-    )['tracks'];
-    for (var tarTrack in tarData) {
-      if (!srcData.any((srcTrack) => srcTrack['id'] == tarTrack['id'])) {
-        myplaylist.addTrackToMyPlaylist(source, tarTrack);
-      }
+// static Future<Map< parseURL(String url) {
+Future<Map<String, dynamic>> parseUrl(String url) {
+  // return {
+  //   'success': (Function fn) {
+  //     final providers = getAllProviders();
+  //     Future.wait(providers.map((provider) {
+  //       return provider.parseUrl(url).then((r) {
+  //         if (r != null) {
+  //           throw r;
+  //         }
+  //       });
+  //     })).then((_) {
+  //       fn({});
+  //     }).catchError((result) {
+  //       fn({'result': result});
+  //     });
+  //   },
+  // };
+  final providers = getAllProviders();
+  for (var provider in providers) {
+    final result = provider.parseUrl(url);
+    if (result != null) {
+      return result;
     }
   }
+  return Future.value(<String, dynamic>{});
+}
 
-  static PlayController get _playController => Get.find<PlayController>();
-  static void bootstrapTrack(Track track, {bool start = true}) {
-    Track? sTrack;
-    successCallback(dynamic res, Track track) {
-      _playController.bootstrapTrackSuccess(
-        res,
-        track,
-        start: start,
-        sTrack: sTrack,
-      );
+Future<dynamic> mergePlaylist(String source, String target) async {
+  // final tarData = localStorage.getObject(target)['tracks'];
+  // final srcData = localStorage.getObject(source)['tracks'];
+  // for (var tarTrack in tarData) {
+  //   if (!srcData.any((srcTrack) => srcTrack['id'] == tarTrack['id'])) {
+  //     myplaylist.addTrackToMyPlaylist(source, tarTrack);
+  //   }
+  // }
+  // return {
+  //   'success': (Function fn) => fn(),
+  // };
+  // shared_preferences
+  final SettingsController settingsController = Get.find<SettingsController>();
+  final tarData = jsonDecode(
+    (await settingsController.getString(target))!,
+  )['tracks'];
+  final srcData = jsonDecode(
+    (await settingsController.getString(source))!,
+  )['tracks'];
+  for (var tarTrack in tarData) {
+    if (!srcData.any((srcTrack) => srcTrack['id'] == tarTrack['id'])) {
+      myplaylist.addTrackToMyPlaylist(source, tarTrack);
     }
+  }
+}
 
-    Track? repTrack = _playController.songReplaceSettings.value
-        .getReplacedTrack(track.id);
-    if (repTrack != null) {
-      sTrack = track;
-      track = repTrack;
-    }
-    final provider = getProviderByName(track.source!);
-    if (provider == null) {
-      _playController.bootstrapTrackFail(track, start: start);
-      return;
-    }
-    provider.bootstrap_track(
+PlayController get _playController => Get.find<PlayController>();
+void bootstrapTrack(Track track, {bool start = true}) {
+  Track? sTrack;
+  successCallback(dynamic res, Track track) {
+    _playController.bootstrapTrackSuccess(
+      res,
       track,
-      successCallback,
-      (track) =>
-          _playController.bootstrapTrackFail(sTrack ?? track, start: start),
+      start: start,
+      sTrack: sTrack,
     );
   }
 
-  static Future<dynamic> login(String source, Map<String, dynamic> options) {
-    final url = '/login?${queryStringify(options)}';
-    final provider = getProviderByName(source);
-    return provider.login(url);
+  Track? repTrack = _playController.songReplaceSettings.value.getReplacedTrack(
+    track.id,
+  );
+  if (repTrack != null) {
+    sTrack = track;
+    track = repTrack;
   }
-
-  static Future<dynamic> getUser(String source) {
-    final provider = getProviderByName(source);
-    return provider.get_user();
+  final provider = getProviderByName(track.source!);
+  if (provider == null) {
+    _playController.bootstrapTrackFail(track, start: start);
+    return;
   }
+  provider.bootstrap_track(
+    track,
+    successCallback,
+    (track) =>
+        _playController.bootstrapTrackFail(sTrack ?? track, start: start),
+  );
+}
 
-  static Future<dynamic> getLoginUrl(String source) {
-    final provider = getProviderByName(source);
-    return provider.getLoginUrl();
-  }
+Future<dynamic> login(String source, Map<String, dynamic> options) {
+  final url = '/login?${queryStringify(options)}';
+  final provider = getProviderByName(source);
+  return provider.login(url);
+}
 
-  static Future<dynamic> getUserCreatedPlaylist(
-    String source,
-    Map<String, dynamic> options,
-  ) {
-    final provider = getProviderByName(source);
-    final url = '/get_user_create_playlist?${queryStringify(options)}';
-    return provider.getUserCreatedPlaylist(url);
-  }
+Future<dynamic> getUser(String source) {
+  final provider = getProviderByName(source);
+  return provider.get_user();
+}
 
-  static Future<dynamic> getUserFavoritePlaylist(
-    String source,
-    Map<String, dynamic> options,
-  ) {
-    final provider = getProviderByName(source);
-    final url = '/get_user_favorite_playlist?${queryStringify(options)}';
-    return provider.getUserFavoritePlaylist(url);
-  }
+Future<dynamic> getLoginUrl(String source) {
+  final provider = getProviderByName(source);
+  return provider.getLoginUrl();
+}
 
-  static Future<dynamic> getRecommendPlaylist(String source) {
-    final provider = getProviderByName(source);
-    return provider.getRecommendPlaylist();
-  }
+Future<dynamic> getUserCreatedPlaylist(
+  String source,
+  Map<String, dynamic> options,
+) {
+  final provider = getProviderByName(source);
+  final url = '/get_user_create_playlist?${queryStringify(options)}';
+  return provider.getUserCreatedPlaylist(url);
+}
 
-  static Future<dynamic> logout(String source) {
-    final provider = getProviderByName(source);
-    return provider.logout();
-  }
+Future<dynamic> getUserFavoritePlaylist(
+  String source,
+  Map<String, dynamic> options,
+) {
+  final provider = getProviderByName(source);
+  final url = '/get_user_favorite_playlist?${queryStringify(options)}';
+  return provider.getUserFavoritePlaylist(url);
+}
 
+Future<dynamic> getRecommendPlaylist(String source) {
+  final provider = getProviderByName(source);
+  return provider.getRecommendPlaylist();
+}
+
+Future<dynamic> logout(String source) {
+  final provider = getProviderByName(source);
+  return provider.logout();
+}
 
 final loWeb = MediaService();

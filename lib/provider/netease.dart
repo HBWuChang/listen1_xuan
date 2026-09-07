@@ -16,6 +16,8 @@ import 'dart:typed_data';
 import 'package:pointycastle/export.dart';
 import 'package:convert/convert.dart';
 
+import 'base.dart';
+
 final netease = Netease();
 
 enum NePlaylistType {
@@ -50,30 +52,17 @@ Future<String> get_csrf() async {
   }
 }
 
-class CookieInterceptors extends InterceptorsWrapper {
+class Netease extends BaseProvider {
   @override
-  void onRequest(
-    RequestOptions options,
-    RequestInterceptorHandler handler,
-  ) async {
-    final tokens = lengcyGetSettings();
-    final _cookies = tokens['ne'];
-    dynamic tcookies = _cookies.split(';');
-    dynamic cookies = [];
-    for (var cookie in tcookies) {
-      cookie = cookie.trim();
-      cookies.add(cookie);
-    }
-    options.queryParameters['cookie'] = cookies;
-
-    //Vercel部署的 需要额外加一个 realIP 参数 国内的IP地址就可以 这里是百度的
-    options.queryParameters['realIP'] = '202.108.22.5';
-    super.onRequest(options, handler);
-  }
-}
-
-class Netease {
-  static String get sourceName => PlatformSource.netease.toString();
+  String get id => "ne";
+  @override
+  bool get searchable => true;
+  @override
+  bool get supportLogin => true;
+  @override
+  String get shortDisplayName => "网易";
+  @override
+  String get name => "netease";
 
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
     final tokens = lengcyGetSettings();
@@ -391,7 +380,7 @@ class Netease {
       'artist_id': 'neartist_${trackJson['ar'][0]['id']}',
       'album': trackJson['al']['name'],
       'album_id': 'nealbum_${trackJson['al']['id']}',
-      'source': sourceName,
+      'source': name,
       'source_url': 'https://music.163.com/#/song?id=${trackJson['id']}',
       'img_url': trackJson['al']['picUrl'],
     };
@@ -499,7 +488,7 @@ class Netease {
                     : null,
                 'album': album['name'] ?? info['title'] ?? '',
                 'album_id': '${NePlaylistType.dj.prefix}_$listId',
-                'source': sourceName,
+                'source': name,
                 'source_url': programId != null
                     ? 'https://music.163.com/#/program?id=$programId'
                     : 'https://music.163.com/#/song?id=$songId',
@@ -564,7 +553,7 @@ class Netease {
         'artist_id': 'neartist_${trackJson['ar'][0]['id']}',
         'album': trackJson['al']['name'],
         'album_id': 'nealbum_${trackJson['al']['id']}',
-        'source': sourceName,
+        'source': name,
         'source_url': 'https://music.163.com/#/song?id=${trackJson['id']}',
         'img_url': trackJson['al']['picUrl'],
       };
@@ -600,7 +589,7 @@ class Netease {
       if (url != null) {
         sound['url'] = url;
         sound['bitrate'] = '${(br / 1000).toStringAsFixed(0)}kbps';
-        sound['platform'] = sourceName;
+        sound['platform'] = name;
         success(sound, track);
       } else {
         failure(track);
@@ -655,7 +644,7 @@ class Netease {
                 'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
                 'album': songInfo['album']['name'],
                 'album_id': 'nealbum_${songInfo['album']['id']}',
-                'source': sourceName,
+                'source': name,
                 'source_url':
                     'https://music.163.com/#/song?id=${songInfo['id']}',
                 'img_url': songInfo['album']['picUrl'],
@@ -668,7 +657,7 @@ class Netease {
               return {
                 'id': '${NePlaylistType.playlist.prefix}_${info['id']}',
                 'title': info['name'],
-                'source': sourceName,
+                'source': name,
                 'source_url':
                     'https://music.163.com/#/playlist?id=${info['id']}',
                 'img_url': info['coverImgUrl'],
@@ -683,7 +672,7 @@ class Netease {
               return {
                 'id': '${NePlaylistType.dj.prefix}_${info['id']}',
                 'title': info['name'],
-                'source': sourceName,
+                'source': name,
                 'source_url':
                     'https://music.163.com/#/djradio?id=${info['id']}',
                 'img_url': info['picUrl'],
@@ -731,7 +720,7 @@ class Netease {
             'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
             'album': songInfo['album']['name'],
             'album_id': 'nealbum_${songInfo['album']['id']}',
-            'source': sourceName,
+            'source': name,
             'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
             'img_url': songInfo['album']['picUrl'],
           };
@@ -765,7 +754,7 @@ class Netease {
             'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
             'album': songInfo['album']['name'],
             'album_id': 'nealbum_${songInfo['album']['id']}',
-            'source': sourceName,
+            'source': name,
             'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
             'img_url': songInfo['album']['picUrl'],
           };
@@ -1121,7 +1110,7 @@ class Netease {
           'user_name': data['account']['userName'],
           'nickname': data['profile']['nickname'],
           'avatar': data['profile']['avatarUrl'],
-          'platform': sourceName,
+          'platform': name,
           'data': data,
         };
       }
