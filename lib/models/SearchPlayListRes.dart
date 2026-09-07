@@ -67,6 +67,11 @@ class SearchPlayListRes {
 
   SearchPlayListRes({required this.result, required this.total, this.error});
 
+  factory SearchPlayListRes.empty() => SearchPlayListRes(result: [], total: 0);
+
+  factory SearchPlayListRes.error(String error) =>
+      SearchPlayListRes(result: [], total: 0, error: error);
+
   factory SearchPlayListRes.fromJson(Map<String, dynamic> json) =>
       _$SearchPlayListResFromJson(json);
 

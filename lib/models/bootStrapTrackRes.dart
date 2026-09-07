@@ -6,11 +6,13 @@ class BootSuccessRes {
   /// BaseProvider.name
   final String platform;
 
+  final String? bitrate;
   final AudioQualityOfBL? audioQualityOfBL;
 
   BootSuccessRes({
     required this.url,
     required this.platform,
+    this.bitrate,
     this.audioQualityOfBL,
   });
 }

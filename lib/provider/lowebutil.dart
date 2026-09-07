@@ -5,7 +5,7 @@ import 'dart:convert';
 // dynamic getParameterByName(String name, [String? url]) {
 dynamic getParameterByName(String name, String url) {
   // if (url == null) {
-  //   url = html.window.location.href;
+  //   url = html.window.location.href;s
   // }
   url = Uri.encodeFull(url);
   name = name.replaceAll(RegExp(r'[\[\]]'), r'\\$&');

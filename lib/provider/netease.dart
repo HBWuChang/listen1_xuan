@@ -4,9 +4,14 @@ import 'package:listen1_xuan/controllers/DioController.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/lowebutil.dart';
+import 'package:listen1_xuan/models/PlayList.dart';
+import 'package:listen1_xuan/models/ProviderUser.dart';
+import 'package:listen1_xuan/models/SearchPlayListRes.dart';
+import 'package:listen1_xuan/models/SearchRes.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 import 'package:dio/dio.dart';
+import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
 import 'package:listen1_xuan/models/websocket_message.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
@@ -387,131 +392,105 @@ class Netease extends BaseProvider {
     callback(null, track);
   }
 
-  Future<Map<String, dynamic>> ne_get_playlist(String url) async {
-    return {
-      'success': (fn) async {
-        try {
-          final listId = Uri.parse(
-            url,
-          ).queryParameters['list_id']!.split('_').last;
-          const targetUrl = 'https://music.163.com/weapi/v3/playlist/detail';
-          final data = weapi({
-            'id': listId,
-            'offset': 0,
-            'total': true,
-            'limit': 1000,
-            'n': 1000,
-            'csrf_token': '',
-          });
-          final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
-          final resData = jsonDecode(response.data);
-          final info = {
-            'id': 'neplaylist_$listId',
-            'cover_img_url': resData['playlist']['coverImgUrl'],
-            'title': resData['playlist']['name'],
-            'source_url': 'https://music.163.com/#/playlist?id=$listId',
-          };
-          final maxAllowSize = 1000;
-          final trackIdsArray = _splitArray(
-            resData['playlist']['trackIds'],
-            maxAllowSize,
-          );
-
-          final tracks = <Map<String, dynamic>>[];
-          for (final trackIds in trackIdsArray) {
-            final trackData = await ng_parse_playlist_tracks(trackIds);
-            tracks.addAll(trackData);
-          }
-          fn({'tracks': tracks, 'info': info});
-        } catch (e) {
-          fn({'tracks': [], 'info': {}});
-        }
-      },
+  Future<PlayList> ne_get_playlist(String listId) async {
+    const targetUrl = 'https://music.163.com/weapi/v3/playlist/detail';
+    final data = weapi({
+      'id': listId,
+      'offset': 0,
+      'total': true,
+      'limit': 1000,
+      'n': 1000,
+      'csrf_token': '',
+    });
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+    final resData = jsonDecode(response.data);
+    final info = {
+      'id': 'neplaylist_$listId',
+      'cover_img_url': resData['playlist']['coverImgUrl'],
+      'title': resData['playlist']['name'],
+      'source_url': 'https://music.163.com/#/playlist?id=$listId',
     };
+    final maxAllowSize = 1000;
+    final trackIdsArray = _splitArray(
+      resData['playlist']['trackIds'],
+      maxAllowSize,
+    );
+
+    final tracks = <Map<String, dynamic>>[];
+    for (final trackIds in trackIdsArray) {
+      final trackData = await ng_parse_playlist_tracks(trackIds);
+      tracks.addAll(trackData);
+    }
+    return PlayList.fromJson({'tracks': tracks, 'info': info});
   }
 
-  Future<Map<String, dynamic>> ne_get_djradio(String url) async {
-    return {
-      'success': (fn) async {
-        try {
-          final listId = Uri.parse(
-            url,
-          ).queryParameters['list_id']!.split('_').last;
-          const pageSize = 1000;
-          var offset = 0;
-          var hasMore = true;
+  Future<PlayList> ne_get_djradio(String listId) async {
+    const pageSize = 1000;
+    var offset = 0;
+    var hasMore = true;
 
-          final tracks = <Map<String, dynamic>>[];
-          var info = <String, dynamic>{
-            'id': '${NePlaylistType.dj.prefix}_$listId',
-            'source_url': 'https://music.163.com/#/djradio?id=$listId',
-          };
-
-          while (hasMore) {
-            final targetUrl =
-                'https://music.163.com/api/dj/program/byradio?asc=false&limit=$pageSize&radioId=$listId&offset=$offset';
-            final response = await dio_get_with_cookie_and_csrf(targetUrl);
-            final resData = jsonDecode(response.data);
-            final programs = (resData['programs'] ?? []) as List;
-
-            if (programs.isNotEmpty && info['title'] == null) {
-              final radio = programs.first['radio'] ?? {};
-              info = {
-                ...info,
-                'cover_img_url':
-                    radio['picUrl'] ?? radio['coverUrl'] ?? radio['imgUrl'],
-                'title': radio['name'] ?? '',
-              };
-            }
-
-            for (final program in programs) {
-              final mainSong = program['mainSong'];
-              if (mainSong == null || mainSong['id'] == null) {
-                continue;
-              }
-
-              final artists = (mainSong['artists'] ?? []) as List;
-              final firstArtist = artists.isNotEmpty ? artists.first : null;
-              final album = mainSong['album'] ?? {};
-              final programId = program['id'];
-              final songId = mainSong['id'];
-
-              tracks.add({
-                'id': '${NeTrackType.track.prefix}_$songId',
-                'title': mainSong['name'] ?? program['name'] ?? '',
-                'artist':
-                    firstArtist?['name'] ??
-                    program['dj']?['nickname'] ??
-                    '未知艺术家',
-                'artist_id': firstArtist?['id'] != null
-                    ? 'neartist_${firstArtist['id']}'
-                    : null,
-                'album': album['name'] ?? info['title'] ?? '',
-                'album_id': '${NePlaylistType.dj.prefix}_$listId',
-                'source': name,
-                'source_url': programId != null
-                    ? 'https://music.163.com/#/program?id=$programId'
-                    : 'https://music.163.com/#/song?id=$songId',
-                'img_url':
-                    program['coverUrl'] ??
-                    album['picUrl'] ??
-                    info['cover_img_url'],
-              });
-            }
-
-            hasMore = resData['more'] == true;
-            if (programs.isEmpty) {
-              break;
-            }
-            offset += pageSize;
-          }
-
-          fn({'tracks': tracks, 'info': info});
-        } catch (e) {
-          fn({'tracks': [], 'info': {}});
-        }
-      },
+    final tracks = <Map<String, dynamic>>[];
+    var info = <String, dynamic>{
+      'id': '${NePlaylistType.dj.prefix}_$listId',
+      'source_url': 'https://music.163.com/#/djradio?id=$listId',
     };
+
+    while (hasMore) {
+      final targetUrl =
+          'https://music.163.com/api/dj/program/byradio?asc=false&limit=$pageSize&radioId=$listId&offset=$offset';
+      final response = await dio_get_with_cookie_and_csrf(targetUrl);
+      final resData = jsonDecode(response.data);
+      final programs = (resData['programs'] ?? []) as List;
+
+      if (programs.isNotEmpty && info['title'] == null) {
+        final radio = programs.first['radio'] ?? {};
+        info = {
+          ...info,
+          'cover_img_url':
+              radio['picUrl'] ?? radio['coverUrl'] ?? radio['imgUrl'],
+          'title': radio['name'] ?? '',
+        };
+      }
+
+      for (final program in programs) {
+        final mainSong = program['mainSong'];
+        if (mainSong == null || mainSong['id'] == null) {
+          continue;
+        }
+
+        final artists = (mainSong['artists'] ?? []) as List;
+        final firstArtist = artists.isNotEmpty ? artists.first : null;
+        final album = mainSong['album'] ?? {};
+        final programId = program['id'];
+        final songId = mainSong['id'];
+
+        tracks.add({
+          'id': '${NeTrackType.track.prefix}_$songId',
+          'title': mainSong['name'] ?? program['name'] ?? '',
+          'artist':
+              firstArtist?['name'] ?? program['dj']?['nickname'] ?? '未知艺术家',
+          'artist_id': firstArtist?['id'] != null
+              ? 'neartist_${firstArtist['id']}'
+              : null,
+          'album': album['name'] ?? info['title'] ?? '',
+          'album_id': '${NePlaylistType.dj.prefix}_$listId',
+          'source': name,
+          'source_url': programId != null
+              ? 'https://music.163.com/#/program?id=$programId'
+              : 'https://music.163.com/#/song?id=$songId',
+          'img_url':
+              program['coverUrl'] ?? album['picUrl'] ?? info['cover_img_url'],
+        });
+      }
+
+      hasMore = resData['more'] == true;
+      if (programs.isEmpty) {
+        break;
+      }
+      offset += pageSize;
+    }
+
+    return PlayList.fromJson({'tracks': tracks, 'info': info});
   }
 
   static List<List<dynamic>> _splitArray(List<dynamic> array, int size) {
@@ -561,13 +540,13 @@ class Netease extends BaseProvider {
     return tracks;
   }
 
-  Future<void> bootstrap_track(
+  @override
+  Future<void> bootStrapTrack(
     Track track,
-    Function success,
-    Function failure,
+    Function(BootSuccessRes res, Track track) success,
+    Function(Track track) failure,
   ) async {
     try {
-      final sound = <String, dynamic>{};
       const targetUrl =
           'https://interface3.music.163.com/eapi/song/enhance/player/url';
       var songId = track.id.toString().replaceFirst(
@@ -577,20 +556,17 @@ class Netease extends BaseProvider {
       const eapiUrl = '/api/song/enhance/player/url';
 
       final data = eapi(eapiUrl, {'ids': '[$songId]', 'br': 999000});
-      final expire =
-          (DateTime.now().millisecondsSinceEpoch +
-              1e3 * 60 * 60 * 24 * 365 * 100) /
-          1000;
-
       final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
       final resData = jsonDecode(response.data)['data'][0];
       final url = resData['url'];
       final br = resData['br'];
       if (url != null) {
-        sound['url'] = url;
-        sound['bitrate'] = '${(br / 1000).toStringAsFixed(0)}kbps';
-        sound['platform'] = name;
-        success(sound, track);
+        final bootRes = BootSuccessRes(
+          url: url,
+          bitrate: '${(br / 1000).toStringAsFixed(0)}kbps',
+          platform: name,
+        );
+        success(bootRes, track);
       } else {
         failure(track);
       }
@@ -603,168 +579,163 @@ class Netease extends BaseProvider {
     return song['fee'] != 4 && song['fee'] != 1;
   }
 
-  Future<Map<String, dynamic>> search(String url) async {
+  @override
+  Future<dynamic>? search(String keywords, int curpage, SearchType type) async {
     const targetUrl = 'https://music.163.com/api/search/pc';
-    final keyword = Uri.parse(url).queryParameters['keywords'];
-    final curpage = Uri.parse(url).queryParameters['curpage'];
-    final searchType = Uri.parse(url).queryParameters['type'];
     var neSearchType = '1';
-    if (searchType == '1') {
+    if (type == SearchType.song) {
       neSearchType = '1000';
-    } else if (searchType == '2') {
+    } else if (type == SearchType.album) {
+      // 专辑
+      neSearchType = '1000';
+    } else if (type == SearchType.dj) {
       // 电台
       neSearchType = '1009';
     }
     final reqData = {
-      's': keyword,
-      'offset': 20 * (int.parse(curpage!) - 1),
+      's': keywords,
+      'offset': 20 * (curpage - 1),
       'limit': 20,
       'type': neSearchType,
     };
-    return {
-      'success': (fn) async {
-        try {
-          final response = await dio_post_with_cookie_and_csrf(
-            targetUrl,
-            reqData,
-          );
-          final data = jsonDecode(response.data);
-          var result = <Map<String, dynamic>>[];
-          var total = 0;
-          if (data['result']['songCount'] == 0) {
-            fn({'result': [], 'total': 0, 'type': searchType});
-            return;
-          }
-          if (searchType == '0') {
-            result = (data['result']['songs'] as List).map((songInfo) {
-              return {
-                'id': '${NeTrackType.track.prefix}_${songInfo['id']}',
-                'title': songInfo['name'],
-                'artist': songInfo['artists'][0]['name'],
-                'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
-                'album': songInfo['album']['name'],
-                'album_id': 'nealbum_${songInfo['album']['id']}',
-                'source': name,
-                'source_url':
-                    'https://music.163.com/#/song?id=${songInfo['id']}',
-                'img_url': songInfo['album']['picUrl'],
-                'url': !is_playable(songInfo) ? '' : null,
-              };
-            }).toList();
-            total = data['result']['songCount'];
-          } else if (searchType == '1') {
-            result = (data['result']['playlists'] as List).map((info) {
-              return {
-                'id': '${NePlaylistType.playlist.prefix}_${info['id']}',
-                'title': info['name'],
-                'source': name,
-                'source_url':
-                    'https://music.163.com/#/playlist?id=${info['id']}',
-                'img_url': info['coverImgUrl'],
-                'url': '${NePlaylistType.playlist.prefix}_${info['id']}',
-                'author': info['creator']['nickname'],
-                'count': info['trackCount'],
-              };
-            }).toList();
-            total = data['result']['playlistCount'];
-          } else if (searchType == '2') {
-            result = (data['result']['djRadios'] as List).map((info) {
-              return {
-                'id': '${NePlaylistType.dj.prefix}_${info['id']}',
-                'title': info['name'],
-                'source': name,
-                'source_url':
-                    'https://music.163.com/#/djradio?id=${info['id']}',
-                'img_url': info['picUrl'],
-                'url': '${NePlaylistType.dj.prefix}_${info['id']}',
-                'author': info['dj']['nickname'],
-                'count': info['programCount'],
-              };
-            }).toList();
-            total = data['result']['djRadiosCount'];
-          }
-          fn({'result': result, 'total': total, 'type': searchType});
-        } catch (e) {
-          fn({
-            'result': [],
-            'total': 0,
-            'type': searchType,
-            'error': e.toString(),
-          });
-        }
-      },
-    };
+
+    try {
+      final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
+      final data = jsonDecode(response.data);
+      if (data['result']['songCount'] == 0) {
+        return type == SearchType.song
+            ? SearchRes.empty()
+            : SearchPlayListRes.empty();
+      }
+      if (type == SearchType.song) {
+        return SearchRes(
+          result: (data['result']['songs'] as List)
+              .map((songInfo) {
+                return {
+                  'id': '${NeTrackType.track.prefix}_${songInfo['id']}',
+                  'title': songInfo['name'],
+                  'artist': songInfo['artists'][0]['name'],
+                  'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
+                  'album': songInfo['album']['name'],
+                  'album_id': 'nealbum_${songInfo['album']['id']}',
+                  'source': name,
+                  'source_url':
+                      'https://music.163.com/#/song?id=${songInfo['id']}',
+                  'img_url': songInfo['album']['picUrl'],
+                  'url': !is_playable(songInfo) ? '' : null,
+                };
+              })
+              .map((song) => Track.fromJson(song))
+              .toList(),
+          total: data['result']['songCount'],
+        );
+      } else if (type == SearchType.album) {
+        return SearchPlayListRes(
+          result: (data['result']['playlists'] as List)
+              .map((info) {
+                return {
+                  'id': '${NePlaylistType.playlist.prefix}_${info['id']}',
+                  'title': info['name'],
+                  'source': name,
+                  'source_url':
+                      'https://music.163.com/#/playlist?id=${info['id']}',
+                  'img_url': info['coverImgUrl'],
+                  'url': '${NePlaylistType.playlist.prefix}_${info['id']}',
+                  'author': info['creator']['nickname'],
+                  'count': info['trackCount'],
+                };
+              })
+              .map((playlist) => SearchPlayListItem.fromJson(playlist))
+              .toList(),
+          total: data['result']['playlistCount'],
+        );
+      } else if (type == SearchType.dj) {
+        return SearchPlayListRes(
+          result: (data['result']['djRadios'] as List)
+              .map((info) {
+                return {
+                  'id': '${NePlaylistType.dj.prefix}_${info['id']}',
+                  'title': info['name'],
+                  'source': name,
+                  'source_url':
+                      'https://music.163.com/#/djradio?id=${info['id']}',
+                  'img_url': info['picUrl'],
+                  'url': '${NePlaylistType.dj.prefix}_${info['id']}',
+                  'author': info['dj']['nickname'],
+                  'count': info['programCount'],
+                };
+              })
+              .map((playlist) => SearchPlayListItem.fromJson(playlist))
+              .toList(),
+          total: data['result']['djRadiosCount'],
+        );
+      }
+      throw Exception('不支持的搜索类型: $type');
+    } catch (e) {
+      return type == SearchType.song
+          ? SearchRes.error('搜索时发生错误: $e')
+          : SearchPlayListRes.error('搜索时发生错误: $e');
+    }
   }
 
-  Future<Map<String, dynamic>> ne_album(String url) async {
-    final albumId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
+  Future<PlayList> ne_album(String listId) async {
+    final albumId = listId.split('_').last;
     const targetUrl = 'https://music.163.com/api/album/';
-    return {
-      'success': (fn) async {
-        final response = await dio_get_with_cookie_and_csrf(
-          targetUrl + albumId,
-        );
-        final data = jsonDecode(response.data);
-        final info = {
-          'cover_img_url': data['album']['picUrl'],
-          'title': data['album']['name'],
-          'id': 'nealbum_${data['album']['id']}',
-          'source_url':
-              'https://music.163.com/#/album?id=${data['album']['id']}',
-        };
-        final tracks = (data['album']['songs'] as List).map((songInfo) {
-          return {
-            'id': '${NeTrackType.track.prefix}_${songInfo['id']}',
-            'title': songInfo['name'],
-            'artist': songInfo['artists'][0]['name'],
-            'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
-            'album': songInfo['album']['name'],
-            'album_id': 'nealbum_${songInfo['album']['id']}',
-            'source': name,
-            'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
-            'img_url': songInfo['album']['picUrl'],
-          };
-        }).toList();
-        fn({'tracks': tracks, 'info': info});
-      },
+
+    final response = await dio_get_with_cookie_and_csrf(targetUrl + albumId);
+    final data = jsonDecode(response.data);
+    final info = {
+      'cover_img_url': data['album']['picUrl'],
+      'title': data['album']['name'],
+      'id': 'nealbum_${data['album']['id']}',
+      'source_url': 'https://music.163.com/#/album?id=${data['album']['id']}',
     };
+    final tracks = (data['album']['songs'] as List).map((songInfo) {
+      return {
+        'id': '${NeTrackType.track.prefix}_${songInfo['id']}',
+        'title': songInfo['name'],
+        'artist': songInfo['artists'][0]['name'],
+        'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
+        'album': songInfo['album']['name'],
+        'album_id': 'nealbum_${songInfo['album']['id']}',
+        'source': name,
+        'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
+        'img_url': songInfo['album']['picUrl'],
+      };
+    }).toList();
+    return PlayList.fromJson({'tracks': tracks, 'info': info});
   }
 
-  Future<Map<String, dynamic>> ne_artist(String url) async {
-    final artistId = Uri.parse(url).queryParameters['list_id']!.split('_').last;
+  Future<PlayList> ne_artist(String listId) async {
+    final artistId = listId.split('_').last;
     const targetUrl = 'https://music.163.com/api/artist/';
-    return {
-      'success': (fn) async {
-        final response = await dio_get_with_cookie_and_csrf(
-          targetUrl + artistId,
-        );
-        final data = jsonDecode(response.data);
-        final info = {
-          'cover_img_url': data['artist']['picUrl'],
-          'title': data['artist']['name'],
-          'id': 'neartist_${data['artist']['id']}',
-          'source_url':
-              'https://music.163.com/#/artist?id=${data['artist']['id']}',
-        };
-        final tracks = (data['hotSongs'] as List).map((songInfo) {
-          return {
-            'id': '${NeTrackType.track.prefix}_${songInfo['id']}',
-            'title': songInfo['name'],
-            'artist': songInfo['artists'][0]['name'],
-            'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
-            'album': songInfo['album']['name'],
-            'album_id': 'nealbum_${songInfo['album']['id']}',
-            'source': name,
-            'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
-            'img_url': songInfo['album']['picUrl'],
-          };
-        }).toList();
-        fn({'tracks': tracks, 'info': info});
-      },
+
+    final response = await dio_get_with_cookie_and_csrf(targetUrl + artistId);
+    final data = jsonDecode(response.data);
+    final info = {
+      'cover_img_url': data['artist']['picUrl'],
+      'title': data['artist']['name'],
+      'id': 'neartist_${data['artist']['id']}',
+      'source_url': 'https://music.163.com/#/artist?id=${data['artist']['id']}',
     };
+    final tracks = (data['hotSongs'] as List).map((songInfo) {
+      return {
+        'id': '${NeTrackType.track.prefix}_${songInfo['id']}',
+        'title': songInfo['name'],
+        'artist': songInfo['artists'][0]['name'],
+        'artist_id': 'neartist_${songInfo['artists'][0]['id']}',
+        'album': songInfo['album']['name'],
+        'album_id': 'nealbum_${songInfo['album']['id']}',
+        'source': name,
+        'source_url': 'https://music.163.com/#/song?id=${songInfo['id']}',
+        'img_url': songInfo['album']['picUrl'],
+      };
+    }).toList();
+    return PlayList.fromJson({'tracks': tracks, 'info': info});
   }
 
-  Future<Map<String, dynamic>> lyric(String url) async {
+  @override
+  Future<(String lyric, String? tlyric)> lyric(String url) async {
     final trackId = Uri.parse(url).queryParameters['track_id']!.split('_').last;
     const targetUrl = 'https://music.163.com/weapi/song/lyric';
     final data = weapi({
@@ -773,28 +744,19 @@ class Netease extends BaseProvider {
       'tv': -1,
       'csrf_token': await get_csrf(),
     });
-    return {
-      'success': (fn) async {
-        try {
-          final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
-          final resData = jsonDecode(response.data);
-          var lrc = '';
-          var tlrc = '';
-          if (resData['lrc'] != null) {
-            lrc = resData['lrc']['lyric'];
-          }
-          if (resData['tlyric'] != null && resData['tlyric']['lyric'] != null) {
-            tlrc = resData['tlyric']['lyric']
-                .replaceAll(RegExp(r'(|\\)'), '')
-                .replaceAll(RegExp(r'[\u2005]+'), ' ');
-          }
-          fn({'lyric': lrc, 'tlyric': tlrc});
-        } catch (e) {
-          showErrorSnackbar('网易加载歌词失败', e.toString());
-          fn({'lyric': null, 'tlyric': null});
-        }
-      },
-    };
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, data);
+    final resData = jsonDecode(response.data);
+    var lrc = '';
+    var tlrc = '';
+    if (resData['lrc'] != null) {
+      lrc = resData['lrc']['lyric'];
+    }
+    if (resData['tlyric'] != null && resData['tlyric']['lyric'] != null) {
+      tlrc = resData['tlyric']['lyric']
+          .replaceAll(RegExp(r'(|\\)'), '')
+          .replaceAll(RegExp(r'[\u2005]+'), ' ');
+    }
+    return (lrc, tlrc.isNotEmpty ? tlrc : null);
   }
 
   Future<Map<String, dynamic>> parse_url(String url) async {
@@ -836,30 +798,18 @@ class Netease extends BaseProvider {
     };
   }
 
-  // static Future<void> getPlaylist(String url, Function fn) async {
-  Future<Map<String, dynamic>> get_playlist(String url) async {
-    final listId = Uri.parse(url).queryParameters['list_id']!.split('_')[0];
-    // switch (listId) {
-    //   case 'neplaylist':
+  @override
+  Future<PlayList> getPlaylist(String listId) async {
     if (listId == NePlaylistType.playlist.prefix)
-      // await neGetPlaylist(url, fn);
-      return ne_get_playlist(url);
-    if (listId == NePlaylistType.album.prefix)
-      // case 'nealbum':
-      // await neAlbum(url, fn);
-      return ne_album(url);
-    // case 'neartist':
-    if (listId == NePlaylistType.artist.prefix)
-      // await neArtist(url, fn);
-      return ne_artist(url);
-    if (listId == NePlaylistType.dj.prefix)
-      // await neDjradio(url, fn);
-      return ne_get_djradio(url);
-    // default:
-    return {};
+      return ne_get_playlist(listId);
+    if (listId == NePlaylistType.album.prefix) return ne_album(listId);
+    if (listId == NePlaylistType.artist.prefix) return ne_artist(listId);
+    if (listId == NePlaylistType.dj.prefix) return ne_get_djradio(listId);
+    throw Exception('不支持的网易云歌单类型: $listId');
   }
 
-  Future<Map<String, dynamic>> get_playlist_filters() {
+  @override
+  Future<Map<String, dynamic>> getPlaylistFilters() async {
     final recommend = [
       {'id': '', 'name': '全部'},
       {'id': 'toplist', 'name': '排行榜'},
@@ -969,22 +919,13 @@ class Netease extends BaseProvider {
         ],
       },
     ];
-    // return {
-    //   success: (fn) => fn({ recommend, all }),
-    // };
-    // return Future.value({'recommend': recommend, 'all': all});
-    return Future.value({
-      'success': (fn) {
-        fn({'recommend': recommend, 'all': all});
-      },
-    });
+    return {'recommend': recommend, 'all': all};
   }
 
-  Future<Map<String, dynamic>> get_user_playlist(
-    String url,
+  Future<List<PlayList>> get_user_playlist(
+    String userId,
     String playlistType,
   ) async {
-    final userId = Uri.parse(url).queryParameters['user_id'];
     const targetUrl = 'https://music.163.com/api/user/playlist';
 
     final reqData = {
@@ -993,58 +934,40 @@ class Netease extends BaseProvider {
       'offset': 0,
       'includeVideo': true,
     };
-    return {
-      'success': (fn) async {
-        try {
-          final response = await dio_post_with_cookie_and_csrf(
-            targetUrl,
-            reqData,
-          );
-          final playlists = (jsonDecode(response.data)['playlist'] as List)
-              .where((item) {
-                if (playlistType == 'created' && item['subscribed'] != false) {
-                  return false;
-                }
-                if (playlistType == 'favorite' && item['subscribed'] != true) {
-                  return false;
-                }
-                return true;
-              })
-              .map((item) {
-                return {
-                  'cover_img_url': item['coverImgUrl'],
-                  'id': 'neplaylist_${item['id']}',
-                  'source_url':
-                      'https://music.163.com/#/playlist?id=${item['id']}',
-                  'title': item['name'],
-                };
-              })
-              .toList();
-          fn({
-            'status': 'success',
-            'data': {'playlists': playlists},
-          });
-        } catch (e) {
-          fn({
-            'status': 'fail',
-            'data': {'playlists': []},
-          });
-        }
-      },
-    };
+
+    final response = await dio_post_with_cookie_and_csrf(targetUrl, reqData);
+    final playlists = (jsonDecode(response.data)['playlist'] as List)
+        .where((item) {
+          if (playlistType == 'created' && item['subscribed'] != false) {
+            return false;
+          }
+          if (playlistType == 'favorite' && item['subscribed'] != true) {
+            return false;
+          }
+          return true;
+        })
+        .map((item) {
+          return {
+            'cover_img_url': item['coverImgUrl'],
+            'id': 'neplaylist_${item['id']}',
+            'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+            'title': item['name'],
+          };
+        })
+        .toList();
+    return playlists
+        .map((playlist) => PlayList.fromJson({'info': playlist}))
+        .toList();
   }
 
-  // static Future<void> getUserCreatedPlaylist(String url, Function fn) async {
-  Future<Map<String, dynamic>> get_user_created_playlist(String url) async {
-    // await getUserPlaylist(url, 'created', fn);
-    return await get_user_playlist(url, 'created');
+  @override
+  Future<List<PlayList>> getUserCreatedPlaylist(String userId) async {
+    return get_user_playlist(userId, 'created');
   }
 
-  // static Future<void> getUserFavoritePlaylist(String url, Function fn) async {
-  //   await getUserPlaylist(url, 'favorite', fn);
-  // }
-  Future<Map<String, dynamic>> get_user_favorite_playlist(String url) async {
-    return await get_user_playlist(url, 'favorite');
+  @override
+  Future<List<PlayList>> getUserFavoritePlaylist(String userId) async {
+    return get_user_playlist(userId, 'favorite');
   }
 
   Future<Map<String, dynamic>> get_recommend_playlist() async {
@@ -1083,7 +1006,9 @@ class Netease extends BaseProvider {
     };
   }
 
-  Future<Map<String, dynamic>> get_user() async {
+  @override
+  Future<ProviderUser?> getUser() async {
+    loginStatus.value = LoginStatus.processing;
     try {
       const url = 'https://music.163.com/weapi/w/nuser/account/get';
 
@@ -1099,26 +1024,21 @@ class Netease extends BaseProvider {
       dynamic encryptReqData = {'csrf_token': _csrf};
       encryptReqData = weapi(encryptReqData);
       final response = await dio_post_with_cookie_and_csrf(url, encryptReqData);
-      dynamic result = {'is_login': false};
-      var status = 'fail';
       if (response.data['account'] != null) {
-        status = 'success';
         final data = response.data;
-        result = {
-          'is_login': true,
-          'user_id': data['account']['id'],
-          'user_name': data['account']['userName'],
-          'nickname': data['profile']['nickname'],
-          'avatar': data['profile']['avatarUrl'],
-          'platform': name,
-          'data': data,
-        };
+        final res = ProviderUser(
+          platform: name,
+          userId: data['account']['id'],
+          name: data['account']['userName'],
+        );
+        loginStatus.value = LoginStatus.loggedIn;
+        return res;
       }
-      // fn({'status': status, 'result': result});
-      return {'status': status, 'result': result};
+      loginStatus.value = LoginStatus.noLogin;
     } catch (e) {
-      print(e);
-      return {'status': 'fail', 'result': {}};
+      loginError.value = e.toString();
+      loginStatus.value = LoginStatus.failed;
+      return null;
     }
   }
 }
