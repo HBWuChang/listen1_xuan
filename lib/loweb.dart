@@ -232,11 +232,6 @@ class MediaService {
     return provider.lyric(url);
   }
 
-  static dynamic queryPlaylist(String listId, String type) {
-    final result = myplaylist.myPlaylistContainers(type, listId);
-    return result;
-  }
-
   static dynamic getPlaylist(String listId, {bool useCache = true}) async {
     final provider = getProviderByItemId(listId);
     final url = '/playlist?list_id=$listId';

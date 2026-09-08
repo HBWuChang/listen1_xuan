@@ -1,15 +1,31 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'controllers/myPlaylist_controller.dart';
-import 'funcs.dart';
+import 'package:listen1_xuan/controllers/myPlaylist_controller.dart';
+import 'package:listen1_xuan/funcs.dart';
+import 'package:listen1_xuan/models/PlayListInfo.dart';
+import 'package:listen1_xuan/models/Playlist.dart';
+import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
+import 'base.dart';
 import 'lowebutil.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:uuid/uuid.dart';
 
-import 'models/PlayListInfo.dart';
-import 'models/Playlist.dart';
+class MyPlaylist extends BaseProvider {
+  @override
+  String get id => "my";
+  @override
+  bool get searchable => false;
+  @override
+  bool get supportLogin => false;
+  @override
+  String get shortDisplayName => "我的";
+  @override
+  String get name => "myplaylist";
+  @override
+  bool get supportLyric => false;
+  @override
+  bool get isLocal => true;
 
-class MyPlaylist {
   final MyPlayListController _myPlayListController =
       Get.find<MyPlayListController>();
   void arrayMove(List<dynamic> arr, int oldIndex, int newIndex) {
@@ -39,7 +55,7 @@ class MyPlaylist {
     String? cover_img_url = "",
   ]) async {
     try {
-      final playlists = show_myplaylist('my')['result'];
+      final playlists = show_myplaylist('my');
       await Get.dialog(
         AlertDialog(
           title: Text('请选择要添加到的歌单'),
@@ -138,43 +154,31 @@ class MyPlaylist {
     }
   }
 
-  Map<String, dynamic> show_myplaylist(String playlistType) {
+  @override
+  Future<List<PlayList>>? getUserFavoritePlaylist(String userId) async {
+    final playlists = show_myplaylist('favorite');
+    return playlists;
+  }
+
+  @override
+  Future<List<PlayList>>? getUserCreatedPlaylist(String userId) async {
+    final playlists = show_myplaylist('my');
+    return playlists;
+  }
+
+  List<PlayList> show_myplaylist(String playlistType) {
     final key = getPlaylistObjectKey(playlistType);
     if (key == '') {
       // fn({'result': []});
-      return {'result': []};
+      return [];
     }
-    // final prefs = await SharedPreferences.getInstance();
-    // List<String>? playlists = prefs.getStringList(key);
-    // if (playlists == null) {
-    //   playlists = [];
-    // }
-    // final result = playlists
-    //     .map((id) {
-    //       final playlistJson = prefs.getString(id);
-    //       if (playlistJson != null) {
-    //         final playlist = jsonDecode(playlistJson);
-    //         if (playlist['tracks'] != null) {
-    //           for (var track in playlist['tracks']) {
-    //             track.remove('url');
-    //           }
-    //         }
-    //         return playlist;
-    //       }
-    //       return null;
-    //     })
-    //     .where((playlist) => playlist != null)
-    //     .toList();
-    // return {'result': result};
     switch (key) {
       case 'playerlists':
-        return {'result': _myPlayListController.playerlists.values.toList()};
+        return _myPlayListController.playerlists.values.toList();
       case 'favoriteplayerlists':
-        return {
-          'result': _myPlayListController.favoriteplayerlists.values.toList(),
-        };
+        return _myPlayListController.favoriteplayerlists.values.toList();
       default:
-        return {'result': []};
+        return [];
     }
   }
 
@@ -304,16 +308,6 @@ class MyPlaylist {
     List<Track> tracks, [
     String cover_img_url = "images/mycover.jpg",
   ]) async {
-    // final playlist = {
-    //   'is_mine': 1,
-    //   'info': {
-    //     'cover_img_url': cover_img_url,
-    //     'title': playlistTitle,
-    //     'id': '',
-    //     'source_url': '',
-    //   },
-    //   'tracks': track is List ? track : [track],
-    // };
     final playlist = PlayList(
       info: PlayListInfo(
         id: '',
@@ -337,6 +331,13 @@ class MyPlaylist {
     _myPlayListController.playerlists[playlistId] = playlist;
     return true;
   }
-}
 
-final myplaylist = MyPlaylist();
+  @override
+  Future<void> bootStrapTrack(
+    Track track,
+    Function(BootSuccessRes res, Track track) success,
+    Function(Track track) failure,
+  ) async {
+    failure(track);
+  }
+}

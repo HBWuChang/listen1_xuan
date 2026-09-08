@@ -4,7 +4,7 @@ import 'package:listen1_xuan/controllers/DioController.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/lowebutil.dart';
-import 'package:listen1_xuan/models/PlayList.dart';
+import 'package:listen1_xuan/models/Playlist.dart';
 import 'package:listen1_xuan/models/ProviderUser.dart';
 import 'package:listen1_xuan/models/SearchPlayListRes.dart';
 import 'package:listen1_xuan/models/SearchRes.dart';
@@ -68,6 +68,8 @@ class Netease extends BaseProvider {
   String get shortDisplayName => "网易";
   @override
   String get name => "netease";
+  @override
+  bool get supportLyric => true;
 
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
     final tokens = lengcyGetSettings();
@@ -242,40 +244,32 @@ class Netease extends BaseProvider {
     return {'params': hexString};
   }
 
-  Future<Map<String, dynamic>> ne_show_toplist(int? offset) async {
+  Future<List<PlayList>> ne_show_toplist(int? offset) async {
     if (offset != null && offset > 0) {
-      return {"success": (fn) => fn([])};
+      return [];
     }
     const url = 'https://music.163.com/weapi/toplist/detail';
     final data = weapi({});
-    return {
-      'success': (fn) async {
-        try {
-          final response = await dio_post_with_cookie_and_csrf(url, data);
-          final result = response.data['list'].map((item) {
-            return {
-              'cover_img_url': item['coverImgUrl'],
-              'id': 'neplaylist_${item['id']}',
-              'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
-              'title': item['name'],
-            };
-          }).toList();
-          fn(result);
-        } catch (e) {
-          showErrorSnackbar('网易加载歌单失败', e.toString());
-          fn([]);
-        }
-      },
-    };
+    final response = await dio_post_with_cookie_and_csrf(url, data);
+    final result = response.data['list'].map((item) {
+      return {
+        'cover_img_url': item['coverImgUrl'],
+        'id': 'neplaylist_${item['id']}',
+        'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+        'title': item['name'],
+      };
+    }).toList();
+    return result
+        .map((playlist) => PlayList.fromJson({'info': playlist}))
+        .toList();
   }
 
-  Future<Map<String, dynamic>> show_playlist(String url) async {
+  @override
+  Future<List<PlayList>>? showPlaylist({int? offset, dynamic filterId}) async {
     const order = 'hot';
-    final offset = getParameterByName('offset', url);
-    final filterId = getParameterByName('filter_id', url);
 
     if (filterId == 'toplist') {
-      return ne_show_toplist(int.parse(offset!));
+      return ne_show_toplist(offset);
     }
 
     String filter = '';
@@ -290,36 +284,31 @@ class Netease extends BaseProvider {
       targetUrl =
           'https://music.163.com/discover/playlist/?order=$order$filter';
     }
-    return {
-      'success': (fn) async {
-        try {
-          final response = await dio_get_with_cookie_and_csrf(targetUrl);
-          final document = parse(response.data);
-          final listElements = document
-              .getElementsByClassName('m-cvrlst')[0]
-              .children;
-          final result = listElements.map((item) {
-            final imgElement = item.getElementsByTagName('img')[0];
-            final divElement = item.getElementsByTagName('div')[0];
-            final aElement = divElement.getElementsByTagName('a')[0];
-            return {
-              'cover_img_url': imgElement.attributes['src']!.replaceAll(
-                '140y140',
-                '512y512',
-              ),
-              'title': aElement.attributes['title']!,
-              'id':
-                  'neplaylist_${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
-              'source_url':
-                  'https://music.163.com/#/playlist?id=${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
-            };
-          }).toList();
-          fn(result);
-        } catch (e) {
-          fn([]);
-        }
-      },
-    };
+
+    final response = await dio_get_with_cookie_and_csrf(targetUrl);
+    final document = parse(response.data);
+    final listElements = document
+        .getElementsByClassName('m-cvrlst')[0]
+        .children;
+    final result = listElements.map((item) {
+      final imgElement = item.getElementsByTagName('img')[0];
+      final divElement = item.getElementsByTagName('div')[0];
+      final aElement = divElement.getElementsByTagName('a')[0];
+      return {
+        'cover_img_url': imgElement.attributes['src']!.replaceAll(
+          '140y140',
+          '512y512',
+        ),
+        'title': aElement.attributes['title']!,
+        'id':
+            'neplaylist_${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
+        'source_url':
+            'https://music.163.com/#/playlist?id=${Uri.parse(aElement.attributes['href']!).queryParameters['id']}',
+      };
+    }).toList();
+    return result
+        .map((playlist) => PlayList.fromJson({'info': playlist}))
+        .toList();
   }
 
   static Future<void> ne_ensure_cookie(Function callback) async {
@@ -970,40 +959,29 @@ class Netease extends BaseProvider {
     return get_user_playlist(userId, 'favorite');
   }
 
-  Future<Map<String, dynamic>> get_recommend_playlist() async {
+  @override
+  Future<List<PlayList>> getRecommendPlaylist() async {
     const targetUrl = 'https://music.163.com/weapi/personalized/playlist';
 
     final reqData = {'limit': 30, 'total': true, 'n': 1000};
 
     final encryptReqData = weapi(reqData);
-    return {
-      'success': (fn) async {
-        try {
-          final response = await dio_post_with_cookie_and_csrf(
-            targetUrl,
-            encryptReqData,
-          );
-          final playlists = (response.data['result'] as List).map((item) {
-            return {
-              'cover_img_url': item['picUrl'],
-              'id': 'neplaylist_${item['id']}',
-              'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
-              'title': item['name'],
-            };
-          }).toList();
-          fn({
-            'status': 'success',
-            'data': {'playlists': playlists},
-          });
-        } catch (e) {
-          showErrorSnackbar('网易加载推荐歌单失败', e.toString());
-          fn({
-            'status': 'fail',
-            'data': {'playlists': []},
-          });
-        }
-      },
-    };
+
+    final response = await dio_post_with_cookie_and_csrf(
+      targetUrl,
+      encryptReqData,
+    );
+    final playlists = (response.data['result'] as List).map((item) {
+      return {
+        'cover_img_url': item['picUrl'],
+        'id': 'neplaylist_${item['id']}',
+        'source_url': 'https://music.163.com/#/playlist?id=${item['id']}',
+        'title': item['name'],
+      };
+    }).toList();
+    return playlists
+        .map((playlist) => PlayList.fromJson({'info': playlist}))
+        .toList();
   }
 
   @override
@@ -1035,6 +1013,7 @@ class Netease extends BaseProvider {
         return res;
       }
       loginStatus.value = LoginStatus.noLogin;
+      return null;
     } catch (e) {
       loginError.value = e.toString();
       loginStatus.value = LoginStatus.failed;

@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
-import 'package:listen1_xuan/models/PlayList.dart';
+import 'package:listen1_xuan/models/Playlist.dart';
 import 'package:listen1_xuan/models/ProviderUser.dart';
 import 'package:listen1_xuan/models/SearchPlayListRes.dart';
 import 'package:listen1_xuan/models/SearchRes.dart';
@@ -19,6 +19,8 @@ abstract class BaseProvider extends GetxService {
   bool get searchable;
   bool get supportLogin;
   bool get hidden => false;
+  bool get supportLyric;
+  bool get isLocal => false;
 
   ///为了未来适配纯音源
   List<String> get supportProcessIds => [id];
@@ -41,6 +43,8 @@ abstract class BaseProvider extends GetxService {
     return search(keywords, curpage, type) as Future<SearchPlayListRes>?;
   }
 
+  Future<List<PlayList>>? getRecommendPlaylist() => null;
+
   /// 获取歌单详情
   Future<PlayList>? getPlaylist(String listId) => null;
 
@@ -49,8 +53,10 @@ abstract class BaseProvider extends GetxService {
 
   /// 获取热门歌单列表
   Future<List<PlayList>>? showPlaylist({int? offset, dynamic filterId}) => null;
+
   Future<List<PlayList>>? getUserFavoritePlaylist(String userId) => null;
   Future<List<PlayList>>? getUserCreatedPlaylist(String userId) => null;
+
   Future<(String lyric, String? tlyric)>? lyric(String trackId) => null;
 
   /// 获取歌曲播放地址
@@ -73,4 +79,7 @@ abstract class BaseProvider extends GetxService {
   }
 
   Future<ProviderUser?>? getUser() => null;
+
+
+  
 }
