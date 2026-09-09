@@ -4,6 +4,8 @@ import 'package:listen1_xuan/controllers/DioController.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/lowebutil.dart';
+import 'package:listen1_xuan/models/PlayListFilter.dart';
+import 'package:listen1_xuan/models/PlayListFilters.dart';
 import 'package:listen1_xuan/models/Playlist.dart';
 import 'package:listen1_xuan/models/ProviderUser.dart';
 import 'package:listen1_xuan/models/SearchPlayListRes.dart';
@@ -70,6 +72,8 @@ class Netease extends BaseProvider {
   String get name => "netease";
   @override
   bool get supportLyric => true;
+  @override
+  bool get isFirstOnH => true;
 
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
     final tokens = lengcyGetSettings();
@@ -798,7 +802,7 @@ class Netease extends BaseProvider {
   }
 
   @override
-  Future<Map<String, dynamic>> getPlaylistFilters() async {
+  Future<PlayListFilters> getPlaylistFilters() async {
     final recommend = [
       {'id': '', 'name': '全部'},
       {'id': 'toplist', 'name': '排行榜'},
@@ -908,7 +912,26 @@ class Netease extends BaseProvider {
         ],
       },
     ];
-    return {'recommend': recommend, 'all': all};
+    return PlayListFilters(
+      recommended: recommend
+          .map(
+            (item) => PlayListFilter(id: item['id'], name: item['name'] ?? ''),
+          )
+          .toList(),
+      filters: all.map((item) {
+        return PlayListCategoryFilters(
+          name: item['category'] as String,
+          filters: (item['filters'] as List)
+              .map(
+                (filter) => PlayListFilter(
+                  id: filter['id'],
+                  name: filter['name'] ?? '',
+                ),
+              )
+              .toList(),
+        );
+      }).toList(),
+    );
   }
 
   Future<List<PlayList>> get_user_playlist(

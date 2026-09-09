@@ -111,7 +111,16 @@ Widget get _leftBar => Scaffold(
 final heroineController = HeroineController();
 
 final innerKey = Get.nestedKey(1);
-
+Obx get filterButton => Obx(
+  () => switch (homeController.playlistFiltersLoadingStatus) {
+    PlaylistFiltersLoadingStatus.loading => globalLoadingAnime,
+    PlaylistFiltersLoadingStatus.loaded => Text(
+      homeController.currentProvider.nowSelectedPlaylistFilter.value.name,
+    ),
+    PlaylistFiltersLoadingStatus.failed => Icon(Icons.error, color: Colors.red),
+    _ => SizedBox.shrink(),
+  },
+);
 Listener _mainContent() => Listener(
   onPointerDown: (event) {
     if (event.kind == PointerDeviceKind.mouse &&
@@ -227,11 +236,13 @@ Listener _mainContent() => Listener(
                                           child: AnimatedTabBarWidget(
                                             pageController: homeController
                                                 .pageControllerHorizon,
-                                            tabLabels: platforms
+                                            tabLabels: providers
                                                 .sublist(1)
                                                 .map(
-                                                  (platform) =>
-                                                      TextSpan(text: platform),
+                                                  (platform) => TextSpan(
+                                                    text: platform
+                                                        .shortDisplayName,
+                                                  ),
                                                 )
                                                 .toList(),
                                             containerHeight: 40,
@@ -245,62 +256,22 @@ Listener _mainContent() => Listener(
                                         right: 20,
                                         child: Obx(
                                           () => AnimatedOpacity(
-                                            opacity:
-                                                homeController.show_filter.value
+                                            opacity: homeController.showFilter
                                                 ? 1.0
                                                 : 0.0,
                                             duration: const Duration(
                                               milliseconds: 300,
                                             ),
                                             child: TextButton(
-                                              child: Obx(
-                                                () => Text(
-                                                  homeController
-                                                      .filters[HomeController
-                                                      .sources
-                                                      .indexOf(
-                                                        homeController
-                                                            .source
-                                                            .value,
-                                                      )]['name'],
-                                                ),
-                                              ),
                                               onPressed:
-                                                  homeController
-                                                      .show_filter
-                                                      .value
+                                                  homeController.canFilterClick
                                                   ? () {
-                                                      Map<String, dynamic>
-                                                      tfilter = {};
-                                                      tfilter["推荐"] =
-                                                          homeController
-                                                              .filter_details[homeController
-                                                              .selectedIndex
-                                                              .value]["recommend"];
-                                                      for (var item
-                                                          in homeController
-                                                              .filter_details[homeController
-                                                              .selectedIndex
-                                                              .value]["all"]) {
-                                                        tfilter[item["category"]] =
-                                                            item["filters"];
-                                                      }
                                                       _showFilterSelection(
                                                         context_in_1,
-                                                        tfilter,
-                                                        homeController
-                                                            .filters[HomeController
-                                                            .sources
-                                                            .indexOf(
-                                                              homeController
-                                                                  .source
-                                                                  .value,
-                                                            )]['id'],
-                                                        homeController
-                                                            .change_fliter,
                                                       );
                                                     }
                                                   : null,
+                                              child: filterButton,
                                             ),
                                           ),
                                         ),
@@ -314,10 +285,8 @@ Listener _mainContent() => Listener(
                                   physics: BouncingScrollPhysics(),
                                   controller: homeController
                                       .pageControllerHorizon, // 使用 PageController
-                                  itemCount:
-                                      HomeController.sources.length - 1, // 页面数量
-                                  preloadPagesCount:
-                                      HomeController.sources.length - 1,
+                                  itemCount: providers.length - 1, // 页面数量
+                                  preloadPagesCount: providers.length - 1,
 
                                   itemBuilder: (context, index) {
                                     index = index + 1;
@@ -394,10 +363,11 @@ Listener _mainContent() => Listener(
                                       child: AnimatedTabBarWidget(
                                         pageController: homeController
                                             .pageControllerPortrait,
-                                        tabLabels: platforms
+                                        tabLabels: providers
                                             .map(
-                                              (platform) =>
-                                                  TextSpan(text: platform),
+                                              (provider) => TextSpan(
+                                                text: provider.shortDisplayName,
+                                              ),
                                             )
                                             .toList(),
                                         containerHeight: 45,
@@ -409,57 +379,8 @@ Listener _mainContent() => Listener(
                                         duration: const Duration(
                                           milliseconds: 300,
                                         ),
-                                        child: homeController.show_filter.value
-                                            ? TextButton(
-                                                child: Obx(
-                                                  () => Text(
-                                                    homeController
-                                                        .filters[HomeController
-                                                        .sources
-                                                        .indexOf(
-                                                          homeController
-                                                              .source
-                                                              .value,
-                                                        )]['name'],
-                                                  ),
-                                                ),
-                                                onPressed:
-                                                    homeController
-                                                        .show_filter
-                                                        .value
-                                                    ? () {
-                                                        Map<String, dynamic>
-                                                        tfilter = {};
-                                                        tfilter["推荐"] =
-                                                            homeController
-                                                                .filter_details[homeController
-                                                                .selectedIndex
-                                                                .value]["recommend"];
-                                                        for (var item
-                                                            in homeController
-                                                                .filter_details[homeController
-                                                                .selectedIndex
-                                                                .value]["all"]) {
-                                                          tfilter[item["category"]] =
-                                                              item["filters"];
-                                                        }
-                                                        _showFilterSelection(
-                                                          context_in_1,
-                                                          tfilter,
-                                                          homeController
-                                                              .filters[HomeController
-                                                              .sources
-                                                              .indexOf(
-                                                                homeController
-                                                                    .source
-                                                                    .value,
-                                                              )]['id'],
-                                                          homeController
-                                                              .change_fliter,
-                                                        );
-                                                      }
-                                                    : null,
-                                              )
+                                        child: homeController.showFilter
+                                            ? filterButton
                                             : SizedBox.shrink(),
                                       ),
                                     ),
@@ -479,10 +400,8 @@ Listener _mainContent() => Listener(
                                   physics: BouncingScrollPhysics(),
                                   controller: homeController
                                       .pageControllerPortrait, // 使用 PageController
-                                  itemCount:
-                                      HomeController.sources.length, // 页面数量
-                                  preloadPagesCount:
-                                      HomeController.sources.length,
+                                  itemCount: providers.length, // 页面数量
+                                  preloadPagesCount: providers.length,
 
                                   itemBuilder: (context, index) {
                                     if (index == 0) {

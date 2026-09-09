@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:heroine/heroine.dart';
+import 'package:iconify_flutter_plus/icons/ic.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/controllers/receiveSharingIntentController.dart';
 import 'package:listen1_xuan/controllers/search_controller.dart';
@@ -13,6 +14,8 @@ import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_page.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_binding.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_args.dart';
+import 'package:listen1_xuan/provider/base.dart';
+import 'package:listen1_xuan/provider/loweb.dart';
 import 'package:listen1_xuan/router/image_toolbox_predictive_transitions.dart';
 import 'package:listen1_xuan/widgets/draggable_toast/toast_overlay_manager.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
@@ -34,7 +37,6 @@ import 'pages/settings/cache_naming_page.dart';
 import 'pages/android_equalizer_page.dart';
 import 'pages/songReplace_page.dart';
 import 'settings.dart';
-import 'loweb.dart';
 import 'bodys.dart';
 import 'play.dart';
 import 'global_settings_animations.dart';
@@ -151,6 +153,7 @@ void main() async {
   settingsController.completeDioInit();
   CacheController cacheController = Get.put(CacheController(), permanent: true);
   Get.put(PlayController(), permanent: true);
+  Get.put(Provider(), permanent: true);
   cacheController.loadLocalCacheList();
   Get.find<PlayController>().loadDatas();
   Get.put(MyPlayListController(), permanent: true);
@@ -358,7 +361,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 late bool globalHorizon;
-final List<String> platforms = ['我的', 'BiliBili', '网易云', 'QQ', '酷狗'];
 
 HomeController get homeController => Get.find<HomeController>();
 
@@ -381,7 +383,6 @@ class _MyHomePageState extends State<MyHomePage>
       init_hotkeys();
       windowManager.addListener(this);
     }
-    init_playlist_filters();
     Get.find<Applinkscontroller>().xshow = xshow;
 
     fToast = FToast();
@@ -445,16 +446,6 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
-  void init_playlist_filters() async {
-    for (var i = 1; i < HomeController.sources.length; i++) {
-      var t = await MediaService.getPlaylistFilters(HomeController.sources[i]);
-      t["success"]((data) {
-        logger.t('获取歌单过滤器成功: ${HomeController.sources[i]}$data');
-        homeController.filter_details[i] = data;
-      });
-    }
-  }
-
   @override
   void onWindowClose() {
     _clickCloseBtn();
@@ -475,18 +466,16 @@ class _MyHomePageState extends State<MyHomePage>
     }
     _focusNode.dispose();
     _focusNode2.dispose();
-    homeController.pageControllerHorizon.dispose(); // 销毁 PageController
-    homeController.pageControllerPortrait.dispose();
+    homeController.pageControllerHorizon?.dispose(); // 销毁 PageController
+    homeController.pageControllerPortrait?.dispose();
 
     super.dispose();
   }
 
-  bool left_to_right_reverse = true;
   List<double> horPartPercentages =
       Get.find<SettingsController>().horPartPercentages;
   @override
   Widget build(BuildContext main_context) {
-    homeController.main_context = main_context;
     // appLinks
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.find<Applinkscontroller>().processAppLink();
@@ -526,21 +515,18 @@ class _MyHomePageState extends State<MyHomePage>
           builder: (context, orientation) {
             globalHorizon = orientation == Orientation.landscape;
             if (globalHorizon) {
-              homeController.selectedIndex.value = 2;
+              homeController.selectedIndex.value = provider.indexOfFirstOnH;
               debugPrint('当前为横屏模式');
               SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
-              homeController.show_filter.value = true;
             } else {
-              homeController.selectedIndex.value = 0;
+              homeController.selectedIndex.value = provider.indexOfFirstOnV;
               if (!Get.find<XSearchController>().showSearchArea.value) {
                 Get.find<XSearchController>().showSearchArea.value = true;
               }
               debugPrint('当前为竖屏模式');
               SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
             }
-            homeController.source.value =
-                HomeController.sources[homeController.selectedIndex.value];
+
             bool flag = false;
             if (orientation == Orientation.portrait) {
               // 竖屏逻辑

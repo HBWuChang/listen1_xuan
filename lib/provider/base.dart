@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
+import 'package:listen1_xuan/models/PlayListFilter.dart';
+import 'package:listen1_xuan/models/PlayListFilters.dart';
 import 'package:listen1_xuan/models/Playlist.dart';
 import 'package:listen1_xuan/models/ProviderUser.dart';
 import 'package:listen1_xuan/models/SearchPlayListRes.dart';
@@ -12,6 +14,8 @@ enum SearchType { song, album, dj }
 
 enum LoginStatus { noLogin, processing, loggedIn, failed }
 
+enum PlaylistFiltersLoadingStatus { notLoaded, empty, loading, loaded, failed }
+
 abstract class BaseProvider extends GetxService {
   String get id;
   String get name;
@@ -21,6 +25,8 @@ abstract class BaseProvider extends GetxService {
   bool get hidden => false;
   bool get supportLyric;
   bool get isLocal => false;
+  bool get isFirstOnH => false;
+  bool get isFirstOnV => false;
 
   ///为了未来适配纯音源
   List<String> get supportProcessIds => [id];
@@ -49,7 +55,15 @@ abstract class BaseProvider extends GetxService {
   Future<PlayList>? getPlaylist(String listId) => null;
 
   /// 获取热门歌单分类
-  Future<Map<String, dynamic>>? getPlaylistFilters() => null;
+  Future<PlayListFilters>? getPlaylistFilters() => null;
+  Rx<PlayListFilter> nowSelectedPlaylistFilter =
+      PlayListFilter.defaultValues().obs;
+  Rx<PlayListFilters> playlistFilters = PlayListFilters(
+    filters: [],
+    recommended: [],
+  ).obs;
+  Rx<PlaylistFiltersLoadingStatus> playlistFiltersLoadingStatus =
+      PlaylistFiltersLoadingStatus.notLoaded.obs;
 
   /// 获取热门歌单列表
   Future<List<PlayList>>? showPlaylist({int? offset, dynamic filterId}) => null;
@@ -80,6 +94,30 @@ abstract class BaseProvider extends GetxService {
 
   Future<ProviderUser?>? getUser() => null;
 
+  @override
+  void onReady() {
+    super.onReady();
+    reloadPlaylistFilters();
+  }
 
-  
+  Future<void> reloadPlaylistFilters({bool force = false}) async {
+    if (!force &&
+        playlistFiltersLoadingStatus.value ==
+            PlaylistFiltersLoadingStatus.loaded) {
+      return;
+    }
+    playlistFiltersLoadingStatus.value = PlaylistFiltersLoadingStatus.loading;
+    try {
+      final filters = await getPlaylistFilters();
+      if (filters != null) {
+        playlistFilters.value = filters;
+        playlistFiltersLoadingStatus.value =
+            PlaylistFiltersLoadingStatus.loaded;
+      } else {
+        playlistFiltersLoadingStatus.value = PlaylistFiltersLoadingStatus.empty;
+      }
+    } catch (e) {
+      playlistFiltersLoadingStatus.value = PlaylistFiltersLoadingStatus.failed;
+    }
+  }
 }

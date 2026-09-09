@@ -9,6 +9,7 @@ import 'netease.dart';
 import 'myplaylist.dart';
 
 Provider provider = Get.find<Provider>();
+List<BaseProvider> get providers => Get.find<Provider>().getAllProviders();
 
 class Provider extends GetxService {
   final List<BaseProvider> providers = [];
@@ -17,6 +18,14 @@ class Provider extends GetxService {
     super.onInit();
     // providers.addAll([Netease(), MyPlaylist()]);
     providers.addAll([Get.put(Netease()), Get.put(MyPlaylist())]);
+  }
+
+  int get indexOfFirstOnH {
+    return providers.indexWhere((i) => i.isFirstOnH);
+  }
+
+  int get indexOfFirstOnV {
+    return providers.indexWhere((i) => i.isFirstOnV);
   }
 
   MyPlaylist get myplaylist =>

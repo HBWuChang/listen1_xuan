@@ -25,6 +25,8 @@ class MyPlaylist extends BaseProvider {
   bool get supportLyric => false;
   @override
   bool get isLocal => true;
+  @override
+  bool get isFirstOnV => true;
 
   final MyPlayListController _myPlayListController =
       Get.find<MyPlayListController>();

@@ -1,11 +1,6 @@
 part of '../../main.dart';
 
-void _showFilterSelection(
-  BuildContext context,
-  Map<String, dynamic> filter,
-  dynamic now_id,
-  Function change_fliter,
-) {
+void _showFilterSelection(BuildContext context) {
   showModalBottomSheet(
     context: context,
     builder: (BuildContext context) {
@@ -21,38 +16,45 @@ void _showFilterSelection(
             Divider(),
             Expanded(
               child: ListView(
-                children: filter.entries.map<Widget>((entry) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.key,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Wrap(
-                        spacing: 8.0,
-                        runSpacing: 4.0,
-                        children: entry.value.map<Widget>((filterItem) {
-                          return FilterChip(
-                            label: Text(filterItem['name']),
-                            onSelected: (bool selected) {
-                              // 处理过滤器选择逻辑
-                              change_fliter(
-                                filterItem['id'],
-                                filterItem['name'],
+                children: homeController
+                    .currentProvider
+                    .playlistFilters
+                    .value
+                    .allFilters
+                    .map<Widget>((entry) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entry.name,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Wrap(
+                            spacing: 8.0,
+                            runSpacing: 4.0,
+                            children: entry.filters.map<Widget>((filterItem) {
+                              return FilterChip(
+                                label: Text(filterItem.name),
+                                onSelected: (bool selected) {
+                                  // 处理过滤器选择逻辑
+                                  homeController
+                                          .currentProvider
+                                          .nowSelectedPlaylistFilter
+                                          .value =
+                                      filterItem;
+                                  Navigator.pop(context);
+                                },
                               );
-                              Navigator.pop(context);
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      16.0.sbh,
-                    ],
-                  );
-                }).toList(),
+                            }).toList(),
+                          ),
+                          16.0.sbh,
+                        ],
+                      );
+                    })
+                    .toList(),
               ),
             ),
           ],
