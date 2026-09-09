@@ -7,6 +7,7 @@ import 'package:listen1_xuan/constants/const.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_args.dart';
+import 'package:listen1_xuan/provider/base.dart';
 import 'package:listen1_xuan/router/ro.dart';
 import 'package:listen1_xuan/widgets/ext/ext_hero.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';

@@ -2,18 +2,12 @@ part of '../bodys.dart';
 
 // PlaylistController for GetX state management
 class PlaylistController extends GetxController {
-  final String source;
-  final int initialOffset;
-  final Map<String, dynamic> filter;
+  final BaseProvider source;
 
-  PlaylistController({
-    required this.source,
-    required this.initialOffset,
-    required this.filter,
-  });
+  PlaylistController({required this.source});
 
   // Reactive state variables
-  final RxList<dynamic> playlists = <dynamic>[].obs;
+  final RxList<PlayList> playlists = <PlayList>[].obs;
   final RxBool loading = true.obs;
   final RxBool loadingMore = false.obs;
   final RxInt perPage = 20.obs;
@@ -24,7 +18,7 @@ class PlaylistController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    currentOffset.value = initialOffset;
+    currentOffset.value = 0;
     loadData();
     scrollController.addListener(_onScroll);
   }
@@ -46,25 +40,15 @@ class PlaylistController extends GetxController {
   Future<void> loadData() async {
     try {
       loading.value = true;
-      Map<String, dynamic> result = await MediaService.showPlaylistArray(
-        source,
-        initialOffset,
-        filter['id'],
-      );
+      List<PlayList> result = await source.showPlaylist(
+        offset: currentOffset.value,
+        filterId: source.nowSelectedPlaylistFilter.value.id,
+      )!;
 
-      result['success']((data) {
-        logger.t('加载歌单数据成功: $data');
-        try {
-          playlists.value = data.toList();
-          perPage.value = data.length;
-          hasMore.value = true;
-          loading.value = false;
-        } catch (e) {
-          showErrorSnackbar('加载歌单数据失败', e.toString());
-          logger.e('加载歌单数据失败', error: e);
-          loading.value = false;
-        }
-      });
+      playlists.value = result;
+      perPage.value = result.length;
+      hasMore.value = true;
+      loading.value = false;
     } catch (e) {
       logger.e('加载歌单数据失败', error: e);
       loading.value = false;
@@ -78,21 +62,18 @@ class PlaylistController extends GetxController {
       loadingMore.value = true;
       currentOffset.value += perPage.value;
 
-      Map<String, dynamic> result = await MediaService.showPlaylistArray(
-        source,
-        currentOffset.value,
-        filter['id'],
-      );
+      List<PlayList> result = await source.showPlaylist(
+        offset: currentOffset.value,
+        filterId: source.nowSelectedPlaylistFilter.value.id,
+      )!;
 
-      result['success']((data) {
-        logger.t('加载更多歌单数据成功: $data');
-        if (data.length == 0) {
-          hasMore.value = false;
-        } else {
-          playlists.addAll(data);
-        }
-        loadingMore.value = false;
-      });
+      logger.t('加载更多歌单数据成功: $result');
+      if (result.isEmpty) {
+        hasMore.value = false;
+      } else {
+        playlists.addAll(result);
+      }
+      loadingMore.value = false;
     } catch (e) {
       logger.e('加载更多歌单数据失败', error: e);
       loadingMore.value = false;
@@ -100,23 +81,19 @@ class PlaylistController extends GetxController {
   }
 
   Future<void> refreshData() async {
-    try {
-      playlists.clear();
-      currentOffset.value = initialOffset;
-      hasMore.value = true;
-      await loadData();
-    } catch (e) {
-      logger.e('刷新歌单数据失败', error: e);
-    }
+    playlists.clear();
+    currentOffset.value = 0;
+    hasMore.value = true;
+    await loadData();
   }
 
-  void onPlaylistTapped(Map<String, dynamic> playlist) {
-    Ro.toArg(PlaylistInfoArgs(playListInfo: PlayListInfo.fromJson(playlist)));
+  void onPlaylistTapped(PlayList playlist) {
+    Ro.toArg(PlaylistInfoArgs(playListInfo: playlist.info));
   }
 
   // Helper method to get controller tag
-  static String getControllerTag(String source, Map<String, dynamic> filter) {
-    return 'playlist_${source}_${filter['id'] ?? 'default'}';
+  static String getControllerTag(String source, dynamic id) {
+    return 'playlist_${source}_${id ?? 'default'}';
   }
 
   // Helper method to dispose controller with tag
@@ -128,32 +105,22 @@ class PlaylistController extends GetxController {
   }
 }
 
-class Playlist extends GetView<PlaylistController> {
-  final String source;
-  final int offset;
-  final Map<String, dynamic> filter;
+class PlaylistPage extends GetView<PlaylistController> {
+  final BaseProvider source;
 
-  const Playlist({
-    required this.source,
-    required this.offset,
-    required this.filter,
-    Key? key,
-  }) : super(key: key);
+  const PlaylistPage({required this.source, super.key});
 
   @override
-  String? get tag => PlaylistController.getControllerTag(source, filter);
+  String get tag => PlaylistController.getControllerTag(
+    source.id,
+    source.nowSelectedPlaylistFilter.value.id,
+  );
 
   @override
   Widget build(BuildContext context) {
     // Initialize controller with unique tag based on source and filter
-    final String controllerTag = PlaylistController.getControllerTag(
-      source,
-      filter,
-    );
-    Get.put(
-      PlaylistController(source: source, initialOffset: offset, filter: filter),
-      tag: controllerTag,
-    );
+    final String controllerTag = tag;
+    Get.put(PlaylistController(source: source), tag: controllerTag);
 
     return Scaffold(
       body: Center(
@@ -263,7 +230,7 @@ class Playlist extends GetView<PlaylistController> {
 
   Widget _buildPlaylistItem(
     BuildContext context,
-    Map<String, dynamic> playlist,
+    PlayList playlist,
     double itemWidth,
   ) {
     return GestureDetector(
@@ -272,7 +239,7 @@ class Playlist extends GetView<PlaylistController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ExtendedImage.network(
-                playlist['cover_img_url'],
+                playlist.info.cover_img_url ?? '',
                 fit: BoxFit.cover,
                 cache: true,
                 loadStateChanged: (ExtendedImageState state) {
@@ -293,10 +260,10 @@ class Playlist extends GetView<PlaylistController> {
               )
               .clipSmoothRectSize(itemWidth)
               .sbs(itemWidth)
-              .hero4playlistItemImg(PlayListInfo.fromJson(playlist)),
+              .hero4playlistItemImg(playlist.info),
           8.sbh,
           Text(
-            playlist['title'],
+            playlist.info.title ?? '未知歌单',
             style: TextStyle(fontSize: 12),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

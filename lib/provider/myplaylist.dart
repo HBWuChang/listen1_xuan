@@ -27,7 +27,9 @@ class MyPlaylist extends BaseProvider {
   bool get isLocal => true;
   @override
   bool get isFirstOnV => true;
-
+  @override
+  bool get supportShowPlaylist => true;
+  
   final MyPlayListController _myPlayListController =
       Get.find<MyPlayListController>();
   void arrayMove(List<dynamic> arr, int oldIndex, int newIndex) {

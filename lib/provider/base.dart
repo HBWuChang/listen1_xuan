@@ -27,6 +27,7 @@ abstract class BaseProvider extends GetxService {
   bool get isLocal => false;
   bool get isFirstOnH => false;
   bool get isFirstOnV => false;
+  bool get supportShowPlaylist => false;
 
   ///为了未来适配纯音源
   List<String> get supportProcessIds => [id];
@@ -71,7 +72,7 @@ abstract class BaseProvider extends GetxService {
   Future<List<PlayList>>? getUserFavoritePlaylist(String userId) => null;
   Future<List<PlayList>>? getUserCreatedPlaylist(String userId) => null;
 
-  Future<(String lyric, String? tlyric)>? lyric(String trackId) => null;
+  Future<(String lyric, String? tlyric)>? lyric(Track track) => null;
 
   /// 获取歌曲播放地址
   Future<void> bootStrapTrack(

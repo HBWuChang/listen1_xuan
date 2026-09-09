@@ -3,7 +3,6 @@ import 'package:listen1_xuan/constants/const.dart';
 import 'package:listen1_xuan/controllers/DioController.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
-import 'package:listen1_xuan/lowebutil.dart';
 import 'package:listen1_xuan/models/PlayListFilter.dart';
 import 'package:listen1_xuan/models/PlayListFilters.dart';
 import 'package:listen1_xuan/models/Playlist.dart';
@@ -74,6 +73,8 @@ class Netease extends BaseProvider {
   bool get supportLyric => true;
   @override
   bool get isFirstOnH => true;
+  @override
+  bool get supportShowPlaylist => true;
 
   Future<dynamic> dio_get_with_cookie_and_csrf(String url) async {
     final tokens = lengcyGetSettings();

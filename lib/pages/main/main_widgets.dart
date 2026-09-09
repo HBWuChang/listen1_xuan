@@ -285,20 +285,21 @@ Listener _mainContent() => Listener(
                                   physics: BouncingScrollPhysics(),
                                   controller: homeController
                                       .pageControllerHorizon, // 使用 PageController
-                                  itemCount: providers.length - 1, // 页面数量
-                                  preloadPagesCount: providers.length - 1,
+                                  itemCount:
+                                      supportShowPlaylistProviders.length -
+                                      1, // 页面数量
+                                  preloadPagesCount:
+                                      supportShowPlaylistProviders.length - 1,
 
                                   itemBuilder: (context, index) {
                                     index = index + 1;
                                     // 其他页面：动态生成
                                     return Obx(() {
-                                      return Playlist(
-                                        source: HomeController.sources[index],
-                                        offset: homeController.offsets[index],
-                                        filter: homeController.filters[index],
-                                        key: Key(
-                                          homeController.filters[index]
-                                              .toString(),
+                                      return PlaylistPage(
+                                        source:
+                                            supportShowPlaylistProviders[index],
+                                        key: ValueKey(
+                                          '${supportShowPlaylistProviders[index].name}${supportShowPlaylistProviders[index].nowSelectedPlaylistFilter.value.id}',
                                         ),
                                       );
                                     });
@@ -400,8 +401,8 @@ Listener _mainContent() => Listener(
                                   physics: BouncingScrollPhysics(),
                                   controller: homeController
                                       .pageControllerPortrait, // 使用 PageController
-                                  itemCount: providers.length, // 页面数量
-                                  preloadPagesCount: providers.length,
+                                  itemCount: supportShowPlaylistProviders.length, // 页面数量
+                                  preloadPagesCount: supportShowPlaylistProviders.length,
 
                                   itemBuilder: (context, index) {
                                     if (index == 0) {
@@ -410,14 +411,9 @@ Listener _mainContent() => Listener(
                                     } else {
                                       // 其他页面：动态生成
                                       return Obx(() {
-                                        return Playlist(
-                                          source: HomeController.sources[index],
-                                          offset: homeController.offsets[index],
-                                          filter: homeController.filters[index],
-                                          key: Key(
-                                            homeController.filters[index]
-                                                .toString(),
-                                          ),
+                                        return PlaylistPage(
+                                          source: supportShowPlaylistProviders[index],
+                                          key: Key(supportShowPlaylistProviders[index].name),
                                         );
                                       });
                                     }

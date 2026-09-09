@@ -10,7 +10,6 @@ import 'package:html/parser.dart' show parse;
 import 'constants/const.dart';
 import 'controllers/DioController.dart';
 import 'controllers/settings_controller.dart';
-import 'lowebutil.dart';
 import 'settings.dart';
 import 'dart:typed_data';
 import 'package:pointycastle/export.dart';

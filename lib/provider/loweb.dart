@@ -10,6 +10,10 @@ import 'myplaylist.dart';
 
 Provider provider = Get.find<Provider>();
 List<BaseProvider> get providers => Get.find<Provider>().getAllProviders();
+List<BaseProvider> get supportShowPlaylistProviders => Get.find<Provider>()
+    .getAllProviders()
+    .where((p) => p.supportShowPlaylist)
+    .toList();
 
 class Provider extends GetxService {
   final List<BaseProvider> providers = [];
@@ -21,11 +25,11 @@ class Provider extends GetxService {
   }
 
   int get indexOfFirstOnH {
-    return providers.indexWhere((i) => i.isFirstOnH);
+    return supportShowPlaylistProviders.indexWhere((i) => i.isFirstOnH);
   }
 
   int get indexOfFirstOnV {
-    return providers.indexWhere((i) => i.isFirstOnV);
+    return supportShowPlaylistProviders.indexWhere((i) => i.isFirstOnV);
   }
 
   MyPlaylist get myplaylist =>

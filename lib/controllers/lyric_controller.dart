@@ -11,9 +11,11 @@ import 'package:listen1_xuan/constants/network_defaults.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/models/SubtitleDetail.dart';
 import 'package:listen1_xuan/models/Subtitle.dart';
+import 'package:listen1_xuan/models/Track.dart';
+import 'package:listen1_xuan/provider/base.dart';
+import 'package:listen1_xuan/provider/loweb.dart';
 import 'dart:io';
 import '../funcs.dart';
-import '../loweb.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/cache_controller.dart';
 import '../controllers/settings_controller.dart';
@@ -221,6 +223,9 @@ class XLyricController extends GetxController {
   /// 加载歌词
   Future<void> loadLyric() async {
     String trackId = Get.find<PlayController>().nowPlayingTrackId;
+    Track track =
+        Get.find<PlayController>().nowPlayingTrackRx.value ??
+        Track(id: trackId);
     if (trackId.isEmpty) return;
     isLyricLoading.value = true;
     hasLyric.value = false;
@@ -248,7 +253,7 @@ class XLyricController extends GetxController {
 
       // 缓存中没有歌词，从网络获取
       debugPrint('从网络获取歌词: $trackId');
-      await _loadLyricFromNetwork(trackId);
+      await _loadLyricFromNetwork(track);
     } catch (e) {
       debugPrint('加载歌词失败: $e');
       isLyricLoading.value = false;
@@ -257,37 +262,25 @@ class XLyricController extends GetxController {
   }
 
   /// 从网络加载歌词
-  Future<void> _loadLyricFromNetwork(String trackId) async {
-    // 使用 MediaService.getLyric 获取歌词
-    var lyricResult;
-    if (trackId.contains('kgtrack')) {
-      lyricResult = await MediaService.getLyric(
-        trackId,
-        albumId: Get.find<PlayController>().currentTrack.album_id,
-      );
+  Future<void> _loadLyricFromNetwork(Track track) async {
+    String trackId = track.id;
+    (String lyric, String? tlyric)? res = await provider
+        .getProviderByItemId(trackId)
+        .lyric(track);
+    if (res == null || res.$1.isEmpty) {
+      lyricController.loadLyricModel(LyricModel(lines: []));
     } else {
-      lyricResult = await MediaService.getLyric(trackId);
-    }
-
-    lyricResult['success']((data) async {
-      final lyric = data['lyric'] ?? '';
-      final tlyric = data['tlyric'] ?? '';
-
-      if (lyric.isNotEmpty) {
-        // 保存歌词到缓存
-        if (!_settingsController.disableLyricDownload) {
-          await _saveLyricToCache(trackId, lyric);
-          if (tlyric.isNotEmpty) {
-            await _saveLyricToCache(trackId, tlyric, isTranslation: true);
-          }
+      // 保存歌词到缓存
+      if (!_settingsController.disableLyricDownload) {
+        await _saveLyricToCache(trackId, res.$1);
+        if (res.$2?.isNotEmpty == true) {
+          await _saveLyricToCache(trackId, res.$2!, isTranslation: true);
         }
-        // 处理歌词数据
-        _processLyricData(lyric, tlyric);
-      } else {
-        lyricController.loadLyricModel(LyricModel(lines: []));
       }
-      isLyricLoading.value = false;
-    });
+      // 处理歌词数据
+      _processLyricData(res.$1, res.$2);
+    }
+    isLyricLoading.value = false;
   }
 
   /// 处理歌词数据
