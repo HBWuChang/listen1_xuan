@@ -6,7 +6,6 @@ import 'package:listen1_xuan/models/PlayListInfo.dart';
 import 'package:listen1_xuan/models/Playlist.dart';
 import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
 import 'base.dart';
-import 'lowebutil.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:uuid/uuid.dart';
 
@@ -186,20 +185,13 @@ class MyPlaylist extends BaseProvider {
     }
   }
 
-  Future<Map<String, dynamic>?> get_playlist(String url) async {
-    final listId = getParameterByName('list_id', url);
+  @override
+  Future<PlayList>? getPlaylist(String listId) {
     final playlist = _myPlayListController.playerlists[listId];
-    return {
-      "success": ((fn) {
-        if (playlist != null) {
-          fn(playlist.toJson());
-          // return playlist;
-        } else {
-          fn(null);
-          // return null;
-        }
-      }),
-    };
+    if (playlist == null) {
+      return null;
+    }
+    return Future.value(playlist);
   }
 
   String guid() {

@@ -8,17 +8,11 @@ class MyPlaylist extends StatefulWidget {
 }
 
 class _MyPlaylistState extends State<MyPlaylist> {
-  List<PlayList> _playlistsBl = [];
-  List<PlayList> _playlistsNe = [];
-  List<PlayList> _playlistsQq = [];
   bool _isExpandedMy = true;
   bool _isExpandedFav = false;
-  bool _isExpandedBl = false;
-  bool _isExpandedNe = false;
-  bool _isExpandedQq = false;
-  bool _isBlDataLoaded = false;
-  bool _isNeDataLoaded = false;
-  bool _isQqDataLoaded = false;
+
+  /// 各平台“我的歌单”分组的加载状态，key 为 provider.name。
+  final Map<String, _ProviderPlaylistSection> _providerSections = {};
 
   bool _isIconOnlyMode(double width) => width <= 90;
 
@@ -160,6 +154,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
     required VoidCallback onTap,
     required double availableWidth,
     bool centerLeadingWhenIconOnly = false,
+    Widget? trailing,
   }) {
     final iconOnly = _isIconOnlyMode(availableWidth);
     final compact = _isCompactMode(availableWidth);
@@ -193,6 +188,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
               ),
               Positioned.fill(
                 left: leadingWidth + spacing,
+                right: trailing != null ? 40 : 0,
                 child: IgnorePointer(
                   ignoring: iconOnly,
                   child: AnimatedOpacity(
@@ -213,6 +209,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                   ),
                 ),
               ),
+              if (trailing != null)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(child: trailing),
+                ),
             ],
           ),
         ).sbh(compact ? 44 : 56),
@@ -220,144 +223,141 @@ class _MyPlaylistState extends State<MyPlaylist> {
     );
   }
 
-  void _loadBlData() async {
+  _ProviderPlaylistSection _sectionOf(BaseProvider provider) {
+    return _providerSections.putIfAbsent(
+      provider.name,
+      () => _ProviderPlaylistSection(),
+    );
+  }
+
+  Future<void> _loadProviderPlaylists(
+    BaseProvider provider, {
+    bool force = false,
+  }) async {
+    final section = _sectionOf(provider);
+    if (section.loading) return;
+    if (section.loaded && !force) return;
+
+    setState(() {
+      section.loading = true;
+      section.error = null;
+    });
+
     try {
-      final resultBl = await bilibili.Xuan_get_bl_playlist();
+      final user = await provider.getUser();
+      if (user == null) {
+        throw StateError('未登录或登录已失效');
+      }
+
+      final futures = <Future<List<PlayList>>>[];
+      if (provider.supportGetUserCreatedPlaylist) {
+        final future = provider.getUserCreatedPlaylist(user.userId);
+        if (future != null) futures.add(future);
+      }
+      if (provider.supportGetUserFavoritePlaylist) {
+        final future = provider.getUserFavoritePlaylist(user.userId);
+        if (future != null) futures.add(future);
+      }
+      if (futures.isEmpty) {
+        throw StateError('该平台未实现歌单接口');
+      }
+
+      final results = await Future.wait(futures);
+      final playlists = <PlayList>[];
+      for (final list in results) {
+        playlists.addAll(list);
+      }
+
+      if (!mounted) return;
       setState(() {
-        _playlistsBl = resultBl;
-        _isBlDataLoaded = true;
+        section.playlists = playlists;
+        section.loaded = true;
+        section.loading = false;
+        section.error = null;
       });
     } catch (e) {
-      logger.e('哔哩哔哩歌单加载失败', error: e);
+      logger.e('${provider.userPlaylistSectionTitle}加载失败', error: e);
+      if (!mounted) return;
+      setState(() {
+        section.loading = false;
+        section.error = e.toString();
+      });
     }
   }
 
-  void _loadNeData() async {
-    try {
-      final neUserInfo = await Netease().get_user();
-      final uid = neUserInfo['result']['user_id'];
-      final resultNe = await netease.get_user_created_playlist(
-        '/get_user_favorite_playlist?user_id=$uid',
-      );
-      final resultNe2 = await netease.get_user_favorite_playlist(
-        '/get_user_favorite_playlist?user_id=$uid',
-      );
-      var flag1 = false;
-      var flag2 = false;
-
-      void checkLoaded() {
-        if (flag1 && flag2) {
-          setState(() {
-            _isNeDataLoaded = true;
-          });
-        }
-      }
-
-      resultNe['success']((data) {
-        if (data['status'] != 'fail') {
-          for (var i = 0; i < data['data']['playlists'].length; i++) {
-            _playlistsNe.add(
-              PlayList(
-                info: PlayListInfo(
-                  id: data['data']['playlists'][i]['id'],
-                  cover_img_url: data['data']['playlists'][i]['cover_img_url'],
-                  title: data['data']['playlists'][i]['title'],
-                  source_url: data['data']['playlists'][i]['source_url'],
-                ),
-              ),
-            );
-          }
-        }
-        flag1 = true;
-        checkLoaded();
-      });
-
-      resultNe2['success']((data) {
-        if (data['status'] != 'fail') {
-          for (var i = 0; i < data['data']['playlists'].length; i++) {
-            _playlistsNe.add(
-              PlayList(
-                info: PlayListInfo(
-                  id: data['data']['playlists'][i]['id'],
-                  cover_img_url: data['data']['playlists'][i]['cover_img_url'],
-                  title: data['data']['playlists'][i]['title'],
-                  source_url: data['data']['playlists'][i]['source_url'],
-                ),
-              ),
-            );
-          }
-        }
-        flag2 = true;
-        checkLoaded();
-      });
-    } catch (e) {
-      showErrorSnackbar('网易云音乐歌单加载失败', e.toString());
-    }
+  void _refreshProviderPlaylists(BaseProvider provider) {
+    _loadProviderPlaylists(provider, force: true);
   }
 
-  void _loadQqData() async {
-    try {
-      final qqUserInfo = await QQ().get_user();
-      final uid = qqUserInfo['data']['user_id'];
-      final resultQq = await qq.get_user_created_playlist(
-        '/get_user_favorite_playlist?user_id=$uid',
-      );
-      final resultQq2 = await qq.get_user_favorite_playlist(
-        '/get_user_favorite_playlist?user_id=$uid',
-      );
-      var flag1 = false;
-      var flag2 = false;
-
-      void checkLoaded() {
-        if (flag1 && flag2) {
-          setState(() {
-            _isQqDataLoaded = true;
-          });
-        }
-      }
-
-      resultQq['success']((data) {
-        if (data['status'] != 'fail') {
-          for (var i = 0; i < data['data']['playlists'].length; i++) {
-            _playlistsQq.add(
-              PlayList(
-                info: PlayListInfo(
-                  cover_img_url: data['data']['playlists'][i]['cover_img_url'],
-                  title: data['data']['playlists'][i]['title'],
-                  id: data['data']['playlists'][i]['id'],
-                  source_url: data['data']['playlists'][i]['source_url'],
-                ),
-              ),
-            );
-          }
-        }
-        flag1 = true;
-        checkLoaded();
-      });
-
-      resultQq2['success']((data) {
-        if (data['status'] != 'fail') {
-          for (var i = 0; i < data['data']['playlists'].length; i++) {
-            _playlistsQq.add(
-              PlayList(
-                info: PlayListInfo(
-                  cover_img_url: data['data']['playlists'][i]['cover_img_url'],
-                  title: data['data']['playlists'][i]['title'],
-                  id: data['data']['playlists'][i]['id'],
-                  source_url: data['data']['playlists'][i]['source_url'],
-                ),
-              ),
-            );
-          }
-        }
-        flag2 = true;
-        checkLoaded();
-      });
-    } catch (e) {
-      showErrorSnackbar('QQ音乐歌单加载失败', e.toString());
-    }
+  Widget _buildSectionError(String error, VoidCallback onRetry) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          Text(error, textAlign: TextAlign.center),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('重试'),
+          ),
+        ],
+      ),
+    );
   }
 
+  Widget _buildProviderSection(
+    BaseProvider provider,
+    double availableWidth,
+  ) {
+    final section = _sectionOf(provider);
+    return _buildExpandableSection(
+      leading: provider.userPlaylistSectionLeading,
+      title: provider.userPlaylistSectionTitle,
+      isExpanded: section.isExpanded,
+      availableWidth: availableWidth,
+      trailing: IconButton(
+        icon: const Icon(Icons.refresh, size: 18),
+        tooltip: '刷新',
+        onPressed: () => _refreshProviderPlaylists(provider),
+      ),
+      onExpandedChanged: (expanded) {
+        setState(() {
+          section.isExpanded = expanded;
+        });
+        if (expanded) {
+          _loadProviderPlaylists(provider);
+        }
+      },
+      body: _buildProviderSectionBody(section, availableWidth, provider),
+    );
+  }
+
+  Widget _buildProviderSectionBody(
+    _ProviderPlaylistSection section,
+    double availableWidth,
+    BaseProvider provider,
+  ) {
+    if (section.loading) {
+      return Center(child: globalLoadingAnime);
+    }
+    if (section.error != null) {
+      return _buildSectionError(
+        section.error!,
+        () => _refreshProviderPlaylists(provider),
+      );
+    }
+    return Column(
+      children: section.playlists
+          .map(
+            (playlist) => _buildPlaylistTile(
+              playlist: playlist,
+              isMy: false,
+              availableWidth: availableWidth,
+            ),
+          )
+          .toList(),
+    );
+  }
   Widget _buildExpandableSection({
     required Widget leading,
     required String title,
@@ -365,6 +365,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
     required double availableWidth,
     required Widget body,
     required ValueChanged<bool> onExpandedChanged,
+    Widget? trailing,
   }) {
     final controller = ExpandableController(initialExpanded: isExpanded);
     return ExpandableNotifier(
@@ -384,6 +385,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
               title: title,
               availableWidth: availableWidth,
               centerLeadingWhenIconOnly: true,
+              trailing: trailing,
               onTap: () {
                 final nextExpanded = !controller.expanded;
                 controller.expanded = nextExpanded;
@@ -481,100 +483,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
                       ),
                     ),
                   ),
-                  _buildExpandableSection(
-                    leading: SvgPicture.string(
-                      '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" class="zhuzhan-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.73252 2.67094C3.33229 2.28484 3.33229 1.64373 3.73252 1.25764C4.11291 0.890684 4.71552 0.890684 5.09591 1.25764L7.21723 3.30403C7.27749 3.36218 7.32869 3.4261 7.37081 3.49407H10.5789C10.6211 3.4261 10.6723 3.36218 10.7325 3.30403L12.8538 1.25764C13.2342 0.890684 13.8368 0.890684 14.2172 1.25764C14.6175 1.64373 14.6175 2.28484 14.2172 2.67094L13.364 3.49407H14C16.2091 3.49407 18 5.28493 18 7.49407V12.9996C18 15.2087 16.2091 16.9996 14 16.9996H4C1.79086 16.9996 0 15.2087 0 12.9996V7.49406C0 5.28492 1.79086 3.49407 4 3.49407H4.58579L3.73252 2.67094ZM4 5.42343C2.89543 5.42343 2 6.31886 2 7.42343V13.0702C2 14.1748 2.89543 15.0702 4 15.0702H14C15.1046 15.0702 16 14.1748 16 13.0702V7.42343C16 6.31886 15.1046 5.42343 14 5.42343H4ZM5 9.31747C5 8.76519 5.44772 8.31747 6 8.31747C6.55228 8.31747 7 8.76519 7 9.31747V10.2115C7 10.7638 6.55228 11.2115 6 11.2115C5.44772 11.2115 5 10.7638 5 10.2115V9.31747ZM12 8.31747C11.4477 8.31747 11 8.76519 11 9.31747V10.2115C11 10.7638 11.4477 11.2115 12 11.2115C12.5523 11.2115 13 10.7638 13 10.2115V9.31747C13 8.76519 12.5523 8.31747 12 8.31747Z" fill="gray"></path></svg>',
-                    ),
-                    title: '我的哔哩哔哩收藏',
-                    isExpanded: _isExpandedBl,
-                    availableWidth: availableWidth,
-                    onExpandedChanged: (expanded) {
-                      setState(() {
-                        _isExpandedBl = expanded;
-                      });
-                      if (expanded && !_isBlDataLoaded) {
-                        _loadBlData();
-                      }
-                    },
-                    body: _isBlDataLoaded
-                        ? Column(
-                            children: _playlistsBl
-                                .map(
-                                  (playlist) => _buildPlaylistTile(
-                                    playlist: playlist,
-                                    isMy: false,
-                                    availableWidth: availableWidth,
-                                  ),
-                                )
-                                .toList(),
-                          )
-                        : Center(child: globalLoadingAnime),
-                  ),
-                  _buildExpandableSection(
-                    leading: ExtendedImage.network(
-                      'https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png',
-                      width: 18,
-                      cache: true,
-                      height: 18,
-                    ),
-                    title: '我的网易云歌单',
-                    isExpanded: _isExpandedNe,
-                    availableWidth: availableWidth,
-                    onExpandedChanged: (expanded) {
-                      setState(() {
-                        _isExpandedNe = expanded;
-                      });
-                      if (expanded && !_isNeDataLoaded) {
-                        _loadNeData();
-                      }
-                    },
-                    body: _isNeDataLoaded
-                        ? Column(
-                            children: _playlistsNe
-                                .map(
-                                  (playlist) => _buildPlaylistTile(
-                                    playlist: playlist,
-                                    isMy: false,
-                                    availableWidth: availableWidth,
-                                  ),
-                                )
-                                .toList(),
-                          )
-                        : Center(child: globalLoadingAnime),
-                  ),
-                  _buildExpandableSection(
-                    leading: ExtendedImage.network(
-                      'https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2',
-                      cache: true,
-                      width: 18,
-                      height: 18,
-                      loadStateChanged: loadStateChanged,
-                    ),
-                    title: '我的QQ歌单',
-                    isExpanded: _isExpandedQq,
-                    availableWidth: availableWidth,
-                    onExpandedChanged: (expanded) {
-                      setState(() {
-                        _isExpandedQq = expanded;
-                      });
-                      if (expanded && !_isQqDataLoaded) {
-                        _loadQqData();
-                      }
-                    },
-                    body: _isQqDataLoaded
-                        ? Column(
-                            children: _playlistsQq
-                                .map(
-                                  (playlist) => _buildPlaylistTile(
-                                    playlist: playlist,
-                                    isMy: false,
-                                    availableWidth: availableWidth,
-                                  ),
-                                )
-                                .toList(),
-                          )
-                        : Center(child: globalLoadingAnime),
-                  ),
+                  ...providers
+                      .where(
+                        (p) =>
+                            p.supportGetUserCreatedPlaylist ||
+                            p.supportGetUserFavoritePlaylist,
+                      )
+                      .map((p) => _buildProviderSection(p, availableWidth)),
                 ],
               ),
             );
@@ -583,4 +498,12 @@ class _MyPlaylistState extends State<MyPlaylist> {
       ),
     );
   }
+}
+
+class _ProviderPlaylistSection {
+  bool isExpanded = false;
+  bool loaded = false;
+  bool loading = false;
+  String? error;
+  List<PlayList> playlists = [];
 }

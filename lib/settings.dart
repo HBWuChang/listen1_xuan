@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:ui';
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
-import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +13,7 @@ import 'package:listen1_xuan/play.dart';
 import 'package:logger/logger.dart';
 import 'controllers/search_controller.dart';
 import 'controllers/upd_controller.dart';
+import 'provider/base.dart';
 import 'models/GitHubRelease.dart';
 import 'models/SupabasePlaylist.dart' as PlaylistModel;
 import 'dart:io';
@@ -953,24 +953,32 @@ class _SettingsPageState extends State<SettingsPage> {
                                     : ListTile(
                                         leading: Icon(Icons.search),
                                         title: const Text('选择默认搜索源'),
-                                        trailing: DropdownButton<String>(
-                                          value: Get.find<SettingsController>()
-                                              .searchLastSource,
+                                        trailing: DropdownButton<BaseProvider>(
+                                          value: Get.find<XSearchController>()
+                                              .providerFromNameOrAlias(
+                                                Get.find<SettingsController>()
+                                                    .searchLastSource,
+                                              ),
                                           icon: Icon(Icons.arrow_downward),
-                                          onChanged: (String? newValue) {
+                                          onChanged: (BaseProvider? newValue) {
+                                            if (newValue == null) return;
                                             setState(() {
                                               Get.find<SettingsController>()
                                                       .searchLastSource =
-                                                  newValue!;
+                                                  newValue.name;
                                             });
                                           },
-                                          items: XSearchController.searchOptions
-                                              .map<DropdownMenuItem<String>>((
-                                                String value,
+                                          items: Get.find<XSearchController>()
+                                              .searchProviders
+                                              .map<DropdownMenuItem<BaseProvider>>((
+                                                BaseProvider provider,
                                               ) {
-                                                return DropdownMenuItem<String>(
-                                                  value: value,
-                                                  child: Text(value),
+                                                return DropdownMenuItem<
+                                                    BaseProvider>(
+                                                  value: provider,
+                                                  child: Text(
+                                                    provider.shortDisplayName,
+                                                  ),
                                                 );
                                               })
                                               .toList(),

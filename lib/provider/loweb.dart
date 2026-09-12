@@ -4,6 +4,8 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/models/Playlist.dart';
+import 'package:listen1_xuan/models/Track.dart';
+import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
 import 'base.dart';
 import 'netease.dart';
 import 'myplaylist.dart';
@@ -39,6 +41,14 @@ class Provider extends GetxService {
     return providers.firstWhere((i) => i.name == name);
   }
 
+  /// 与 [getProviderByName] 类似，但找不到时返回 null 而不是抛异常。
+  BaseProvider? tryGetProviderByName(String name) {
+    for (final provider in providers) {
+      if (provider.name == name) return provider;
+    }
+    return null;
+  }
+
   List<BaseProvider> getAllProviders() {
     return providers.where((i) => i.hidden != true).toList();
   }
@@ -48,16 +58,15 @@ class Provider extends GetxService {
   }
 
   String getProviderNameByItemId(String id) {
-    String prefix = id.substring(0, 2);
+    if (id.length < 2) {
+      throw Exception('Invalid id: $id');
+    }
+    final prefix = id.substring(0, 2);
     return providers.firstWhere((i) => i.id == prefix).name;
   }
 
   BaseProvider getProviderByItemId(String id) {
-    if (id.length < 2) {
-      throw Exception('Invalid id: $id');
-    }
-    String prefix = id.substring(0, 2);
-    return providers.firstWhere((i) => i.id == prefix);
+    return getProviderByName(getProviderNameByItemId(id));
   }
 
   // function queryStringify(options) {
@@ -127,6 +136,45 @@ class Provider extends GetxService {
         myplaylist.addTrackToMyPlaylist(source, tarTrack);
       }
     }
+  }
+
+  /// 引导播放：处理歌曲替换、选择对应 provider 并回调解缓存/失败逻辑。
+  void bootstrapTrack(Track track, {bool start = true}) {
+    Track? sTrack;
+
+    void successCallback(BootSuccessRes res, Track track) {
+      _playController.bootstrapTrackSuccess(
+        res,
+        track,
+        start: start,
+        sTrack: sTrack,
+      );
+    }
+
+    final repTrack = _playController.songReplaceSettings.value
+        .getReplacedTrack(track.id);
+    if (repTrack != null) {
+      sTrack = track;
+      track = repTrack;
+    }
+    // 优先根据 track.id 的前缀定位 provider，失败时再回退到 track.source。
+    BaseProvider? targetProvider;
+    try {
+      targetProvider = tryGetProviderByName(getProviderNameByItemId(track.id));
+    } catch (_) {
+      targetProvider = null;
+    }
+    targetProvider ??= tryGetProviderByName(track.source ?? '');
+    if (targetProvider == null) {
+      _playController.bootstrapTrackFail(track, start: start);
+      return;
+    }
+    targetProvider.bootStrapTrack(
+      track,
+      successCallback,
+      (track) =>
+          _playController.bootstrapTrackFail(sTrack ?? track, start: start),
+    );
   }
 
   PlayController get _playController => Get.find<PlayController>();

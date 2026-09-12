@@ -78,19 +78,19 @@ class _SearchlistinfoState extends State<Searchlistinfo>
             ),
 
             Obx(
-              () => DropdownButton<String>(
-                value: controller!.selectedOption,
+              () => DropdownButton<BaseProvider>(
+                value: controller!.selectedProvider,
                 icon: const Icon(Icons.arrow_downward),
-                onChanged: (String? newValue) {
+                onChanged: (BaseProvider? newValue) {
                   if (newValue != null) {
-                    controller!.updateSelectedOption(newValue);
+                    controller!.updateSelectedProvider(newValue);
                   }
                 },
-                items: XSearchController.searchOptions
-                    .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
+                items: controller!.searchProviders
+                    .map<DropdownMenuItem<BaseProvider>>((provider) {
+                      return DropdownMenuItem<BaseProvider>(
+                        value: provider,
+                        child: Text(provider.shortDisplayName),
                       );
                     })
                     .toList(),

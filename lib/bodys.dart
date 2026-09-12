@@ -8,6 +8,7 @@ import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_args.dart';
 import 'package:listen1_xuan/provider/base.dart';
+import 'package:listen1_xuan/provider/loweb.dart';
 import 'package:listen1_xuan/router/ro.dart';
 import 'package:listen1_xuan/widgets/ext/ext_hero.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
@@ -20,15 +21,10 @@ import 'controllers/search_controller.dart';
 import 'examples/websocket_client_example.dart';
 import 'package:flutter/material.dart'
     hide SearchController, CircularProgressIndicator;
-import 'package:listen1_xuan/bl.dart';
-import 'package:listen1_xuan/qq.dart';
 import 'models/PlayListInfo.dart';
 import 'models/Playlist.dart';
-import 'netease.dart';
 import 'package:marquee/marquee.dart';
-import 'loweb.dart';
 import 'play.dart';
-import 'myplaylist.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
@@ -174,7 +170,7 @@ Future<dynamic> song_dialog(
                   Navigator.of(context).pop();
                   xSearchController.toListByIDOrSearch(
                     "",
-                    search_text: track.title!,
+                    searchText: track.title!,
                   );
                 },
                 onLongPress: () {
@@ -221,14 +217,14 @@ Future<dynamic> song_dialog(
                 title: Text('添加到歌单'),
                 onTap: () {
                   if (nowplaylistinfo != null) {
-                    myplaylist.Add_to_my_playlist(
+                    provider.myplaylist.Add_to_my_playlist(
                       context,
                       [track],
                       nowplaylistinfo.title,
                       nowplaylistinfo.cover_img_url,
                     );
                   } else {
-                    myplaylist.Add_to_my_playlist(context, [track]);
+                    provider.myplaylist.Add_to_my_playlist(context, [track]);
                   }
                 },
               ),
@@ -440,7 +436,7 @@ Future<dynamic> song_dialog(
                             ),
                             TextButton(
                               onPressed: () {
-                                myplaylist.removeTrackFromMyPlaylist(
+                                provider.myplaylist.removeTrackFromMyPlaylist(
                                   nowplaylistinfo!.id,
                                   track.id,
                                 );

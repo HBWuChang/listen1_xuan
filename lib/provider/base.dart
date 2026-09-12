@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/models/PlayListFilter.dart';
@@ -28,6 +29,19 @@ abstract class BaseProvider extends GetxService {
   bool get isFirstOnH => false;
   bool get isFirstOnV => false;
   bool get supportShowPlaylist => false;
+
+  /// 是否支持在“我的歌单”页展示“我创建的歌单”
+  bool get supportGetUserCreatedPlaylist => false;
+
+  /// 是否支持在“我的歌单”页展示“我收藏的歌单”
+  bool get supportGetUserFavoritePlaylist => false;
+
+  /// “我的歌单”页中该平台分组的标题
+  String get userPlaylistSectionTitle => '我的$shortDisplayName歌单';
+
+  /// “我的歌单”页中该平台分组标题左侧的图标
+  Widget get userPlaylistSectionLeading =>
+      const Icon(Icons.library_music, size: 18);
 
   ///为了未来适配纯音源
   List<String> get supportProcessIds => [id];

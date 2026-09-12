@@ -34,6 +34,7 @@ import 'supabase_auth_controller.dart';
 import 'BroadcastWsController.dart';
 import 'package:windows_taskbar/windows_taskbar.dart';
 import '../play.dart'; // 导入 safeCallWindowsTaskbar
+import '../provider/loweb.dart';
 
 class PlayController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -562,7 +563,7 @@ class PlayController extends GetxController
       if (tdir == "") {
         // 无本地文件，引导播放
         bootStraping[track.id] = "";
-        MediaService.bootstrapTrack(track, start: start);
+        provider.bootstrapTrack(track, start: start);
         return;
       }
       Map<String, String>? httpHeaders = Get.find<CacheController>()

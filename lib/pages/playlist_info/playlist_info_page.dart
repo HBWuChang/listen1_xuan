@@ -9,9 +9,8 @@ import 'package:listen1_xuan/controllers/routeController.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:listen1_xuan/models/Track.dart';
-import 'package:listen1_xuan/myplaylist.dart';
 import 'package:listen1_xuan/play.dart';
-import 'package:listen1_xuan/router/ro.dart';
+import 'package:listen1_xuan/provider/loweb.dart';
 import 'package:listen1_xuan/widgets/ext/ext_hero.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:marquee/marquee.dart';
@@ -77,23 +76,26 @@ class PlaylistInfoPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Obx(
-                      () => ExtendedImage.network(
-                        controller.result.info.cover_img_url ?? '',
-                        width: 150,
-                        height: 150,
-                        fit: BoxFit.cover,
-                        cache: true,
-                        loadStateChanged: (state) {
-                          if (state.extendedImageLoadState ==
-                              LoadState.failed) {
-                            return Icon(Icons.error);
-                          }
-                          if (state.extendedImageLoadState ==
-                              LoadState.loading) {
-                            return globalLoadingAnimeOfExtendedImage;
-                          }
-                          return null;
-                        },
+                      () => Skeletonizer(
+                        enabled: controller.loading.value,
+                        child: ExtendedImage.network(
+                          controller.result.info.cover_img_url ?? '',
+                          width: 150,
+                          height: 150,
+                          fit: BoxFit.cover,
+                          cache: true,
+                          loadStateChanged: (state) {
+                            if (state.extendedImageLoadState ==
+                                LoadState.failed) {
+                              return Icon(Icons.error);
+                            }
+                            if (state.extendedImageLoadState ==
+                                LoadState.loading) {
+                              return globalLoadingAnimeOfExtendedImage;
+                            }
+                            return null;
+                          },
+                        ),
                       ),
                     ).hero4playlistItemImg(args.playListInfo),
                     8.sbh,
@@ -105,6 +107,9 @@ class PlaylistInfoPage extends StatelessWidget {
                             flex: 5,
                             child: ElevatedButton(
                               onPressed: () async {
+                                if (controller.tracks.isEmpty) {
+                                  return;
+                                }
                                 List<Track> trackList = List<Track>.from(
                                   controller.tracks,
                                 );
@@ -152,11 +157,18 @@ class PlaylistInfoPage extends StatelessWidget {
             Obx(
               () => SliverFillRemaining(
                 hasScrollBody: true,
-                child: controller.loading.value
-                    ? globalLoadingAnime.center
-                    : controller.useReorderableList.value
-                    ? _buildReorderableList(context, controller)
-                    : _buildNormalList(context, controller),
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(
+                    context,
+                  ).copyWith(scrollbars: false),
+                  child: controller.loading.value
+                      ? globalLoadingAnime.center
+                      : controller.loadFailed.value
+                      ? _buildErrorView(context, controller)
+                      : controller.useReorderableList.value
+                      ? _buildReorderableList(context, controller)
+                      : _buildNormalList(context, controller),
+                ),
               ),
             ),
           ],
@@ -169,17 +181,16 @@ class PlaylistInfoPage extends StatelessWidget {
     BuildContext context,
     PlaylistInfoController controller,
   ) {
-    final result = controller.result;
     return [
       IconButton(
         icon: Icon(Icons.add),
         onPressed: () async {
           try {
-            await myplaylist.Add_to_my_playlist(
+            await provider.myplaylist.Add_to_my_playlist(
               context,
-              controller.tracks.toList(),
-              result.info.title,
-              result.info.cover_img_url,
+              List<Track>.from(controller.tracks),
+              controller.result.info.title,
+              controller.result.info.cover_img_url,
             );
             Get.back(result: {"refresh": true}, id: 1);
           } catch (e) {
@@ -206,7 +217,7 @@ class PlaylistInfoPage extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () async {
-                            myplaylist.removeMyPlaylist(
+                            provider.myplaylist.removeMyPlaylist(
                               'my',
                               controller.listId,
                             );
@@ -224,7 +235,12 @@ class PlaylistInfoPage extends StatelessWidget {
           : IconButton(
               icon: Icon(Icons.link),
               onPressed: () {
-                launchUrl(Uri.parse(result.info.source_url!));
+                final sourceUrl = controller.result.info.source_url;
+                if (sourceUrl == null || sourceUrl.isEmpty) {
+                  showErrorSnackbar('没有可打开的链接', null);
+                  return;
+                }
+                launchUrl(Uri.parse(sourceUrl));
               },
             ),
       controller.isMy
@@ -236,9 +252,13 @@ class PlaylistInfoPage extends StatelessWidget {
                   context: context,
                   builder: (BuildContext contextDialog) {
                     final TextEditingController titleCtrl =
-                        TextEditingController(text: result.info.title);
+                        TextEditingController(
+                          text: controller.result.info.title,
+                        );
                     final TextEditingController coverCtrl =
-                        TextEditingController(text: result.info.cover_img_url);
+                        TextEditingController(
+                          text: controller.result.info.cover_img_url,
+                        );
                     return AlertDialog(
                       title: Text('编辑歌单'),
                       content: Column(
@@ -263,7 +283,7 @@ class PlaylistInfoPage extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () async {
-                            await myplaylist.editMyPlaylist(
+                            provider.myplaylist.editMyPlaylist(
                               controller.listId,
                               titleCtrl.text,
                               coverCtrl.text,
@@ -288,11 +308,17 @@ class PlaylistInfoPage extends StatelessWidget {
                     : Icon(Icons.star_border),
                 onPressed: () async {
                   if (controller.isFav.value) {
-                    myplaylist.removeMyPlaylist('favorite', controller.listId);
+                    provider.myplaylist.removeMyPlaylist(
+                      'favorite',
+                      controller.listId,
+                    );
                     controller.checkFav();
                     showInfoSnackbar('已取消收藏', null);
                   } else {
-                    myplaylist.saveMyPlaylist('favorite', controller.result);
+                    provider.myplaylist.saveMyPlaylist(
+                      'favorite',
+                      controller.result,
+                    );
                     controller.checkFav();
                     showSuccessSnackbar('已添加到我的收藏', null);
                   }
@@ -321,6 +347,43 @@ class PlaylistInfoPage extends StatelessWidget {
           ),
         ),
     ];
+  }
+
+  Widget _buildErrorView(
+    BuildContext context,
+    PlaylistInfoController controller,
+  ) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '加载失败',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            SelectableText(
+              controller.loadError.value,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => controller.loadData(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('重试'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildReorderableList(
@@ -406,7 +469,7 @@ class PlaylistInfoPage extends StatelessWidget {
     final iconDy = renderObject is RenderBox
         ? renderObject.localToGlobal(Offset.zero).dy
         : 0.0;
-    var ret = await song_dialog(
+    await song_dialog(
       context,
       track,
       is_my: controller.isMy,

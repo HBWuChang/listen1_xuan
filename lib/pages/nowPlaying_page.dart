@@ -3,13 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:listen1_xuan/provider/loweb.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import '../bodys.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/nowplaying_controller.dart';
-import '../myplaylist.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 class NowPlayingPage extends StatefulWidget {
@@ -219,7 +219,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               color: theme.textTheme.bodyLarge?.color,
             ),
             onPressed: () {
-              myplaylist.Add_to_my_playlist(
+              provider.myplaylist.Add_to_my_playlist(
                 null,
                 Get.find<PlayController>().current_playing,
               );

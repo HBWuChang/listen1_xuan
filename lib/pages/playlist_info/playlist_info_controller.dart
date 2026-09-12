@@ -6,29 +6,63 @@ import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:listen1_xuan/models/Playlist.dart';
 import 'package:listen1_xuan/models/Track.dart';
-import 'package:listen1_xuan/myplaylist.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_args.dart';
+import 'package:listen1_xuan/provider/loweb.dart';
 import 'package:listen1_xuan/settings.dart';
 
 class PlaylistInfoController extends GetxController {
   final PlaylistInfoArgs args;
   PlaylistInfoController(this.args)
-    : _result = PlayList(info: args.playListInfo).obs;
+    : result = PlayList(info: args.playListInfo);
+
   String get listId => args.listId;
   bool get isMy => args.isMy;
-  final Rx<PlayList> _result;
 
-  PlayList get result => _result.value;
-
-  set result(result) => _result.value = result;
+  /// 歌单数据。非响应式字段，页面通过 [loading] / [loadFailed] /
+  /// [_tracksRevision] / [_filterQuery] 等响应式信号触发刷新。
+  PlayList result;
 
   final loading = true.obs;
   final loadFailed = false.obs;
+  final loadError = ''.obs;
   final isFav = false.obs;
   final useReorderableList = false.obs;
 
-  final tracks = <Track>[].obs;
-  List<Track> unfilteredTracks = [];
+  /// 歌单结构变更计数，用于通知依赖 [tracks] 的 Obx 刷新。
+  final _tracksRevision = 0.obs;
+
+  /// 过滤关键字（小写），变化时依赖 [tracks] 的 Obx 会重新计算。
+  final _filterQuery = ''.obs;
+
+  List<Track>? _cachedTracks;
+  int _cachedRevision = -1;
+  String _cachedQuery = '';
+
+  /// 直接读取 [result] 内的歌曲；有搜索关键字时返回过滤后的视图。
+  List<Track> get tracks {
+    final revision = _tracksRevision.value;
+    final query = _filterQuery.value;
+    if (_cachedTracks != null &&
+        _cachedRevision == revision &&
+        _cachedQuery == query) {
+      return _cachedTracks!;
+    }
+    final all = result.tracks ?? const <Track>[];
+    final computed = query.isEmpty
+        ? all
+        : all.where((track) {
+            final title = track.title?.toLowerCase() ?? '';
+            final artist = track.artist?.toLowerCase() ?? '';
+            final album = track.album?.toLowerCase() ?? '';
+            return title.contains(query) ||
+                artist.contains(query) ||
+                album.contains(query);
+          }).toList();
+    _cachedTracks = computed;
+    _cachedRevision = revision;
+    _cachedQuery = query;
+    return computed;
+  }
 
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
@@ -51,7 +85,7 @@ class PlaylistInfoController extends GetxController {
     super.onInit();
     checkFav();
     loadData();
-    searchController.addListener(filterTracks);
+    searchController.addListener(onSearchChanged);
     innerScrollController.addListener(onInnerScroll);
     searchFocusNode.addListener(() {
       if (searchFocusNode.hasFocus) {
@@ -62,50 +96,57 @@ class PlaylistInfoController extends GetxController {
     });
   }
 
-  void checkFav() async {
-    final res = await myplaylist.isMyfavPlaylist(listId);
-    isFav.value = res;
+  void checkFav() {
+    isFav.value = provider.myplaylist.isMyfavPlaylist(listId);
   }
 
-  void loadData() async {
-    var res = await MediaService.getPlaylist(listId);
-    res['success']?.call((data) {
-      try {
-        if (data is PlayList) {
-          result = data;
-        } else {
-          result = PlayList.fromJson(data);
-        }
-      } catch (e) {
-        logger.e('歌单数据解析失败', error: e);
-        result = PlayList.fromJson({
-          'info': {'id': listId},
-        });
+  Future<void> loadData() async {
+    loading.value = true;
+    loadFailed.value = false;
+    loadError.value = '';
+    try {
+      final source = provider.getProviderByItemId(listId);
+      final data = await source.getPlaylist(listId);
+      if (data == null) {
+        throw StateError('接口未返回歌单数据');
       }
-      unfilteredTracks = result.tracks ?? [];
-      tracks.value = unfilteredTracks;
+      if (data.info.title == null) {
+        throw StateError('歌单不存在或已被删除');
+      }
+      result = data;
+      _bumpTracks();
       loading.value = false;
-      if (result.info.title == null) {
-        loadFailed.value = true;
-      }
-    });
+    } catch (e, stack) {
+      logger.e('加载歌单失败: $listId', error: e, stackTrace: stack);
+      loadError.value = _formatError(e);
+      loadFailed.value = true;
+      loading.value = false;
+    }
+  }
+
+  String _formatError(Object error) {
+    String platformName;
+    try {
+      platformName = provider.getProviderByItemId(listId).shortDisplayName;
+    } catch (_) {
+      platformName = '未知平台';
+    }
+    return '歌单 ID：$listId\n'
+        '平台：$platformName\n'
+        '原因：$error';
+  }
+
+  void onSearchChanged() {
+    _filterQuery.value = searchController.text.trim().toLowerCase();
+  }
+
+  void _bumpTracks() {
+    _tracksRevision.value++;
   }
 
   void delTrack(Track track) {
-    unfilteredTracks.remove(track);
-    filterTracks();
-  }
-
-  void filterTracks() {
-    String query = searchController.text.toLowerCase();
-    tracks.value = unfilteredTracks.where((track) {
-      final title = track.title?.toLowerCase() ?? '';
-      final artist = track.artist?.toLowerCase() ?? '';
-      final album = track.album?.toLowerCase() ?? '';
-      return title.contains(query) ||
-          artist.contains(query) ||
-          album.contains(query);
-    }).toList();
+    result.tracks?.remove(track);
+    _bumpTracks();
   }
 
   void onReorder(int oldIndex, int newIndex) {
@@ -113,30 +154,42 @@ class PlaylistInfoController extends GetxController {
       showErrorSnackbar('只有自己创建的歌单才能排序', null);
       return;
     }
-    if (searchController.text.toLowerCase().isNotEmpty) {
+    if (searchController.text.trim().isNotEmpty) {
       showErrorSnackbar('搜索状态下无法排序', null);
       return;
     }
-    MediaService.insertTrackToMyPlaylist(
+    final list = result.tracks;
+    if (list == null ||
+        oldIndex < 0 ||
+        newIndex < 0 ||
+        oldIndex >= list.length ||
+        newIndex >= list.length) {
+      return;
+    }
+    provider.insertTrackToMyPlaylist(
       listId,
-      tracks[oldIndex],
-      tracks[newIndex],
+      list[oldIndex],
+      list[newIndex],
       'top',
     );
-    final item = tracks.removeAt(oldIndex);
-    tracks.insert(newIndex, item);
+    // provider 内部就是同一个 PlayList 对象，顺序已更新，这里只需通知刷新。
+    _bumpTracks();
   }
 
   void onInnerScroll() {
+    final position = innerScrollController.position;
+    if (position.maxScrollExtent <= 0) {
+      hideScrollBar();
+      return;
+    }
     if (!scrollBarVisible) {
       showScrollBar();
     }
     startAutoCloseTimer();
-    scrollBarPos =
-        innerScrollController.position.pixels /
-        innerScrollController.position.maxScrollExtent;
-    scrollBarPos = scrollBarPos > 1 ? 1 : scrollBarPos;
-    scrollBarPos = scrollBarPos < 0 ? 0 : scrollBarPos;
+    scrollBarPos = (position.pixels / position.maxScrollExtent).clamp(
+      0.0,
+      1.0,
+    );
     if (scrollBarSetState != null && scrollBarVisible) {
       try {
         scrollBarSetState!(() {});
@@ -145,7 +198,7 @@ class PlaylistInfoController extends GetxController {
       }
     }
     // 获取滚动信息
-    final move = innerScrollController.position.pixels - lastMove;
+    final move = position.pixels - lastMove;
     // 判断滚动方向
     bool nowMoveIsUp = move > 0;
     if (nowMoveIsUp != lastMoveIsUp && move > 20) {
@@ -174,13 +227,18 @@ class PlaylistInfoController extends GetxController {
         }
       }
     }
-    lastMove = innerScrollController.position.pixels;
+    lastMove = position.pixels;
   }
 
   void showScrollBar() {
-    scrollBarPos =
-        innerScrollController.position.pixels /
-        innerScrollController.position.maxScrollExtent;
+    final max = innerScrollController.position.maxScrollExtent;
+    if (max <= 0) {
+      return;
+    }
+    scrollBarPos = (innerScrollController.position.pixels / max).clamp(
+      0.0,
+      1.0,
+    );
     scrollBarVisible = true;
     scrollBarOverlayEntry = createOverlayEntry();
     final context = Get.overlayContext;
@@ -192,11 +250,16 @@ class PlaylistInfoController extends GetxController {
 
   void startAutoCloseTimer() {
     scrollBarTimer?.cancel();
-    scrollBarTimer = Timer(Duration(seconds: 1), () {
-      scrollBarOverlayEntry?.remove();
-      scrollBarOverlayEntry = null;
-      scrollBarVisible = false;
-    });
+    scrollBarTimer = Timer(const Duration(seconds: 1), hideScrollBar);
+  }
+
+  void hideScrollBar() {
+    scrollBarTimer?.cancel();
+    scrollBarTimer = null;
+    scrollBarOverlayEntry?.remove();
+    scrollBarOverlayEntry = null;
+    scrollBarSetState = null;
+    scrollBarVisible = false;
   }
 
   OverlayEntry createOverlayEntry() {
@@ -208,11 +271,7 @@ class PlaylistInfoController extends GetxController {
           color: Colors.transparent,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () {
-              scrollBarOverlayEntry?.remove();
-              scrollBarOverlayEntry = null;
-              scrollBarVisible = false;
-            },
+            onTap: hideScrollBar,
             child: Container(
               height: MediaQuery.of(context).size.height - 200,
               width: 30,
@@ -261,12 +320,13 @@ class PlaylistInfoController extends GetxController {
 
   @override
   void onClose() {
+    searchController.removeListener(onSearchChanged);
     searchController.dispose();
     searchFocusNode.dispose();
+    innerScrollController.removeListener(onInnerScroll);
     innerScrollController.dispose();
     outerScrollController.dispose();
-    scrollBarTimer?.cancel();
-    scrollBarOverlayEntry?.remove();
+    hideScrollBar();
     super.onClose();
   }
 }

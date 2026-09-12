@@ -5,7 +5,10 @@ import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:listen1_xuan/models/PlayListInfo.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/models/SearchPlayListRes.dart';
+import 'package:listen1_xuan/models/SearchRes.dart';
 import 'package:listen1_xuan/pages/playlist_info/playlist_info_args.dart';
+import 'package:listen1_xuan/provider/base.dart';
+import 'package:listen1_xuan/provider/loweb.dart';
 import 'package:listen1_xuan/router/ro.dart';
 
 import '../funcs.dart';
@@ -15,16 +18,13 @@ import 'routeController.dart';
 class XSearchController extends GetxController {
   XSearchController();
 
-  // Search options
-  static const List<String> searchOptions = ['BiliBili', '网易云', "QQ", '酷狗'];
-
   // Reactive state variables
   final RxBool loading = true.obs;
   final RxBool loadingMore = false.obs;
   final RxBool songOrPlaylist = false.obs;
   final RxList<Track> tracks = <Track>[].obs;
-  final RxMap<String, dynamic> result = <String, dynamic>{}.obs;
-  String? get resultErr => result['error'] as String?;
+  final Rx<SearchRes?> songResult = Rx<SearchRes?>(null);
+  String? get resultErr => songResult.value?.error;
   final RxString source = 'netease'.obs;
   final RxString lastSource = 'netease'.obs;
   final RxInt currentPage = 1.obs;
@@ -48,8 +48,8 @@ class XSearchController extends GetxController {
   final RxBool djLoading = true.obs;
   final RxBool djLoadingMore = false.obs;
   final RxList<SearchPlayListItem> djs = <SearchPlayListItem>[].obs;
-  final RxMap<String, dynamic> djResult = <String, dynamic>{}.obs;
-  String? get djResultErr => djResult['error'] as String?;
+  final Rx<SearchPlayListRes?> djResult = Rx<SearchPlayListRes?>(null);
+  String? get djResultErr => djResult.value?.error;
 
   final RxInt djCurrentPage = 1.obs;
   final RxString djLastQuery = ''.obs;
@@ -60,21 +60,42 @@ class XSearchController extends GetxController {
   final RxBool showTabBar = true.obs;
   double _lastScrollOffset = 0.0;
 
-  // 计算属性：从 source 获取显示名称
-  String get selectedOption {
-    switch (source.value) {
-      case 'bilibili':
-        return 'BiliBili';
-      case 'netease':
-        return '网易云';
-      case 'qq':
-        return 'QQ';
-      case 'kugou':
-        return '酷狗';
-      default:
-        return '网易云';
+  /// 声明支持搜索的平台，直接来自 provider 注册表。
+  List<BaseProvider> get searchProviders =>
+      providers.where((p) => p.searchable).toList();
+
+  /// 根据 name / 显示名 / 历史别名查找平台。
+  BaseProvider? providerFromNameOrAlias(String value) {
+    for (final p in searchProviders) {
+      if (p.name == value) return p;
     }
+    for (final p in searchProviders) {
+      if (p.shortDisplayName == value) return p;
+    }
+    // 兼容历史设置中保存的旧显示名
+    const legacyAliases = {
+      '网易云': 'netease',
+      'BiliBili': 'bilibili',
+      'QQ': 'qq',
+      '酷狗': 'kugou',
+    };
+    final id = legacyAliases[value];
+    if (id != null) {
+      return provider.tryGetProviderByName(id);
+    }
+    return null;
   }
+
+  /// 当前选中的搜索平台；找不到时回退到第一个可用平台。
+  BaseProvider? get selectedProvider {
+    final matched = providerFromNameOrAlias(source.value);
+    if (matched != null) return matched;
+    return searchProviders.isEmpty ? null : searchProviders.first;
+  }
+
+  // 计算属性：当前平台显示名称（用于错误提示等）
+  String get selectedOption =>
+      providerFromNameOrAlias(source.value)?.shortDisplayName ?? source.value;
 
   // Controllers
   late TextEditingController searchTextController;
@@ -132,8 +153,12 @@ class XSearchController extends GetxController {
 
   // 每次进入页面时调用，重新加载平台设置
   void refreshFromSettings() {
-    final lastSource = settingsController.searchLastSource;
-    _updateSourceFromOption(lastSource);
+    final matched = providerFromNameOrAlias(
+      settingsController.searchLastSource,
+    );
+    if (matched != null) {
+      source.value = matched.name;
+    }
   }
 
   void _setupListeners() {
@@ -244,36 +269,17 @@ class XSearchController extends GetxController {
     }
   }
 
-  void updateSelectedOption(String displayName) {
-    _updateSourceFromOption(displayName);
+  void updateSelectedProvider(BaseProvider selected) {
+    source.value = selected.name;
 
     // Save to settings if enabled
     if (settingsController.searchUseLastSource) {
-      settingsController.searchLastSource = displayName;
+      settingsController.searchLastSource = selected.name;
     }
 
     // 切换平台后重新搜索
     if (searchQuery.value.trim().isNotEmpty) {
       performSearch();
-    }
-  }
-
-  void _updateSourceFromOption(String option) {
-    switch (option) {
-      case 'BiliBili':
-        source.value = 'bilibili';
-        break;
-      case '网易云':
-        source.value = 'netease';
-        break;
-      case 'QQ':
-        source.value = 'qq';
-        break;
-      case '酷狗':
-        source.value = 'kugou';
-        break;
-      default:
-        source.value = 'netease';
     }
   }
 
@@ -338,6 +344,17 @@ class XSearchController extends GetxController {
     await _performDjSearch();
   }
 
+  BaseProvider _requireSearchProvider() {
+    final searchProvider = provider.tryGetProviderByName(source.value);
+    if (searchProvider == null) {
+      throw StateError('平台「$selectedOption」尚未接入');
+    }
+    if (!searchProvider.searchable) {
+      throw StateError('平台「$selectedOption」不支持搜索');
+    }
+    return searchProvider;
+  }
+
   Future<void> _performSongSearch() async {
     final query = searchQuery.value.trim();
 
@@ -362,29 +379,24 @@ class XSearchController extends GetxController {
     try {
       loading.value = true;
 
-      final ret = await MediaService.search(source.value, {
-        'keywords': query,
-        'curpage': currentPage.value,
-        'type': 0, // 搜索歌曲
-      });
+      final searchProvider = _requireSearchProvider();
+      final res = await searchProvider.searchSong(query, currentPage.value);
+      if (res == null) {
+        throw StateError('该平台未实现歌曲搜索');
+      }
 
-      ret["success"]((data) {
-        try {
-          result.value = data;
-          tracks.value = List<Track>.from(
-            data['result'].map((item) => Track.fromJson(item)),
-          );
-        } catch (e) {
-          _rollbackSearch(previousQuery, previousSource, previousPage);
-          showErrorSnackbar('搜索失败', e.toString());
-        } finally {
-          loading.value = false;
-        }
-      });
+      songResult.value = res;
+      if (res.hasError) {
+        tracks.value = [];
+        return;
+      }
+      tracks.value = res.result;
     } catch (e) {
       _rollbackSearch(previousQuery, previousSource, previousPage);
+      songResult.value = SearchRes.error(e.toString());
+      showErrorSnackbar('搜索失败', e.toString());
+    } finally {
       loading.value = false;
-      showErrorSnackbar('搜索请求失败', e.toString());
     }
   }
 
@@ -411,34 +423,25 @@ class XSearchController extends GetxController {
     try {
       playlistLoading.value = true;
 
-      final ret = await MediaService.search(source.value, {
-        'keywords': query,
-        'curpage': playlistCurrentPage.value,
-        'type': 1, // 搜索歌单
-      });
+      final searchProvider = _requireSearchProvider();
+      final res = await searchProvider.searchPlaylist(
+        query,
+        playlistCurrentPage.value,
+        SearchType.album,
+      );
+      if (res == null) {
+        throw StateError('该平台未实现歌单搜索');
+      }
 
-      ret["success"]((data) {
-        try {
-          if (data is SearchPlayListRes) {
-            playlistResult.value = data;
-            playlists.value = data.result;
-          } else {
-            playlistResult.value = SearchPlayListRes.fromJson(data);
-            playlists.value = List<SearchPlayListItem>.from(
-              data['result'].map((item) => SearchPlayListItem.fromJson(item)),
-            );
-          }
-        } catch (e) {
-          _rollbackPlaylistSearch(previousQuery, previousSource, previousPage);
-          showErrorSnackbar('歌单搜索失败', e.toString());
-        } finally {
-          playlistLoading.value = false;
-        }
-      });
+      playlistResult.value = res;
+      playlists.value = res.result;
     } catch (e) {
       _rollbackPlaylistSearch(previousQuery, previousSource, previousPage);
+      playlistResult.value = SearchPlayListRes.error(e.toString());
+      playlists.value = [];
+      showErrorSnackbar('歌单搜索失败', e.toString());
+    } finally {
       playlistLoading.value = false;
-      showErrorSnackbar('歌单搜索请求失败', e.toString());
     }
   }
 
@@ -466,29 +469,25 @@ class XSearchController extends GetxController {
     try {
       djLoading.value = true;
 
-      final ret = await MediaService.search(source.value, {
-        'keywords': query,
-        'curpage': djCurrentPage.value,
-        'type': 2, // 搜索 DJ
-      });
+      final searchProvider = _requireSearchProvider();
+      final res = await searchProvider.searchPlaylist(
+        query,
+        djCurrentPage.value,
+        SearchType.dj,
+      );
+      if (res == null) {
+        throw StateError('该平台未实现播客搜索');
+      }
 
-      ret["success"]((data) {
-        try {
-          djResult.value = data;
-          djs.value = List<SearchPlayListItem>.from(
-            data['result'].map((item) => SearchPlayListItem.fromJson(item)),
-          );
-        } catch (e) {
-          _rollbackDjSearch(previousQuery, previousSource, previousPage);
-          showErrorSnackbar('DJ 搜索失败', e.toString());
-        } finally {
-          djLoading.value = false;
-        }
-      });
+      djResult.value = res;
+      djs.value = res.result;
     } catch (e) {
       _rollbackDjSearch(previousQuery, previousSource, previousPage);
+      djResult.value = SearchPlayListRes.error(e.toString());
+      djs.value = [];
+      showErrorSnackbar('DJ 搜索失败', e.toString());
+    } finally {
       djLoading.value = false;
-      showErrorSnackbar('DJ 搜索请求失败', e.toString());
     }
   }
 
@@ -501,40 +500,38 @@ class XSearchController extends GetxController {
       currentPage.value += 1;
 
       // Check if we've reached the end
-      if (result.isNotEmpty &&
+      final previousResult = songResult.value;
+      if (previousResult != null &&
+          previousResult.result.isNotEmpty &&
+          tracks.isNotEmpty &&
           currentPage.value >=
-              result['total'] / (tracks.length / (currentPage.value - 1))) {
+              previousResult.total /
+                  (tracks.length / (currentPage.value - 1))) {
         currentPage.value = previousPage;
         return;
       }
 
       loadingMore.value = true;
 
-      final ret = await MediaService.search(source.value, {
-        'keywords': searchQuery.value,
-        'curpage': currentPage.value,
-        'type': 0, // 搜索歌曲
-      });
+      final searchProvider = _requireSearchProvider();
+      final res = await searchProvider.searchSong(
+        searchQuery.value,
+        currentPage.value,
+      );
+      if (res == null) {
+        throw StateError('该平台未实现歌曲搜索');
+      }
 
-      ret["success"]((data) {
-        try {
-          result.value = data;
-          tracks.addAll(
-            List<Track>.from(
-              data['result'].map((item) => Track.fromJson(item)),
-            ),
-          );
-        } catch (e) {
-          currentPage.value = previousPage;
-          showErrorSnackbar('加载更多数据失败', e.toString());
-        } finally {
-          loadingMore.value = false;
-        }
-      });
+      songResult.value = res;
+      if (res.hasError) {
+        return;
+      }
+      tracks.addAll(res.result);
     } catch (e) {
       currentPage.value = previousPage;
-      loadingMore.value = false;
       showErrorSnackbar('加载更多数据失败', e.toString());
+    } finally {
+      loadingMore.value = false;
     }
   }
 
@@ -548,6 +545,7 @@ class XSearchController extends GetxController {
 
       // Check if we've reached the end
       if (playlistResult.value.result.isNotEmpty &&
+          playlists.isNotEmpty &&
           playlistCurrentPage.value >=
               playlistResult.value.total /
                   (playlists.length / (playlistCurrentPage.value - 1))) {
@@ -557,36 +555,26 @@ class XSearchController extends GetxController {
 
       playlistLoadingMore.value = true;
 
-      final ret = await MediaService.search(source.value, {
-        'keywords': searchQuery.value,
-        'curpage': playlistCurrentPage.value,
-        'type': 1, // 搜索歌单
-      });
+      final searchProvider = _requireSearchProvider();
+      final res = await searchProvider.searchPlaylist(
+        searchQuery.value,
+        playlistCurrentPage.value,
+        SearchType.album,
+      );
+      if (res == null) {
+        throw StateError('该平台未实现歌单搜索');
+      }
 
-      ret["success"]((data) {
-        try {
-          if (data is SearchPlayListRes) {
-            playlistResult.value = data;
-            playlists.addAll(data.result);
-          } else {
-            playlistResult.value = SearchPlayListRes.fromJson(data);
-            playlists.addAll(
-              List<SearchPlayListItem>.from(
-                data['result'].map((item) => SearchPlayListItem.fromJson(item)),
-              ),
-            );
-          }
-        } catch (e) {
-          playlistCurrentPage.value = previousPage;
-          showErrorSnackbar('加载更多歌单失败', e.toString());
-        } finally {
-          playlistLoadingMore.value = false;
-        }
-      });
+      playlistResult.value = res;
+      if (res.hasError) {
+        return;
+      }
+      playlists.addAll(res.result);
     } catch (e) {
       playlistCurrentPage.value = previousPage;
-      playlistLoadingMore.value = false;
       showErrorSnackbar('加载更多歌单失败', e.toString());
+    } finally {
+      playlistLoadingMore.value = false;
     }
   }
 
@@ -600,40 +588,39 @@ class XSearchController extends GetxController {
       djCurrentPage.value += 1;
 
       // Check if we've reached the end
-      if (djResult.isNotEmpty &&
+      final previousResult = djResult.value;
+      if (previousResult != null &&
+          previousResult.result.isNotEmpty &&
+          djs.isNotEmpty &&
           djCurrentPage.value >=
-              djResult['total'] / (djs.length / (djCurrentPage.value - 1))) {
+              previousResult.total /
+                  (djs.length / (djCurrentPage.value - 1))) {
         djCurrentPage.value = previousPage;
         return;
       }
 
       djLoadingMore.value = true;
 
-      final ret = await MediaService.search(source.value, {
-        'keywords': searchQuery.value,
-        'curpage': djCurrentPage.value,
-        'type': 2, // 搜索 DJ
-      });
+      final searchProvider = _requireSearchProvider();
+      final res = await searchProvider.searchPlaylist(
+        searchQuery.value,
+        djCurrentPage.value,
+        SearchType.dj,
+      );
+      if (res == null) {
+        throw StateError('该平台未实现播客搜索');
+      }
 
-      ret["success"]((data) {
-        try {
-          djResult.value = data;
-          djs.addAll(
-            List<SearchPlayListItem>.from(
-              data['result'].map((item) => SearchPlayListItem.fromJson(item)),
-            ),
-          );
-        } catch (e) {
-          djCurrentPage.value = previousPage;
-          showErrorSnackbar('加载更多 DJ 失败', e.toString());
-        } finally {
-          djLoadingMore.value = false;
-        }
-      });
+      djResult.value = res;
+      if (res.hasError) {
+        return;
+      }
+      djs.addAll(res.result);
     } catch (e) {
       djCurrentPage.value = previousPage;
-      djLoadingMore.value = false;
       showErrorSnackbar('加载更多 DJ 失败', e.toString());
+    } finally {
+      djLoadingMore.value = false;
     }
   }
 
@@ -675,8 +662,8 @@ class XSearchController extends GetxController {
 
   void toListByIDOrSearch(
     String id, {
-    bool is_my = false,
-    String search_text = "",
+    bool isMy = false,
+    String searchText = "",
     bool off = false,
   }) {
     if (!isEmpty(id)) {
@@ -684,21 +671,21 @@ class XSearchController extends GetxController {
         Ro.offArg(
           PlaylistInfoArgs(
             playListInfo: PlayListInfo(id: id),
-            isMy: is_my,
+            isMy: isMy,
           ),
         );
       } else {
         Ro.toArg(
           PlaylistInfoArgs(
             playListInfo: PlayListInfo(id: id),
-            isMy: is_my,
+            isMy: isMy,
           ),
         );
       }
     } else {
-      if (!isEmpty(search_text)) {
+      if (!isEmpty(searchText)) {
         final searchController = Get.find<XSearchController>();
-        searchController.searchTextController.text = search_text;
+        searchController.searchTextController.text = searchText;
         Get.toNamed(RouteName.searchPage, id: 1);
       }
     }

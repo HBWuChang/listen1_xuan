@@ -6,7 +6,6 @@ import 'package:flutter_lyric/core/lyric_model.dart';
 import 'package:get/get.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:get/get_connect/http/src/utils/utils.dart';
-import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/constants/network_defaults.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/models/SubtitleDetail.dart';

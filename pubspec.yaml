@@ -28,6 +28,8 @@ dependencies:
     path: packages/audio_service-0.18.18
   audio_session: ^0.2.2
   encrypt: ^5.0.0
+  pointycastle: ^3.9.1
+  convert: ^3.1.2
   webview_flutter: ^4.10.0
   webview_cookie_manager:
     path: packages/webview_cookie_manager-2.0.6
