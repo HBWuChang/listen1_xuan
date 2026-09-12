@@ -223,18 +223,36 @@ class _MyPlaylistState extends State<MyPlaylist> {
     );
   }
 
-  _ProviderPlaylistSection _sectionOf(BaseProvider provider) {
+  _ProviderPlaylistSection _sectionOf(
+    BaseProvider provider,
+    _UserPlaylistType type,
+  ) {
     return _providerSections.putIfAbsent(
-      provider.name,
+      '${provider.name}_${type.name}',
       () => _ProviderPlaylistSection(),
     );
   }
 
+  Future<List<PlayList>> _fetchUserPlaylists(
+    BaseProvider provider,
+    _UserPlaylistType type,
+    String userId,
+  ) async {
+    final future = type == _UserPlaylistType.created
+        ? provider.getUserCreatedPlaylist(userId)
+        : provider.getUserFavoritePlaylist(userId);
+    if (future == null) {
+      throw StateError('该平台未实现该歌单接口');
+    }
+    return future;
+  }
+
   Future<void> _loadProviderPlaylists(
-    BaseProvider provider, {
+    BaseProvider provider,
+    _UserPlaylistType type, {
     bool force = false,
   }) async {
-    final section = _sectionOf(provider);
+    final section = _sectionOf(provider, type);
     if (section.loading) return;
     if (section.loaded && !force) return;
 
@@ -248,25 +266,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
       if (user == null) {
         throw StateError('未登录或登录已失效');
       }
-
-      final futures = <Future<List<PlayList>>>[];
-      if (provider.supportGetUserCreatedPlaylist) {
-        final future = provider.getUserCreatedPlaylist(user.userId);
-        if (future != null) futures.add(future);
-      }
-      if (provider.supportGetUserFavoritePlaylist) {
-        final future = provider.getUserFavoritePlaylist(user.userId);
-        if (future != null) futures.add(future);
-      }
-      if (futures.isEmpty) {
-        throw StateError('该平台未实现歌单接口');
-      }
-
-      final results = await Future.wait(futures);
-      final playlists = <PlayList>[];
-      for (final list in results) {
-        playlists.addAll(list);
-      }
+      final playlists = await _fetchUserPlaylists(provider, type, user.userId);
 
       if (!mounted) return;
       setState(() {
@@ -276,7 +276,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
         section.error = null;
       });
     } catch (e) {
-      logger.e('${provider.userPlaylistSectionTitle}加载失败', error: e);
+      logger.e('${_sectionTitleOf(provider, type)}加载失败', error: e);
       if (!mounted) return;
       setState(() {
         section.loading = false;
@@ -285,8 +285,23 @@ class _MyPlaylistState extends State<MyPlaylist> {
     }
   }
 
-  void _refreshProviderPlaylists(BaseProvider provider) {
-    _loadProviderPlaylists(provider, force: true);
+  void _refreshProviderPlaylists(
+    BaseProvider provider,
+    _UserPlaylistType type,
+  ) {
+    _loadProviderPlaylists(provider, type, force: true);
+  }
+
+  String _sectionTitleOf(BaseProvider provider, _UserPlaylistType type) {
+    return type == _UserPlaylistType.created
+        ? provider.userCreatedPlaylistSectionTitle
+        : provider.userFavoritePlaylistSectionTitle;
+  }
+
+  Widget _sectionLeadingOf(BaseProvider provider, _UserPlaylistType type) {
+    return type == _UserPlaylistType.created
+        ? provider.userCreatedPlaylistSectionLeading
+        : provider.userFavoritePlaylistSectionLeading;
   }
 
   Widget _buildSectionError(String error, VoidCallback onRetry) {
@@ -307,28 +322,29 @@ class _MyPlaylistState extends State<MyPlaylist> {
 
   Widget _buildProviderSection(
     BaseProvider provider,
+    _UserPlaylistType type,
     double availableWidth,
   ) {
-    final section = _sectionOf(provider);
+    final section = _sectionOf(provider, type);
     return _buildExpandableSection(
-      leading: provider.userPlaylistSectionLeading,
-      title: provider.userPlaylistSectionTitle,
+      leading: _sectionLeadingOf(provider, type),
+      title: _sectionTitleOf(provider, type),
       isExpanded: section.isExpanded,
       availableWidth: availableWidth,
       trailing: IconButton(
         icon: const Icon(Icons.refresh, size: 18),
         tooltip: '刷新',
-        onPressed: () => _refreshProviderPlaylists(provider),
+        onPressed: () => _refreshProviderPlaylists(provider, type),
       ),
       onExpandedChanged: (expanded) {
         setState(() {
           section.isExpanded = expanded;
         });
         if (expanded) {
-          _loadProviderPlaylists(provider);
+          _loadProviderPlaylists(provider, type);
         }
       },
-      body: _buildProviderSectionBody(section, availableWidth, provider),
+      body: _buildProviderSectionBody(section, availableWidth, provider, type),
     );
   }
 
@@ -336,6 +352,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
     _ProviderPlaylistSection section,
     double availableWidth,
     BaseProvider provider,
+    _UserPlaylistType type,
   ) {
     if (section.loading) {
       return Center(child: globalLoadingAnime);
@@ -343,7 +360,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
     if (section.error != null) {
       return _buildSectionError(
         section.error!,
-        () => _refreshProviderPlaylists(provider),
+        () => _refreshProviderPlaylists(provider, type),
       );
     }
     return Column(
@@ -483,13 +500,22 @@ class _MyPlaylistState extends State<MyPlaylist> {
                       ),
                     ),
                   ),
-                  ...providers
-                      .where(
-                        (p) =>
-                            p.supportGetUserCreatedPlaylist ||
-                            p.supportGetUserFavoritePlaylist,
-                      )
-                      .map((p) => _buildProviderSection(p, availableWidth)),
+                  ...providers.expand(
+                    (p) => [
+                      if (p.supportGetUserCreatedPlaylist)
+                        _buildProviderSection(
+                          p,
+                          _UserPlaylistType.created,
+                          availableWidth,
+                        ),
+                      if (p.supportGetUserFavoritePlaylist)
+                        _buildProviderSection(
+                          p,
+                          _UserPlaylistType.favorite,
+                          availableWidth,
+                        ),
+                    ],
+                  ),
                 ],
               ),
             );
@@ -507,3 +533,5 @@ class _ProviderPlaylistSection {
   String? error;
   List<PlayList> playlists = [];
 }
+
+enum _UserPlaylistType { created, favorite }

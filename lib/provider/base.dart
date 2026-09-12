@@ -36,12 +36,19 @@ abstract class BaseProvider extends GetxService {
   /// 是否支持在“我的歌单”页展示“我收藏的歌单”
   bool get supportGetUserFavoritePlaylist => false;
 
-  /// “我的歌单”页中该平台分组的标题
-  String get userPlaylistSectionTitle => '我的$shortDisplayName歌单';
+  /// “我的歌单”页中该平台“我创建的歌单”分组的标题
+  String get userCreatedPlaylistSectionTitle => '我创建的$shortDisplayName歌单';
 
-  /// “我的歌单”页中该平台分组标题左侧的图标
-  Widget get userPlaylistSectionLeading =>
+  /// “我的歌单”页中该平台“我创建的歌单”分组标题左侧的图标
+  Widget get userCreatedPlaylistSectionLeading =>
       const Icon(Icons.library_music, size: 18);
+
+  /// “我的歌单”页中该平台“我收藏的歌单”分组的标题
+  String get userFavoritePlaylistSectionTitle => '我收藏的$shortDisplayName歌单';
+
+  /// “我的歌单”页中该平台“我收藏的歌单”分组标题左侧的图标
+  Widget get userFavoritePlaylistSectionLeading =>
+      const Icon(Icons.star, size: 18);
 
   ///为了未来适配纯音源
   List<String> get supportProcessIds => [id];
