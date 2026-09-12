@@ -25,8 +25,6 @@ import 'package:convert/convert.dart';
 
 import 'base.dart';
 
-final netease = Netease();
-
 enum NePlaylistType {
   playlist('neplaylist'),
   album('nealbum'),

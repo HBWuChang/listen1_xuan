@@ -1,4 +1,4 @@
-import 'package:listen1_xuan/bl.dart';
+import 'package:listen1_xuan/models/AudioQualityOfBL.dart';
 
 class BootSuccessRes {
   final String url;

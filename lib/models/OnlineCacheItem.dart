@@ -1,5 +1,5 @@
-import 'package:listen1_xuan/bl.dart';
 import 'package:listen1_xuan/constants/const.dart';
+import 'package:listen1_xuan/models/AudioQualityOfBL.dart';
 
 class OnlineCacheItem {
   final String url;

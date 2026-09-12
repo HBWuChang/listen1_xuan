@@ -12,6 +12,7 @@ import 'package:listen1_xuan/models/SubtitleDetail.dart';
 import 'package:listen1_xuan/models/Subtitle.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/provider/base.dart';
+import 'package:listen1_xuan/provider/bilibili.dart';
 import 'package:listen1_xuan/provider/loweb.dart';
 import 'dart:io';
 import '../funcs.dart';
@@ -531,7 +532,7 @@ class XLyricController extends GetxController {
     List<DanmuElem> allDanmuElems = [];
     do {
       param['segment_index'] = segmentIndex;
-      final response = await Bilibili.wrap_wbi_request(
+      final response = await Bilibili.wrapWbiRequest(
         'https://api.bilibili.com/x/v2/dm/wbi/web/seg.so',
         segmentIndex != 1 ? param : {...param, 'ps': 0, 'pe': 120000},
         responseType: ResponseType.bytes,
@@ -544,7 +545,7 @@ class XLyricController extends GetxController {
         throw '请求弹幕第$segmentIndex段失败，状态码: ${response.statusCode}';
       }
       if (segmentIndex == 1) {
-        final response = await Bilibili.wrap_wbi_request(
+        final response = await Bilibili.wrapWbiRequest(
           'https://api.bilibili.com/x/v2/dm/wbi/web/seg.so',
           {...param, 'ps': 120000, 'pe': 360000},
           responseType: ResponseType.bytes,
@@ -574,7 +575,7 @@ class XLyricController extends GetxController {
       cid = trackId.split('-')[1];
     }
     // https://api.bilibili.com/x/player/wbi/v2?aid=116447602875105&cid=37719312328&isGaiaAvoided=false&web_location=1315873&dm_img_list=%5B%7B%22x%22:2985,%22y%22:1795,%22z%22:0,%22timestamp%22:2203,%22k%22:65,%22type%22:0%7D,%7B%22x%22:3169,%22y%22:1520,%22z%22:43,%22timestamp%22:2700,%22k%22:116,%22type%22:0%7D,%7B%22x%22:3358,%22y%22:1332,%22z%22:121,%22timestamp%22:2854,%22k%22:119,%22type%22:0%7D,%7B%22x%22:3950,%22y%22:871,%22z%22:77,%22timestamp%22:3561,%22k%22:87,%22type%22:0%7D,%7B%22x%22:3932,%22y%22:788,%22z%22:47,%22timestamp%22:3686,%22k%22:74,%22type%22:0%7D,%7B%22x%22:5019,%22y%22:718,%22z%22:396,%22timestamp%22:4690,%22k%22:69,%22type%22:0%7D%5D&dm_img_str=V2ViR0wgMS4wIChPcGVuR0wgRVMgMi4wIENocm9taXVtKQ&dm_cover_img_str=QU5HTEUgKE5WSURJQSwgTlZJRElBIEdlRm9yY2UgUlRYIDMwNjAgTGFwdG9wIEdQVSAoMHgwMDAwMjUyMCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSlHb29nbGUgSW5jLiAoTlZJRElBKQ&dm_img_inter=%7B%22ds%22:%5B%7B%22t%22:2,%22c%22:%22YnB4LXBsYXllci1sb2FkaW5nLXBhbmVsIGJweC1zdGF0ZS1sb2FkaW%22,%22p%22:%5B698,60,661%5D,%22s%22:%5B160,4822,2296%5D%7D%5D,%22wh%22:%5B5685,6175,85%5D,%22of%22:%5B499,998,499%5D%7D&w_rid=f859d87abf1cd11f1f59c601386a24eb&wts=1777037254
-    final response = await Bilibili.wrap_wbi_request(
+    final response = await Bilibili.wrapWbiRequest(
       'https://api.bilibili.com/x/player/wbi/v2',
       {
         'bvid': trackId.split('_').last.split('-').first,

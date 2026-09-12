@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:listen1_xuan/bl.dart';
+import 'package:listen1_xuan/models/AudioQualityOfBL.dart';
 import 'package:listen1_xuan/constants/const.dart';
 import 'package:listen1_xuan/controllers/settings_controller.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';

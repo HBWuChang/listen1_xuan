@@ -20,15 +20,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../bl.dart';
 import '../constants/const.dart';
 import '../global_settings_animations.dart';
 import '../kugou.dart';
 import '../main.dart';
+import '../models/AudioQualityOfBL.dart';
 import '../models/Equalizer/EqSetting.dart';
 import '../models/Playlist.dart';
 import '../models/SongReplaceSettings.dart';
 import '../netease.dart';
+import '../provider/bilibili.dart';
 import '../qq.dart';
 import '../settings.dart';
 
@@ -1017,7 +1018,7 @@ class SettingsController extends GetxController {
     final tasks = Future.wait([
       Future.microtask(() async {
         loginDataLoading.add(PlantformCodes.bl);
-        loginData[PlantformCodes.bl] = await bilibili.check_bl_cookie();
+        loginData[PlantformCodes.bl] = await Get.find<Bilibili>().checkBlCookie();
         loginDataLoading.remove(PlantformCodes.bl);
       }),
       Future.microtask(() async {

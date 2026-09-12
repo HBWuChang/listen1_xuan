@@ -7,6 +7,7 @@ import 'package:listen1_xuan/models/Playlist.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
 import 'base.dart';
+import 'bilibili.dart';
 import 'netease.dart';
 import 'myplaylist.dart';
 
@@ -23,7 +24,11 @@ class Provider extends GetxService {
   void onInit() {
     super.onInit();
     // providers.addAll([Netease(), MyPlaylist()]);
-    providers.addAll([Get.put(Netease()), Get.put(MyPlaylist())]);
+    providers.addAll([
+      Get.put(Netease()),
+      Get.put(MyPlaylist()),
+      Get.put(Bilibili()),
+    ]);
   }
 
   int get indexOfFirstOnH {
