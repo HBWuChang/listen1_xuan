@@ -18,6 +18,12 @@ class _MyPlaylistState extends State<MyPlaylist> {
 
   bool _isCompactMode(double width) => width <= 220;
 
+  /// 宽度至少达到该值时，分组标题栏才有空间放下右侧的刷新按钮。
+  static const double _minWidthForSectionTrailing = 150;
+
+  bool _hasRoomForSectionTrailing(double width) =>
+      width >= _minWidthForSectionTrailing;
+
   double _coverSize(double width) {
     return 50;
   }
@@ -155,9 +161,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
     required double availableWidth,
     bool centerLeadingWhenIconOnly = false,
     Widget? trailing,
+    VoidCallback? onLongPress,
   }) {
     final iconOnly = _isIconOnlyMode(availableWidth);
     final compact = _isCompactMode(availableWidth);
+    // 页面过窄时隐藏刷新按钮，此时可长按整条标题栏刷新。
+    final showTrailing =
+        trailing != null && _hasRoomForSectionTrailing(availableWidth);
     final shouldCenterLeading = iconOnly && centerLeadingWhenIconOnly;
     final horizontalPadding = shouldCenterLeading
         ? 0.0
@@ -167,9 +177,11 @@ class _MyPlaylistState extends State<MyPlaylist> {
     const duration = Duration(milliseconds: 220);
 
     return Tooltip(
-      message: title,
+      // 窄屏时刷新按钮会被隐藏，这里顺便提示长按可刷新。
+      message: onLongPress == null ? title : '$title（长按刷新）',
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: AnimatedPadding(
           duration: duration,
           curve: Curves.easeInOut,
@@ -188,7 +200,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
               ),
               Positioned.fill(
                 left: leadingWidth + spacing,
-                right: trailing != null ? 40 : 0,
+                right: showTrailing ? 40 : 0,
                 child: IgnorePointer(
                   ignoring: iconOnly,
                   child: AnimatedOpacity(
@@ -209,7 +221,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                   ),
                 ),
               ),
-              if (trailing != null)
+              if (showTrailing)
                 Positioned(
                   right: 0,
                   top: 0,
@@ -336,6 +348,8 @@ class _MyPlaylistState extends State<MyPlaylist> {
         tooltip: '刷新',
         onPressed: () => _refreshProviderPlaylists(provider, type),
       ),
+      // 长按整条标题栏会展开并刷新（页面过窄时按钮会被隐藏）。
+      onLongPress: () => _refreshProviderPlaylists(provider, type),
       onExpandedChanged: (expanded) {
         setState(() {
           section.isExpanded = expanded;
@@ -375,6 +389,21 @@ class _MyPlaylistState extends State<MyPlaylist> {
           .toList(),
     );
   }
+
+  /// 长按标题栏：先展开（若未展开），再执行刷新。
+  void _handleSectionLongPress(
+    ExpandableController controller,
+    ValueChanged<bool> onExpandedChanged,
+    VoidCallback onRefresh,
+  ) {
+    if (!controller.expanded) {
+      controller.expanded = true;
+      // 这里只是展开，真正的加载交给紧随其后的强制刷新。
+      onExpandedChanged(true);
+    }
+    onRefresh();
+  }
+
   Widget _buildExpandableSection({
     required Widget leading,
     required String title,
@@ -383,8 +412,10 @@ class _MyPlaylistState extends State<MyPlaylist> {
     required Widget body,
     required ValueChanged<bool> onExpandedChanged,
     Widget? trailing,
+    VoidCallback? onLongPress,
   }) {
     final controller = ExpandableController(initialExpanded: isExpanded);
+    final onRefresh = onLongPress;
     return ExpandableNotifier(
       controller: controller,
       child: Builder(
@@ -403,6 +434,13 @@ class _MyPlaylistState extends State<MyPlaylist> {
               availableWidth: availableWidth,
               centerLeadingWhenIconOnly: true,
               trailing: trailing,
+              onLongPress: onRefresh == null
+                  ? null
+                  : () => _handleSectionLongPress(
+                      controller,
+                      onExpandedChanged,
+                      onRefresh,
+                    ),
               onTap: () {
                 final nextExpanded = !controller.expanded;
                 controller.expanded = nextExpanded;

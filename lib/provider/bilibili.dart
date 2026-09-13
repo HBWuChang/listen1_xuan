@@ -135,10 +135,70 @@ class Bilibili extends BaseProvider {
     final imgKey = key['img_key']!;
     final subKey = key['sub_key']!;
     const mixinKeyEncTab = [
-      46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5,
-      49, 33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24,
-      55, 40, 61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63,
-      57, 62, 11, 36, 20, 34, 44, 52,
+      46,
+      47,
+      18,
+      2,
+      53,
+      8,
+      23,
+      32,
+      15,
+      50,
+      10,
+      31,
+      58,
+      3,
+      45,
+      35,
+      27,
+      43,
+      5,
+      49,
+      33,
+      9,
+      42,
+      19,
+      29,
+      28,
+      14,
+      39,
+      12,
+      38,
+      41,
+      13,
+      37,
+      48,
+      7,
+      16,
+      24,
+      55,
+      40,
+      61,
+      26,
+      17,
+      0,
+      1,
+      60,
+      51,
+      30,
+      4,
+      22,
+      25,
+      54,
+      21,
+      56,
+      59,
+      6,
+      63,
+      57,
+      62,
+      11,
+      36,
+      20,
+      34,
+      44,
+      52,
     ];
 
     String getMixinKey(String original) {
@@ -462,7 +522,9 @@ class Bilibili extends BaseProvider {
 
   /// 视频所属合集
   Future<PlayList> _getUgcSeason(String listId, String selectMid) async {
-    final bvid = selectMid.substring(BLPlayListXuanType.ugcSeason.prefix.length);
+    final bvid = selectMid.substring(
+      BLPlayListXuanType.ugcSeason.prefix.length,
+    );
     final response = await dioWithCookieManager.get(
       'https://api.bilibili.com/x/web-interface/wbi/view/detail',
       queryParameters: {'bvid': bvid},
@@ -626,11 +688,6 @@ class Bilibili extends BaseProvider {
         },
       });
     }).toList();
-  }
-
-  @override
-  Future<PlayListFilters>? getPlaylistFilters() async {
-    return const PlayListFilters(recommended: [], filters: []);
   }
 
   // #endregion
@@ -806,7 +863,10 @@ class Bilibili extends BaseProvider {
       final data = response.data;
       if (data['code'] == 0) {
         success(
-          BootSuccessRes(url: data['data']['cdns'][0] as String, platform: name),
+          BootSuccessRes(
+            url: data['data']['cdns'][0] as String,
+            platform: name,
+          ),
           track,
         );
       } else {
@@ -882,8 +942,7 @@ class Bilibili extends BaseProvider {
       imgUrl = 'https:$imgUrl';
     }
     return SearchPlayListItem(
-      id:
-          '${BLPlaylistType.playlistxuan.prefix}_${BLPlayListXuanType.ugcSeason.prefix}${songInfo['bvid']}',
+      id: '${BLPlaylistType.playlistxuan.prefix}_${BLPlayListXuanType.ugcSeason.prefix}${songInfo['bvid']}',
       title: _htmlDecode(songInfo['title']),
       source: name,
       sourceUrl: 'https://www.bilibili.com/video/${songInfo['bvid']}',

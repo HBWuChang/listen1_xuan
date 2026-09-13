@@ -28,9 +28,9 @@ class MyPlaylist extends BaseProvider {
   bool get isFirstOnV => true;
   @override
   bool get supportShowPlaylist => true;
-  
+
   final MyPlayListController _myPlayListController =
-      Get.find<MyPlayListController>();
+      Get.put<MyPlayListController>(MyPlayListController(), permanent: true);
   void arrayMove(List<dynamic> arr, int oldIndex, int newIndex) {
     if (newIndex >= arr.length) {
       int k = newIndex - arr.length + 1;

@@ -22,6 +22,7 @@ import 'package:listen1_xuan/settings.dart';
 import 'dart:typed_data';
 import 'package:pointycastle/export.dart';
 import 'package:convert/convert.dart';
+import 'package:listen1_xuan/utils/response_utils.dart';
 
 import 'base.dart';
 
@@ -55,15 +56,6 @@ Future<String> getCsrf() async {
   } catch (e) {
     return '';
   }
-}
-
-/// Dio 只有在响应头为 JSON 时才会自动解析 response.data，
-/// 而网易部分接口以 text/plain 返回，这里统一兼容两种形式。
-dynamic decodeResponseData(dynamic data) {
-  if (data is String) {
-    return data.isEmpty ? null : jsonDecode(data);
-  }
-  return data;
 }
 
 class Netease extends BaseProvider {

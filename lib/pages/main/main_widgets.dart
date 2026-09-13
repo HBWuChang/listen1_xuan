@@ -111,15 +111,33 @@ Widget get _leftBar => Scaffold(
 final heroineController = HeroineController();
 
 final innerKey = Get.nestedKey(1);
-Obx get filterButton => Obx(
-  () => switch (homeController.playlistFiltersLoadingStatus) {
-    PlaylistFiltersLoadingStatus.loading => globalLoadingAnime,
-    PlaylistFiltersLoadingStatus.loaded => Text(
-      homeController.currentProvider.nowSelectedPlaylistFilter.value.name,
+/// 歌单分类（筛选）按钮。
+///
+/// 注意：任何状态下都不要返回 [SizedBox.shrink] 之类没有内容的子组件。
+/// 该按钮的显隐完全交给外层动画（横屏用 [AnimatedOpacity]、竖屏用 [AnimatedSize]）控制，
+/// 而「隐藏」和 `empty` 状态是同一时刻发生的；一旦子组件在这里先变成零尺寸，
+/// 淡出动画就没有内容可淡，视觉上就成了「瞬间消失」。
+Widget get filterButton => Builder(
+  builder: (context) => TextButton(
+    onPressed: homeController.canFilterClick
+        ? () {
+            _showFilterSelection(context);
+          }
+        : null,
+    child: Obx(
+      () => switch (homeController.playlistFiltersLoadingStatus) {
+        PlaylistFiltersLoadingStatus.loading => globalLoadingAnime,
+        PlaylistFiltersLoadingStatus.failed => Icon(
+          Icons.error,
+          color: Colors.red,
+        ),
+        // loaded / empty / notLoaded 都显示当前分类名（默认「全部」）。
+        _ => Text(
+          homeController.currentProvider.nowSelectedPlaylistFilter.value.name,
+        ),
+      },
     ),
-    PlaylistFiltersLoadingStatus.failed => Icon(Icons.error, color: Colors.red),
-    _ => SizedBox.shrink(),
-  },
+  ),
 );
 Listener _mainContent() => Listener(
   onPointerDown: (event) {
@@ -236,15 +254,15 @@ Listener _mainContent() => Listener(
                                           child: AnimatedTabBarWidget(
                                             pageController: homeController
                                                 .pageControllerHorizon,
-                                            tabLabels: providers
-                                                .sublist(1)
-                                                .map(
-                                                  (platform) => TextSpan(
-                                                    text: platform
-                                                        .shortDisplayName,
-                                                  ),
-                                                )
-                                                .toList(),
+                                            tabLabels:
+                                                supportShowPlaylistProvidersH
+                                                    .map(
+                                                      (platform) => TextSpan(
+                                                        text: platform
+                                                            .shortDisplayName,
+                                                      ),
+                                                    )
+                                                    .toList(),
                                             containerHeight: 40,
                                             spacing: 0,
                                           ),
@@ -255,6 +273,8 @@ Listener _mainContent() => Listener(
                                         top: isWindows || isMacOS ? 5 : -5,
                                         right: 20,
                                         child: Obx(
+                                          // filterButton 隐藏时仍会保留内容，
+                                          // 这样淡出才有东西可以淡（见 filterButton 注释）。
                                           () => AnimatedOpacity(
                                             opacity: homeController.showFilter
                                                 ? 1.0
@@ -262,17 +282,7 @@ Listener _mainContent() => Listener(
                                             duration: const Duration(
                                               milliseconds: 300,
                                             ),
-                                            child: TextButton(
-                                              onPressed:
-                                                  homeController.canFilterClick
-                                                  ? () {
-                                                      _showFilterSelection(
-                                                        context_in_1,
-                                                      );
-                                                    }
-                                                  : null,
-                                              child: filterButton,
-                                            ),
+                                            child: filterButton,
                                           ),
                                         ),
                                       ),
@@ -285,21 +295,19 @@ Listener _mainContent() => Listener(
                                   physics: BouncingScrollPhysics(),
                                   controller: homeController
                                       .pageControllerHorizon, // 使用 PageController
-                                  itemCount:
-                                      supportShowPlaylistProviders.length -
-                                      1, // 页面数量
+                                  itemCount: supportShowPlaylistProvidersH
+                                      .length, // 页面数量
                                   preloadPagesCount:
-                                      supportShowPlaylistProviders.length - 1,
+                                      supportShowPlaylistProvidersH.length,
 
                                   itemBuilder: (context, index) {
-                                    index = index + 1;
                                     // 其他页面：动态生成
                                     return Obx(() {
                                       return PlaylistPage(
                                         source:
-                                            supportShowPlaylistProviders[index],
+                                            supportShowPlaylistProvidersH[index],
                                         key: ValueKey(
-                                          '${supportShowPlaylistProviders[index].name}${supportShowPlaylistProviders[index].nowSelectedPlaylistFilter.value.id}',
+                                          '${supportShowPlaylistProvidersH[index].name}${supportShowPlaylistProvidersH[index].nowSelectedPlaylistFilter.value.id}',
                                         ),
                                       );
                                     });
@@ -364,7 +372,7 @@ Listener _mainContent() => Listener(
                                       child: AnimatedTabBarWidget(
                                         pageController: homeController
                                             .pageControllerPortrait,
-                                        tabLabels: providers
+                                        tabLabels: supportShowPlaylistProviders
                                             .map(
                                               (provider) => TextSpan(
                                                 text: provider.shortDisplayName,
@@ -377,12 +385,17 @@ Listener _mainContent() => Listener(
                                     ),
                                     Obx(
                                       () => AnimatedSize(
+                                        // 不要加 key：状态一变 key 就变，
+                                        // State 会被重建，尺寸动画会退化成瞬间跳变。
                                         duration: const Duration(
                                           milliseconds: 300,
                                         ),
+                                        // 贴住右边缘，收起/展开时像是从右侧滑出。
+                                        alignment: Alignment.centerRight,
+                                        // 必须能在隐藏时真的收成 0 宽度，否则占位不会变化。
                                         child: homeController.showFilter
                                             ? filterButton
-                                            : SizedBox.shrink(),
+                                            : const SizedBox.shrink(),
                                       ),
                                     ),
                                   ],
@@ -401,21 +414,21 @@ Listener _mainContent() => Listener(
                                   physics: BouncingScrollPhysics(),
                                   controller: homeController
                                       .pageControllerPortrait, // 使用 PageController
-                                  itemCount: supportShowPlaylistProviders.length, // 页面数量
-                                  preloadPagesCount: supportShowPlaylistProviders.length,
+                                  itemCount: supportShowPlaylistProviders
+                                      .length, // 页面数量
+                                  preloadPagesCount:
+                                      supportShowPlaylistProviders.length,
 
                                   itemBuilder: (context, index) {
-                                    if (index == 0) {
-                                      // 第一个页面：我的歌单
+                                    final provider =
+                                        supportShowPlaylistProviders[index];
+                                    if (provider.isLocal) {
                                       return MyPlaylist();
                                     } else {
-                                      // 其他页面：动态生成
-                                      return Obx(() {
-                                        return PlaylistPage(
-                                          source: supportShowPlaylistProviders[index],
-                                          key: Key(supportShowPlaylistProviders[index].name),
-                                        );
-                                      });
+                                      return PlaylistPage(
+                                        source: provider,
+                                        key: Key(provider.name),
+                                      );
                                     }
                                   },
                                 ),

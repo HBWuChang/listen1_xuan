@@ -360,7 +360,9 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-late bool globalHorizon;
+RxBool _globalHorizon = false.obs;
+bool get globalHorizon => _globalHorizon.value;
+set globalHorizon(bool value) => _globalHorizon.value = value;
 
 HomeController get homeController => Get.find<HomeController>();
 

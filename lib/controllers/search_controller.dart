@@ -10,6 +10,7 @@ import 'package:listen1_xuan/pages/playlist_info/playlist_info_args.dart';
 import 'package:listen1_xuan/provider/base.dart';
 import 'package:listen1_xuan/provider/loweb.dart';
 import 'package:listen1_xuan/router/ro.dart';
+import 'package:listen1_xuan/settings.dart';
 
 import '../funcs.dart';
 import 'routeController.dart';
@@ -394,6 +395,7 @@ class XSearchController extends GetxController {
     } catch (e) {
       _rollbackSearch(previousQuery, previousSource, previousPage);
       songResult.value = SearchRes.error(e.toString());
+      logger.e('搜索失败', error: e);
       showErrorSnackbar('搜索失败', e.toString());
     } finally {
       loading.value = false;
@@ -593,8 +595,7 @@ class XSearchController extends GetxController {
           previousResult.result.isNotEmpty &&
           djs.isNotEmpty &&
           djCurrentPage.value >=
-              previousResult.total /
-                  (djs.length / (djCurrentPage.value - 1))) {
+              previousResult.total / (djs.length / (djCurrentPage.value - 1))) {
         djCurrentPage.value = previousPage;
         return;
       }

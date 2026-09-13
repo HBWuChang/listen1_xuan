@@ -330,7 +330,7 @@ Widget _buildThirdPartyLoginPanel(
                     if (data == '') {
                       return const Text('cookie未设置或失效');
                     } else {
-                      return Text(data?['data']?['nickname'] ?? '未知用户');
+                      return Text(data ?? 'Loading...');
                     }
                   }
                 }),

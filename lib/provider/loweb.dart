@@ -10,12 +10,18 @@ import 'base.dart';
 import 'bilibili.dart';
 import 'netease.dart';
 import 'myplaylist.dart';
+import 'qq.dart';
+import 'kugou.dart';
 
 Provider provider = Get.find<Provider>();
 List<BaseProvider> get providers => Get.find<Provider>().getAllProviders();
 List<BaseProvider> get supportShowPlaylistProviders => Get.find<Provider>()
     .getAllProviders()
     .where((p) => p.supportShowPlaylist)
+    .toList();
+List<BaseProvider> get supportShowPlaylistProvidersH => Get.find<Provider>()
+    .getAllProviders()
+    .where((p) => p.supportShowPlaylist && p.isLocal == false)
     .toList();
 
 class Provider extends GetxService {
@@ -24,15 +30,23 @@ class Provider extends GetxService {
   void onInit() {
     super.onInit();
     // providers.addAll([Netease(), MyPlaylist()]);
+    // 注意：必须显式写出类型参数。
+    // 若写成 `providers.addAll([Get.put(Netease()), ...])`，列表字面量的上下文类型是
+    // `List<BaseProvider>`，Dart 会把泛型实参推断为 `BaseProvider`（`Get.put<BaseProvider>`）。
+    // 而 GetX 的 `put<S>` 内部是 `_insert(...)` 后 `return find<S>()`：五个实例会共用同一个
+    // 注册键 `BaseProvider`，且已存在的单例不会被覆盖，于是 `find<BaseProvider>()` 每次都返回
+    // 第一个实例（Netease），列表变成 5 个 Netease，同时 `Get.find<Bilibili>()` 等全部失败。
     providers.addAll([
-      Get.put(Netease()),
-      Get.put(MyPlaylist()),
-      Get.put(Bilibili()),
+      Get.put<MyPlaylist>(MyPlaylist()),
+      Get.put<Bilibili>(Bilibili()),
+      Get.put<Netease>(Netease()),
+      Get.put<QQ>(QQ()),
+      Get.put<Kugou>(Kugou()),
     ]);
   }
 
   int get indexOfFirstOnH {
-    return supportShowPlaylistProviders.indexWhere((i) => i.isFirstOnH);
+    return supportShowPlaylistProvidersH.indexWhere((i) => i.isFirstOnH);
   }
 
   int get indexOfFirstOnV {
@@ -156,8 +170,9 @@ class Provider extends GetxService {
       );
     }
 
-    final repTrack = _playController.songReplaceSettings.value
-        .getReplacedTrack(track.id);
+    final repTrack = _playController.songReplaceSettings.value.getReplacedTrack(
+      track.id,
+    );
     if (repTrack != null) {
       sTrack = track;
       track = repTrack;
