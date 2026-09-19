@@ -313,13 +313,13 @@ class SettingsController extends GetxController {
   }
 
   static const String disableLyricDownloadKey = 'disableLyricDownload';
-  bool get disableLyricDownload => settings[disableLyricDownloadKey] ?? false;
+  bool get disableLyricDownload => settings[disableLyricDownloadKey] ?? true;
   set disableLyricDownload(bool value) {
     settings[disableLyricDownloadKey] = value;
   }
 
   static const String disableSongDownloadKey = 'disableSongDownload';
-  bool get disableSongDownload => settings[disableSongDownloadKey] ?? false;
+  bool get disableSongDownload => settings[disableSongDownloadKey] ?? true;
   set disableSongDownload(bool value) {
     settings[disableSongDownloadKey] = value;
   }
