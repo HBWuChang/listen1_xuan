@@ -82,7 +82,19 @@ class Github {
       MaterialPageRoute(
         builder: (context) => LoginWebview(
           controller: controller,
-          config_key: 'github',
+          onSave: (url) async {
+            if (url == null) {
+              showErrorSnackbar('获取cookie失败', null);
+              return;
+            }
+            final code = Uri.parse(url).queryParameters['code'];
+            if (code == null) {
+              showErrorSnackbar('获取code失败', '请确认已跳转到Github授权成功页面再点击按钮');
+              return;
+            }
+            await Github.handleCallback(code, context);
+            await Get.find<SettingsController>().refreshLoginData();
+          },
           open_url: url,
         ),
       ),

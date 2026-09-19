@@ -4,6 +4,7 @@ import 'package:listen1_xuan/controllers/BroadcastWsController.dart';
 import 'package:listen1_xuan/models/Track.dart';
 
 import '../controllers/play_controller.dart';
+import '../provider/loweb.dart' as music_providers;
 
 /// WebSocket 消息基类
 /// 用于服务器和客户端之间的通信
@@ -223,21 +224,23 @@ class PlayControlCommands {
   static const String previous = 'previous';
 }
 
-Map<String, String> getCookieCommandsMap = {
+Map<String, String> get getCookieCommandsMap => {
   '所有': PlantformCodes.all,
-  '哔哩哔哩': PlantformCodes.bl,
-  '网易云音乐': PlantformCodes.ne,
-  'QQ音乐': PlantformCodes.qq,
+  for (final provider in music_providers.provider.getLoginProviders())
+    provider.loginDisplayName: provider.credentialKey,
   'Github': PlantformCodes.github,
 };
 
 class PlantformCodes {
   static const String all = 'all';
-  static const String bl = 'bl';
-  static const String ne = 'ne';
-  static const String qq = 'qq';
   static const String github = 'github';
-  static const List<String> values = [bl, ne, qq, github];
+
+  /// all 是选择命令，不是可保存的凭据；GitHub 独立于音乐 provider。
+  static List<String> get values => [
+    for (final provider in music_providers.provider.getLoginProviders())
+      provider.credentialKey,
+    github,
+  ];
 }
 
 /// WebSocket 消息构建器

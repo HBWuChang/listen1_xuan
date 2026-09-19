@@ -60,7 +60,7 @@ class PlaylistController extends GetxController {
       playlists.value = result;
       currentOffset.value = 0;
       perPage.value = result.length;
-      hasMore.value = true;
+      hasMore.value = result.isNotEmpty;
       loading.value = false;
     } catch (e, stack) {
       logger.e('加载歌单数据失败', error: e, stackTrace: stack);
@@ -71,7 +71,7 @@ class PlaylistController extends GetxController {
   }
 
   Future<void> loadMoreData() async {
-    if (loadingMore.value || !hasMore.value) return;
+    if (loading.value || loadingMore.value || !hasMore.value) return;
 
     loadingMore.value = true;
     loadMoreFailed.value = false;
@@ -82,10 +82,13 @@ class PlaylistController extends GetxController {
       final result = await _requestPlaylist(nextOffset);
 
       logger.t('加载更多歌单数据成功: $result');
-      if (result.isEmpty) {
+      final knownIds = playlists.map((playlist) => playlist.info.id).toSet();
+      final newPlaylists = result.where((playlist) => knownIds.add(playlist.info.id)).toList();
+      // 部分接口越界时会重复返回已有页，没有新歌单也应结束加载。
+      if (newPlaylists.isEmpty) {
         hasMore.value = false;
       } else {
-        playlists.addAll(result);
+        playlists.addAll(newPlaylists);
         currentOffset.value = nextOffset;
       }
       loadingMore.value = false;

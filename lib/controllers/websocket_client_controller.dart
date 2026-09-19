@@ -909,8 +909,8 @@ class WebSocketClientController extends GetxController {
                   }
                 }
                 // 保存设置
-                Get.find<SettingsController>().saveSettings();
-                Get.find<SettingsController>().refreshLoginData();
+                await Get.find<SettingsController>().saveSettings();
+                await Get.find<SettingsController>().refreshLoginData();
 
                 showSuccessSnackbar('Cookie 设置成功', null);
               } else {

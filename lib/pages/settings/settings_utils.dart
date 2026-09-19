@@ -175,33 +175,6 @@ Future<void> importSettingsFromFile(
   }
 }
 
-String cookiePath(Directory dir) {
-  return p.join(dir.path, '.cookies');
-}
-
-Future<void> setSaveCookie({
-  required String url,
-  required List<Cookie> cookies,
-}) async {
-  //Save cookies
-  final tempDir = await getApplicationDocumentsDirectory();
-  final _cookiePath = cookiePath(tempDir);
-  await PersistCookieJar(
-    ignoreExpires: true,
-    storage: FileStorage(_cookiePath),
-  ).delete(Uri.parse(url));
-  await PersistCookieJar(
-    ignoreExpires: true,
-    storage: FileStorage(_cookiePath),
-  ).saveFromResponse(Uri.parse(url), cookies);
-}
-
-Map<String, List<String>> _cookieUrls = {
-  'bl': ['https://api.bilibili.com', 'https://www.bilibili.com'],
-  'ne': ['https://music.163.com', 'https://interface3.music.163.com'],
-  'qq': ['https://u.y.qq.com'],
-};
-
 void g_launchURL(Uri url) async {
   try {
     // if (await canLaunchUrl(url)) {
@@ -220,36 +193,22 @@ Map<String, dynamic> lengcyGetSettings() {
 
 Future<String?> outputPlatformToken(String platform) async {
   if (platform == PlantformCodes.github) {
-    final s = Get.find<SettingsController>();
-    return await s.getString('githubOauthAccessKey');
+    return Get.find<SettingsController>().getString('githubOauthAccessKey');
   }
-  return Get.find<SettingsController>().settings[platform];
+  return music_providers.provider.tryGetProviderByCredentialKey(platform)?.token;
 }
 
 Future<void> savePlatformToken(
   PlatformCredentials credentials, {
   bool saveRightNow = true,
 }) async {
-  try {
-    if (credentials.platform == PlantformCodes.github) {
-      final s = Get.find<SettingsController>();
-      await s.setString('githubOauthAccessKey', credentials.token);
-      return;
-    }
-    final settings = Get.find<SettingsController>().settings;
-    settings[credentials.platform] = credentials.token;
-    // debugPrint('Saved platform token for ${credentials.platform}: ${credentials.token}');
-    if (saveRightNow) Get.find<SettingsController>().saveSettings();
-
-    if (_cookieUrls.containsKey(credentials.platform)) {
-      for (var url in _cookieUrls[credentials.platform]!) {
-        await setSaveCookie(url: url, cookies: credentials.prcdCookies);
-      }
-    }
-    await Get.find<DioController>().reloadCookie();
-  } catch (e) {
-    showErrorSnackbar('保存Cookie时出错', '$e');
+  if (credentials.platform == PlantformCodes.github) {
+    await Get.find<SettingsController>().setString('githubOauthAccessKey', credentials.token);
+    return;
   }
+  final provider = music_providers.provider.tryGetProviderByCredentialKey(credentials.platform);
+  if (provider == null) throw ArgumentError('不支持的平台凭据: ${credentials.platform}');
+  await provider.saveToken(credentials.token, saveRightNow: saveRightNow);
 }
 
 Future<void> createAndRunBatFile(String tempPath, String executableDir) async {

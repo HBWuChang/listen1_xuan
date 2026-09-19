@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:hive/hive.dart';
-import 'package:listen1_xuan/provider/netease.dart';
 
 import 'package:path/path.dart' as p;
 import 'package:flutter/foundation.dart';
@@ -30,7 +29,9 @@ import '../models/Equalizer/EqSetting.dart';
 import '../models/Playlist.dart';
 import '../models/SongReplaceSettings.dart';
 import '../provider/bilibili.dart';
+import '../provider/netease.dart';
 import '../provider/qq.dart';
+import '../provider/loweb.dart' as music_providers;
 import '../settings.dart';
 
 class SettingsController extends GetxController {
@@ -1016,23 +1017,8 @@ class SettingsController extends GetxController {
     await dioInitFuture;
 
     final tasks = Future.wait([
-      Future.microtask(() async {
-        loginDataLoading.add(PlantformCodes.bl);
-        loginData[PlantformCodes.bl] = await Get.find<Bilibili>()
-            .checkBlCookie();
-        loginDataLoading.remove(PlantformCodes.bl);
-      }),
-      Future.microtask(() async {
-        loginDataLoading.add(PlantformCodes.ne);
-        loginData[PlantformCodes.ne] = await Get.find<Netease>().getUser();
-        loginDataLoading.remove(PlantformCodes.ne);
-      }),
-      Future.microtask(() async {
-        loginDataLoading.add(PlantformCodes.qq);
-        final qqUser = await Get.find<QQ>().getUser();
-        loginData[PlantformCodes.qq] = qqUser?.name ?? '';
-        loginDataLoading.remove(PlantformCodes.qq);
-      }),
+      for (final provider in music_providers.provider.getLoginProviders())
+        provider.getUser(),
       Future.microtask(() async {
         loginDataLoading.add(PlantformCodes.github);
         loginData[PlantformCodes.github] = await Github.updateStatus();

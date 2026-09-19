@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:listen1_xuan/constants/const.dart';
 import 'package:listen1_xuan/controllers/DioController.dart';
-import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/models/PlayListFilter.dart';
 import 'package:listen1_xuan/models/PlayListFilters.dart';
 import 'package:listen1_xuan/models/Playlist.dart';
@@ -56,6 +56,22 @@ class QQ extends BaseProvider {
   bool get supportLogin => true;
 
   @override
+  String get credentialKey => 'qq';
+  @override
+  String get loginDisplayName => 'QQ音乐';
+  @override
+  Widget get loginIcon => _qqSectionIcon;
+  @override
+  List<String> get cookieUrls => const [
+    'https://u.y.qq.com',
+    'https://c.y.qq.com',
+  ];
+
+  @override
+  Future<void> login(BuildContext context) =>
+      openWebLogin(context, url: 'https://y.qq.com/');
+
+  @override
   bool get supportLyric => true;
 
   @override
@@ -89,6 +105,25 @@ class QQ extends BaseProvider {
   static String get sourceName => PlatformSource.qq.name;
 
   Future<Response<dynamic>> dioGetWithCookieAndCsrf(String url) async {
+    final uri = Uri.parse(url);
+    // 兼容旧版本只向 u.y.qq.com 写入 Cookie 的登录信息。
+    // 直接补齐当前 Dio 使用的 CookieJar，避免重载拦截器或改变登录状态。
+    if (cookieUrls.contains(uri.origin) && token.isNotEmpty) {
+      final cookies = CookieUtils.parseCookieString(token)
+          .where((cookie) => cookie.value.isNotEmpty)
+          .toList();
+      for (final manager in dioWithCookieManager.interceptors.whereType<CookieManager>()) {
+        final savedCookies = await manager.cookieJar.loadForRequest(uri);
+        final savedNames = savedCookies
+            .where((cookie) => cookie.value.isNotEmpty)
+            .map((cookie) => cookie.name)
+            .toSet();
+        final missingCookies = cookies.where((cookie) => !savedNames.contains(cookie.name)).toList();
+        if (missingCookies.isNotEmpty) {
+          await manager.cookieJar.saveFromResponse(Uri.parse(uri.origin), missingCookies);
+        }
+      }
+    }
     return await dioWithCookieManager.get(
       url,
       options: Options(
@@ -110,40 +145,15 @@ class QQ extends BaseProvider {
   // #region 登录 / 用户
 
   @override
-  Future<ProviderUser?> getUser() async {
-    loginStatus.value = LoginStatus.processing;
-    try {
-      final settings = lengcyGetSettings();
-      final cookie = settings['qq'];
-      if (isEmpty(cookie)) {
-        loginStatus.value = LoginStatus.noLogin;
-        return null;
-      }
-      final cookies = CookieUtils.parseCookieString(cookie);
-      var uin = CookieUtils.getCookieValue(cookies, 'uin');
-      if (uin == null) {
-        final wxuin = CookieUtils.getCookieValue(cookies, 'wxuin');
-        if (wxuin != null) {
-          // 微信登录的 uin 会带一个 'o' 前缀，替换为 '1'
-          uin = '1${wxuin.substring('o'.length)}';
-        }
-      }
-      if (uin == null) {
-        loginStatus.value = LoginStatus.noLogin;
-        return null;
-      }
-      final user = await _fetchUser(uin);
-      if (user != null) {
-        loginStatus.value = LoginStatus.loggedIn;
-        return user;
-      }
-      loginStatus.value = LoginStatus.noLogin;
-      return null;
-    } catch (e) {
-      loginError.value = e.toString();
-      loginStatus.value = LoginStatus.failed;
-      return null;
+  Future<ProviderUser?> fetchUser() async {
+    final cookies = CookieUtils.parseCookieString(token);
+    var uin = CookieUtils.getCookieValue(cookies, 'uin');
+    if (uin == null) {
+      final wxuin = CookieUtils.getCookieValue(cookies, 'wxuin');
+      if (wxuin != null) uin = '1${wxuin.substring('o'.length)}';
     }
+    if (uin == null || uin.isEmpty) return null;
+    return _fetchUser(uin);
   }
 
   Future<ProviderUser?> _fetchUser(String uin) async {
@@ -176,11 +186,6 @@ class QQ extends BaseProvider {
       userId: uin,
       name: info['nick'] as String? ?? uin,
     );
-  }
-
-  @override
-  Future<void> logout() async {
-    loginStatus.value = LoginStatus.noLogin;
   }
 
   // #endregion
@@ -226,6 +231,10 @@ class QQ extends BaseProvider {
     final targetUrl =
         'https://c.y.qq.com/fav/fcgi-bin/fcg_get_profile_order_asset.fcg?ct=20&cid=205360956&userid=$userId&reqtype=3&sin=0&ein=$size';
     final response = await dioGetWithCookieAndCsrf(targetUrl);
+    final res = decodeResponseData(response.data);
+    if (res['code'] != 0) {
+      throw Exception('QQ音乐获取收藏歌单失败: ${res['msg']}');
+    }
     final cdList = decodeResponseData(response.data)['data']['cdlist'] as List;
 
     final playlists = <PlayList>[];
@@ -641,10 +650,7 @@ class QQ extends BaseProvider {
     Function(Track track, Object? error) failure,
   ) async {
     try {
-      final settings = lengcyGetSettings();
-      final qqCookie = settings['qq'] is String?
-          ? (settings['qq'] as String? ?? '')
-          : '';
+      final qqCookie = token;
       final songId = track.id.replaceFirst('${QQTrackType.track.prefix}_', '');
       const targetUrl = 'https://u.y.qq.com/cgi-bin/musicu.fcg';
       final guid = Random().nextDouble().toStringAsFixed(10).substring(2);

@@ -251,7 +251,7 @@ class WebSocketServerController extends GetxController {
           Set<String> toOpr = {};
           if (message.content == PlantformCodes.all) {
             toOpr.addAll(PlantformCodes.values);
-          } else {
+          } else if (PlantformCodes.values.contains(message.content)) {
             toOpr.add(message.content);
           }
           Map<String, String> cookiesMap = {};

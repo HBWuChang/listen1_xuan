@@ -242,148 +242,52 @@ Widget _buildSupabasePanel() {
   });
 }
 
-Widget _buildThirdPartyLoginPanel(
-  BuildContext context,
-  open_bl_login,
-  open_netease_login,
-  open_qq_login,
-) {
+Widget _buildThirdPartyLoginPanel(BuildContext context) {
   final settingsController = Get.find<SettingsController>();
   return Column(
     children: <Widget>[
-      IntrinsicHeight(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+      for (final provider in music_providers.provider.getLoginProviders())
+        Row(
           children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Iconify(
-                  Ri.bilibili_fill,
-                  color: AdaptiveTheme.of(Get.context!).theme.iconTheme.color,
-                ),
-
-                ExtendedImage.network(
-                  "https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/28469918905/0dfc/b6c0/d913/713572367ec9d917628e41266a39a67f.png",
-                  width: 18,
-                  height: 18,
-                  cache: true,
-                  loadStateChanged: loadStateChanged,
-                ),
-
-                ExtendedImage.network(
-                  "https://ts2.cn.mm.bing.net/th?id=ODLS.07d947f8-8fdd-4949-8b9a-be5283268438&w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
-                  cache: true,
-                  width: 18,
-                  height: 18,
-                  loadStateChanged: loadStateChanged,
-                ),
-
-                Iconify(
-                  Mdi.github,
-                  color: AdaptiveTheme.of(Get.context!).theme.iconTheme.color,
-                ),
-              ].map((e) => Center(child: e)).toList(),
-            ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Obx(() {
-                  bool isLoading = settingsController.loginDataLoading.contains(
-                    PlantformCodes.bl,
+            provider.loginIcon,
+            const SizedBox(width: 12),
+            Expanded(child: Obx(() {
+              switch (provider.loginStatus.value) {
+                case LoginStatus.processing:
+                  return Center(child: globalLoadingAnime);
+                case LoginStatus.loggedIn:
+                  return Text(provider.currentUser.value?.name ?? '未知用户');
+                case LoginStatus.failed:
+                  return Tooltip(
+                    message: provider.loginError.value,
+                    child: const Text('登录状态获取失败'),
                   );
-                  final data = settingsController.loginData[PlantformCodes.bl];
-                  if (isLoading) {
-                    return globalLoadingAnime;
-                  } else {
-                    if (data == '') {
-                      return const Text('cookie未设置或失效');
-                    } else {
-                      return Text(data ?? 'Loading...');
-                    }
-                  }
-                }),
-                Obx(() {
-                  bool isLoading = settingsController.loginDataLoading.contains(
-                    PlantformCodes.ne,
-                  );
-                  final data = settingsController.loginData[PlantformCodes.ne];
-                  if (isLoading) {
-                    return globalLoadingAnime;
-                  } else {
-                    if (data == '') {
-                      return const Text('cookie未设置或失效');
-                    } else {
-                      return Text(data?['result']?['nickname'] ?? '未知用户');
-                    }
-                  }
-                }),
-                Obx(() {
-                  bool isLoading = settingsController.loginDataLoading.contains(
-                    PlantformCodes.qq,
-                  );
-                  final data = settingsController.loginData[PlantformCodes.qq];
-                  if (isLoading) {
-                    return globalLoadingAnime;
-                  } else {
-                    if (data == '') {
-                      return const Text('cookie未设置或失效');
-                    } else {
-                      return Text(data ?? 'Loading...');
-                    }
-                  }
-                }),
-                Obx(() {
-                  bool isLoading = settingsController.loginDataLoading.contains(
-                    PlantformCodes.github,
-                  );
-                  final data =
-                      settingsController.loginData[PlantformCodes.github];
-                  if (isLoading) {
-                    return globalLoadingAnime;
-                  } else {
-                    if (data == '') {
-                      return const Text('cookie未设置或失效');
-                    } else {
-                      return Text(Github.getStatusText());
-                    }
-                  }
-                }),
-              ].map((e) => Center(child: e)).toList(),
-            ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children:
-                  [
-                        ElevatedButton(
-                          onPressed: () => open_bl_login(),
-                          child: const Text('设置bilibili cookie'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => open_netease_login(),
-                          child: const Text('登录网易云'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => open_qq_login(),
-                          child: const Text('登录QQ音乐'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Github.openAuthUrl(context),
-                          child: const Text('登录Github(建议使用魔法'),
-                        ),
-                      ]
-                      .map((e) => Center(child: e))
-                      .map(
-                        (e) => Padding(
-                          padding: EdgeInsets.symmetric(vertical: 4.0),
-                          child: e,
-                        ),
-                      )
-                      .toList(),
+                case LoginStatus.noLogin:
+                  return const Text('cookie未设置或失效');
+              }
+            })),
+            ElevatedButton(
+              onPressed: () => provider.login(context),
+              child: Text(provider.loginButtonText),
             ),
           ],
         ),
+      Row(
+        children: [
+          Iconify(Mdi.github, color: AdaptiveTheme.of(context).theme.iconTheme.color),
+          const SizedBox(width: 12),
+          Expanded(child: Obx(() {
+            if (settingsController.loginDataLoading.contains(PlantformCodes.github)) {
+              return Center(child: globalLoadingAnime);
+            }
+            settingsController.loginData[PlantformCodes.github];
+            return Text(Github.getStatusText());
+          })),
+          ElevatedButton(
+            onPressed: () => Github.openAuthUrl(context),
+            child: const Text('登录Github(建议使用魔法'),
+          ),
+        ],
       ),
       Wrap(
         spacing: 8.0,
@@ -1133,12 +1037,11 @@ class _SupabaseTokenManagementContent extends StatelessWidget {
   final cloudTokens = <String, String?>{}.obs;
   final isLoading = false.obs;
 
-  // 平台信息
-  final platforms = const [
-    {'code': 'bl', 'name': 'Bilibili'},
-    {'code': 'ne', 'name': '网易云音乐'},
-    {'code': 'qq', 'name': 'QQ音乐'},
-    {'code': 'github', 'name': 'GitHub'},
+  // 每次读取实际注册的登录平台，不保留独立的平台清单。
+  List<Map<String, String>> get platforms => [
+    for (final provider in music_providers.provider.getLoginProviders())
+      {'code': provider.credentialKey, 'name': provider.loginDisplayName},
+    {'code': PlantformCodes.github, 'name': 'GitHub'},
   ];
 
   _SupabaseTokenManagementContent() {
@@ -1195,7 +1098,6 @@ class _SupabaseTokenManagementContent extends StatelessWidget {
         platformCode,
         localToken,
       );
-      logger.d('上传 $platformName Token $localToken');
       if (success) {
         showSuccessSnackbar('上传成功', null);
         await _loadCloudTokens();

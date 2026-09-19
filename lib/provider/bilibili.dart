@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/global_settings_animations.dart';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -59,6 +60,18 @@ class Bilibili extends BaseProvider {
 
   @override
   bool get supportLogin => true;
+
+  @override
+  String get credentialKey => 'bl';
+  @override
+  String get loginDisplayName => '哔哩哔哩';
+  @override
+  Widget get loginIcon => _bilibiliSectionIcon;
+  @override
+  List<String> get cookieUrls => const [
+    'https://api.bilibili.com',
+    'https://www.bilibili.com',
+  ];
 
   @override
   bool get supportLyric => false;
@@ -256,59 +269,23 @@ class Bilibili extends BaseProvider {
 
   // #region 登录 / 用户
 
-  /// 检查 B 站 cookie 是否有效，有效时返回用户名，否则返回空字符串。
-  Future<String> checkBlCookie() async {
-    final settings = lengcyGetSettings();
-    final cookie = settings['bl'];
-    if (isEmpty(cookie)) {
-      return '';
-    }
-    try {
-      final response = await dioWithCookieManager.get(
-        'https://api.bilibili.com/x/web-interface/nav',
-        options: Options(
-          headers: {
-            'cookie': cookie,
-            'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0',
-            'Referer': 'https://www.bilibili.com/',
-            'Origin': 'https://www.bilibili.com',
-          },
-        ),
-      );
-      if (response.data['code'] == 0) {
-        return response.data['data']['uname'] as String;
-      }
-    } catch (e) {
-      logger.e('Bilibili cookie 无效', error: e);
-    }
-    return '';
+  @override
+  String get loginButtonText => '设置bilibili cookie';
+
+  @override
+  Future<void> login(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _BilibiliLoginForm(provider: this),
+    );
+    await getUser();
   }
 
   @override
-  Future<ProviderUser?> getUser() async {
-    loginStatus.value = LoginStatus.processing;
-    try {
-      final user = await _fetchUser();
-      if (user != null) {
-        loginStatus.value = LoginStatus.loggedIn;
-        return user;
-      }
-      loginStatus.value = LoginStatus.noLogin;
-      return null;
-    } catch (e) {
-      loginError.value = e.toString();
-      loginStatus.value = LoginStatus.failed;
-      return null;
-    }
-  }
-
-  Future<ProviderUser?> _fetchUser() async {
-    final settings = lengcyGetSettings();
-    final cookie = settings['bl'];
-    if (isEmpty(cookie)) {
-      return null;
-    }
+  Future<ProviderUser?> fetchUser() async {
+    final cookie = token;
     final response = await dioWithCookieManager.get(
       'https://api.bilibili.com/x/web-interface/nav',
       options: Options(
@@ -330,11 +307,6 @@ class Bilibili extends BaseProvider {
       );
     }
     return null;
-  }
-
-  @override
-  Future<void> logout() async {
-    loginStatus.value = LoginStatus.noLogin;
   }
 
   // #endregion
@@ -672,11 +644,26 @@ class Bilibili extends BaseProvider {
 
   @override
   Future<List<PlayList>>? showPlaylist({int? offset, dynamic filterId}) async {
-    final page = ((offset ?? 0) / 20).ceil() + 1;
+    final off = offset ?? 0;
+    final page = (off / 20).ceil() + 1;
     final response = await dioWithCookieManager.get(
       'https://www.bilibili.com/audio/music-service-c/web/menu/hit?ps=20&pn=$page',
     );
-    final data = response.data['data']['data'] as List;
+    final body = response.data;
+    if (body['code'] != 0) {
+      throw Exception(
+        '哔哩哔哩获取热门歌单失败: ${body['msg'] ?? body['message'] ?? body['code']}',
+      );
+    }
+    final pagination = body['data'];
+    final pageCount = pagination['pageCount'] as num?;
+    final totalSize = pagination['totalSize'] as num?;
+    // 此接口越界后仍可能返回第一页的数据，必须先判断分页边界。
+    if ((pageCount != null && page > pageCount) ||
+        (totalSize != null && off >= totalSize)) {
+      return [];
+    }
+    final data = pagination['data'] as List;
     return data.map((item) {
       return PlayList.fromJson({
         'info': {
@@ -875,10 +862,7 @@ class Bilibili extends BaseProvider {
           track,
         );
       } else {
-        failure(
-          track,
-          Exception('哔哩哔哩音频接口返回错误: ${track.id}, data: $data'),
-        );
+        failure(track, Exception('哔哩哔哩音频接口返回错误: ${track.id}, data: $data'));
       }
     } catch (e) {
       failure(track, e);
@@ -1027,4 +1011,90 @@ class Bilibili extends BaseProvider {
   }
 
   // #endregion
+}
+
+class _BilibiliLoginForm extends StatefulWidget {
+  final Bilibili provider;
+  const _BilibiliLoginForm({required this.provider});
+
+  @override
+  State<_BilibiliLoginForm> createState() => _BilibiliLoginFormState();
+}
+
+class _BilibiliLoginFormState extends State<_BilibiliLoginForm> {
+  late final TextEditingController _controller;
+  final _focusNode = FocusNode();
+  late final bool _hotKeysEnabled;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.provider.token);
+    _hotKeysEnabled = enable_inapp_hotkey;
+    _focusNode.addListener(_updateHotKeys);
+  }
+
+  void _updateHotKeys() {
+    setInAppHotKeyEnable(_focusNode.hasFocus ? false : _hotKeysEnabled);
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_updateHotKeys);
+    _focusNode.dispose();
+    _controller.dispose();
+    setInAppHotKeyEnable(_hotKeysEnabled);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton(
+              onPressed: () => g_launchURL(
+                Uri.parse('https://mashir0-bilibili-qr-login.hf.space/'),
+              ),
+              child: const Text('点击打开B站cookie获取页面'),
+            ),
+            TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              decoration: const InputDecoration(labelText: '请输入B站cookie'),
+              onChanged: (value) async {
+                try {
+                  await widget.provider.saveToken(value, refreshUser: false);
+                } catch (e) {
+                  showErrorSnackbar('保存Cookie时出错', '$e');
+                }
+              },
+              onSubmitted: (value) async {
+                if (_saving) return;
+                _saving = true;
+                try {
+                  await widget.provider.saveToken(value);
+                  showSuccessSnackbar('设置成功', null);
+                  if (context.mounted) Navigator.of(context).pop();
+                } catch (e) {
+                  showErrorSnackbar('保存Cookie时出错', '$e');
+                } finally {
+                  _saving = false;
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

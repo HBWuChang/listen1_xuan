@@ -14,11 +14,10 @@ import 'package:listen1_xuan/models/Track.dart';
 
 import 'package:dio/dio.dart';
 import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
-import 'package:listen1_xuan/models/websocket_message.dart';
+import 'package:listen1_xuan/utils/cookie_utils.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' show parse;
-import 'package:listen1_xuan/settings.dart';
 import 'dart:typed_data';
 import 'package:pointycastle/export.dart';
 import 'package:convert/convert.dart';
@@ -44,20 +43,6 @@ enum NeTrackType {
   const NeTrackType(this.prefix);
 }
 
-Future<String> getCsrf() async {
-  final tokens = lengcyGetSettings();
-  try {
-    String cookies = tokens['ne'];
-    return cookies
-        .split(';')
-        .firstWhere((element) => element.contains('__csrf'))
-        .split('=')
-        .last;
-  } catch (e) {
-    return '';
-  }
-}
-
 class Netease extends BaseProvider {
   @override
   String get id => "ne";
@@ -65,6 +50,23 @@ class Netease extends BaseProvider {
   bool get searchable => true;
   @override
   bool get supportLogin => true;
+
+  @override
+  String get credentialKey => 'ne';
+  @override
+  String get loginDisplayName => '网易云音乐';
+  @override
+  Widget get loginIcon => _neteaseSectionIcon;
+  @override
+  List<String> get cookieUrls => const ['https://music.163.com', 'https://interface3.music.163.com'];
+
+  @override
+  Future<void> login(BuildContext context) => openWebLogin(
+    context,
+    url: 'https://music.163.com/',
+    enableZoom: true,
+  );
+
   @override
   String get shortDisplayName => "网易";
   @override
@@ -101,10 +103,14 @@ class Netease extends BaseProvider {
     cache: true,
   );
 
+  Future<String> getCsrf() async {
+    final cookies = CookieUtils.parseCookieString(token);
+    return CookieUtils.getCookieValue(cookies, '__csrf') ?? '';
+  }
+
   Future<dynamic> dioGetWithCookieAndCsrf(String url) async {
-    final tokens = lengcyGetSettings();
     try {
-      final cookies = tokens['ne'];
+      final cookies = token;
       final csrf = cookies
           .split(';')
           .firstWhere((element) => element.contains('__csrf'))
@@ -125,9 +131,8 @@ class Netease extends BaseProvider {
     String url,
     dynamic data,
   ) async {
-    final tokens = lengcyGetSettings();
     try {
-      final cookies = tokens['ne'];
+      final cookies = token;
 
       final csrf = isEmpty(cookies)
           ? '1234567890123456'
@@ -1042,39 +1047,19 @@ class Netease extends BaseProvider {
   }
 
   @override
-  Future<ProviderUser?> getUser() async {
-    loginStatus.value = LoginStatus.processing;
-    try {
-      const url = 'https://music.163.com/weapi/w/nuser/account/get';
-
-      // final encryptReqData = weapi({});
-      final tokens = lengcyGetSettings();
-      final cookies = tokens[PlantformCodes.ne] ?? '';
-
-      final csrf = cookies
-          .split(';')
-          .firstWhere((String element) => element.contains('__csrf'))
-          .split('=')
-          .last;
-      dynamic encryptReqData = {'csrf_token': csrf};
-      encryptReqData = weapi(encryptReqData);
-      final response = await dioPostWithCookieAndCsrf(url, encryptReqData);
-      final data = decodeResponseData(response.data);
-      if (data['account'] != null) {
-        final res = ProviderUser(
-          platform: name,
-          userId: data['account']['id'],
-          name: data['account']['userName'],
-        );
-        loginStatus.value = LoginStatus.loggedIn;
-        return res;
-      }
-      loginStatus.value = LoginStatus.noLogin;
-      return null;
-    } catch (e) {
-      loginError.value = e.toString();
-      loginStatus.value = LoginStatus.failed;
-      return null;
-    }
+  Future<ProviderUser?> fetchUser() async {
+    const url = 'https://music.163.com/weapi/w/nuser/account/get';
+    final csrf = await getCsrf();
+    if (csrf.isEmpty) return null;
+    final request = weapi({'csrf_token': csrf});
+    final response = await dioPostWithCookieAndCsrf(url, request);
+    final data = decodeResponseData(response.data);
+    final account = data['account'];
+    if (account == null) return null;
+    return ProviderUser(
+      platform: name,
+      userId: '${account['id']}',
+      name: data['profile']?['nickname'] as String? ?? '${account['userName']}',
+    );
   }
 }

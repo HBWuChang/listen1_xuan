@@ -10,12 +10,33 @@ import 'package:native_dio_adapter/native_dio_adapter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../global_settings_animations.dart';
 import '../constants/network_defaults.dart';
-import '../settings.dart';
+import 'package:path/path.dart' as p;
 import 'settings_controller.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 
 Dio get dioWithCookieManager => Get.find<DioController>().dioWithCookieManager;
 Dio get dioWithProxyAdapter => Get.find<DioController>().dioWithProxyAdapter;
+
+String cookiePath(Directory dir) {
+  return p.join(dir.path, '.cookies');
+}
+
+Future<void> setSaveCookie({
+  required String url,
+  required List<Cookie> cookies,
+}) async {
+  //Save cookies
+  final tempDir = await getApplicationDocumentsDirectory();
+  final _cookiePath = cookiePath(tempDir);
+  await PersistCookieJar(
+    ignoreExpires: true,
+    storage: FileStorage(_cookiePath),
+  ).delete(Uri.parse(url));
+  await PersistCookieJar(
+    ignoreExpires: true,
+    storage: FileStorage(_cookiePath),
+  ).saveFromResponse(Uri.parse(url), cookies);
+}
 
 class MyHttpOverrides extends HttpOverrides {
   MyHttpOverrides({required this.trustBadCertificates, this.userAgent});

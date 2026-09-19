@@ -1,3 +1,4 @@
+import '../models/websocket_message.dart';
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
@@ -942,7 +943,7 @@ class SupabaseAuthController extends GetxController {
 
       final response = await _supabase
           .from('tokens')
-          .select('bl, ne, qq, github')
+          .select()
           .eq('user_id', currentUser.value!.id)
           .maybeSingle();
 
@@ -951,10 +952,8 @@ class SupabaseAuthController extends GetxController {
       }
 
       return {
-        'bl': response['bl'] as String?,
-        'ne': response['ne'] as String?,
-        'qq': response['qq'] as String?,
-        'github': response['github'] as String?,
+        for (final platform in PlantformCodes.values)
+          platform: response[platform] as String?,
       };
     } catch (e) {
       logger.e('获取云端 tokens 失败: $e');
@@ -975,9 +974,8 @@ class SupabaseAuthController extends GetxController {
 
       // 获取所有本地 token
       final tokens = <String, String?>{};
-      for (var platform in ['bl', 'ne', 'qq', 'github']) {
+      for (final platform in PlantformCodes.values) {
         final token = await settings.outputPlatformToken(platform);
-        logger.d('本地 token - $platform: $token');
         if (token != null && token.isNotEmpty) {
           tokens[platform] = token;
         }
@@ -1051,7 +1049,7 @@ class SupabaseAuthController extends GetxController {
       }
 
       // 最后统一保存设置
-      Get.find<SettingsController>().saveSettings();
+      await Get.find<SettingsController>().saveSettings();
 
       isLoading.value = false;
       return true;

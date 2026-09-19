@@ -13,7 +13,7 @@ import 'myplaylist.dart';
 import 'qq.dart';
 import 'kugou.dart';
 
-Provider provider = Get.find<Provider>();
+Provider get provider => Get.find<Provider>();
 List<BaseProvider> get providers => Get.find<Provider>().getAllProviders();
 List<BaseProvider> get supportShowPlaylistProviders => Get.find<Provider>()
     .getAllProviders()
@@ -102,6 +102,13 @@ class Provider extends GetxService {
     // 使用 Uri 来生成查询字符串
     // return Uri(queryParameters: options).query;
     return options.entries.map((e) => '${e.key}=${e.value}').join('&');
+  }
+
+  BaseProvider? tryGetProviderByCredentialKey(String key) {
+    for (final provider in getLoginProviders()) {
+      if (provider.credentialKey == key) return provider;
+    }
+    return null;
   }
 
   List<BaseProvider> getLoginProviders() {
