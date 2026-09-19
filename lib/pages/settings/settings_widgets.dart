@@ -284,7 +284,7 @@ Widget _buildThirdPartyLoginPanel(BuildContext context) {
             return Text(Github.getStatusText());
           })),
           ElevatedButton(
-            onPressed: () => Github.openAuthUrl(context),
+            onPressed: () => Github.openAuthUrl(),
             child: const Text('登录Github(建议使用魔法'),
           ),
         ],
