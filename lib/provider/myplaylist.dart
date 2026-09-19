@@ -332,8 +332,8 @@ class MyPlaylist extends BaseProvider {
   Future<void> bootStrapTrack(
     Track track,
     Function(BootSuccessRes res, Track track) success,
-    Function(Track track) failure,
+    Function(Track track, Object? error) failure,
   ) async {
-    failure(track);
+    failure(track, UnsupportedError('不支持获取本地歌单歌曲的播放地址: ${track.id}'));
   }
 }

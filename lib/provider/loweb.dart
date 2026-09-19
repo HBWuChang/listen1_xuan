@@ -45,6 +45,9 @@ class Provider extends GetxService {
     ]);
   }
 
+  Bilibili get bilibili =>
+      providers.firstWhere((i) => i is Bilibili) as Bilibili;
+
   int get indexOfFirstOnH {
     return supportShowPlaylistProvidersH.indexWhere((i) => i.isFirstOnH);
   }
@@ -186,14 +189,23 @@ class Provider extends GetxService {
     }
     targetProvider ??= tryGetProviderByName(track.source ?? '');
     if (targetProvider == null) {
-      _playController.bootstrapTrackFail(track, start: start);
+      _playController.bootstrapTrackFail(
+        track,
+        start: start,
+        error: Exception(
+          'No provider found for track id: ${track.id}, source: ${track.source}',
+        ),
+      );
       return;
     }
     targetProvider.bootStrapTrack(
       track,
       successCallback,
-      (track) =>
-          _playController.bootstrapTrackFail(sTrack ?? track, start: start),
+      (track, error) => _playController.bootstrapTrackFail(
+        sTrack ?? track,
+        start: start,
+        error: error,
+      ),
     );
   }
 

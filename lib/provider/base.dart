@@ -59,8 +59,13 @@ abstract class BaseProvider extends GetxService {
   /// 该方法不应抛出异常，而是应返回一个包含错误信息的 SearchRes 或 SearchPlayListRes 对象
   Future<dynamic>? search(String keywords, int curpage, SearchType type) =>
       null;
-  Future<SearchRes>? searchSong(String keywords, int curpage) =>
-      search(keywords, curpage, SearchType.song) as Future<SearchRes>?;
+  Future<SearchRes>? searchSong(String keywords, int curpage) {
+    return search(
+      keywords,
+      curpage,
+      SearchType.song,
+    )?.then((res) => res as SearchRes);
+  }
 
   Future<SearchPlayListRes>? searchPlaylist(
     String keywords,
@@ -68,7 +73,11 @@ abstract class BaseProvider extends GetxService {
     SearchType type,
   ) {
     assert(type != SearchType.song, 'Invalid search type: $type');
-    return search(keywords, curpage, type) as Future<SearchPlayListRes>?;
+    return search(
+      keywords,
+      curpage,
+      type,
+    )?.then((res) => res as SearchPlayListRes);
   }
 
   Future<List<PlayList>>? getRecommendPlaylist() => null;
@@ -99,7 +108,7 @@ abstract class BaseProvider extends GetxService {
   Future<void> bootStrapTrack(
     Track track,
     Function(BootSuccessRes res, Track track) success,
-    Function(Track track) failure,
+    Function(Track track, Object? error) failure,
   );
 
   SettingsController get settingsController => Get.find<SettingsController>();

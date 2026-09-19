@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/lyric_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/models/OnlineCacheItem.dart';
+import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
+import 'package:listen1_xuan/provider/loweb.dart';
 import 'package:listen1_xuan/services/bilibili_mp3_transcoder.dart';
 import 'package:listen1_xuan/services/cache_audio_metadata.dart';
 import 'package:listen1_xuan/services/cache_file_naming.dart';
@@ -210,13 +212,13 @@ class CacheController extends GetxController {
   }
 
   Future<void> downloadAndCacheFile(
-    dynamic res,
+    BootSuccessRes res,
     Track track, {
     Track? sTrack,
   }) async {
     _onlineCacheList[track.id] = OnlineCacheItem(
-      url: res['url'],
-      audioQualityOfBL: res['audioQualityOfBL'],
+      url: res.url,
+      audioQualityOfBL: res.audioQualityOfBL,
     );
     if (_settingsController.disableSongDownload) return;
 
@@ -228,12 +230,12 @@ class CacheController extends GetxController {
 
     final downDir = await xuanGetdataDirectory();
     String downPath = downDir.path;
-    final isBilibili = res['platform'] == PlatformSource.bilibili.name;
+    final isBilibili = res.platform == provider.bilibili.name;
     final existingFileNames = await listExistingCacheFileNames(downDir)
       ..addAll(_activeDownloadFileNames);
     String fileName = getDownloadNamed(
       track,
-      res['url'],
+      res.url,
       extensionOverride: isFfmpegEnabled && isBilibili ? '.mp3' : null,
       existingFileNames: existingFileNames,
     );
@@ -274,11 +276,11 @@ class CacheController extends GetxController {
       }
     }
 
-    if (isFfmpegEnabled && isBilibili && !_isMp3Url(res['url'])) {
+    if (isFfmpegEnabled && isBilibili && !_isMp3Url(res.url)) {
       unawaited(
         runCacheOperation(
           () => _transcodeBilibiliToMp3(
-            sourceUrl: res['url'],
+            sourceUrl: res.url,
             filePath: filePath,
             track: track,
             onReceiveProgress: onReceiveProgress,
@@ -296,7 +298,7 @@ class CacheController extends GetxController {
         try {
           if (await partialFile.exists()) await partialFile.delete();
           await dioWithCookieManager.download(
-            res['url'],
+            res.url,
             partialFile.path,
             options: isBilibili ? Options(headers: kBilibiliPlayHeader) : null,
             onReceiveProgress: onReceiveProgress,

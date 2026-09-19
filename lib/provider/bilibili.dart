@@ -11,7 +11,6 @@ import 'package:listen1_xuan/controllers/DioController.dart';
 import 'package:listen1_xuan/controllers/search_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/models/AudioQualityOfBL.dart';
-import 'package:listen1_xuan/models/PlayListFilters.dart';
 import 'package:listen1_xuan/models/PlayListInfo.dart';
 import 'package:listen1_xuan/models/Playlist.dart';
 import 'package:listen1_xuan/models/ProviderUser.dart';
@@ -752,7 +751,7 @@ class Bilibili extends BaseProvider {
   Future<void> bootStrapTrack(
     Track track,
     Function(BootSuccessRes res, Track track) success,
-    Function(Track track) failure,
+    Function(Track track, Object? error) failure,
   ) async {
     final trackId = track.id;
     if (trackId.startsWith('bitrack_v_')) {
@@ -765,7 +764,7 @@ class Bilibili extends BaseProvider {
   Future<void> _bootstrapVideoTrack(
     Track track,
     Function(BootSuccessRes res, Track track) success,
-    Function(Track track) failure,
+    Function(Track track, Object? error) failure,
   ) async {
     final trackId = track.id;
     var bvid = trackId.substring('bitrack_v_'.length);
@@ -833,7 +832,13 @@ class Bilibili extends BaseProvider {
             return;
           }
         }
-        failure(track);
+        failure(
+          track,
+          Exception(
+            '哔哩哔哩未找到可用音质: ${track.id}, '
+            'selectQuality: $selectQuality, audioTracks: ${audioTracks.keys.toList()}',
+          ),
+        );
       } catch (e) {
         final durl = response.data['data']['durl'];
         if (durl != null && (durl as List).isNotEmpty) {
@@ -842,18 +847,18 @@ class Bilibili extends BaseProvider {
             track,
           );
         } else {
-          failure(track);
+          failure(track, e);
         }
       }
     } catch (e) {
-      failure(track);
+      failure(track, e);
     }
   }
 
   Future<void> _bootstrapAudioTrack(
     Track track,
     Function(BootSuccessRes res, Track track) success,
-    Function(Track track) failure,
+    Function(Track track, Object? error) failure,
   ) async {
     final songId = track.id.substring('bitrack_'.length);
     try {
@@ -870,10 +875,13 @@ class Bilibili extends BaseProvider {
           track,
         );
       } else {
-        failure(track);
+        failure(
+          track,
+          Exception('哔哩哔哩音频接口返回错误: ${track.id}, data: $data'),
+        );
       }
     } catch (e) {
-      failure(track);
+      failure(track, e);
     }
   }
 

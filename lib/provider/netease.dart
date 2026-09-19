@@ -561,7 +561,7 @@ class Netease extends BaseProvider {
   Future<void> bootStrapTrack(
     Track track,
     Function(BootSuccessRes res, Track track) success,
-    Function(Track track) failure,
+    Function(Track track, Object? error) failure,
   ) async {
     try {
       const targetUrl =
@@ -585,10 +585,13 @@ class Netease extends BaseProvider {
         );
         success(bootRes, track);
       } else {
-        failure(track);
+        failure(
+          track,
+          Exception('网易云音乐未返回播放地址: ${track.id}, resData: $resData'),
+        );
       }
     } catch (e) {
-      failure(track);
+      failure(track, e);
     }
   }
 

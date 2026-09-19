@@ -14,6 +14,7 @@ import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/models/OnlineCacheItem.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
+import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
@@ -639,7 +640,7 @@ class PlayController extends GetxController
   }
 
   Future<void> bootstrapTrackSuccess(
-    dynamic res,
+    BootSuccessRes res,
     Track track, {
     bool start = true,
     Track? sTrack,
@@ -650,19 +651,25 @@ class PlayController extends GetxController
       }
       // 此时应正在缓存本地文件
       bootStraping.remove(sTrack?.id ?? track.id);
-      playsong(
-        sTrack ?? track,
-        start: start,
-        onBootstrapTrackSuccessCallback: true,
+      unawaited(
+        playsong(
+          sTrack ?? track,
+          start: start,
+          onBootstrapTrackSuccessCallback: true,
+        ),
       );
     } catch (e) {
-      debugPrint('Error downloading or playing audio: $e');
-      bootstrapTrackFail(sTrack ?? track);
+      logger.e('Error downloading or playing audio', error: e);
+      bootstrapTrackFail(sTrack ?? track, error: e);
     }
   }
 
-  Future<void> bootstrapTrackFail(Track track, {bool start = true}) async {
-    debugPrint('bootstrapTrackFail');
+  Future<void> bootstrapTrackFail(
+    Track track, {
+    bool start = true,
+    Object? error,
+  }) async {
+    logger.e('引导播放失败: ${track.title}', error: error);
     debugPrint(track.toJson().toString());
     // {id: netrack_2084034562, title: Anytime Anywhere, artist: milet, artist_id: neartist_31464106, album: Anytime Anywhere, album_id: nealbum_175250775, source: netease, source_url: https://music.163.com/#/song?id=2084034562, img_url: https://p1.music.126.net/11p2mKi5CMKJvAS43ulraQ==/109951168930518368.jpg, sourceName: 网易, $$hashKey: object:2884, disabled: false, index: 365, playNow: true, bitrate: 320kbps, platform: netease, platformText: 网易}\
     //去除引导状态

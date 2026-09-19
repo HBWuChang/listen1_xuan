@@ -638,11 +638,13 @@ class QQ extends BaseProvider {
   Future<void> bootStrapTrack(
     Track track,
     Function(BootSuccessRes res, Track track) success,
-    Function(Track track) failure,
+    Function(Track track, Object? error) failure,
   ) async {
     try {
       final settings = lengcyGetSettings();
-      final qqCookie = settings['qq'] ?? '';
+      final qqCookie = settings['qq'] is String?
+          ? (settings['qq'] as String? ?? '')
+          : '';
       final songId = track.id.replaceFirst('${QQTrackType.track.prefix}_', '');
       const targetUrl = 'https://u.y.qq.com/cgi-bin/musicu.fcg';
       final guid = Random().nextDouble().toStringAsFixed(10).substring(2);
@@ -690,7 +692,7 @@ class QQ extends BaseProvider {
       final data = decodeResponseData(response.data);
       final purl = data['req_1']['data']['midurlinfo'][0]['purl'] as String;
       if (purl == '') {
-        failure(track);
+        failure(track, Exception('QQ音乐未返回播放地址: ${track.id}, data: $data'));
         return;
       }
       final url = data['req_1']['data']['sip'][0] + purl;
@@ -705,7 +707,7 @@ class QQ extends BaseProvider {
         track,
       );
     } catch (e) {
-      failure(track);
+      failure(track, e);
     }
   }
 

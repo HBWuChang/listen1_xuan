@@ -278,7 +278,7 @@ class Kugou extends BaseProvider {
   Future<void> bootStrapTrack(
     Track track,
     Function(BootSuccessRes res, Track track) success,
-    Function(Track track) failure,
+    Function(Track track, Object? error) failure,
   ) async {
     final trackId = track.id.replaceFirst('${KgTrackType.track.prefix}_', '');
     try {
@@ -288,7 +288,10 @@ class Kugou extends BaseProvider {
       final info = decodeResponseData(response.data);
       final url = info['url'] as String?;
       if (url == null || url.isEmpty) {
-        failure(track);
+        failure(
+          track,
+          Exception('酷狗音乐未返回播放地址: ${track.id}, info: $info'),
+        );
         return;
       }
       success(
@@ -300,7 +303,7 @@ class Kugou extends BaseProvider {
         track,
       );
     } catch (e) {
-      failure(track);
+      failure(track, e);
     }
   }
 
