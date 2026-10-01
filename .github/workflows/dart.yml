@@ -5,6 +5,7 @@ on:
     branches: [ "main" , "feat/dual-build-ffmpeg"]
     paths:
       - "**/*.dart"
+      - "**/AndroidManifest.xml"
       - "pubspec.yaml"
       - "**/dart.yml"
 
