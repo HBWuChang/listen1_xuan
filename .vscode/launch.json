@@ -10,6 +10,12 @@
             "type": "dart",
         },
         {
+            "name": "listen1_xuan profile",
+            "request": "launch",
+            "flutterMode": "profile",
+            "type": "dart",
+        },
+        {
             "name": "windows",
             "request": "launch",
             "type": "dart",

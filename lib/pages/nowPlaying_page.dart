@@ -10,7 +10,12 @@ import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import '../bodys.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/nowplaying_controller.dart';
+import 'package:listen1_xuan/global_settings_animations.dart' show isDesktop;
 import 'package:listen1_xuan/models/Track.dart';
+
+/// 播放列表行高（与 [ListTile.minTileHeight] 保持一致）。
+/// 固定行高可以让 super_sliver_list 精确估算 extent，并支持用初始滚动偏移直接定位。
+const double _kTrackRowHeight = 40;
 
 class NowPlayingPage extends StatefulWidget {
   @override
@@ -26,13 +31,28 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   void initState() {
     super.initState();
     controller = Get.find<NowPlayingPageController>();
-    scrollController = ScrollController();
+    // 首帧就按已知行高定位到当前播放项附近，避免先构建列表顶部的窗口、
+    // 再通过 jumpToItem 跳转导致同一帧内构建两批列表项。
+    scrollController = ScrollController(
+      initialScrollOffset: _initialScrollOffset(),
+    );
     scrollController.addListener(_onScroll);
     controller.scrollToCurrentTrack = scrollToCurrentTrack;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 确保页面加载后，滚动到当前播放位置
+      // 此时列表已经在目标位置附近，这里只是精确居中对齐（微调，不会批量新建子项）
       scrollToCurrentTrack(animated: false);
+      controller.showScrollButton.value = false; // 初始化时隐藏按钮
     });
+  }
+
+  /// 用固定行高估算当前播放项的位置，作为首帧的初始滚动偏移。
+  double _initialScrollOffset() {
+    final playingList = controller.filteredPlayingList;
+    final index = playingList.indexWhere(
+      (track) => track.id == controller.currentTrackId,
+    );
+    if (index <= 0) return 0;
+    return index * _kTrackRowHeight;
   }
 
   @override
@@ -304,6 +324,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     return Obx(() {
       final playingList = controller.filteredPlayingList; // 使用过滤后的列表
       final currentTrackId = controller.currentTrackId;
+      // 在这里统一订阅搜索状态，替代原先每个列表项内部的 Obx
+      final isSearching = controller.isSearching.value;
+      final query = controller.searchQuery.value;
 
       if (playingList.isEmpty) {
         return Center(
@@ -337,8 +360,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         );
       }
 
-      final canReorder =
-          useReorderableList.value && !controller.isSearching.value;
+      final canReorder = useReorderableList.value && !isSearching;
 
       if (canReorder) {
         return AnimatedReorderableListView(
@@ -358,14 +380,14 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           padding: EdgeInsets.symmetric(horizontal: 16),
           itemBuilder: (context, index) {
             final track = playingList[index];
-            final isCurrentTrack = track.id == currentTrackId;
-            return _buildTrackItem(
-              context,
-              track,
-              index,
-              isCurrentTrack,
-              controller,
+            return _TrackTile(
+              key: ValueKey(track.id),
+              track: track,
+              isCurrentTrack: track.id == currentTrackId,
               reorderEnabled: true,
+              isSearching: isSearching,
+              query: query,
+              controller: controller,
             );
           },
         );
@@ -376,130 +398,26 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         listController: _listController,
         itemCount: playingList.length,
         padding: EdgeInsets.symmetric(horizontal: 16),
+        // 行内容没有需要保活的状态，去掉每项的 AutomaticKeepAlive 包装
+        addAutomaticKeepAlives: false,
+        // 行高固定：让 jumpToItem / 初始偏移的估算精确
+        extentEstimation: (_, __) => _kTrackRowHeight,
+        // cache 区的子项延迟到后续帧填充，避免首帧一次性物化过多列表项
+        delayPopulatingCacheArea: true,
         itemBuilder: (context, index) {
           final track = playingList[index];
-          final isCurrentTrack = track.id == currentTrackId;
-          return _buildTrackItem(
-            context,
-            track,
-            index,
-            isCurrentTrack,
-            controller,
+          return _TrackTile(
+            key: ValueKey(track.id),
+            track: track,
+            isCurrentTrack: track.id == currentTrackId,
             reorderEnabled: false,
+            isSearching: isSearching,
+            query: query,
+            controller: controller,
           );
         },
       );
     });
-  }
-
-  Widget _buildTrackItem(
-    BuildContext context,
-    Track track,
-    int index,
-    bool isCurrentTrack,
-    NowPlayingPageController controller, {
-    required bool reorderEnabled,
-  }) {
-    final theme = Theme.of(context);
-    void playT() {
-      controller.playTrack(track);
-    }
-
-    return Container(
-      key: ValueKey(track.id), // 重排序需要的key
-      decoration: BoxDecoration(
-        color: isCurrentTrack
-            ? theme.colorScheme.primary.withOpacity(0.1)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 2,
-        ), // 减少垂直padding
-        visualDensity: VisualDensity.compact, // 使用紧凑密度保持跨平台一致性
-        dense: true, // 使用紧凑模式进一步减少高度
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 拖拽手柄 - 在搜索状态下隐藏
-            Obx(
-              () => controller.isSearching.value
-                  ? 20
-                        .sbw // 占位符保持布局一致
-                  : Icon(
-                      reorderEnabled ? Icons.drag_handle : Icons.more_horiz,
-                      color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                        0.5,
-                      ),
-                      size: 20,
-                    ),
-            ),
-            8.sbw,
-            // 当前播放指示器
-            if (isCurrentTrack) ...[
-              Icon(
-                Icons.graphic_eq,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
-              8.sbw,
-            ] else
-              28.sbw, // 占位符保持对齐
-          ],
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Obx(() {
-                final query = controller.searchQuery.value;
-                final title = track.title ?? '未知歌曲';
-                final artist = track.artist ?? '未知艺术家';
-                final displayText = '$title · $artist';
-
-                return _buildHighlightedText(
-                  displayText,
-                  query,
-                  theme.textTheme.bodyMedium?.copyWith(
-                    color: isCurrentTrack
-                        ? theme.colorScheme.primary
-                        : theme.textTheme.bodyLarge?.color,
-                    fontWeight: isCurrentTrack
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                  ),
-                  theme.colorScheme.secondary,
-                  voidCallback: playT,
-                );
-              }),
-            ),
-          ],
-        ),
-        subtitle: null, // 移除副标题
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min, // 确保按钮在行内对齐
-          children: [
-            IconButton(
-              onPressed: () {
-                song_dialog(Get.context!, track);
-              },
-              icon: Icon(Icons.list),
-            ),
-            IconButton(
-              onPressed: isCurrentTrack
-                  ? null
-                  : () {
-                      controller.removeTrackFromList(track);
-                    },
-              icon: Icon(Icons.delete),
-              color: theme.colorScheme.error.withOpacity(0.7),
-            ),
-          ],
-        ),
-        onTap: playT,
-      ),
-    );
   }
 
   void _showClearDialog(
@@ -545,84 +463,267 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           onPressed: scrollToCurrentTrack,
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
-          child: Icon(Icons.my_location, size: 20),
           tooltip: '定位到当前播放',
+          child: Icon(Icons.my_location, size: 20),
         ),
       );
     });
   }
+}
 
-  Widget _buildHighlightedText(
-    String text,
-    String query,
-    TextStyle? baseStyle,
-    Color highlightColor, {
-    VoidCallback? voidCallback,
-  }) {
-    if (query.isEmpty) {
-      return SelectableText(
-        text,
-        style: baseStyle,
-        maxLines: 1,
-        // 禁用默认的文本选择工具栏，避免与列表项交互冲突
-        showCursor: false,
-        toolbarOptions: ToolbarOptions(
-          copy: true,
-          selectAll: false,
-          cut: false,
-          paste: false,
-        ),
-        onTap: voidCallback,
-      );
-    }
+/// 单个播放列表项。
+///
+/// 相比原实现做了这些优化：
+/// - 用 [Text]/[Text.rich] 代替 [SelectableText]（不再为每行创建整套文本编辑栈），
+///   标题加 [Tooltip] 便于查看被省略的完整内容；
+/// - 用一个轻量的 [InkResponse] + [Icon] 代替两个 [IconButton]（桌面端还只在
+///   hover / 当前播放项上才构建，并用 Stack 悬浮在右侧、带渐变背景，不占用标题宽度）；
+/// - 当前项背景仍用 Container + BoxDecoration，保持原有的圆角高亮效果；
+/// - 搜索状态由列表外层统一传入，去掉每行两个 Obx；
+/// - 固定 [ListTile.minTileHeight]，让滚动定位可以按 `index * 行高` 计算。
+class _TrackTile extends StatefulWidget {
+  const _TrackTile({
+    super.key,
+    required this.track,
+    required this.isCurrentTrack,
+    required this.reorderEnabled,
+    required this.isSearching,
+    required this.query,
+    required this.controller,
+  });
 
-    final lowerText = text.toLowerCase();
-    final lowerQuery = query.toLowerCase();
-    final spans = <TextSpan>[];
+  final Track track;
+  final bool isCurrentTrack;
+  final bool reorderEnabled;
+  final bool isSearching;
+  final String query;
+  final NowPlayingPageController controller;
 
-    int start = 0;
-    int index = lowerText.indexOf(lowerQuery);
+  @override
+  State<_TrackTile> createState() => _TrackTileState();
+}
 
-    while (index != -1) {
-      // 添加高亮前的文本
-      if (index > start) {
-        spans.add(
-          TextSpan(text: text.substring(start, index), style: baseStyle),
-        );
-      }
+class _TrackTileState extends State<_TrackTile> {
+  bool _hovered = false;
 
-      // 添加高亮文本
-      spans.add(
-        TextSpan(
-          text: text.substring(index, index + query.length),
-          style: baseStyle?.copyWith(
-            backgroundColor: highlightColor.withOpacity(0.3),
-            fontWeight: FontWeight.bold,
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final track = widget.track;
+    final isCurrentTrack = widget.isCurrentTrack;
+    // 桌面端仅在 hover 或当前播放项上显示操作按钮
+    final showActions = !isDesktop || _hovered || isCurrentTrack;
+
+    final displayText = '${track.title ?? '未知歌曲'} · ${track.artist ?? '未知艺术家'}';
+
+    final tile = ListTile(
+      minTileHeight: _kTrackRowHeight,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      visualDensity: VisualDensity.compact, // 使用紧凑密度保持跨平台一致性
+      dense: true, // 使用紧凑模式进一步减少高度
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isCurrentTrack) ...[
+            Icon(Icons.graphic_eq, size: 20, color: theme.colorScheme.primary),
+            8.sbw,
+          ] else
+            28.sbw, // 占位符保持对齐
+        ],
+      ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Tooltip(
+              // 鼠标悬停（移动端长按）查看被省略的完整标题
+              message: displayText,
+              waitDuration: const Duration(milliseconds: 500),
+              child: _buildHighlightedText(
+                displayText,
+                widget.query,
+                theme.textTheme.bodyMedium?.copyWith(
+                  color: isCurrentTrack
+                      ? theme.colorScheme.primary
+                      : theme.textTheme.bodyLarge?.color,
+                  fontWeight: isCurrentTrack
+                      ? FontWeight.w600
+                      : FontWeight.normal,
+                ),
+                theme.colorScheme.secondary,
+              ),
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+      subtitle: null, // 移除副标题
+      // 桌面端操作按钮用 Stack 悬浮在右侧，不占用标题显示空间
+      trailing: isDesktop ? null : _buildActions(theme),
+      onTap: () => widget.controller.playTrack(track),
+    );
 
-      start = index + query.length;
-      index = lowerText.indexOf(lowerQuery, start);
+    // 保留原来的 Container 装饰（当前项圆角高亮），视觉效果与之前一致
+    final item = Container(
+      decoration: BoxDecoration(
+        color: isCurrentTrack
+            ? theme.colorScheme.primary.withOpacity(0.1)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: tile,
+    );
+
+    if (!isDesktop) {
+      return item;
     }
 
-    // 添加剩余文本
-    if (start < text.length) {
-      spans.add(TextSpan(text: text.substring(start), style: baseStyle));
-    }
-
-    return SelectableText.rich(
-      TextSpan(children: spans),
-      maxLines: 1,
-      // 禁用默认的文本选择工具栏，避免与列表项交互冲突
-      showCursor: false,
-      onTap: voidCallback,
-      toolbarOptions: ToolbarOptions(
-        copy: true,
-        selectAll: false,
-        cut: false,
-        paste: false,
+    return MouseRegion(
+      onEnter: (_) {
+        if (!_hovered) setState(() => _hovered = true);
+      },
+      onExit: (_) {
+        if (_hovered) setState(() => _hovered = false);
+      },
+      child: Stack(
+        children: [
+          item,
+          // hover / 当前播放项时才构建，并悬浮在行右侧
+          if (showActions)
+            Positioned(
+              top: 0,
+              right: 0,
+              bottom: 0,
+              child: DecoratedBox(
+                // 从透明渐变到页面底色，盖住标题尾部但保留整行宽度
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      theme.scaffoldBackgroundColor.withValues(alpha: 0),
+                      theme.scaffoldBackgroundColor.withValues(alpha: 0.75),
+                      theme.scaffoldBackgroundColor,
+                    ],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 28, right: 4),
+                  child: _buildActions(theme),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
+
+  Widget _buildActions(ThemeData theme) {
+    final track = widget.track;
+    return Row(
+      mainAxisSize: MainAxisSize.min, // 确保按钮在行内对齐
+      children: [
+        _TrackActionIcon(
+          icon: Icons.list,
+          onTap: () {
+            song_dialog(Get.context!, track);
+          },
+        ),
+        _TrackActionIcon(
+          icon: Icons.delete,
+          color: theme.colorScheme.error.withOpacity(0.7),
+          onTap: widget.isCurrentTrack
+              ? null
+              : () {
+                  widget.controller.removeTrackFromList(track);
+                },
+        ),
+      ],
+    );
+  }
+}
+
+/// 轻量的行内操作按钮：InkResponse + Icon，替换昂贵的 IconButton。
+class _TrackActionIcon extends StatelessWidget {
+  const _TrackActionIcon({required this.icon, this.onTap, this.color});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return MouseRegion(
+      cursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 20,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(
+            icon,
+            size: 20,
+            color: enabled
+                ? color
+                : Theme.of(context).disabledColor.withOpacity(0.6),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 高亮搜索关键字（用 [Text]/[Text.rich]，避免每行创建 SelectableText 的编辑栈）。
+Widget _buildHighlightedText(
+  String text,
+  String query,
+  TextStyle? baseStyle,
+  Color highlightColor,
+) {
+  if (query.isEmpty) {
+    return Text(
+      text,
+      style: baseStyle,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  final lowerText = text.toLowerCase();
+  final lowerQuery = query.toLowerCase();
+  final spans = <TextSpan>[];
+
+  int start = 0;
+  int index = lowerText.indexOf(lowerQuery);
+
+  while (index != -1) {
+    // 添加高亮前的文本
+    if (index > start) {
+      spans.add(TextSpan(text: text.substring(start, index), style: baseStyle));
+    }
+
+    // 添加高亮文本
+    spans.add(
+      TextSpan(
+        text: text.substring(index, index + query.length),
+        style: baseStyle?.copyWith(
+          backgroundColor: highlightColor.withOpacity(0.3),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+
+    start = index + query.length;
+    index = lowerText.indexOf(lowerQuery, start);
+  }
+
+  // 添加剩余文本
+  if (start < text.length) {
+    spans.add(TextSpan(text: text.substring(start), style: baseStyle));
+  }
+
+  return Text.rich(
+    TextSpan(children: spans),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+  );
 }
