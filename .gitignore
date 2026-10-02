@@ -62,3 +62,5 @@ windows/flutter/generated_plugins.cmake
 .env
 dsa_priv.pem
 .vscode/settings.json
+.pi
+.mcp.json
