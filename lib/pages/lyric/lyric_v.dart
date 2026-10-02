@@ -4,7 +4,7 @@ class LyricVPage extends StatefulWidget {
   const LyricVPage({super.key});
 
   @override
-  _LyricVPageState createState() => _LyricVPageState();
+  State<LyricVPage> createState() => _LyricVPageState();
 }
 
 class _LyricVPageState extends State<LyricVPage>
@@ -59,9 +59,8 @@ Widget traBtn(
                       fontWeight: FontWeight.w600,
                       color: settingsController.showLyricTranslation.value
                           ? Theme.of(context).colorScheme.primary
-                          : Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                          : Theme.of(context).textTheme.bodyMedium?.color
+                                ?.withValues(alpha: 0.6),
                     ),
                   ),
                 ),
@@ -118,8 +117,7 @@ Widget traBtn(
 class _ExpandableMoreMenu extends StatefulWidget {
   final XLyricController lyricController;
 
-  const _ExpandableMoreMenu({Key? key, required this.lyricController})
-    : super(key: key);
+  const _ExpandableMoreMenu({required this.lyricController});
 
   @override
   __ExpandableMoreMenuState createState() => __ExpandableMoreMenuState();
@@ -262,14 +260,17 @@ class __ExpandableMoreMenuState extends State<_ExpandableMoreMenu> {
 }
 
 class LyricVBackPage extends StatefulWidget {
+  const LyricVBackPage({super.key});
+
   @override
-  _LyricVBackPageState createState() => _LyricVBackPageState();
+  State<LyricVBackPage> createState() => _LyricVBackPageState();
 }
 
 class _LyricVBackPageState extends State<LyricVBackPage>
     with TickerProviderStateMixin, LyricBlurredBackgroundMixin {
   SettingsController settingsController = Get.find<SettingsController>();
 
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -282,8 +283,8 @@ class _LyricVBackPageState extends State<LyricVBackPage>
           // 前景内容
           Container(
             decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor.withOpacity(
-                isDark ? 0.15 : 0.25,
+              color: theme.scaffoldBackgroundColor.withValues(
+                alpha: isDark ? 0.15 : 0.25,
               ),
             ),
           ),
@@ -313,7 +314,7 @@ class _LyricVBackPageState extends State<LyricVBackPage>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Theme.of(context).primaryColor.withOpacity(0.3),
+                  Theme.of(context).primaryColor.withValues(alpha: 0.3),
                   Theme.of(context).scaffoldBackgroundColor,
                 ],
               ),
@@ -349,8 +350,9 @@ class SheetOffsetClip extends StatelessWidget {
   final Widget child;
   final bool type2;
 
-  SheetOffsetClip({required this.child, this.type2 = false});
-  double lyricBorderRadius = Get.find<SettingsController>().lyricBorderRadius;
+  SheetOffsetClip({super.key, required this.child, this.type2 = false});
+  final double lyricBorderRadius =
+      Get.find<SettingsController>().lyricBorderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -499,8 +501,7 @@ class MyClipper2 extends CustomClipper<Path> {
 class LyricDelayAdjuster extends StatelessWidget {
   final XLyricController lyricController;
 
-  const LyricDelayAdjuster({Key? key, required this.lyricController})
-    : super(key: key);
+  const LyricDelayAdjuster({super.key, required this.lyricController});
 
   @override
   Widget build(BuildContext context) {
@@ -527,8 +528,8 @@ class LyricDelayAdjuster extends StatelessWidget {
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w400,
                         fontSize: 12,
-                        color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                          0.6,
+                        color: theme.textTheme.bodyMedium?.color?.withValues(
+                          alpha: 0.6,
                         ),
                       ),
                     ),
@@ -571,12 +572,11 @@ class _DelaySliderItem extends StatefulWidget {
   final bool enabled;
 
   const _DelaySliderItem({
-    Key? key,
     required this.label,
     required this.delayValue,
     required this.theme,
     required this.enabled,
-  }) : super(key: key);
+  });
 
   @override
   State<_DelaySliderItem> createState() => _DelaySliderItemState();
@@ -651,7 +651,7 @@ class _DelaySliderItemState extends State<_DelaySliderItem> {
                     '-2.5s',
                     style: widget.theme.textTheme.bodySmall?.copyWith(
                       color: widget.theme.textTheme.bodySmall?.color
-                          ?.withOpacity(0.6),
+                          ?.withValues(alpha: 0.6),
                     ),
                   ),
                   // 滑块
@@ -667,15 +667,15 @@ class _DelaySliderItemState extends State<_DelaySliderItem> {
                         ),
                         activeTrackColor: widget.theme.colorScheme.primary,
                         inactiveTrackColor: widget.theme.colorScheme.primary
-                            .withOpacity(0.3),
+                            .withValues(alpha: 0.3),
                         thumbColor: widget.theme.colorScheme.primary,
                         overlayColor: widget.theme.colorScheme.primary
-                            .withOpacity(0.2),
+                            .withValues(alpha: 0.2),
                         disabledThumbColor: widget.theme.disabledColor,
                         disabledActiveTrackColor: widget.theme.disabledColor
-                            .withOpacity(0.3),
+                            .withValues(alpha: 0.3),
                         disabledInactiveTrackColor: widget.theme.disabledColor
-                            .withOpacity(0.1),
+                            .withValues(alpha: 0.1),
                       ),
                       child: Slider(
                         value: _tempOffset,
@@ -693,7 +693,7 @@ class _DelaySliderItemState extends State<_DelaySliderItem> {
                     '+2.5s',
                     style: widget.theme.textTheme.bodySmall?.copyWith(
                       color: widget.theme.textTheme.bodySmall?.color
-                          ?.withOpacity(0.6),
+                          ?.withValues(alpha: 0.6),
                     ),
                   ),
                 ],

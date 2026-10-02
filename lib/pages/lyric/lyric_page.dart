@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
@@ -5,7 +8,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/constants/const.dart';
 import 'package:listen1_xuan/controllers/sleep_timer_controller.dart';
-import 'dart:ui' as ui;
 import 'package:iconify_flutter_plus/iconify_flutter_plus.dart';
 import 'package:iconify_flutter_plus/icons/material_symbols.dart';
 
@@ -31,8 +33,10 @@ part 'lyric_v.dart';
 part 'lyric_shared.dart';
 
 class LyricPage extends StatefulWidget {
+  const LyricPage({super.key});
+
   @override
-  _LyricPageState createState() => _LyricPageState();
+  State<LyricPage> createState() => _LyricPageState();
 }
 
 class _LyricPageState extends State<LyricPage>
@@ -79,8 +83,8 @@ class _LyricPageState extends State<LyricPage>
 
     // 根据主题设置背景动画
     _backgroundAnimation = ColorTween(
-      begin: theme.scaffoldBackgroundColor.withOpacity(0.3),
-      end: theme.scaffoldBackgroundColor.withOpacity(isDark ? 0.8 : 0.9),
+      begin: theme.scaffoldBackgroundColor.withValues(alpha: 0.3),
+      end: theme.scaffoldBackgroundColor.withValues(alpha: isDark ? 0.8 : 0.9),
     ).animate(_backgroundController);
 
     return Scaffold(
@@ -97,8 +101,8 @@ class _LyricPageState extends State<LyricPage>
                 // 前景内容
                 Container(
                   decoration: BoxDecoration(
-                    color: theme.scaffoldBackgroundColor.withOpacity(
-                      isDark ? 0.15 : 0.25,
+                    color: theme.scaffoldBackgroundColor.withValues(
+                      alpha: isDark ? 0.15 : 0.25,
                     ),
                   ),
                   child: _buildLyricContent(context),
@@ -145,7 +149,7 @@ class _LyricPageState extends State<LyricPage>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Theme.of(context).primaryColor.withOpacity(0.3),
+                  Theme.of(context).primaryColor.withValues(alpha: 0.3),
                   Theme.of(context).scaffoldBackgroundColor,
                 ],
               ),
@@ -159,7 +163,7 @@ class _LyricPageState extends State<LyricPage>
           topLeft: Radius.circular(lyricBorderRadius),
           topRight: Radius.circular(lyricBorderRadius),
         ),
-        child: Container(
+        child: SizedBox(
           width: double.infinity,
           height: double.infinity,
           child: Obx(

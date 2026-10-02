@@ -11,13 +11,13 @@ class CustomSideSheetType extends WoltModalType {
     this.edge = CustomSideSheetEdge.right,
     this.horizontalMargin = 16,
     ShapeBorder? shapeBorder,
-    bool forceMaxHeight = true,
-    Duration transitionDuration = const Duration(milliseconds: 300),
-    Duration reverseTransitionDuration = const Duration(milliseconds: 250),
+    super.forceMaxHeight = true,
+    super.transitionDuration = const Duration(milliseconds: 300),
+    super.reverseTransitionDuration = const Duration(milliseconds: 250),
     WoltModalDismissDirection? dismissDirection,
-    double minFlingVelocity = 365.0,
-    double closeProgressThreshold = 0.5,
-    bool? barrierDismissible,
+    super.minFlingVelocity = 365.0,
+    super.closeProgressThreshold = 0.5,
+    super.barrierDismissible,
   }) : assert(width == null || width > 0),
        assert(horizontalMargin >= 0),
        super(
@@ -37,17 +37,11 @@ class CustomSideSheetType extends WoltModalType {
                      ),
                    )),
          showDragHandle: false,
-         forceMaxHeight: forceMaxHeight,
-         transitionDuration: transitionDuration,
-         reverseTransitionDuration: reverseTransitionDuration,
          dismissDirection:
              dismissDirection ??
              (edge == CustomSideSheetEdge.right
                  ? WoltModalDismissDirection.endToStart
                  : WoltModalDismissDirection.startToEnd),
-         minFlingVelocity: minFlingVelocity,
-         closeProgressThreshold: closeProgressThreshold,
-         barrierDismissible: barrierDismissible,
        );
 
   final double? width;

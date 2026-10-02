@@ -1,226 +1,318 @@
 part of 'lyric_page.dart';
 
-/// 歌词页面共享功能的 Mixin
-/// 提供模糊背景图片和失败时的渐变背景构建方法
-mixin LyricBlurredBackgroundMixin<T extends StatefulWidget> on State<T> {
-  // 缓存模糊后的图像，key 格式: "url_blurRadius"
-  final Map<String, ui.Image> _blurredImageCache = {};
-  // 正在处理中的任务，避免重复处理
-  final Set<String> _processingKeys = {};
+/// 模糊封面解码宽度限制。
+///
+/// 背景经过高斯模糊后不需要原图分辨率，限制解码尺寸可以显著降低
+/// 解码耗时、内存占用以及模糊计算量，减少打开页面时的卡顿。
+const int _kBlurredCoverDecodeWidth = 480;
 
-  /// 构建预模糊的图片，使用 RepaintBoundary 缓存渲染结果
-  Widget buildBlurredImage(String imageUrl, double blurRadius) {
-    // 如果模糊半径为0，直接显示原图，避免不必要的模糊计算
-    if (blurRadius == 0) {
-      return ExtendedImage.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        cache: true,
-        cacheMaxAge: const Duration(days: 365 * 4),
-        loadStateChanged: (state) {
-          if (state.extendedImageLoadState == LoadState.failed) {
-            return buildFallbackGradient();
-          } else if (state.extendedImageLoadState == LoadState.loading) {
-            return Center(child: globalLoadingAnime);
-          }
-          return null;
-        },
-      );
+/// 模糊封面全局缓存：按「图片地址 + 模糊半径」复用模糊结果。
+///
+/// 放在全局而不是 State 中，保证页面重建、来回切歌时依然命中，
+/// 避免重复解码与重复模糊；超出容量后按 LRU 淘汰并释放。
+class _LyricCoverCache {
+  _LyricCoverCache._();
+
+  static const int _maxEntries = 8;
+
+  static final Map<String, ui.Image> _images = <String, ui.Image>{};
+  static final Map<String, Future<ui.Image?>> _pending =
+      <String, Future<ui.Image?>>{};
+
+  static ui.Image? get(String key) {
+    final ui.Image? image = _images.remove(key);
+    if (image != null) {
+      _images[key] = image; // 命中后移到队尾（LRU）
     }
-
-    // 使用 RepaintBoundary 缓存渲染结果，在 beforePaintImage 中使用预模糊的图像
-    return RepaintBoundary(
-      child: ExtendedImage.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        cache: true,
-        cacheMaxAge: const Duration(days: 365 * 4),
-        clearMemoryCacheWhenDispose: false,
-        beforePaintImage: (canvas, rect, image, paint) {
-          if (!rect.isEmpty) {
-            final String cacheKey = '${imageUrl}_$blurRadius';
-
-            // 检查是否有缓存的模糊图像
-            if (!_blurredImageCache.containsKey(cacheKey)) {
-              // 第一次绘制：异步生成模糊图像
-              _generateBlurredImage(image, blurRadius, cacheKey);
-
-              // 计算适配图像分辨率的模糊半径
-              // 基准：假设 1000px 宽度时使用原始模糊半径
-              final double scaleFactor = image.width / 1000.0;
-              final double adaptiveBlurRadius = blurRadius * scaleFactor;
-
-              // 在等待预模糊图像时，使用临时 canvas 模糊方法
-              // 保存 canvas 状态
-              canvas.save();
-
-              // 应用高斯模糊滤镜到 canvas layer
-              canvas.saveLayer(
-                rect,
-                Paint()
-                  ..imageFilter = ui.ImageFilter.blur(
-                    sigmaX: adaptiveBlurRadius,
-                    sigmaY: adaptiveBlurRadius,
-                    tileMode: TileMode.clamp,
-                  ),
-              );
-
-              // 绘制图像
-              _drawImageWithAspectRatio(canvas, rect, image, Paint());
-
-              // 恢复 canvas 状态
-              canvas.restore();
-              canvas.restore();
-            } else {
-              // 使用缓存的模糊图像直接绘制（高性能）
-              final blurredImage = _blurredImageCache[cacheKey]!;
-              _drawImageWithAspectRatio(canvas, rect, blurredImage, paint);
-            }
-          }
-          return true; // 返回 true 表示已经手动绘制，跳过默认绘制
-        },
-        loadStateChanged: (state) {
-          if (state.extendedImageLoadState == LoadState.failed) {
-            return buildFallbackGradient();
-          } else if (state.extendedImageLoadState == LoadState.loading) {
-            return Center(child: globalLoadingAnime);
-          }
-          return null;
-        },
-      ),
-    );
+    return image;
   }
 
-  /// 异步生成模糊图像并缓存（混合方案：图像处理在主线程，使用异步避免阻塞）
-  Future<void> _generateBlurredImage(
-    ui.Image originalImage,
-    double blurRadius,
-    String cacheKey,
-  ) async {
-    // 如果已经在处理中，避免重复生成
-    if (_processingKeys.contains(cacheKey)) return;
-    _processingKeys.add(cacheKey);
-
-    try {
-      // 由于 UI 操作必须在主 isolate 中，我们使用异步延迟来避免阻塞 UI
-      // 将处理分批进行，给 UI 线程喘息的机会
-      await Future.delayed(Duration.zero);
-
-      // 计算适配图像分辨率的模糊半径
-      // 基准：假设 1000px 宽度时使用原始模糊半径
-      final double scaleFactor = originalImage.width / 1.sw;
-      final double adaptiveBlurRadius = blurRadius * scaleFactor;
-
-      // 创建一个 PictureRecorder 来录制绘制操作
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-
-      // 应用模糊滤镜并绘制图像
-      final paint = Paint()
-        ..imageFilter = ui.ImageFilter.blur(
-          sigmaX: adaptiveBlurRadius,
-          sigmaY: adaptiveBlurRadius,
-          tileMode: TileMode.clamp,
-        );
-
-      canvas.saveLayer(
-        Rect.fromLTWH(
-          0,
-          0,
-          originalImage.width.toDouble(),
-          originalImage.height.toDouble(),
-        ),
-        paint,
-      );
-
-      canvas.drawImage(originalImage, Offset.zero, Paint());
-      canvas.restore();
-
-      // 结束录制并生成图片
-      final picture = recorder.endRecording();
-      // 让出控制权，避免长时间占用
-      await Future.delayed(Duration.zero);
-
-      final blurredImage = await picture.toImage(
-        originalImage.width,
-        originalImage.height,
-      );
-
-      // 缓存模糊后的图像
-      _blurredImageCache[cacheKey] = blurredImage;
-
-      // 触发重绘以使用新的模糊图像
-      if (mounted) {
-        setState(() {});
-      }
-
-      // 释放资源
-      picture.dispose();
-    } catch (e) {
-      // 模糊生成失败，不影响正常显示
-      debugPrint('Failed to generate blurred image: $e');
-    } finally {
-      _processingKeys.remove(cacheKey);
-    }
-  }
-
-  /// 保持宽高比绘制图像
-  void _drawImageWithAspectRatio(
-    Canvas canvas,
-    Rect rect,
-    ui.Image image,
-    Paint paint,
+  /// 相同 key 只会执行一次 [loader]，并发请求共享同一个 Future。
+  static Future<ui.Image?> load(
+    String key,
+    Future<ui.Image> Function() loader,
   ) {
-    // 计算保持宽高比的源区域
-    final double imageAspectRatio = image.width / image.height;
-    final double rectAspectRatio = rect.width / rect.height;
-
-    Rect srcRect;
-    if (imageAspectRatio > rectAspectRatio) {
-      // 图像更宽，裁剪左右两侧
-      final double srcWidth = image.height * rectAspectRatio;
-      final double srcLeft = (image.width - srcWidth) / 2;
-      srcRect = Rect.fromLTWH(srcLeft, 0, srcWidth, image.height.toDouble());
-    } else {
-      // 图像更高，裁剪上下两侧
-      final double srcHeight = image.width / rectAspectRatio;
-      final double srcTop = (image.height - srcHeight) / 2;
-      srcRect = Rect.fromLTWH(0, srcTop, image.width.toDouble(), srcHeight);
+    final ui.Image? cached = get(key);
+    if (cached != null) {
+      return Future<ui.Image?>.value(cached);
     }
+    return _pending.putIfAbsent(key, () async {
+      try {
+        final ui.Image image = await loader();
+        _images.remove(key)?.dispose();
+        _images[key] = image;
+        while (_images.length > _maxEntries) {
+          _images.remove(_images.keys.first)?.dispose();
+        }
+        return image;
+      } catch (e) {
+        debugPrint('Failed to load lyric cover: $e');
+        return null;
+      } finally {
+        _pending.remove(key);
+      }
+    });
+  }
+}
 
-    // 直接绘制图像（无需模糊滤镜，因为图像本身已经是模糊的）
-    canvas.drawImageRect(
-      image,
-      srcRect,
-      rect,
-      Paint()..filterQuality = FilterQuality.medium,
+/// 歌词页模糊封面背景。
+///
+/// 关键优化：
+/// 1. 后台异步解码 + 预模糊，首帧不再同步执行高斯模糊，打开页面不卡顿；
+/// 2. 切歌时保留上一张封面，新封面就绪后交叉淡入，
+///    加载中 / 失败都不会闪回默认渐变背景；
+/// 3. 模糊结果进入全局缓存，重复打开、来回切歌直接复用。
+class _LyricBlurredCover extends StatefulWidget {
+  const _LyricBlurredCover({required this.imageUrl, required this.blurRadius});
+
+  final String imageUrl;
+  final double blurRadius;
+
+  @override
+  State<_LyricBlurredCover> createState() => _LyricBlurredCoverState();
+}
+
+class _LyricBlurredCoverState extends State<_LyricBlurredCover>
+    with SingleTickerProviderStateMixin {
+  static const Duration _fadeDuration = Duration(milliseconds: 420);
+
+  /// 必须在 initState 中创建：若在 dispose 时才首次访问，
+  /// `createTicker` 会去查找已失效 element 的祖先（TickerMode），
+  /// 抛出 "Looking up a deactivated widget's ancestor is unsafe"。
+  late final AnimationController _fadeController;
+
+  /// 当前完整显示的封面（切歌期间保留上一张，避免闪回默认背景）
+  ui.Image? _current;
+
+  /// 正在淡入的封面
+  ui.Image? _next;
+
+  String? _requestedUrl;
+  double? _requestedBlurRadius;
+  int _requestId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: _fadeDuration,
     );
+    _syncCover();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LyricBlurredCover oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageUrl != widget.imageUrl ||
+        oldWidget.blurRadius != widget.blurRadius) {
+      _syncCover();
+    }
   }
 
   @override
   void dispose() {
-    // 清理缓存的模糊图像
-    for (var image in _blurredImageCache.values) {
-      image.dispose();
-    }
-    _blurredImageCache.clear();
+    _fadeController.dispose();
+    _current?.dispose();
+    _next?.dispose();
     super.dispose();
   }
 
-  /// 构建失败时的渐变背景
-  Widget buildFallbackGradient() {
+  void _syncCover() {
+    final String url = widget.imageUrl;
+    // 地址为空（无封面 / 信息未就绪）时保留当前画面，不闪回默认背景
+    if (url.isEmpty) return;
+    if (url == _requestedUrl && widget.blurRadius == _requestedBlurRadius) {
+      return;
+    }
+    _requestedUrl = url;
+    _requestedBlurRadius = widget.blurRadius;
+    final int requestId = ++_requestId;
+
+    // 同步命中缓存（页面重建、来回切歌）时直接显示，
+    // 不经过异步流程，避免闪一帧兜底渐变
+    final ui.Image? cached = _LyricCoverCache.get(
+      _coverKey(url, widget.blurRadius),
+    );
+    if (cached != null && _current == null) {
+      _current = cached.clone();
+      return; // initState / didUpdateWidget 之后必然重新 build
+    }
+    unawaited(_loadAndShow(url, widget.blurRadius, requestId));
+  }
+
+  String _coverKey(String url, double blurRadius) =>
+      '$url|${blurRadius.toStringAsFixed(2)}';
+
+  Future<void> _loadAndShow(
+    String url,
+    double blurRadius,
+    int requestId,
+  ) async {
+    final ui.Image? image = await _LyricCoverCache.load(
+      _coverKey(url, blurRadius),
+      () => _decodeAndBlur(url, blurRadius),
+    );
+    if (!mounted || requestId != _requestId || image == null) return;
+
+    // 首次显示（没有旧图可对比）直接展示，避免闪一下兜底渐变
+    if (_current == null) {
+      setState(() {
+        _next?.dispose();
+        _next = null;
+        _current = image.clone();
+      });
+      return;
+    }
+
+    // 切换封面：旧图垫底，新图淡入，加载期间画面保持不变
+    setState(() {
+      _next?.dispose();
+      _next = image.clone();
+    });
+    try {
+      await _fadeController.forward(from: 0).orCancel;
+    } on TickerCanceled {
+      return; // 已被更新的封面请求取代
+    }
+    if (!mounted || requestId != _requestId) return;
+    setState(() {
+      _current?.dispose();
+      _current = _next;
+      _next = null;
+    });
+  }
+
+  Future<ui.Image> _decodeAndBlur(String url, double blurRadius) async {
+    final ExtendedNetworkImageProvider network = ExtendedNetworkImageProvider(
+      url,
+      cache: true,
+      cacheMaxAge: const Duration(days: 365 * 4),
+    );
+    // 模糊模式按低分辨率解码；清晰模式保持原分辨率
+    final ImageProvider<Object> provider = blurRadius > 0
+        ? ExtendedResizeImage(
+            network,
+            width: _kBlurredCoverDecodeWidth,
+            maxBytes: null,
+          )
+        : network;
+
+    final ui.Image decoded = await _resolveImage(provider);
+    if (blurRadius <= 0) return decoded;
+    try {
+      return await _blurImage(decoded, blurRadius);
+    } finally {
+      decoded.dispose(); // 模糊结果已生成，释放低分辨率原图
+    }
+  }
+
+  Future<ui.Image> _resolveImage(ImageProvider<Object> provider) {
+    final Completer<ui.Image> completer = Completer<ui.Image>();
+    final ImageStream stream = provider.resolve(ImageConfiguration.empty);
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (ImageInfo info, bool _) {
+        if (!completer.isCompleted) {
+          // clone：避免 ImageCache 淘汰原图后持有失效的图像
+          completer.complete(info.image.clone());
+        }
+        info.dispose(); // 监听器拥有这份副本，用完即释放
+        stream.removeListener(listener);
+      },
+      onError: (Object error, StackTrace? stackTrace) {
+        if (!completer.isCompleted) {
+          completer.completeError(error, stackTrace);
+        }
+        stream.removeListener(listener);
+      },
+    );
+    stream.addListener(listener);
+    return completer.future;
+  }
+
+  /// 在低分辨率图像上完成模糊，避免每次绘制都在大图上做高斯模糊。
+  Future<ui.Image> _blurImage(ui.Image source, double blurRadius) {
+    final int width = source.width;
+    final int height = source.height;
+    // 以「屏幕逻辑像素」为基准换算模糊半径，保证不同分辨率下观感一致
+    final double screenWidth = 1.sw;
+    final double scale = screenWidth > 0 ? width / screenWidth : 1;
+    final double sigma = blurRadius * scale;
+    final double adaptiveSigma = sigma < 0.5 ? 0.5 : sigma;
+    final Rect rect = Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble());
+
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+    canvas.saveLayer(
+      rect,
+      Paint()
+        ..imageFilter = ui.ImageFilter.blur(
+          sigmaX: adaptiveSigma,
+          sigmaY: adaptiveSigma,
+          tileMode: TileMode.clamp,
+        ),
+    );
+    canvas.drawImage(source, Offset.zero, Paint());
+    canvas.restore();
+
+    final ui.Picture picture = recorder.endRecording();
+    return picture.toImage(width, height).whenComplete(picture.dispose);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final FilterQuality quality = widget.blurRadius > 0
+        ? FilterQuality.low
+        : FilterQuality.medium;
+    return RepaintBoundary(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _buildFallbackGradient(context),
+          if (_current != null)
+            RawImage(
+              image: _current,
+              fit: BoxFit.cover,
+              filterQuality: quality,
+            ),
+          if (_next != null)
+            FadeTransition(
+              opacity: _fadeController,
+              child: RawImage(
+                image: _next,
+                fit: BoxFit.cover,
+                filterQuality: quality,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 无封面 / 加载失败时的兜底渐变
+  Widget _buildFallbackGradient(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Theme.of(context).primaryColor.withOpacity(0.3),
+            Theme.of(context).primaryColor.withValues(alpha: 0.3),
             Theme.of(context).scaffoldBackgroundColor,
           ],
         ),
       ),
     );
+  }
+}
+
+/// 歌词页面共享功能的 Mixin
+/// 提供带模糊与淡入过渡的封面背景
+mixin LyricBlurredBackgroundMixin<T extends StatefulWidget> on State<T> {
+  /// 构建模糊封面背景；切歌 / 换图时自动交叉淡入，加载中保留旧图。
+  Widget buildBlurredImage(String imageUrl, double blurRadius) {
+    return _LyricBlurredCover(imageUrl: imageUrl, blurRadius: blurRadius);
   }
 }
 
@@ -569,24 +661,30 @@ LyricStyle _createThemedLyricStyle(BuildContext context) {
       fontSize: lyricStyle.textStyleFontSizeValue,
       fontWeight: lyricStyle.textStyleFontWeightValue,
       color:
-          theme.textTheme.bodyLarge?.color?.withOpacity(isDark ? 0.8 : 0.7) ??
+          theme.textTheme.bodyLarge?.color?.withValues(
+            alpha: isDark ? 0.8 : 0.7,
+          ) ??
           (isDark ? Colors.white70 : Colors.black54),
     ),
     activeStyle: TextStyle(
       fontSize: lyricStyle.activeStyleFontSizeValue,
       color:
-          theme.textTheme.bodyLarge?.color?.withOpacity(isDark ? 0.8 : 0.7) ??
+          theme.textTheme.bodyLarge?.color?.withValues(
+            alpha: isDark ? 0.8 : 0.7,
+          ) ??
           (isDark ? Colors.white70 : Colors.black54),
       fontWeight: lyricStyle.activeTextWeightValue,
     ),
     translationStyle: TextStyle(
       fontSize: lyricStyle.translationTextSizeValue,
       color:
-          theme.textTheme.bodyMedium?.color?.withOpacity(isDark ? 0.6 : 0.5) ??
+          theme.textTheme.bodyMedium?.color?.withValues(
+            alpha: isDark ? 0.6 : 0.5,
+          ) ??
           (isDark ? Colors.white60 : Colors.black45),
       fontWeight: lyricStyle.translationTextWeightValue,
     ),
-    translationActiveColor: theme.colorScheme.primary.withOpacity(0.7),
+    translationActiveColor: theme.colorScheme.primary.withValues(alpha: 0.7),
     lineTextAlign: lyricStyle.lineTextAlignValue,
     lineGap: lyricStyle.lineGapValue,
     translationLineGap: lyricStyle.translationLineGapValue,
@@ -595,7 +693,7 @@ LyricStyle _createThemedLyricStyle(BuildContext context) {
     selectionAnchorPosition: 0.48,
     fadeRange: FadeRange(top: 80, bottom: 80),
     selectedColor: theme.colorScheme.primary,
-    selectedTranslationColor: theme.colorScheme.primary.withOpacity(0.7),
+    selectedTranslationColor: theme.colorScheme.primary.withValues(alpha: 0.7),
     scrollDuration: Duration(milliseconds: 240),
     scrollDurations: {
       500: Duration(milliseconds: 500),

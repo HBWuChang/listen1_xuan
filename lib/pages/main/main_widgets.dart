@@ -111,6 +111,7 @@ Widget get _leftBar => Scaffold(
 final heroineController = HeroineController();
 
 final innerKey = Get.nestedKey(1);
+
 /// 歌单分类（筛选）按钮。
 ///
 /// 注意：任何状态下都不要返回 [SizedBox.shrink] 之类没有内容的子组件。
@@ -139,26 +140,29 @@ Widget get filterButton => Builder(
     ),
   ),
 );
+void Function(PointerDownEvent)? onMainPointerDown(PointerDownEvent event) {
+  if (event.kind == PointerDeviceKind.mouse &&
+      event.buttons == kSecondaryMouseButton) {
+    routerPop();
+  }
+  if (event.kind == PointerDeviceKind.mouse &&
+      event.buttons == kMiddleMouseButton) {
+    switch (Get.find<SettingsController>().hideOrMinimize) {
+      case false:
+        windowManager.hide();
+        windowManager.setSkipTaskbar(true);
+        break;
+      case true:
+        windowManager.minimize();
+        windowManager.setSkipTaskbar(false);
+        break;
+    }
+  }
+  return null;
+}
+
 Listener _mainContent() => Listener(
-  onPointerDown: (event) {
-    if (event.kind == PointerDeviceKind.mouse &&
-        event.buttons == kSecondaryMouseButton) {
-      routerPop();
-    }
-    if (event.kind == PointerDeviceKind.mouse &&
-        event.buttons == kMiddleMouseButton) {
-      switch (Get.find<SettingsController>().hideOrMinimize) {
-        case false:
-          windowManager.hide();
-          windowManager.setSkipTaskbar(true);
-          break;
-        case true:
-          windowManager.minimize();
-          windowManager.setSkipTaskbar(false);
-          break;
-      }
-    }
-  },
+  onPointerDown: onMainPointerDown,
   child: Scaffold(
     body: Column(
       children: [

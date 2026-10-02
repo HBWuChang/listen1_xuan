@@ -30,14 +30,17 @@ Widget buildCoverImage(double size, {double? borderRadius}) {
 DragStartDetails? _dragStartDetails;
 Widget withDragDetector({required Widget child, required bool isCollapsed}) {
   return Builder(
-    builder: (context) => GestureDetector(
-      onTapDown: (TapDownDetails details) {
-        position = details.globalPosition;
-      },
-      onTap: () => _onTap(context),
-      onDoubleTap: _onDoubleTap,
-      onLongPress: isCollapsed ? _onLongPress : null,
-      child: child,
+    builder: (context) => Listener(
+      onPointerDown: onMainPointerDown,
+      child: GestureDetector(
+        onTapDown: (TapDownDetails details) {
+          position = details.globalPosition;
+        },
+        onTap: () => _onTap(context),
+        onDoubleTap: _onDoubleTap,
+        onLongPress: isCollapsed ? _onLongPress : null,
+        child: child,
+      ),
     ),
   );
 }
