@@ -24,8 +24,7 @@ dependencies:
   audioplayers: 6.5.1
   path_provider: 2.1.5
   path_provider_foundation: 2.4.4
-  audio_service:
-    path: packages/audio_service-0.18.18
+  audio_service: 0.18.19
   audio_session: ^0.2.2
   encrypt: ^5.0.0
   pointycastle: ^3.9.1
