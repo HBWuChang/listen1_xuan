@@ -3,7 +3,7 @@ description: "Rewrite From listen1"
 
 publish_to: "none"
 
-version: 2.7.0+50
+version: 2.7.1+51
 
 environment:
   sdk: ^3.8.1
@@ -81,11 +81,11 @@ dependencies:
   shelf_router: ^1.1.4
 
   # flutter_lyric: 3.0.2
-  flutter_lyric:
-    git:
-      url: https://github.com/HBWuChang/flutter_lyric.git
   # flutter_lyric:
-  #   path: packages/flutter_lyric-3.0.2
+  #   git:
+  #     url: https://github.com/HBWuChang/flutter_lyric.git
+  flutter_lyric:
+    path: E:/HB_WuChang/code/flutter/flutter_lyric
   # metadata_god: ^1.0.0
   extended_image: ^10.0.1
   mime: ^2.0.0

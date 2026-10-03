@@ -16,6 +16,12 @@
             "type": "dart",
         },
         {
+            "name": "listen1_xuan release",
+            "request": "launch",
+            "flutterMode": "release",
+            "type": "dart",
+        },
+        {
             "name": "windows",
             "request": "launch",
             "type": "dart",
