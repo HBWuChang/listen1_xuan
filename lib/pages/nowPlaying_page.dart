@@ -10,12 +10,40 @@ import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import '../bodys.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/nowplaying_controller.dart';
-import 'package:listen1_xuan/global_settings_animations.dart' show isDesktop;
+import 'package:listen1_xuan/global_settings_animations.dart'
+    show isDesktop, isMobile;
 import 'package:listen1_xuan/models/Track.dart';
 
 /// 播放列表行高（与 [ListTile.minTileHeight] 保持一致）。
 /// 固定行高可以让 super_sliver_list 精确估算 extent，并支持用初始滚动偏移直接定位。
 const double _kTrackRowHeight = 40;
+
+/// 移动端滚动条行为。
+///
+/// Flutter 默认只在桌面平台（linux/macOS/windows）的
+/// [MaterialScrollBehavior.buildScrollbar] 中自动添加 [Scrollbar]，
+/// 移动端不会展示滚动条。这里复用桌面端的同一套逻辑，让移动端的
+/// 垂直滚动列表也显示滚动条。
+class _AlwaysScrollbarBehavior extends MaterialScrollBehavior {
+  const _AlwaysScrollbarBehavior();
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    // 与桌面端 MaterialScrollBehavior 保持一致：
+    // 仅垂直方向添加滚动条，且必须提供 controller。
+    switch (axisDirectionToAxis(details.direction)) {
+      case Axis.horizontal:
+        return child;
+      case Axis.vertical:
+        assert(details.controller != null);
+        return Scrollbar(controller: details.controller, child: child);
+    }
+  }
+}
 
 class NowPlayingPage extends StatefulWidget {
   @override
@@ -321,7 +349,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     BuildContext context,
     NowPlayingPageController controller,
   ) {
-    return Obx(() {
+    final list = Obx(() {
       final playingList = controller.filteredPlayingList; // 使用过滤后的列表
       final currentTrackId = controller.currentTrackId;
       // 在这里统一订阅搜索状态，替代原先每个列表项内部的 Obx
@@ -418,6 +446,28 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         },
       );
     });
+
+    // 移动端默认不显示滚动条，这里复用桌面端的展示逻辑。
+    // 桌面端由 MaterialScrollBehavior 自动添加滚动条，因此无需额外包裹。
+    // 通过 ScrollbarTheme 统一加粗滚动条、两端圆角（胶囊形），
+    // 并开启 interactive 以支持拖动滑块控制列表。
+    final styledList = ScrollbarTheme(
+      data: ScrollbarTheme.of(context).copyWith(
+        thickness: const WidgetStatePropertyAll(16),
+        radius: const Radius.circular(8),
+        crossAxisMargin: 2,
+        interactive: true,
+      ),
+      child: list,
+    );
+
+    if (isMobile) {
+      return ScrollConfiguration(
+        behavior: const _AlwaysScrollbarBehavior(),
+        child: styledList,
+      );
+    }
+    return styledList;
   }
 
   void _showClearDialog(
