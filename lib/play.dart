@@ -705,6 +705,17 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   final Map<String, rxdart.BehaviorSubject<Map<String, dynamic>>>
   _childrenChangedSubjects = {};
 
+  /// 停止播放后多久释放媒体会话（控制中心卡片随之消失）
+  static const Duration sessionIdleReleaseDelay = Duration(minutes: 30);
+
+  /// 会话已进入空闲释放态（已发布过 idle，原生侧会 deactivate + stopSelf）
+  bool _sessionIdle = false;
+
+  /// 启动后是否已用真实曲目激活过会话，只做一次
+  bool _sessionActivatedOnce = false;
+
+  Timer? _idleReleaseTimer;
+
   /// Initialise our audio handler.
   static final _item = MediaItem(
     id: 'https://s.040905.xyz/d/v/temp/%E5%91%A8%E6%9D%B0%E4%BC%A6%20-%20%E6%9C%80%E4%BC%9F%E5%A4%A7%E7%9A%84%E4%BD%9C%E5%93%81%20%5Bmqms2%5D.mp3?sign=fNa5fJ-EtPzcIs_UlZYKYrjNgKhbYy7pKAgpcLEKC6M=:0',
@@ -752,6 +763,53 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // 当前播放列表变化时同步系统播放队列，车机才能显示出可切换的曲目列表
     _playController.currentPlayingRx.listen((_) => _publishQueue());
     _publishQueue();
+
+    // 暂停后开始计时，长时间不播放就把会话交还给系统
+    _playController.music_player.stream.playing.listen((playing) {
+      if (playing) {
+        _idleReleaseTimer?.cancel();
+        _sessionIdle = false;
+        return;
+      }
+      _scheduleIdleRelease();
+    });
+  }
+
+  /// 停止播放 [sessionIdleReleaseDelay] 后释放会话，避免长期占用控制中心槽位
+  void _scheduleIdleRelease() {
+    _idleReleaseTimer?.cancel();
+    _idleReleaseTimer = Timer(sessionIdleReleaseDelay, () {
+      if (_music_player.state.playing) return;
+      releaseSession();
+    });
+  }
+
+  /// 启动时用当前曲目把会话置为 active，并发布真实的暂停态元数据，
+  /// 使控制中心的媒体卡片立刻归属本应用（用户可再点一次直接播放），
+  /// 硬件媒体按键也从这时起才开始定向路由到本应用。
+  /// 没有历史曲目时什么都不做，避免出现占位卡片。
+  Future<void> activateSessionWithCurrentTrack() async {
+    if (_sessionActivatedOnce) return;
+    final track = _playController.nowPlayingTrackRx.value;
+    if (track == null) return;
+    _sessionActivatedOnce = true;
+    final current = mediaItem.hasValue ? mediaItem.value : null;
+    if (current?.id != track.id) {
+      change_playbackstate(_trackToMediaItem(track));
+    }
+    // 等 mediaItem 先送达原生侧，再发布状态触发会话激活
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    _sessionIdle = false;
+    playbackState.add(_transformEvent(_playController.isplaying.value));
+  }
+
+  /// 释放会话：发布 idle 状态，原生侧会 deactivateMediaSession + stopSelf，
+  /// 控制中心卡片消失；下次播放会自动重新激活。
+  void releaseSession() {
+    if (_sessionIdle) return;
+    if (_music_player.state.playing) return;
+    _sessionIdle = true;
+    playbackState.add(_transformEvent(false));
   }
   // void change_playbackstate(PlaybackState _playbackState) {
   void change_playbackstate(MediaItem _item) {
@@ -862,6 +920,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   }
 
   PlaybackState _transformEvent(bool playing) {
+    if (_music_player.state.playing) _sessionIdle = false;
     return PlaybackState(
       controls: _playController.sortedAndroidControls,
       systemActions: const {
@@ -871,9 +930,12 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       },
       androidCompactActionIndices:
           Get.find<SettingsController>().androidActionSort,
-      processingState: _music_player.state.completed
-          ? AudioProcessingState.completed
-          : AudioProcessingState.ready,
+      // 空闲释放后持续上报 idle，原生侧才不会因为普通状态更新又把会话激活
+      processingState: _sessionIdle
+          ? AudioProcessingState.idle
+          : (_music_player.state.completed
+                ? AudioProcessingState.completed
+                : AudioProcessingState.ready),
       updatePosition: _music_player.state.position,
       playing: _music_player.state.playing,
       bufferedPosition: _music_player.state.buffer,

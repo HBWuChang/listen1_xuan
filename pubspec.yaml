@@ -26,9 +26,12 @@ dependencies:
   path_provider_foundation: 2.4.4
   audio_service:
     # path: /Users/Apple/HB_WuChang/code/audio_service/audio_service
+    # ref 99f7fc0 = 上游 219f10e + 「发布非 idle 状态时保持媒体会话 active」
+    # （控制中心媒体卡片才会归属本应用，可再点一次直接播放）
+    # 补丁存档：docs/audio_service_activate_session.patch
     git:
       url: https://github.com/HBWuChang/audio_service
-      ref: 219f10e886d15411cd9b2be924c8e697806f294e
+      ref: 99f7fc02c32feee6ec939dc43dc10db804e570c3
       path: audio_service
       
   audio_session: ^0.2.2

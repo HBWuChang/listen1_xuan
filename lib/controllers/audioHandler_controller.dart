@@ -71,6 +71,12 @@ class AudioHandlerController extends GetxController {
         );
       }
     }
+    // Android 上把会话提前置为 active 并发布真实暂停态元数据，
+    // 控制中心的媒体卡片才会立刻归属本应用（可再点一次直接播放）
+    if (isAndroid) {
+      await (audioHandler as AudioPlayerHandler)
+          .activateSessionWithCurrentTrack();
+    }
     bind_smtc();
     loading.value = false;
     update();
