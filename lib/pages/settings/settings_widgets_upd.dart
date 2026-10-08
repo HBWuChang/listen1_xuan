@@ -18,6 +18,11 @@ Widget updSettingsTile(BuildContext context) {
           },
           child: Text('打开GitHub Release页面'),
         ),
+        if (!kDebugMode && (isAndroid || isWindows || isMacOS))
+          ElevatedButton(
+            onPressed: updController.switchFfmpegVariant,
+            child: Text(isFfmpegEnabled ? '切换到无 FFmpeg 版' : '切换到有 FFmpeg 版'),
+          ),
         if (isAndroid)
           ElevatedButton(
             onPressed: updController.delAndroidApkCache,

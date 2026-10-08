@@ -9,6 +9,7 @@ import 'package:install_plugin/install_plugin.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:listen1_xuan/widgets/motor_progress_indicator_xuan.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:system_info3/system_info3.dart';
@@ -80,13 +81,14 @@ class UpdController extends GetxController {
     return response.data["artifacts"];
   }
 
-  /// 文件名是否匹配当前构建的 FFmpeg 变体。
+  /// 文件名是否匹配 FFmpeg 变体。
   ///
   /// 命名约定：带 FFmpeg 的产物在 hash 前带 `-ffmpeg`（如
   /// `app-release-ffmpeg-<hash>.apk`），精简版不带（如
   /// `app-release-<hash>.apk`）。
-  bool _matchesFfmpegVariant(String name) {
-    return isFfmpegEnabled == name.contains('ffmpeg');
+  /// [enabled] 为 null 时使用当前构建的变体。
+  bool _matchesFfmpegVariant(String name, {bool? enabled}) {
+    return (enabled ?? isFfmpegEnabled) == name.contains('ffmpeg');
   }
 
   /// 查找匹配平台和 FFmpeg 变体的 artifact（精确匹配 name）。
@@ -1230,6 +1232,349 @@ class UpdController extends GetxController {
     }
 
     return null;
+  }
+
+  /// ===================== FFmpeg 变体切换 =====================
+
+  /// 目标（相反）FFmpeg 变体：当前带 FFmpeg 则切换到精简版，反之亦然。
+  bool get _targetFfmpegEnabled => !isFfmpegEnabled;
+
+  /// 当前平台是否支持 FFmpeg 变体切换（iOS 无自装能力）。
+  bool get canSwitchFfmpegVariant => isAndroid || isWindows || isMacOS;
+
+  String _variantDisplayName(bool ffmpegEnabled) =>
+      ffmpegEnabled ? '有 FFmpeg 版' : '无 FFmpeg 版';
+
+  /// 从资产名提取构建 hash（资产名以 `-<hash>` 结尾）。
+  String _assetHash(String name) =>
+      p.basenameWithoutExtension(name).split('-').last;
+
+  /// 按平台与目标变体筛选可安装的 Release 资产。
+  List<ReleaseAsset> _filterSwitchAssets(
+    List<ReleaseAsset> assets, {
+    required bool ffmpegEnabled,
+    String? hash,
+  }) {
+    var list = assets
+        .where(
+          (asset) => _matchesFfmpegVariant(asset.name, enabled: ffmpegEnabled),
+        )
+        .where((asset) => hash == null || _assetHash(asset.name) == hash)
+        .toList();
+
+    if (isWindows) {
+      list = list
+          .where(
+            (asset) =>
+                asset.name.toLowerCase().contains('windows') &&
+                asset.name.toLowerCase().endsWith('.zip'),
+          )
+          .toList();
+    } else if (isMacOS) {
+      list = list
+          .where(
+            (asset) =>
+                asset.name.toLowerCase().contains('macos') &&
+                asset.name.toLowerCase().endsWith('.zip'),
+          )
+          .toList();
+    } else if (isAndroid) {
+      list = list
+          .where((asset) => asset.name.toLowerCase().endsWith('.apk'))
+          .toList();
+      switch (SysInfo.kernelArchitecture.name) {
+        case "ARM64":
+          list = list.where((asset) => asset.name.contains('arm64')).toList();
+          break;
+        case "ARM":
+          list = list.where((asset) => asset.name.contains('armeabi')).toList();
+          break;
+        case "X86_64":
+          list = list.where((asset) => asset.name.contains('x86_64')).toList();
+          break;
+      }
+      // GitHub release 上传时会把文件名中的空格替换为 `.`，
+      // 因此这里用点号匹配 "without.embedded.Cronet"。
+      if (cronetHttpNoPlay) {
+        list.removeWhere(
+          (asset) => asset.name.contains("without.embedded.Cronet"),
+        );
+      } else {
+        list.removeWhere(
+          (asset) => !asset.name.contains("without.embedded.Cronet"),
+        );
+      }
+    } else {
+      return [];
+    }
+
+    list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return list;
+  }
+
+  /// 查找与当前构建 hash 完全相同、目标 FFmpeg 变体的资产。
+  ///
+  /// 仅当同一 Release 同时存在当前变体与目标变体时才算命中，
+  /// 避免把仅有单变体命名的旧 Release 误判为精简版。
+  ReleaseAsset? _findExactVariantAsset(List<GitHubRelease> releases) {
+    for (final release in releases) {
+      final current = _filterSwitchAssets(
+        release.assets,
+        ffmpegEnabled: isFfmpegEnabled,
+        hash: buildGitHash,
+      );
+      if (current.isEmpty) continue;
+      final target = _filterSwitchAssets(
+        release.assets,
+        ffmpegEnabled: _targetFfmpegEnabled,
+        hash: buildGitHash,
+      );
+      if (target.isNotEmpty) return target.first;
+    }
+    return null;
+  }
+
+  /// 从指定 Release 中挑选目标变体的可安装资产。
+  ReleaseAsset? _pickTargetVariantAsset(GitHubRelease release) {
+    final list = _filterSwitchAssets(
+      release.assets,
+      ffmpegEnabled: _targetFfmpegEnabled,
+    );
+    return list.isEmpty ? null : list.first;
+  }
+
+  /// 切换到相反的 FFmpeg 变体：优先同 hash 精确匹配，
+  /// 未命中时弹窗让用户选择从最新正式版或 PreRelease 下载。
+  Future<void> switchFfmpegVariant() async {
+    if (!canSwitchFfmpegVariant) {
+      showWarningSnackbar('当前平台不支持切换 FFmpeg 变体', null);
+      return;
+    }
+    if (isEmpty(buildGitHash)) {
+      showWarningSnackbar('开发构建不支持切换', '当前构建未包含 gitHash');
+      return;
+    }
+    try {
+      final releases = await Github.getReleasesList();
+      if (releases.isEmpty) {
+        showDebugSnackbar('未能获取 Releases 列表', null);
+        return;
+      }
+      final targetAsset = _findExactVariantAsset(releases);
+      if (targetAsset != null) {
+        await _confirmAndSwitchVariant(targetAsset);
+        return;
+      }
+      await _showVariantFallbackDialog(releases);
+    } catch (e) {
+      showErrorSnackbar('切换 FFmpeg 变体失败', e.toString());
+    }
+  }
+
+  /// 切换时的平台特定提示。
+  String? _switchPlatformTip() {
+    if (isWindows) {
+      return '更新时应用会被关闭，由脚本完成替换并重启。';
+    } else if (isMacOS) {
+      return '若脚本被拦截，请在 系统设置 → 隐私与安全性 中手动允许。';
+    } else if (isAndroid) {
+      return '安装时请允许来自本应用的未知来源安装。';
+    }
+    return null;
+  }
+
+  /// 拼装切换确认信息（目标变体、hash、大小及平台提示）。
+  String _switchVariantMessage(ReleaseAsset asset) {
+    final targetName = _variantDisplayName(_targetFfmpegEnabled);
+    final sizeMb = (asset.size / 1024 / 1024).toStringAsFixed(2);
+    final buffer = StringBuffer()
+      ..writeln('目标版本：$targetName')
+      ..writeln('Build hash：${_assetHash(asset.name)}')
+      ..writeln('文件大小：$sizeMb MB')
+      ..writeln()
+      ..writeln('切换后用户数据保留，安装将由系统确认。');
+    final tip = _switchPlatformTip();
+    if (tip != null) buffer.writeln(tip);
+    return buffer.toString().trimRight();
+  }
+
+  /// 确认后下载并安装目标变体。
+  Future<void> _confirmAndSwitchVariant(ReleaseAsset asset) async {
+    final targetName = _variantDisplayName(_targetFfmpegEnabled);
+    final confirmed = await showConfirmDialog(
+      _switchVariantMessage(asset),
+      '切换到$targetName',
+      confirmText: '下载并安装',
+      cancelText: '取消',
+    );
+    if (confirmed != true) return;
+    await _downloadVariantWithProgress(asset, targetName);
+  }
+
+  /// 展示可拖动下载进度 Toast 并执行下载安装。
+  Future<void> _downloadVariantWithProgress(
+    ReleaseAsset asset,
+    String targetName,
+  ) async {
+    final isUpdating = true.obs;
+    final progressText = '准备下载'.obs;
+
+    final toastController = draggableToastManager.show(
+      inLockMode: true,
+      icon: Icon(
+        Icons.system_update_alt_rounded,
+        color: Get.theme.colorScheme.onPrimary,
+      ),
+      config: DraggableToastConfig(
+        areaPadding: EdgeInsets.fromLTRB(16, 100, 16, 80),
+        snapThreshold: 60,
+        expandedWidth: 300,
+        collapsedSize: 46,
+        snapEdges: {ToastSnapEdge.left, ToastSnapEdge.right},
+      ),
+      onDismiss: () {},
+      builder: (context, state, controller) {
+        return Padding(
+          padding: EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Obx(() {
+                final text = progressText.value;
+                double progress = 0.0;
+                if (text.contains('%')) {
+                  progress =
+                      (double.tryParse(text.replaceAll('%', '')) ?? 0) / 100.0;
+                }
+                return MotorCircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: progress > 0 ? progress : null,
+                  color: Get.theme.colorScheme.primary,
+                );
+              }).sbs(16),
+              12.sbw,
+              Expanded(
+                child: Obx(
+                  () => Text(
+                    '切换到$targetName：${progressText.value}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Get.theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      await _downloadAndUpdateRelease(asset, isUpdating, progressText);
+    } finally {
+      toastController.exitLockedMode();
+      toastController.hide();
+    }
+  }
+
+  /// hash 未命中时的回退弹窗：从最新正式版或最新 PreRelease 下载目标变体。
+  Future<void> _showVariantFallbackDialog(List<GitHubRelease> releases) async {
+    final targetName = _variantDisplayName(_targetFfmpegEnabled);
+
+    GitHubRelease? stableRelease;
+    for (final release in releases) {
+      if (!release.prerelease) {
+        stableRelease = release;
+        break;
+      }
+    }
+    final stable = stableRelease;
+    final latestRelease = releases.first;
+
+    final currentBuildNumber =
+        int.tryParse((await PackageInfo.fromPlatform()).buildNumber) ?? 0;
+
+    ListTile buildOption({
+      required String title,
+      required GitHubRelease release,
+      required ReleaseAsset? asset,
+    }) {
+      final targetBuildNumber =
+          int.tryParse(release.tagName.split('+').last) ?? 0;
+      final isDowngrade =
+          currentBuildNumber > 0 &&
+          targetBuildNumber > 0 &&
+          targetBuildNumber < currentBuildNumber;
+      final enabled = asset != null && !isDowngrade;
+
+      String subtitle;
+      if (asset == null) {
+        subtitle = '该渠道未找到$targetName安装包';
+      } else {
+        final sizeMb = (asset.size / 1024 / 1024).toStringAsFixed(2);
+        subtitle =
+            '版本：${release.tagName}\n'
+            'Build hash：${_assetHash(asset.name)}\n'
+            '文件大小：$sizeMb MB';
+        if (isDowngrade) {
+          subtitle += '\n目标版本低于当前版本（$currentBuildNumber），已禁用';
+        }
+      }
+
+      return ListTile(
+        enabled: enabled,
+        contentPadding: EdgeInsets.zero,
+        title: Text(title),
+        subtitle: Text(subtitle),
+        onTap: enabled ? () => Get.back(result: asset) : null,
+      );
+    }
+
+    final selected = await Get.dialog<ReleaseAsset>(
+      AlertDialog(
+        title: const Text('未找到相同 Build hash 的另一变体'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '当前构建（hash：$buildGitHash）没有可直接切换的$targetName，'
+                '请选择从最新渠道下载：',
+              ),
+              const SizedBox(height: 8),
+              if (stable != null)
+                buildOption(
+                  title: '最新正式版',
+                  release: stable,
+                  asset: _pickTargetVariantAsset(stable),
+                ),
+              if (stable == null || latestRelease.id != stable.id)
+                buildOption(
+                  title: '最新 PreRelease',
+                  release: latestRelease,
+                  asset: _pickTargetVariantAsset(latestRelease),
+                ),
+              if (_switchPlatformTip() != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _switchPlatformTip()!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Get.theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('取消')),
+        ],
+      ),
+    );
+
+    if (selected == null) return;
+    await _downloadVariantWithProgress(selected, targetName);
   }
 
   /// 处理 Release 更新
