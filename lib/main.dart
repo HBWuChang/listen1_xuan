@@ -68,7 +68,17 @@ part 'main_testBtn.dart';
 part 'pages/main/main_widgets.dart';
 part 'pages/main/main_utils.dart';
 
-String supabaseUrl = 'https://jtvxrwybwvgpqobyhaoy.supabase.co';
+/// Supabase 项目默认地址（直连）
+const String supabaseDefaultUrl = 'https://jtvxrwybwvgpqobyhaoy.supabase.co';
+
+/// Supabase 备用地址：自建的 Cloudflare Worker 透明反代，用于绕过受限网络。
+/// 部署方式见 workers/supabase-proxy/README.md，部署后把这里改成实际域名。
+/// 注意必须是 **一级** 子域，Cloudflare 免费版证书不覆盖多层子域。
+/// 在「设置 - Supabase 账号 - 使用备用地址」开关切换，重启应用生效。
+const String supabaseBackupUrl = 'https://sb.040905.xyz';
+
+/// 实际使用的地址，在 main() 中按设置决定
+String supabaseUrl = supabaseDefaultUrl;
 
 String supabaseKey =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0dnhyd3lid3ZncHFvYnloYW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NjE5ODUsImV4cCI6MjA3NzUzNzk4NX0.lb4YhPlsyTinmoK85jv_15KCEv1QDr0JsUa1oI5P0Ko';
@@ -124,7 +134,7 @@ void enableThumbnailToolbar() async {
 }
 
 void main() async {
-  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+  // Supabase 的初始化被移到了读取设置之后，见下方 settingsController.init()
   await WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter框架已初始化
   MediaKit.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
@@ -146,6 +156,22 @@ void main() async {
     permanent: true,
   );
   await settingsController.init();
+  // 读取「使用备用地址」开关后，才能确定要连哪个 Supabase 地址
+  supabaseUrl = settingsController.supabaseUseBackupUrl
+      ? supabaseBackupUrl
+      : supabaseDefaultUrl;
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseKey,
+    // 固定会话存储键。默认实现是用 host 首段拼出来的
+    // （sb-<host 首段>-auth-token），切换地址会因此换键、丢掉登录态。
+    // 两个地址指向同一个 Supabase 项目，token 通用，所以固定成默认地址的键。
+    authOptions: FlutterAuthClientOptions(
+      localStorage: SharedPreferencesLocalStorage(
+        persistSessionKey: 'sb-jtvxrwybwvgpqobyhaoy-auth-token',
+      ),
+    ),
+  );
   Get.put(RouteController(), permanent: true);
   Get.put(SleepTimerController(), permanent: true);
   DioController dioController = Get.put(DioController(), permanent: true);

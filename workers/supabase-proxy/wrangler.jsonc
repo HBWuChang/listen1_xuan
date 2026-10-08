@@ -1,0 +1,48 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "supabase-proxy",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-01",
+
+  // Cloudflare 会在 fetch() 出去时按目标 URL 自动设置 Host，
+  // 无需也无法手工指定，因此这里只暴露上游地址给 Worker。
+  "vars": {
+    // 上游 Supabase 项目地址（结尾不要带 /）
+    "UPSTREAM": "https://jtvxrwybwvgpqobyhaoy.supabase.co",
+
+    // 可选：访问口令。非空时请求必须带 x-proxy-token 头，否则 401。
+    // 客户端通过 Supabase.initialize(headers: {'x-proxy-token': '...'}) 携带。
+    // 留空则完全开放（任何人都能拿它当中继，会消耗你的 CF 免费额度）。
+    "AUTH_TOKEN": "",
+
+    // 可选：强制改写发出的 Origin 头。
+    // 留空 = 不改写（Flutter 桌面/移动端本就不发 Origin，可直接用）。
+    // 若 Supabase 控制台给 Realtime 配了 Origin 白名单，填上游 origin：
+    // "https://jtvxrwybwvgpqobyhaoy.supabase.co"
+    "FORCE_ORIGIN": "",
+
+    // 是否把上游返回的 Location / Set-Cookie Domain 改写成本代理域名。
+    // Flutter 客户端不走 cookie，OAuth 场景才有用。默认 true 无害。
+    "REWRITE_REDIRECT": "true",
+
+    // 健康检查路径，设为 "" 可关闭
+    "HEALTH_PATH": "/__spx/health"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // 需要 *.workers.dev 之外的稳定域名时，改成你的自定义域。
+  // 国内网络下 *.workers.dev 基本不可达，务必绑自定义域。
+  //
+  // 【坑】不要再往下嵌套：Cloudflare 免费版 Universal SSL 只覆盖
+  // apex 和 **一级** 子域（证书 SAN 实测为 `040905.xyz, *.040905.xyz`）。
+  // 写成 sb.jtvxrwybwvgpqobyhaoy.040905.xyz 这类两层子域时，
+  // DNS 能解析、Worker 也能部署，但边缘没有匹配证书，
+  // 握手直接被拒：curl: (35) sslv3 alert handshake failure。
+  // 要用多层子域得额外买 Total TLS 或 Advanced Certificate Manager。
+  "routes": [
+    { "pattern": "sb.040905.xyz", "custom_domain": true }
+  ]
+}

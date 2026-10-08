@@ -1,0 +1,17 @@
+{
+  "name": "supabase-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker: transparent reverse proxy for the listen1_xuan Supabase project",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:remote": "wrangler dev --remote",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "whoami": "wrangler whoami"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

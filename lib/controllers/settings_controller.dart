@@ -226,6 +226,17 @@ class SettingsController extends GetxController {
     }
   }
 
+  static const String supabaseUseBackupUrlKey = 'supabaseUseBackupUrl';
+  /// 是否使用备用地址连接 Supabase
+  ///
+  /// 备用地址是自建的 Cloudflare Worker 透明反代，见
+  /// `workers/supabase-proxy/README.md`。
+  /// 该值只在 main() 初始化 Supabase 时读取一次，改动后需重启应用生效。
+  bool get supabaseUseBackupUrl => settings[supabaseUseBackupUrlKey] ?? false;
+  set supabaseUseBackupUrl(bool value) {
+    settings[supabaseUseBackupUrlKey] = value;
+  }
+
   // Supabase 账号密码保存（用于自动重连）
   static const String supabaseEmailKey = 'supabaseEmail';
   String get supabaseEmail => settings[supabaseEmailKey] ?? '';

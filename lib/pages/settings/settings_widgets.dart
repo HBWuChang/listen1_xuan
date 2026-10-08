@@ -164,6 +164,18 @@ Widget _buildSupabasePanel() {
               ),
             ),
             Obx(
+              () => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('使用备用地址'),
+                subtitle: Text('通过自建中转连接 Supabase，需重启应用生效'),
+                value: Get.find<SettingsController>().supabaseUseBackupUrl,
+                onChanged: (bool value) {
+                  Get.find<SettingsController>().supabaseUseBackupUrl = value;
+                  showSuccessSnackbar('设置成功', '重启生效');
+                },
+              ),
+            ),
+            Obx(
               () => ListTile(
                 leading: Icon(Icons.timelapse_rounded),
                 title: const Text('退出应用同步播放超时时间'),
