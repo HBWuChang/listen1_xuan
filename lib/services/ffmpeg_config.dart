@@ -6,4 +6,4 @@
 // (bilibili transcode, cache metadata writing).
 //
 // Switch with:  scripts/build.sh with|without
-const bool isFfmpegEnabled = true;
+const bool isFfmpegEnabled = false;

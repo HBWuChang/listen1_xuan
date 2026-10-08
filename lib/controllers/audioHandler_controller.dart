@@ -72,10 +72,15 @@ class AudioHandlerController extends GetxController {
       }
     }
     // Android 上把会话提前置为 active 并发布真实暂停态元数据，
-    // 控制中心的媒体卡片才会立刻归属本应用（可再点一次直接播放）
+    // 控制中心的媒体卡片才会立刻归属本应用（可再点一次直接播放）。
+    // 失败不得阻断后面的 loading 收尾，否则 Play 组件会卡在加载态。
     if (isAndroid) {
-      await (audioHandler as AudioPlayerHandler)
-          .activateSessionWithCurrentTrack();
+      try {
+        await (audioHandler as AudioPlayerHandler)
+            .activateSessionWithCurrentTrack();
+      } catch (e) {
+        debugPrint('激活媒体会话失败: $e');
+      }
     }
     bind_smtc();
     loading.value = false;

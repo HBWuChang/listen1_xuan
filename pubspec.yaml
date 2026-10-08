@@ -194,3 +194,9 @@ msix_config:
   install_certificate: false
   protocol_activation: https, listen1-xuan # Add the protocols to activate the app
   app_uri_handler_hosts: listen1-xuan.040905.xyz # Add the app uri handler hosts. You can't use patterns here.
+
+# BEGIN: no-ffmpeg override
+dependency_overrides:
+  ffmpeg_kit_flutter_new_audio:
+    path: packages/ffmpeg_kit_flutter_new_audio
+# END: no-ffmpeg override

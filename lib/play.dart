@@ -708,6 +708,19 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   /// 停止播放后多久释放媒体会话（控制中心卡片随之消失）
   static const Duration sessionIdleReleaseDelay = Duration(minutes: 30);
 
+  /// 手动触发一次播放状态重算并发布。
+  /// playbackState 已被 Rx.merge(...).pipe() 接管（处于 addStream 状态），
+  /// 直接 add 会报 "You cannot add items while items are being added from
+  /// addStream"，所以只能从这个流参与合并后再由 _transformEvent 产出。
+  final rxdart.BehaviorSubject<int> _stateSync = rxdart.BehaviorSubject<int>();
+  int _stateSyncTicks = 0;
+
+  /// 请求重算并发布一次播放状态
+  void _publishStateNow() {
+    if (_stateSync.isClosed) return;
+    _stateSync.add(++_stateSyncTicks);
+  }
+
   /// 会话已进入空闲释放态（已发布过 idle，原生侧会 deactivate + stopSelf）
   bool _sessionIdle = false;
 
@@ -736,6 +749,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     rxdart.Rx.merge([
           _playController.music_player.stream.playing,
           _playController.updatePosToAudioServiceNow.stream.cast<int>(),
+          _stateSync,
         ])
         .map((_) => _playController.music_player.state.playing)
         .map(_transformEvent)
@@ -800,7 +814,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // 等 mediaItem 先送达原生侧，再发布状态触发会话激活
     await Future<void>.delayed(const Duration(milliseconds: 200));
     _sessionIdle = false;
-    playbackState.add(_transformEvent(_playController.isplaying.value));
+    _publishStateNow();
   }
 
   /// 释放会话：发布 idle 状态，原生侧会 deactivateMediaSession + stopSelf，
@@ -809,7 +823,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     if (_sessionIdle) return;
     if (_music_player.state.playing) return;
     _sessionIdle = true;
-    playbackState.add(_transformEvent(false));
+    _publishStateNow();
   }
   // void change_playbackstate(PlaybackState _playbackState) {
   void change_playbackstate(MediaItem _item) {
@@ -921,6 +935,9 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
   PlaybackState _transformEvent(bool playing) {
     if (_music_player.state.playing) _sessionIdle = false;
+    // 没有任何曲目时上报 idle：既不会激活会话，也会让已激活的会话被释放，
+    // 避免控制中心出现点不动的占位卡片
+    final noTrack = _playController.nowPlayingTrackRx.value == null;
     return PlaybackState(
       controls: _playController.sortedAndroidControls,
       systemActions: const {
@@ -931,7 +948,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       androidCompactActionIndices:
           Get.find<SettingsController>().androidActionSort,
       // 空闲释放后持续上报 idle，原生侧才不会因为普通状态更新又把会话激活
-      processingState: _sessionIdle
+      processingState: (_sessionIdle || noTrack)
           ? AudioProcessingState.idle
           : (_music_player.state.completed
                 ? AudioProcessingState.completed

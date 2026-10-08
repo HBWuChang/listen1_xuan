@@ -9,6 +9,7 @@ import 'package:universal_io/io.dart' as universal_io;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'constants/const.dart';
 import 'controllers/settings_controller.dart';
@@ -20,14 +21,63 @@ import 'package:path/path.dart' as p;
 import 'package:expressive_loading_indicator/expressive_loading_indicator.dart';
 import 'package:material_new_shapes/material_new_shapes.dart';
 
+/// 无界面引擎（例如被系统媒体按键或车机绑定 MediaBrowserService 冷启动）
+/// 下没有 FlutterView，也无法弹系统权限对话框
+bool get isHeadlessEngine => ui.PlatformDispatcher.instance.views.isEmpty;
+
+/// 存储权限已确认可用时跳过一次状态查询，避免每次取目录都走一趟平台通道
+bool _storagePermissionConfirmed = false;
+
+/// 本次运行是否已经弹过权限请求，避免连续取目录时反复弹窗
+bool _storagePermissionRequested = false;
+
+/// 确认存储权限。
+/// 已授权时只查状态：permission_handler 的 checkPermissionStatus 走
+/// application context，不需要 Activity，因此后台无界面冷启动也能正常取目录；
+/// 只有确实未授权且存在界面时才弹窗请求（requestPermissions 必须有 Activity，
+/// 否则会抛 PlatformException: Unable to detect current Android Activity）。
+Future<bool> xuanEnsureStoragePermission() async {
+  if (!isAndroid) return true;
+  try {
+    if (!_storagePermissionConfirmed &&
+        (await Permission.manageExternalStorage.isGranted ||
+            await Permission.storage.isGranted)) {
+      _storagePermissionConfirmed = true;
+    }
+  } on PlatformException catch (e) {
+    debugPrint('存储权限状态查询失败: $e');
+  }
+  if (_storagePermissionConfirmed) return true;
+  if (isHeadlessEngine) {
+    // 无界面时无法弹权限对话框，留待下次前台启动处理
+    debugPrint('无界面引擎，跳过存储权限请求');
+    return false;
+  }
+  if (_storagePermissionRequested) return false;
+  _storagePermissionRequested = true;
+  try {
+    final granted =
+        await Permission.manageExternalStorage.request().isGranted ||
+        await Permission.storage.request().isGranted;
+    _storagePermissionConfirmed = granted;
+    return granted;
+  } on PlatformException catch (e) {
+    debugPrint('存储权限请求失败: $e');
+    return false;
+  }
+}
+
 Future<Directory> xuanGetdataDirectory() async {
   if (isAndroid) {
-    if (!(await Permission.manageExternalStorage.request().isGranted ||
-        await Permission.storage.request().isGranted)) {
-      showInfoSnackbar('请务必授予存储权限以下载歌曲及读取配置文件等操作', '本应用不会访问您的个人数据');
-      if (!(await Permission.manageExternalStorage.request().isGranted ||
-          await Permission.storage.request().isGranted))
-        throw Exception('Storage permission not granted');
+    if (!await xuanEnsureStoragePermission()) {
+      // 无界面引擎里没有可展示的提示，也不应阻塞播放流程
+      if (!isHeadlessEngine) {
+        showInfoSnackbar(
+          '请务必授予存储权限以下载歌曲及读取配置文件等操作',
+          '本应用不会访问您的个人数据',
+        );
+      }
+      throw Exception('Storage permission not granted');
     }
   }
 

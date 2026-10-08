@@ -290,8 +290,31 @@ void main() async {
   }
 
   initDeepLinks();
+  // 引擎被系统无界面拉起（音频服务/媒体按键冷启动）时，WidgetsApp 首次派发的
+  // NavigationNotification 会因为 _appLifecycleState 仍为 null 而被跳过
+  // （见 flutter/lib/src/widgets/app.dart 的 _defaultOnNavigationNotification），
+  // 于是系统以为本应用不处理返回，Activity 之后挂上来也不会注册
+  // OnBackInvokedCallback，安卓返回手势就彻底无效了。这里补一个监听，
+  // 每次回到前台都重发一次（本应用根节点始终带 PopScope(canPop: false)，
+  // Navigator 的 routeBlocksPop 分支会把 canHandlePop 报成 true）。
+  if (isAndroid) {
+    WidgetsBinding.instance.addObserver(frameworkHandlesBackRestorer);
+  }
   runApp(MyApp());
 }
+
+/// 修复「系统先无界面拉起引擎、Activity 之后才挂上」时安卓返回手势失效的问题，
+/// 详见 main() 里的调用处注释
+class FrameworkHandlesBackRestorer with WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!isAndroid) return;
+    if (state != AppLifecycleState.resumed) return;
+    SystemNavigator.setFrameworkHandlesBack(true);
+  }
+}
+
+final frameworkHandlesBackRestorer = FrameworkHandlesBackRestorer();
 
 Future<void> initDeepLinks() async {
   AppLinks().uriLinkStream.listen((uri) {
