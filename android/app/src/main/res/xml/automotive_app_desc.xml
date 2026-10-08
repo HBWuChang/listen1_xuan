@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android Auto 媒体应用声明：让车机/助理可以绑定 AudioService（MediaBrowserService） -->
+<automotiveApp>
+    <uses name="media" />
+</automotiveApp>

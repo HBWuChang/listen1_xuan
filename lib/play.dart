@@ -649,6 +649,62 @@ Future<int> globalChangePlayMode() async {
 Player get _music_player => _playController.music_player;
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
+  /// 浏览树根节点 id，与 AudioService.java 的 BROWSABLE_ROOT_ID 一致
+  static const String browseRootId = 'root';
+
+  /// 最近播放根节点 id，与 AudioService.java 的 RECENT_ROOT_ID 一致。
+  /// 客户端（Android Auto / 系统助理）带 EXTRA_RECENT 请求时会拿到该 parentId
+  static const String browseRecentId = 'recent';
+
+  /// 浏览树中「当前播放列表」分类 id，是 root 下唯一的入口
+  static const String browseCurrentPlayingId = 'current_playing';
+
+  /// 车机点播时携带完整曲目的 extras 键
+  static const String trackExtrasKey = 'track';
+
+  /// 曲目没有封面时的兜底图
+  static const String fallbackArtUri =
+      'https://s.040905.xyz/d/v/business-spirit-unit.gif?sign=uDy2k6zQMaZr8CnNBem03KTPdcQGX-JVOIRcEBcVOhk=:0';
+
+  /// 浏览树与播放队列共用的 Track -> MediaItem 转换。
+  /// id 直接使用 Track.id，供 playFromMediaId 反查曲目；
+  /// extras 里带一份压缩后的 Track，使车机点播命中浏览树内容时无需重走网络解析。
+  MediaItem _trackToMediaItem(Track track) => MediaItem(
+    id: track.id,
+    title: track.title ?? '',
+    artist: track.artist,
+    album: track.album,
+    artUri: Uri.parse(track.img_url ?? fallbackArtUri),
+    artHeaders: kGlobalDefaultHeaders,
+    playable: true,
+    extras: {trackExtrasKey: track.toBase64WithGzip()},
+  );
+
+  /// 从 playFromMediaId 的 extras 里取回完整曲目，id 不匹配则视为无效
+  Track? _trackFromExtras(String mediaId, Map<String, dynamic>? extras) {
+    final raw = extras?[trackExtrasKey];
+    if (raw is! String || raw.isEmpty) return null;
+    try {
+      final track = Track.fromBase64MaybeGzip(raw);
+      return track.id == mediaId ? track : null;
+    } catch (e) {
+      debugPrint('[AudioPlayerHandler] 解析曲目 extras 失败: $e');
+      return null;
+    }
+  }
+
+  /// 把当前播放列表同步给系统，车机的队列视图依赖它
+  void _publishQueue() {
+    if (queue.isClosed) return;
+    queue.add(_playController.current_playing.map(_trackToMediaItem).toList());
+  }
+
+  /// 已订阅的子节点变更提醒。
+  /// 冷启动时车机可能在 Dart 侧就绪前就查过浏览树（此时原生侧只能返回空列表），
+  /// 靠这个流把后续的内容变化推给客户端，否则车机需重新绑定才能刷新。
+  final Map<String, rxdart.BehaviorSubject<Map<String, dynamic>>>
+  _childrenChangedSubjects = {};
+
   /// Initialise our audio handler.
   static final _item = MediaItem(
     id: 'https://s.040905.xyz/d/v/temp/%E5%91%A8%E6%9D%B0%E4%BC%A6%20-%20%E6%9C%80%E4%BC%9F%E5%A4%A7%E7%9A%84%E4%BD%9C%E5%93%81%20%5Bmqms2%5D.mp3?sign=fNa5fJ-EtPzcIs_UlZYKYrjNgKhbYy7pKAgpcLEKC6M=:0',
@@ -692,6 +748,10 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         onPlaybackCompleted();
       }
     });
+
+    // 当前播放列表变化时同步系统播放队列，车机才能显示出可切换的曲目列表
+    _playController.currentPlayingRx.listen((_) => _publishQueue());
+    _publishQueue();
   }
   // void change_playbackstate(PlaybackState _playbackState) {
   void change_playbackstate(MediaItem _item) {
@@ -708,7 +768,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   // @override
   // Future<void> play() => _player.play();
   @override
-  Future<void> play() => globalPlay();
+  Future<void> play() => _playController.requestPlay();
 
   // @override
   // Future<void> pause() => _playController.music_player.pause();
@@ -722,6 +782,84 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> skipToNext() => globalSkipToNext();
+
+  /// MediaBrowserService 浏览树。
+  /// root 只暴露「当前播放列表」一个分类；recent 分支返回同源内容，
+  /// 以满足 Android Auto / 系统助理带 EXTRA_RECENT 的请求。
+  @override
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]) async {
+    switch (parentMediaId) {
+      case browseRootId:
+        // playable 为 false 时原生侧会标记为 FLAG_BROWSABLE，即可下钻的分类
+        return const [
+          MediaItem(
+            id: browseCurrentPlayingId,
+            title: '当前播放列表',
+            playable: false,
+          ),
+        ];
+      case browseCurrentPlayingId:
+      case browseRecentId:
+        return _playController.current_playing
+            .map(_trackToMediaItem)
+            .toList();
+      default:
+        return const [];
+    }
+  }
+
+  /// 车机/系统按 mediaId 点播。mediaId 为 Track.id，
+  /// 未命中当前播放列表时由 PlayController 走 provider 网络解析。
+  @override
+  Future<void> playFromMediaId(
+    String mediaId, [
+    Map<String, dynamic>? extras,
+  ]) async {
+    await _playController.playTrackById(
+      mediaId,
+      hintedTrack: _trackFromExtras(mediaId, extras),
+    );
+  }
+
+  /// 车机在队列里直接选曲（索引基于已发布的 queue，即当前播放列表）
+  @override
+  Future<void> skipToQueueItem(int index) async {
+    final list = _playController.current_playing;
+    if (index < 0 || index >= list.length) return;
+    await _playController.playsong(list[index], start: true);
+  }
+
+  @override
+  rxdart.ValueStream<Map<String, dynamic>> subscribeToChildren(
+    String parentMediaId,
+  ) {
+    if (parentMediaId != browseCurrentPlayingId &&
+        parentMediaId != browseRecentId) {
+      return super.subscribeToChildren(parentMediaId);
+    }
+    return _childrenChangedSubjects.putIfAbsent(parentMediaId, () {
+      final subject = rxdart.BehaviorSubject<Map<String, dynamic>>.seeded(
+        <String, dynamic>{},
+      );
+      _playController.currentPlayingRx.listen(
+        (_) => subject.add(<String, dynamic>{}),
+      );
+      return subject;
+    });
+  }
+
+  /// 当前播放曲目在已发布队列中的下标，供车机高亮正在播放的项
+  int? get _currentQueueIndex {
+    final id = _playController.nowPlayingTrackId;
+    if (id.isEmpty) return null;
+    final index = _playController.current_playing.indexWhere(
+      (track) => track.id == id,
+    );
+    return index < 0 ? null : index;
+  }
 
   PlaybackState _transformEvent(bool playing) {
     return PlaybackState(
@@ -739,6 +877,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       updatePosition: _music_player.state.position,
       playing: _music_player.state.playing,
       bufferedPosition: _music_player.state.buffer,
+      queueIndex: _currentQueueIndex,
     );
   }
 }

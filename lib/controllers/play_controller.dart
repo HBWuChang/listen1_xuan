@@ -529,6 +529,61 @@ class PlayController extends GetxController
   bool receivedContinuePlay = false;
   int? toSeek;
   Rxn<OnlineCacheItem> currentPlayingOnlineCacheItem = Rxn<OnlineCacheItem>();
+
+  /// 由系统媒体按键（通知栏/耳机/锁屏/车机）触发的播放意图。
+  /// 冷启动或引导播放期间音频源可能尚未就绪，此时先记录意图，
+  /// 等音频源加载完成后再真正播放，避免 media_kit 在无源时
+  /// 把状态置为 playing 却不出声。
+  bool pendingPlay = false;
+
+  /// 系统媒体按键「播放」入口。
+  /// 音频源已就绪则直接播放；否则记录意图并触发（重新）加载。
+  Future<void> requestPlay() async {
+    if (music_player.state.playlist.medias.isNotEmpty) {
+      pendingPlay = false;
+      await music_player.play();
+      return;
+    }
+    // 冷启动时音频源可能还没加载（历史曲目尚未恢复），
+    // 先只记录意图，由后续 playsong 消费。
+    pendingPlay = true;
+    final track = nowPlayingTrackRx.value;
+    if (track == null) return;
+    if (!bootStraping.containsKey(track.id)) {
+      await playsong(track, start: true);
+    }
+  }
+
+  /// 在音频源加载完成后调用，消费待播放意图。
+  void consumePendingPlay() {
+    if (!pendingPlay) return;
+    pendingPlay = false;
+    music_player.play();
+  }
+
+  /// 车机/系统通过 mediaId 点播曲目（MediaBrowserService 的 onPlayFromMediaId）。
+  /// 优先使用浏览树 extras 携带的完整曲目，其次查当前播放列表，
+  /// 都不命中时按 id 前缀定位 provider 走网络解析（bootstrapTrack）。
+  Future<void> playTrackById(String mediaId, {Track? hintedTrack}) async {
+    if (isEmpty(mediaId)) return;
+    final track = hintedTrack ?? getTrackById(mediaId);
+    if (track != null) {
+      // 与用户手动点播一致：入列沿用 add_current_playing 的去重尾部追加
+      await playsong(track, start: true);
+      return;
+    }
+    // 只拿到 id，title/artist 等元数据留空，由 provider 解析出播放地址后再播放
+    if (bootStraping.containsKey(mediaId)) return;
+    bootStraping[mediaId] = '';
+    try {
+      provider.bootstrapTrack(Track(id: mediaId), start: true);
+    } catch (e) {
+      bootStraping.remove(mediaId);
+      logger.e('车机点播解析失败: $mediaId', error: e);
+      showErrorSnackbar('播放失败', mediaId);
+    }
+  }
+
   Future<void> playsong(
     Track track, {
     bool start = true,
@@ -564,7 +619,10 @@ class PlayController extends GetxController
       if (tdir == "") {
         // 无本地文件，引导播放
         bootStraping[track.id] = "";
-        provider.bootstrapTrack(track, start: start);
+        provider.bootstrapTrack(
+          track,
+          start: start || pendingPlay,
+        );
         return;
       }
       Map<String, String>? httpHeaders = Get.find<CacheController>()
@@ -616,6 +674,9 @@ class PlayController extends GetxController
       }
       if (start) {
         music_player.play();
+        pendingPlay = false;
+      } else {
+        consumePendingPlay();
       }
       await change_playback_state(track);
     } catch (e, stackTrace) {
@@ -654,7 +715,7 @@ class PlayController extends GetxController
       unawaited(
         playsong(
           sTrack ?? track,
-          start: start,
+          start: start || pendingPlay,
           onBootstrapTrackSuccessCallback: true,
         ),
       );
@@ -674,6 +735,7 @@ class PlayController extends GetxController
     // {id: netrack_2084034562, title: Anytime Anywhere, artist: milet, artist_id: neartist_31464106, album: Anytime Anywhere, album_id: nealbum_175250775, source: netease, source_url: https://music.163.com/#/song?id=2084034562, img_url: https://p1.music.126.net/11p2mKi5CMKJvAS43ulraQ==/109951168930518368.jpg, sourceName: 网易, $$hashKey: object:2884, disabled: false, index: 365, playNow: true, bitrate: 320kbps, platform: netease, platformText: 网易}\
     //去除引导状态
     bootStraping.remove(track.id);
+    pendingPlay = false;
     showErrorSnackbar('播放失败', track.title);
     // 若用户欲播放的曲目就是当前曲目，则触发播放完成逻辑
     if (nowPlayingTrackId != track.id) {
