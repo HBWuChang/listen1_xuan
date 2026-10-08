@@ -84,7 +84,8 @@ dependencies:
   flutter_lyric:
     git:
       url: https://github.com/HBWuChang/flutter_lyric.git
-  #   path: E:/HB_WuChang/code/flutter/flutter_lyric
+    # path: E:/HB_WuChang/code/flutter/flutter_lyric
+    # path: /Users/cd022/HBWuChang/code/flutter_lyric
   # metadata_god: ^1.0.0
   extended_image: ^10.0.1
   mime: ^2.0.0

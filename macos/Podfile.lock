@@ -178,7 +178,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   app_links: 05a6ec2341985eb05e9f97dc63f5837c39895c3f
-  audio_service: aa99a6ba2ae7565996015322b0bb024e1d25c6fd
+  audio_service: 63dc0985b2bbbfab3c8ad6748fd934b7ec90f9b5
   audio_session: eaca2512cf2b39212d724f35d11f46180ad3a33e
   audioplayers_darwin: 835ced6edd4c9fc8ebb0a7cc9e294a91d99917d5
   bonsoir_darwin: 29c7ccf356646118844721f36e1de4b61f6cbd0e
