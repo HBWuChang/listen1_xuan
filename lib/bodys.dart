@@ -18,6 +18,7 @@ import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/websocket_client_controller.dart';
 import 'controllers/search_controller.dart';
+import 'services/startup_tips_service.dart';
 import 'examples/websocket_client_example.dart';
 import 'package:flutter/material.dart'
     hide SearchController, CircularProgressIndicator;

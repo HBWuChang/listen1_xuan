@@ -31,6 +31,9 @@ import 'packages/circular_theme_reveal/src/circular_theme_reveal_overlay.dart';
 import 'pages/download_page.dart';
 import 'pages/nowPlaying_page.dart';
 import 'pages/settings/settings_readme.dart';
+import 'pages/settings/settings_tips_page.dart';
+import 'pages/startup_page.dart';
+import 'services/startup_tips_service.dart';
 import 'pages/settings/settings_supabase_login_page.dart';
 import 'pages/settings/settings_supabase_password_login_page.dart';
 import 'pages/settings/cache_naming_page.dart';
@@ -58,6 +61,7 @@ import 'package:smtc_windows/smtc_windows.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'controllers/theme.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -133,16 +137,94 @@ void enableThumbnailToolbar() async {
   }
 }
 
-void main() async {
-  // Supabase 的初始化被移到了读取设置之后，见下方 settingsController.init()
-  await WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter框架已初始化
-  MediaKit.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      systemNavigationBarColor: Colors.transparent, // 设置导航栏背景色为透明
-      systemNavigationBarDividerColor: Colors.transparent, // 设置导航栏分割线为透明
-    ),
+Future<void> showStartupWindow(SettingsController? settingsController) async {
+  if (!isDesktop) return;
+  await Window.initialize();
+  await windowManager.ensureInitialized();
+  await hotKeyManager.unregisterAll();
+  final rememberBounds =
+      settingsController?.rememberWindowsSizeAndPosition ?? false;
+  final bounds = rememberBounds
+      ? settingsController!.windowsWindowBounds
+      : const Rect.fromLTWH(0, 0, 1000, 700);
+  final options = WindowOptions(
+    size: Size(bounds.width, bounds.height),
+    minimumSize: const Size(400, 700),
+    center: settingsController?.centerWindowOnStart ?? true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.hidden,
   );
+  await windowManager.waitUntilReadyToShow(options);
+  if (settingsController?.isWindowMaximized ?? false) {
+    await windowManager.maximize();
+  }
+  await windowManager.setPreventClose(true);
+  await windowManager.show();
+}
+
+bool _startupWindowConfigured = false;
+
+Future<void> _loadStartupLogoColor(
+  SettingsController settingsController,
+  ValueNotifier<Color?> logoColor,
+) async {
+  final settings = settingsController.settings;
+  final savedColor = settings['theme_color'];
+  final seed = savedColor is int ? Color(savedColor) : Colors.purple;
+  final savedMode = settings['theme_mode'];
+  final brightness = savedMode == 'dark'
+      ? Brightness.dark
+      : savedMode == 'light'
+      ? Brightness.light
+      : WidgetsBinding.instance.platformDispatcher.platformBrightness;
+  ColorScheme? scheme;
+  if (settings['use_dynamic_color'] ?? true) {
+    try {
+      final palette = await DynamicColorPlugin.getCorePalette();
+      if (palette != null) {
+        scheme = palette.toColorScheme(brightness: brightness);
+      } else {
+        final accent = await DynamicColorPlugin.getAccentColor();
+        if (accent != null) {
+          scheme = ColorScheme.fromSeed(seedColor: accent, brightness: brightness);
+        }
+      }
+    } catch (error) {
+      debugPrint('读取开屏主题色失败: $error');
+    }
+  }
+  logoColor.value = (scheme ?? ColorScheme.fromSeed(
+    seedColor: seed,
+    brightness: brightness,
+  )).primaryContainer;
+}
+
+Future<void> _initializeOptionalServices() async {
+  try {
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final cookieDirectory = cookiePath(appDocDir);
+    final cookieDir = Directory(cookieDirectory);
+    if (!await cookieDir.exists()) {
+      await cookieDir.create(recursive: true);
+    }
+    dioWithCookieManager.interceptors.add(CookieManager(PersistCookieJar(
+      storage: FileStorage(cookieDirectory),
+      ignoreExpires: true,
+    )));
+    final settingsController = Get.find<SettingsController>();
+    if (settingsController.settingsPageExpansion.contains(0)) {
+      unawaited(settingsController.refreshLoginData().catchError((Object error) {
+        debugPrint('刷新登录信息失败: $error');
+      }));
+    }
+  } catch (error) {
+    debugPrint('启动后的可选服务初始化失败: $error');
+  }
+}
+
+Future<void> _initializeAppForHome(ValueNotifier<Color?> logoColor) async {
+  MediaKit.ensureInitialized();
   const SharedPreferencesOptions sharedPreferencesOptions =
       SharedPreferencesOptions();
   final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -156,6 +238,11 @@ void main() async {
     permanent: true,
   );
   await settingsController.init();
+  unawaited(_loadStartupLogoColor(settingsController, logoColor));
+  if (isDesktop) {
+    await showStartupWindow(settingsController);
+    _startupWindowConfigured = true;
+  }
   // 读取「使用备用地址」开关后，才能确定要连哪个 Supabase 地址
   supabaseUrl = settingsController.supabaseUseBackupUrl
       ? supabaseBackupUrl
@@ -198,46 +285,7 @@ void main() async {
   Get.put(PasteController(), permanent: true);
   if (isAndroid) Get.put(ReceiveSharingIntentController(), permanent: true);
   init_apkfilepath();
-  if (isDesktop) {
-    if (isWindows) {
-      SMTCWindows.initialize();
-    }
-    // flutter_acrylic
-    await Window.initialize();
-    // Must add this line.
-    await windowManager.ensureInitialized();
-    await hotKeyManager.unregisterAll();
-    late WindowOptions windowOptions;
-    if (settingsController.rememberWindowsSizeAndPosition) {
-      Rect bounds = settingsController.windowsWindowBounds;
-      windowOptions = WindowOptions(
-        size: Size(bounds.width, bounds.height),
-        minimumSize: Size(400, 700),
-        center: settingsController.centerWindowOnStart,
-        backgroundColor: Colors.transparent,
-        skipTaskbar: false,
-        titleBarStyle: TitleBarStyle.hidden,
-      );
-    } else {
-      windowOptions = WindowOptions(
-        size: Size(1000, 700),
-        minimumSize: Size(400, 700),
-        center: settingsController.centerWindowOnStart,
-        backgroundColor: Colors.transparent,
-        skipTaskbar: false,
-        titleBarStyle: TitleBarStyle.hidden,
-      );
-    }
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      if (settingsController.isWindowMaximized) {
-        await windowManager.maximize();
-      }
-      await windowManager.show();
-      createThemeController().didChangePlatformBrightnessOrManual();
-    });
-    windowManager.setPreventClose(true);
-  }
-  createThemeController();
+  if (isWindows) SMTCWindows.initialize();
   // 初始化WebSocket控制器并加载配置
   WebSocketCardController wsController = Get.put(
     WebSocketCardController(),
@@ -270,37 +318,58 @@ void main() async {
     userAgent: kGlobalDefaultUserAgent,
   );
 
-  final appDocDir = await getApplicationDocumentsDirectory();
-  final _cookiePath = cookiePath(appDocDir);
-  final cookieDir = Directory(_cookiePath);
-  if (!await cookieDir.exists()) {
-    await cookieDir.create(recursive: true);
-  }
-
-  // 创建 PersistCookieJar 实例
-  final cookieJar = PersistCookieJar(
-    storage: FileStorage(_cookiePath),
-    ignoreExpires: true,
-  );
-
-  // 将 PersistCookieJar 添加到 Dio 的拦截器中
-  dioWithCookieManager.interceptors.add(CookieManager(cookieJar));
-  if (settingsController.settingsPageExpansion.contains(0)) {
-    settingsController.refreshLoginData();
-  }
-
   initDeepLinks();
-  // 引擎被系统无界面拉起（音频服务/媒体按键冷启动）时，WidgetsApp 首次派发的
-  // NavigationNotification 会因为 _appLifecycleState 仍为 null 而被跳过
-  // （见 flutter/lib/src/widgets/app.dart 的 _defaultOnNavigationNotification），
-  // 于是系统以为本应用不处理返回，Activity 之后挂上来也不会注册
-  // OnBackInvokedCallback，安卓返回手势就彻底无效了。这里补一个监听，
-  // 每次回到前台都重发一次（本应用根节点始终带 PopScope(canPop: false)，
-  // Navigator 的 routeBlocksPop 分支会把 canHandlePop 报成 true）。
+}
+
+void main() async {
+  // Supabase 的初始化被移到了读取设置之后，见下方 settingsController.init()
+  await WidgetsFlutterBinding.ensureInitialized(); // 确保 Flutter框架已初始化
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: Colors.transparent, // 设置导航栏背景色为透明
+      systemNavigationBarDividerColor: Colors.transparent, // 设置导航栏分割线为透明
+    ),
+  );
+  // 无界面音频启动后再挂载 Activity 时，重新注册 Android 返回手势处理。
   if (isAndroid) {
     WidgetsBinding.instance.addObserver(frameworkHandlesBackRestorer);
   }
+  final startupFailure = ValueNotifier<StartupFailure?>(null);
+  final startupLogoColor = ValueNotifier<Color?>(null);
+  runApp(MaterialApp(
+    theme: ThemeData.light(useMaterial3: true),
+    darkTheme: ThemeData.dark(useMaterial3: true),
+    home: StartupPage(
+      tipsService: startupTipsService,
+      failure: startupFailure,
+      logoColor: startupLogoColor,
+    ),
+  ));
+  unawaited(startupTipsService.load());
+  try {
+    await _initializeAppForHome(startupLogoColor);
+  } catch (error, stackTrace) {
+    if (isHeadlessEngine) Error.throwWithStackTrace(error, stackTrace);
+    if (isDesktop && !_startupWindowConfigured) {
+      try {
+        await showStartupWindow(null);
+      } catch (windowError) {
+        debugPrint('显示启动错误窗口失败: $windowError');
+      }
+    }
+    startupFailure.value = StartupFailure.fromError(error, stackTrace);
+    return;
+  }
   runApp(MyApp());
+  createThemeController();
+  if (!isHeadlessEngine) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_initializeOptionalServices());
+      unawaited(startupTipsService.refreshIfDue(dioWithProxyAdapter));
+    });
+  } else {
+    unawaited(_initializeOptionalServices());
+  }
 }
 
 /// 修复「系统先无界面拉起引擎、Activity 之后才挂上」时安卓返回手势失效的问题，
@@ -422,11 +491,22 @@ class _MyHomePageState extends State<MyHomePage>
     with TrayListener, WindowListener, WidgetsBindingObserver {
   FocusNode _focusNode = FocusNode();
   FocusNode _focusNode2 = FocusNode();
+  bool _wasInactive = false;
+  bool _wasUnfocused = false;
+  bool _hasBeenResumed = false;
+
+  void _refreshSearchHint() {
+    if (Get.find<SettingsController>().showSomeTips) {
+      startupTipsService.updateSearchHint();
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    if (isDesktop) WidgetsBinding.instance.addObserver(this);
+    _hasBeenResumed =
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    WidgetsBinding.instance.addObserver(this);
     trayManager.addListener(this);
     homeController.updatePageControllers();
     if (isDesktop) {
@@ -446,8 +526,18 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    Get.find<ThemeController>().stateAppLifecycleStateResumed.value =
-        state == AppLifecycleState.resumed;
+    if (isDesktop) {
+      Get.find<ThemeController>().stateAppLifecycleStateResumed.value =
+          state == AppLifecycleState.resumed;
+      return;
+    }
+    if (state == AppLifecycleState.resumed) {
+      if (_wasInactive && _hasBeenResumed) _refreshSearchHint();
+      _wasInactive = false;
+      _hasBeenResumed = true;
+    } else {
+      _wasInactive = true;
+    }
   }
 
   void _initTrayManager() async {
@@ -510,9 +600,9 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (isDesktop) {
       trayManager.removeListener(this);
-      WidgetsBinding.instance.removeObserver(this);
       windowManager.removeListener(this);
     }
     _focusNode.dispose();
@@ -695,7 +785,14 @@ class _MyHomePageState extends State<MyHomePage>
 
   bool _windowManagerOnce = false;
   @override
+  void onWindowBlur() {
+    _wasUnfocused = true;
+  }
+
+  @override
   void onWindowFocus() {
+    if (_windowManagerOnce && _wasUnfocused) _refreshSearchHint();
+    _wasUnfocused = false;
     // 确保只调用一次
     if (!_windowManagerOnce) {
       _windowManagerOnce = true;

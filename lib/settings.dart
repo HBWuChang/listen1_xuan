@@ -23,6 +23,7 @@ import 'controllers/cache_controller.dart';
 import 'controllers/myPlaylist_controller.dart';
 import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
+import 'services/startup_tips_service.dart';
 import 'services/ffmpeg_config.dart';
 import 'controllers/routeController.dart';
 import 'controllers/supabase_auth_controller.dart';
@@ -465,6 +466,16 @@ class _SettingsPageState extends State<SettingsPage> {
                             .contains(8),
                         body: Column(
                           children: [
+                            Obx(
+                              () => SwitchListTile(
+                                title: const Text('显示一些tip'),
+                                value: settingsController.showSomeTips,
+                                onChanged: (value) {
+                                  settingsController.showSomeTips = value;
+                                  if (value) startupTipsService.updateSearchHint();
+                                },
+                              ),
+                            ),
                             ListTile(
                               leading: Icon(Icons.width_normal),
                               title: const Text('当左边栏大于一定宽度时隐藏搜索页面的搜索框'),
@@ -597,6 +608,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
 
+                ListTile(
+                  leading: Icon(Icons.lightbulb_outline),
+                  title: Text('Tip'),
+                  trailing: Icon(Icons.chevron_right),
+                  onTap: () {
+                    Get.toNamed(RouteName.settingsTipsPage, id: 1);
+                  },
+                ),
                 ListTile(
                   leading: Icon(Icons.book),
                   title: Text('查看README'),

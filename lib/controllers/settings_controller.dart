@@ -182,6 +182,12 @@ class SettingsController extends GetxController {
   }
 
   static const String searchUseLastSourceKey = 'searchUseLastSource';
+  static const String showSomeTipsKey = 'showSomeTips';
+  bool get showSomeTips => settings[showSomeTipsKey] as bool? ?? true;
+  set showSomeTips(bool value) {
+    settings[showSomeTipsKey] = value;
+  }
+
   bool get searchUseLastSource => settings[searchUseLastSourceKey] ?? true;
   set searchUseLastSource(bool value) {
     settings[searchUseLastSourceKey] = value;

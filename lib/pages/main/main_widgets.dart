@@ -1,5 +1,11 @@
 part of '../../main.dart';
 
+String _searchHintText(String? tip) =>
+    startupTipsService.searchHintText(
+      showTips: Get.find<SettingsController>().showSomeTips,
+      tip: tip,
+    );
+
 Widget get _leftBar => Scaffold(
   body: Column(
     children: [
@@ -61,22 +67,27 @@ Widget get _leftBar => Scaffold(
           final inputFontSize = (constraints.maxWidth / 6)
               .clamp(12.0, 16.0)
               .toDouble();
-          return TextField(
-            focusNode: useFocusNode ? searchController.focusNode : null,
-            decoration: InputDecoration(
-              labelText: '请输入歌曲名，歌手或专辑',
-              labelStyle: TextStyle(fontSize: inputFontSize),
-              border: InputBorder.none,
+          return ValueListenableBuilder<String?>(
+            valueListenable: startupTipsService.searchHint,
+            builder: (context, tip, _) => Obx(
+              () => TextField(
+                focusNode: useFocusNode ? searchController.focusNode : null,
+                decoration: InputDecoration(
+                  hintText: _searchHintText(tip),
+                  hintStyle: TextStyle(fontSize: inputFontSize),
+                  border: InputBorder.none,
+                ),
+                style: TextStyle(fontSize: inputFontSize),
+                controller: input_text_Controller,
+                readOnly: searchController.showSearchArea.value,
+                onSubmitted: (_) => searchController.onSubmitted(),
+                onTap: searchController.showSearchArea.value
+                    ? () async {
+                        Get.toNamed(RouteName.searchPage, id: 1);
+                      }
+                    : null,
+              ),
             ),
-            style: TextStyle(fontSize: inputFontSize),
-            controller: input_text_Controller,
-            readOnly: searchController.showSearchArea.value,
-            onSubmitted: (_) => searchController.onSubmitted(),
-            onTap: searchController.showSearchArea.value
-                ? () async {
-                    Get.toNamed(RouteName.searchPage, id: 1);
-                  }
-                : null,
           );
         },
       ).sbh(56),
@@ -335,16 +346,21 @@ Listener _mainContent() => Listener(
                               Text('Listen1'),
                               10.sbw,
                               Expanded(
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    hintText: '请输入歌曲名，歌手或专辑',
-                                    border: InputBorder.none,
+                                child: ValueListenableBuilder<String?>(
+                                  valueListenable: startupTipsService.searchHint,
+                                  builder: (context, tip, _) => Obx(
+                                    () => TextField(
+                                      decoration: InputDecoration(
+                                        hintText: _searchHintText(tip),
+                                        border: InputBorder.none,
+                                      ),
+                                      controller: input_text_Controller,
+                                      readOnly: true,
+                                      onTap: () async {
+                                        Get.toNamed(RouteName.searchPage, id: 1);
+                                      },
+                                    ),
                                   ),
-                                  controller: input_text_Controller,
-                                  readOnly: true,
-                                  onTap: () async {
-                                    Get.toNamed(RouteName.searchPage, id: 1);
-                                  },
                                 ),
                               ),
                               WebSocketHelper.buildReactiveButton(
@@ -488,6 +504,15 @@ Listener _mainContent() => Listener(
                     middlewares: [ListenPopMiddleware()],
                   );
                   addAndCleanReapeatRoute(route, RouteName.settingsReadmePage);
+                  return route;
+                case RouteName.settingsTipsPage:
+                  var route = ThemedGetPageRoute(
+                    settings: settings,
+                    transition: Transition.rightToLeftWithFade,
+                    page: () => const SettingsTipsPage(),
+                    middlewares: [ListenPopMiddleware()],
+                  );
+                  addAndCleanReapeatRoute(route, RouteName.settingsTipsPage);
                   return route;
                 case RouteName.downloadPage:
                   var route = ThemedGetPageRoute(

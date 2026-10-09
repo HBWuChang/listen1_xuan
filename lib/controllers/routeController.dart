@@ -264,6 +264,7 @@ class RouteName {
   static const String nowPlayingPage = '/now_playing';
   static const String settingsPage = '/settings';
   static const String settingsReadmePage = '/settings_readme';
+  static const String settingsTipsPage = '/settings_tips';
   static const String downloadPage = '/download';
   static const String supabaseLoginPage = '/supabase_login';
   static const String supabasePasswordLoginPage = '/supabase_password_login';

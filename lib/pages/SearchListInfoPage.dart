@@ -64,15 +64,24 @@ class _SearchlistinfoState extends State<Searchlistinfo>
                           Tab(text: '播客'),
                         ],
                       )
-                    : TextField(
-                        focusNode: controller!.focusNode,
-                        decoration: const InputDecoration(
-                          hintText: '请输入歌曲名，歌手或专辑',
-                          border: InputBorder.none,
+                    : ValueListenableBuilder<String?>(
+                        valueListenable: startupTipsService.searchHint,
+                        builder: (context, tip, _) => Obx(
+                          () => TextField(
+                            focusNode: controller!.focusNode,
+                            decoration: InputDecoration(
+                              hintText: startupTipsService.searchHintText(
+                                showTips:
+                                    Get.find<SettingsController>().showSomeTips,
+                                tip: tip,
+                              ),
+                              border: InputBorder.none,
+                            ),
+                            controller: controller!.searchTextController,
+                            onSubmitted: (_) => controller!.onSubmitted(),
+                            autofocus: true,
+                          ),
                         ),
-                        controller: controller!.searchTextController,
-                        onSubmitted: (_) => controller!.onSubmitted(),
-                        autofocus: true,
                       ),
               ),
             ),
