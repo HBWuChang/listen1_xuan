@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../controllers/theme.dart';
 import '../services/startup_tips_service.dart';
 
 class StartupFailure {
@@ -36,17 +38,43 @@ class StartupFailure {
   }
 }
 
+class StartupApp extends StatelessWidget {
+  const StartupApp({
+    super.key,
+    required this.themeController,
+    required this.home,
+  });
+
+  final ThemeController themeController;
+  final Widget home;
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint('Startup theme controller: $themeController');
+    debugPrint('Startup color:${themeController.lightTheme.colorScheme.primary}');
+    final mode = themeController.themeMode.value;
+    return MaterialApp(
+      theme: themeController.lightTheme,
+      darkTheme: themeController.darkTheme,
+      themeMode: mode == AdaptiveThemeMode.light
+          ? ThemeMode.light
+          : mode == AdaptiveThemeMode.dark
+          ? ThemeMode.dark
+          : ThemeMode.system,
+      home: home,
+    );
+  }
+}
+
 class StartupPage extends StatefulWidget {
   const StartupPage({
     super.key,
     required this.tipsService,
     required this.failure,
-    required this.logoColor,
   });
 
   final StartupTipsService tipsService;
   final ValueNotifier<StartupFailure?> failure;
-  final ValueNotifier<Color?> logoColor;
 
   @override
   State<StartupPage> createState() => _StartupPageState();
@@ -108,18 +136,15 @@ class _StartupPageState extends State<StartupPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ValueListenableBuilder<Color?>(
-                      valueListenable: widget.logoColor,
-                      builder: (context, color, _) => Container(
-                        key: const Key('startup-logo'),
-                        width: 160,
-                        height: 160,
-                        decoration: BoxDecoration(
-                          color: color ?? Theme.of(context).colorScheme.primaryContainer,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Image.asset('assets/images/force.png'),
+                    Container(
+                      key: const Key('startup-logo'),
+                      width: 160,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
                       ),
+                      child: Image.asset('assets/images/force.png'),
                     ),
                     if (failure != null || _tip != null) const SizedBox(height: 28),
                     if (failure != null || _tip != null) Flexible(

@@ -19,6 +19,12 @@ class ThemeController extends GetxController {
   // ColorScheme? _dark;
   final _dark = Rx<ColorScheme?>(null);
 
+  final _lightTheme = ThemeData.light(useMaterial3: true).obs;
+  final _darkTheme = ThemeData.dark(useMaterial3: true).obs;
+  ThemeData get lightTheme => _lightTheme.value;
+  ThemeData get darkTheme => _darkTheme.value;
+  late final Future<void> initialization;
+
   RxBool stateAppLifecycleStateResumed = true.obs;
   bool get disSomeEffect =>
       (!stateAppLifecycleStateResumed.value) &&
@@ -109,7 +115,7 @@ class ThemeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadThemeSettings();
+    initialization = loadThemeSettings();
     ever(themeMode, (callback) {
       didChangePlatformBrightnessOrManual();
     });
@@ -237,11 +243,15 @@ class ThemeController extends GetxController {
     }
     final lightTheme = _buildTheme(Brightness.light);
     final darkTheme = _buildTheme(Brightness.dark);
+    // 启动阶段尚未挂载 AdaptiveTheme，先发布主题供 StartupPage 使用。
+    _lightTheme.value = lightTheme;
+    _darkTheme.value = darkTheme;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 确保在框架渲染后应用主题
-      AdaptiveTheme.of(
-        Get.context!,
-      ).setTheme(light: lightTheme, dark: darkTheme);
+      final context = Get.context;
+      if (context == null) return;
+      final adaptiveTheme = AdaptiveTheme.maybeOf(context);
+      if (adaptiveTheme == null) return;
+      adaptiveTheme.setTheme(light: lightTheme, dark: darkTheme);
       toUpd.value = (toUpd.value + 1) % 2;
     });
   }
@@ -400,6 +410,10 @@ class ThemeController extends GetxController {
   bool firstDidChangePlatformBrightnessOrManual = true;
   Future<void> didChangePlatformBrightnessOrManual({bool once = false}) async {
     if (isMobile) return;
+    final context = Get.context;
+    if (context == null) return;
+    final adaptiveTheme = AdaptiveTheme.maybeOf(context);
+    if (adaptiveTheme == null) return;
     if (once && firstDidChangePlatformBrightnessOrManual) {
       firstDidChangePlatformBrightnessOrManual = false;
       await Window.setEffect(effect: WindowEffect.acrylic);
@@ -410,8 +424,8 @@ class ThemeController extends GetxController {
             WidgetsBinding.instance.window.platformBrightness ==
                 Brightness.light);
     Color t = isLight
-        ? AdaptiveTheme.of(Get.context!).lightTheme.scaffoldBackgroundColor
-        : AdaptiveTheme.of(Get.context!).darkTheme.scaffoldBackgroundColor;
+        ? adaptiveTheme.lightTheme.scaffoldBackgroundColor
+        : adaptiveTheme.darkTheme.scaffoldBackgroundColor;
     playHBackgroundColor.value = t.withAlpha(desktopOpacity);
     playHBackgroundColor.refresh();
     await Window.setEffect(

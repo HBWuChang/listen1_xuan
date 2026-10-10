@@ -22,7 +22,6 @@ import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:listen1_xuan/widgets/native_file_drop_region.dart';
 import 'package:media_kit/media_kit.dart' show MediaKit;
 import 'package:resizable_widget/resizable_widget.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'controllers/HomeController.dart';
 import 'controllers/upd_controller.dart';
 import 'examples/websocket_server_example.dart';
@@ -61,12 +60,10 @@ import 'package:smtc_windows/smtc_windows.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
-import 'package:dynamic_color/dynamic_color.dart';
 import 'controllers/theme.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
-import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
 import 'package:listen1_xuan/constants/network_defaults.dart';
 part 'main_testBtn.dart';
 part 'pages/main/main_widgets.dart';
@@ -165,41 +162,6 @@ Future<void> showStartupWindow(SettingsController? settingsController) async {
 
 bool _startupWindowConfigured = false;
 
-Future<void> _loadStartupLogoColor(
-  SettingsController settingsController,
-  ValueNotifier<Color?> logoColor,
-) async {
-  final settings = settingsController.settings;
-  final savedColor = settings['theme_color'];
-  final seed = savedColor is int ? Color(savedColor) : Colors.purple;
-  final savedMode = settings['theme_mode'];
-  final brightness = savedMode == 'dark'
-      ? Brightness.dark
-      : savedMode == 'light'
-      ? Brightness.light
-      : WidgetsBinding.instance.platformDispatcher.platformBrightness;
-  ColorScheme? scheme;
-  if (settings['use_dynamic_color'] ?? true) {
-    try {
-      final palette = await DynamicColorPlugin.getCorePalette();
-      if (palette != null) {
-        scheme = palette.toColorScheme(brightness: brightness);
-      } else {
-        final accent = await DynamicColorPlugin.getAccentColor();
-        if (accent != null) {
-          scheme = ColorScheme.fromSeed(seedColor: accent, brightness: brightness);
-        }
-      }
-    } catch (error) {
-      debugPrint('读取开屏主题色失败: $error');
-    }
-  }
-  logoColor.value = (scheme ?? ColorScheme.fromSeed(
-    seedColor: seed,
-    brightness: brightness,
-  )).primaryContainer;
-}
-
 Future<void> _initializeOptionalServices() async {
   try {
     final appDocDir = await getApplicationDocumentsDirectory();
@@ -223,22 +185,19 @@ Future<void> _initializeOptionalServices() async {
   }
 }
 
-Future<void> _initializeAppForHome(ValueNotifier<Color?> logoColor) async {
+Future<SettingsController> _initializeSettingsAndTheme() async {
   MediaKit.ensureInitialized();
-  const SharedPreferencesOptions sharedPreferencesOptions =
-      SharedPreferencesOptions();
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await migrateLegacySharedPreferencesToSharedPreferencesAsyncIfNecessary(
-    legacySharedPreferencesInstance: prefs,
-    sharedPreferencesAsyncOptions: sharedPreferencesOptions,
-    migrationCompletedKey: 'migrationCompleted',
-  );
   SettingsController settingsController = Get.put(
     SettingsController(),
     permanent: true,
   );
   await settingsController.init();
-  unawaited(_loadStartupLogoColor(settingsController, logoColor));
+  final themeController = createThemeController();
+  await themeController.initialization;
+  return settingsController;
+}
+
+Future<void> _initializeAppForHome(SettingsController settingsController) async {
   if (isDesktop) {
     await showStartupWindow(settingsController);
     _startupWindowConfigured = true;
@@ -335,19 +294,20 @@ void main() async {
     WidgetsBinding.instance.addObserver(frameworkHandlesBackRestorer);
   }
   final startupFailure = ValueNotifier<StartupFailure?>(null);
-  final startupLogoColor = ValueNotifier<Color?>(null);
-  runApp(MaterialApp(
-    theme: ThemeData.light(useMaterial3: true),
-    darkTheme: ThemeData.dark(useMaterial3: true),
-    home: StartupPage(
-      tipsService: startupTipsService,
-      failure: startupFailure,
-      logoColor: startupLogoColor,
-    ),
-  ));
+  final startupPage = StartupPage(
+    tipsService: startupTipsService,
+    failure: startupFailure,
+  );
+  var startupPageShown = false;
   unawaited(startupTipsService.load());
   try {
-    await _initializeAppForHome(startupLogoColor);
+    final settingsController = await _initializeSettingsAndTheme();
+    runApp(StartupApp(
+      themeController: Get.find<ThemeController>(),
+      home: startupPage,
+    ));
+    startupPageShown = true;
+    await _initializeAppForHome(settingsController);
   } catch (error, stackTrace) {
     if (isHeadlessEngine) Error.throwWithStackTrace(error, stackTrace);
     if (isDesktop && !_startupWindowConfigured) {
@@ -358,10 +318,12 @@ void main() async {
       }
     }
     startupFailure.value = StartupFailure.fromError(error, stackTrace);
+    if (!startupPageShown) {
+      runApp(MaterialApp(home: startupPage));
+    }
     return;
   }
   runApp(MyApp());
-  createThemeController();
   if (!isHeadlessEngine) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_initializeOptionalServices());
@@ -396,8 +358,9 @@ class MyApp extends StatelessWidget {
   MyApp({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
+    final themeController = Get.find<ThemeController>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      createThemeController();
+      themeController.didChangePlatformBrightnessOrManual();
     });
 
     return ScreenUtilInit(
@@ -406,9 +369,9 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       builder: (context, child) {
         return AdaptiveTheme(
-          light: ThemeData.light(useMaterial3: true),
-          dark: ThemeData.dark(useMaterial3: true),
-          initial: AdaptiveThemeMode.system,
+          light: themeController.lightTheme,
+          dark: themeController.darkTheme,
+          initial: themeController.themeMode.value,
           builder: (theme, darkTheme) => GetMaterialApp(
             title: 'Listen1',
             builder: (context, widget) {
