@@ -572,7 +572,7 @@ Future<void> globalSeekToPrevious({
 }
 
 Future<void> globalVolumeUp({double step = 2}) async {
-  var now_pos = _playController.music_player.state.volume;
+  var now_pos = _playController.currentVolume;
   var next_pos = now_pos + step;
   if (next_pos > 100) {
     next_pos = 100;
@@ -581,7 +581,7 @@ Future<void> globalVolumeUp({double step = 2}) async {
 }
 
 Future<void> globalVolumeDown({double step = 2}) async {
-  var now_pos = _playController.music_player.state.volume;
+  var now_pos = _playController.currentVolume;
   var next_pos = now_pos - step;
   if (next_pos < 0) {
     next_pos = 0;

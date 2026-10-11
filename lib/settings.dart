@@ -1,3 +1,4 @@
+import 'widgets/loudness_gain_input.dart';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:animations/animations.dart';
@@ -385,6 +386,29 @@ class _SettingsPageState extends State<SettingsPage> {
                               trailing: const Icon(Icons.chevron_right),
                               onTap: () => DefaultQualitySettingsSheet.show(),
                             ),
+                            Obx(
+                              () => SwitchListTile(
+                                title: const Text('响度均衡'),
+                                subtitle: const Text('会降低整体音量；哔哩哔哩按响度均衡，其他平台使用固定音量补偿'),
+                                value: settingsController.loudnessNormalization,
+                                onChanged: (value) async {
+                                  settingsController.loudnessNormalization = value;
+                                  await Get.find<PlayController>().applyPlaybackVolume();
+                                  if (value) {
+                                    unawaited(Get.find<PlayController>().refreshCurrentLoudness());
+                                  }
+                                },
+                              ),
+                            ),
+                            Obx(() => settingsController.loudnessNormalization
+                                ? LoudnessGainInput(
+                                    value: settingsController.otherPlatformLoudnessGain,
+                                    onChanged: (value) {
+                                      settingsController.otherPlatformLoudnessGain = value;
+                                      unawaited(Get.find<PlayController>().applyPlaybackVolume());
+                                    },
+                                  )
+                                : const SizedBox.shrink()),
                             Obx(
                               () => SwitchListTile(
                                 title: const Text('音量跟随系统'),

@@ -15,6 +15,7 @@ import 'package:listen1_xuan/play.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'settings_controller.dart';
+import '../services/audio_metadata_store.dart';
 
 class routeWithName {
   final Route route;
@@ -122,7 +123,11 @@ Future<void> closeApp() async {
         Get.find<SettingsController>().supabaseUploadTimeoutDurationOnExit,
   );
 
-  void performExit() {
+  bool exiting = false;
+  void performExit() async {
+    if (exiting) return;
+    exiting = true;
+    await AudioMetadataStore.instance.close();
     Get.back();
     // if (kDebugMode) {
     // print("exit(0)");

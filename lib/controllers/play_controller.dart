@@ -12,6 +12,7 @@ import 'package:listen1_xuan/controllers/cache_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/models/OnlineCacheItem.dart';
+import '../models/audio_metadata.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
 import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
@@ -149,6 +150,7 @@ class PlayController extends GetxController
   Future<void> initSysVolAndSet() async {
     if (settingsController.volumnFollowSystem) {
       await Get.find<PlayController>().getSysVolAndSet();
+      await applyPlaybackVolume();
     }
   }
 
@@ -196,6 +198,7 @@ class PlayController extends GetxController
   Future<void> updSysVolAndSet() async {
     if (settingsController.volumnFollowSystem) {
       await Get.find<PlayController>().getSysVolAndSet();
+      await applyPlaybackVolume();
     } else {
       Get.find<PlayController>().currentVolume = 100;
     }
@@ -215,6 +218,39 @@ class PlayController extends GetxController
   }
 
   double get currentVolume => _player_settings['volume'] ?? 50.0;
+  int _volumeApplyRevision = 0;
+  Future<void> applyPlaybackVolume() async {
+    final revision = ++_volumeApplyRevision;
+    var metadata = currentPlayingOnlineCacheItem.value?.audioMetadata;
+    final loadedId = _loadedTrackId;
+    if (metadata == null && loadedId != null) {
+      final sourceId = songReplaceSettings.value.getReplacementId(loadedId) ?? loadedId;
+      metadata = AudioMetadata(platform: sourceId.startsWith('bitrack_') ? 'bilibili' : null);
+    }
+    final gain = metadata?.gain(settingsController.loudnessNormalization,
+        otherPlatformGain: settingsController.otherPlatformLoudnessGain) ?? 1.0;
+    final base = settingsController.volumnFollowSystem ? 100.0 : currentVolume;
+    // mpv applies (volume / 100)^3, so convert linear gain to its volume scale.
+    final volume = base * pow(gain, 1 / 3).toDouble();
+    if (volume > 100 && music_player.platform is NativePlayer) {
+      await (music_player.platform as NativePlayer).setProperty('volume-max', '1000');
+    }
+    if (revision != _volumeApplyRevision) return;
+    await music_player.setVolume(volume);
+  }
+
+  String? _loadedTrackId;
+  Future<void> refreshCurrentLoudness() async {
+    if (!settingsController.loudnessNormalization) return;
+    final id = _loadedTrackId;
+    final metadata = currentPlayingOnlineCacheItem.value?.audioMetadata;
+    if (metadata?.hasWebLoudnessParams == true || id == null || id.isEmpty) return;
+    final item = await cacheController.ensureBilibiliLoudness(id);
+    if (_loadedTrackId != id) return;
+    currentPlayingOnlineCacheItem.value = item;
+    await applyPlaybackVolume();
+  }
+
   bool _skipForVolChange = true;
   set currentVolume(double value) {
     _player_settings['volume'] = value;
@@ -225,7 +261,7 @@ class PlayController extends GetxController
       }
       setSystemVolume(value);
     } else {
-      music_player.setVolume(value);
+      unawaited(applyPlaybackVolume());
     }
   }
 
@@ -245,7 +281,7 @@ class PlayController extends GetxController
       return;
     }
     settingSystemVolume = true;
-    music_player.setVolume(100);
+    unawaited(applyPlaybackVolume());
     _setShowSystemUI(false, () {
       FlutterVolumeController.setVolume(toSet)
           .then((_) {
@@ -628,11 +664,13 @@ class PlayController extends GetxController
       }
       Map<String, String>? httpHeaders = Get.find<CacheController>()
           .httpHeadersOfOnlineCache(track.id);
-      currentPlayingOnlineCacheItem.value = Get.find<CacheController>()
+      final cacheItem = Get.find<CacheController>()
           .getLocalCacheOnlineCacheItem(track.id);
       // 有缓存，直接播放
       Media media = Media(tdir, httpHeaders: httpHeaders);
       await music_player.open(media, play: false);
+      _loadedTrackId = track.id;
+      currentPlayingOnlineCacheItem.value = cacheItem;
       if (!randommodetemplist.any((element) => element.id == track.id)) {
         if (randomTrackInsertAtHead) {
           randommodetemplist.insert(0, track);
@@ -648,17 +686,10 @@ class PlayController extends GetxController
 
       Get.find<XLyricController>().loadLyric();
       if (!settingsController.volumnFollowSystem) {
-        double t_volume = 100;
-        try {
-          t_volume = getPlayerSettings("volume");
-        } catch (e) {
-          t_volume = 100;
-          setPlayerSetting("volume", t_volume);
-        }
-        music_player.setVolume(t_volume);
-      } else {
-        music_player.setVolume(100);
+        _player_settings['volume'] ??= 100.0;
       }
+      await applyPlaybackVolume();
+      unawaited(refreshCurrentLoudness());
       if (toSeek != null) {
         try {
           music_player.stream.duration

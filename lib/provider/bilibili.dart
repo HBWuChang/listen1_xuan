@@ -28,6 +28,7 @@ import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
 import 'package:listen1_xuan/settings.dart';
 
 import 'base.dart';
+import '../models/audio_metadata.dart';
 
 enum BLPlaylistType {
   playlist('biplaylist'),
@@ -754,6 +755,22 @@ class Bilibili extends BaseProvider {
     }
   }
 
+  // 为旧本地缓存补充响度，不把新请求的音质当作旧文件音质。
+  Future<AudioMetadata?> fetchAudioLoudness(String trackId) async {
+    if (!trackId.startsWith('bitrack_v_')) return null;
+    final parts = trackId.substring('bitrack_v_'.length).split('-');
+    final bvid = parts.first;
+    dynamic cid = parts.length > 1 ? parts[1] : null;
+    if (cid == null) {
+      final view = await dioWithCookieManager.get(
+        'https://api.bilibili.com/x/web-interface/view?bvid=$bvid');
+      cid = view.data['data']['pages'][0]['cid'];
+    }
+    final response = await dioWithCookieManager.get(
+      'https://api.bilibili.com/x/player/playurl?fnval=4048&voice_balance=1&bvid=$bvid&cid=$cid');
+    return AudioMetadata.fromBilibiliVolume(response.data['data']['volume']);
+  }
+
   Future<void> _bootstrapVideoTrack(
     Track track,
     Function(BootSuccessRes res, Track track) success,
@@ -774,7 +791,7 @@ class Bilibili extends BaseProvider {
         cid = trackIdCheck[1];
       }
       final response = await dioWithCookieManager.get(
-        'https://api.bilibili.com/x/player/playurl?fnval=4048&bvid=$bvid&cid=$cid',
+        'https://api.bilibili.com/x/player/playurl?fnval=4048&voice_balance=1&bvid=$bvid&cid=$cid',
       );
 
       final audioTracks = <int, dynamic>{};
@@ -819,6 +836,8 @@ class Bilibili extends BaseProvider {
                 url: audioTracks[quality.code]['baseUrl'] as String,
                 platform: name,
                 audioQualityOfBL: quality,
+                audioMetadata: AudioMetadata.fromBilibiliVolume(
+                  response.data['data']['volume'], qualityCode: quality.code),
               ),
               track,
             );
@@ -836,7 +855,8 @@ class Bilibili extends BaseProvider {
         final durl = response.data['data']['durl'];
         if (durl != null && (durl as List).isNotEmpty) {
           success(
-            BootSuccessRes(url: durl[0]['url'] as String, platform: name),
+            BootSuccessRes(url: durl[0]['url'] as String, platform: name,
+              audioMetadata: AudioMetadata.fromBilibiliVolume(response.data['data']['volume'])),
             track,
           );
         } else {

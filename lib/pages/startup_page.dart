@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../controllers/theme.dart';
 import '../services/startup_tips_service.dart';
+import '../services/audio_metadata_store.dart';
 
 class StartupFailure {
   const StartupFailure(this.reason, this.diagnostics);
@@ -105,7 +106,10 @@ class _StartupPageState extends State<StartupPage> {
     if (mounted) setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _exitTimer != null) return;
-      _exitTimer = Timer(const Duration(seconds: 3), () => exit(0));
+      _exitTimer = Timer(const Duration(seconds: 3), () async {
+        await AudioMetadataStore.instance.close();
+        exit(0);
+      });
       unawaited(Clipboard.setData(ClipboardData(text: failure.diagnostics))
           .catchError((Object error) {
         debugPrint('复制启动错误失败: $error');

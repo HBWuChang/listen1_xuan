@@ -1,4 +1,7 @@
 import 'dart:async';
+import '../services/audio_metadata_store.dart';
+import '../models/audio_metadata.dart';
+import '../models/AudioQualityOfBL.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
@@ -219,6 +222,7 @@ class CacheController extends GetxController {
     _onlineCacheList[track.id] = OnlineCacheItem(
       url: res.url,
       audioQualityOfBL: res.audioQualityOfBL,
+      audioMetadata: res.audioMetadata ?? AudioMetadata(platform: res.platform),
     );
     if (_settingsController.disableSongDownload) return;
 
@@ -251,10 +255,16 @@ class CacheController extends GetxController {
       }
     }
 
-    void onSuccess() {
+    Future<void> onSuccess() async {
       showDebugSnackbar('$fileName 下载完成', null);
       _activeDownloadFileNames.remove(fileName);
-      setLocalCache(track.id, fileName);
+      final online = _onlineCacheList[track.id];
+      final metadata = online?.url == res.url
+          ? online?.audioMetadata ?? AudioMetadata(platform: res.platform)
+          : res.audioMetadata ?? AudioMetadata(platform: res.platform);
+      await AudioMetadataStore.instance.put(track.id, metadata.forFile(fileName,
+        transcoded: isFfmpegEnabled && isBilibili && !_isMp3Url(res.url)));
+      setLocalCache(track.id, fileName, preserveMetadata: true);
       if (downloadId != track.id) {
         _playController.bootStrapDownloading.remove(downloadId);
       }
@@ -270,7 +280,7 @@ class CacheController extends GetxController {
     Future<void> runCacheOperation(Future<void> Function() operation) async {
       try {
         await operation();
-        onSuccess();
+        await onSuccess();
       } catch (error) {
         onError(error);
       }
@@ -591,11 +601,51 @@ class CacheController extends GetxController {
     if (_onlineCacheList.containsKey(id)) {
       return _onlineCacheList[id]!;
     }
-    return null;
+    final fileName = _localCacheList[id];
+    final metadata = fileName == null ? null : AudioMetadataStore.instance.get(id, fileName);
+    return metadata == null ? null : OnlineCacheItem(url: fileName!, audioMetadata: metadata);
+  }
+
+  final Map<String, Future<OnlineCacheItem?>> _loudnessRequests = {};
+
+  Future<OnlineCacheItem?> ensureBilibiliLoudness(String displayId) async {
+    final id = _playController.songReplaceSettings.value.getReplacementId(displayId) ?? displayId;
+    if (!id.startsWith('bitrack_v_')) return getLocalCacheOnlineCacheItem(displayId);
+    return _loudnessRequests.putIfAbsent(id, () async {
+      try {
+        final before = getLocalCacheOnlineCacheItem(displayId);
+        if (before?.audioMetadata?.hasWebLoudnessParams == true) return before;
+        final fileName = _localCacheList[id];
+        final online = _onlineCacheList[id];
+        final loudness = await provider.bilibili.fetchAudioLoudness(id);
+        if (loudness == null || loudness.measuredI == null) return before;
+        if (online != null && identical(_onlineCacheList[id], online)) {
+          final metadata = (online.audioMetadata ?? AudioMetadata(
+            platform: 'bilibili', sourceQualityCode: online.audioQualityOfBL?.code))
+              .withLoudness(loudness);
+          _onlineCacheList[id] = OnlineCacheItem(url: online.url,
+            audioQualityOfBL: online.audioQualityOfBL, audioMetadata: metadata);
+        }
+        if (fileName != null && _localCacheList[id] == fileName) {
+          final previous = AudioMetadataStore.instance.get(id, fileName);
+          // 旧文件格式未知，不能用当前设置推断其原始音质或是否转码。
+          final metadata = (previous ?? AudioMetadata(
+            platform: 'bilibili', fileName: fileName)).withLoudness(loudness);
+          await AudioMetadataStore.instance.put(id, metadata);
+        }
+        return getLocalCacheOnlineCacheItem(displayId);
+      } catch (e) {
+        _logger.w('无法获取歌曲响度，保持原音量', error: e);
+        return getLocalCacheOnlineCacheItem(displayId);
+      } finally {
+        _loudnessRequests.remove(id);
+      }
+    });
   }
 
   // 设置本地缓存文件路径
-  void setLocalCache(String id, String fileName) async {
+  void setLocalCache(String id, String fileName, {bool preserveMetadata = false}) async {
+    if (!preserveMetadata) unawaited(AudioMetadataStore.instance.delete(id));
     _onlineCacheList.remove(id);
     _localCacheList[id] = fileName;
     _playController.bootStrapDownloading.remove(id);
@@ -643,6 +693,7 @@ class CacheController extends GetxController {
       try {
         await File(path).delete();
         _localCacheList.remove(id);
+        await AudioMetadataStore.instance.delete(id);
 
         if (!hideSnackbar) {
           showInfoSnackbar('已清理', null);
@@ -672,6 +723,7 @@ class CacheController extends GetxController {
 
     // 清空缓存列表
     _localCacheList.clear();
+    await AudioMetadataStore.instance.retain({});
 
     _showCleanResult(count);
   }
@@ -714,6 +766,7 @@ class CacheController extends GetxController {
         }
       }
     }
+    await AudioMetadataStore.instance.retain(_localCacheList.keys.toSet());
     Get.find<XLyricController>().clearLyricBoxExceptIds(notToDelIds);
     // 清理无效的缓存记录（文件已不存在）
     await _cleanInvalidCacheRecords();
@@ -773,6 +826,7 @@ class CacheController extends GetxController {
 
     for (final key in keysToRemove) {
       _localCacheList.remove(key);
+      await AudioMetadataStore.instance.delete(key);
     }
   }
 

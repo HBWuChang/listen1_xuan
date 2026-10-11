@@ -33,9 +33,25 @@ import '../provider/netease.dart';
 import '../provider/qq.dart';
 import '../provider/loweb.dart' as music_providers;
 import '../settings.dart';
+import '../services/audio_metadata_store.dart';
+import '../models/audio_metadata.dart';
 
 class SettingsController extends GetxController {
   static const String hiveStoreKey = 'hive_store';
+  static const String loudnessNormalizationKey = 'loudnessNormalization';
+  bool get loudnessNormalization => settings[loudnessNormalizationKey] as bool? ?? true;
+  set loudnessNormalization(bool value) {
+    settings[loudnessNormalizationKey] = value;
+  }
+  static const String otherPlatformLoudnessGainKey = 'otherPlatformLoudnessGain';
+  double get otherPlatformLoudnessGain => AudioMetadata.validOtherPlatformGain(
+      settings[otherPlatformLoudnessGainKey]);
+  set otherPlatformLoudnessGain(double value) {
+    if (!value.isFinite || value < 0 || value > 1) {
+      throw ArgumentError.value(value, 'value', '音量系数必须在 0～1 之间');
+    }
+    settings[otherPlatformLoudnessGainKey] = value;
+  }
   static const String lyricHiveStoreKey = 'lyric_store';
   bool useHive = false;
   Box<dynamic>? box;
@@ -602,6 +618,7 @@ class SettingsController extends GetxController {
       Hive.init(path);
       box = await Hive.openBox(SettingsController.hiveStoreKey);
       useHive = true;
+      await AudioMetadataStore.instance.open();
 
       try {
         lyricBox = await Hive.openBox(SettingsController.lyricHiveStoreKey);
@@ -992,6 +1009,7 @@ class SettingsController extends GetxController {
 
   @override
   void onClose() {
+    unawaited(AudioMetadataStore.instance.close());
     box?.close();
     lyricBox?.close();
     super.onClose();
