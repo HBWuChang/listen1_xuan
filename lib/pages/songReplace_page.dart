@@ -9,10 +9,30 @@ import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
+import 'package:listen1_xuan/global_settings_animations.dart' show isMobile;
 import '../constants/const.dart';
 import '../controllers/myPlaylist_controller.dart';
 import '../funcs.dart';
 import '../settings.dart';
+
+class _SongReplaceScrollbarBehavior extends MaterialScrollBehavior {
+  const _SongReplaceScrollbarBehavior();
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    switch (axisDirectionToAxis(details.direction)) {
+      case Axis.horizontal:
+        return child;
+      case Axis.vertical:
+        assert(details.controller != null);
+        return Scrollbar(controller: details.controller, child: child);
+    }
+  }
+}
 
 /// 歌曲替换设置页面
 class SongReplacePage extends StatefulWidget {
@@ -24,10 +44,17 @@ class SongReplacePage extends StatefulWidget {
 
 class _SongReplacePageState extends State<SongReplacePage> {
   final PlayController _playController = Get.find<PlayController>();
+  final ScrollController _songReplaceScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _songReplaceScrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -69,6 +96,9 @@ class _SongReplacePageState extends State<SongReplacePage> {
           // 可滚动内容
           Expanded(
             child: CustomScrollView(
+              scrollBehavior: ScrollConfiguration.of(
+                context,
+              ).copyWith(scrollbars: false),
               slivers: [
                 // 解释信息行（可滚动隐藏）
                 SliverToBoxAdapter(child: _buildExplanationRow()),
@@ -89,7 +119,8 @@ class _SongReplacePageState extends State<SongReplacePage> {
                       );
                     }
 
-                    return SuperListView.builder(
+                    final list = SuperListView.builder(
+                      controller: _songReplaceScrollController,
                       padding: const EdgeInsets.all(8.0),
                       itemCount: mappings.length,
 
@@ -114,6 +145,7 @@ class _SongReplacePageState extends State<SongReplacePage> {
                         );
                       },
                     );
+                    return _withSongReplaceScrollbar(list);
                   }),
                 ),
               ],
@@ -122,6 +154,25 @@ class _SongReplacePageState extends State<SongReplacePage> {
         ],
       ),
     );
+  }
+
+  Widget _withSongReplaceScrollbar(Widget list) {
+    final styledList = ScrollbarTheme(
+      data: ScrollbarTheme.of(context).copyWith(
+        thickness: const WidgetStatePropertyAll(16),
+        radius: const Radius.circular(8),
+        crossAxisMargin: 2,
+        interactive: true,
+      ),
+      child: list,
+    );
+    if (isMobile) {
+      return ScrollConfiguration(
+        behavior: const _SongReplaceScrollbarBehavior(),
+        child: styledList,
+      );
+    }
+    return styledList;
   }
 
   /// 构建固定标题行
@@ -462,8 +513,19 @@ class _SongReplacePageState extends State<SongReplacePage> {
       );
     }
 
+    Offset? songDialogPosition;
     return InkWell(
-      onTap: allowTap ? () => song_dialog(context, track) : null,
+      onTapDown: allowTap ? (details) {
+        songDialogPosition = details.globalPosition;
+      } : null,
+      onTapCancel: allowTap ? () {
+        songDialogPosition = null;
+      } : null,
+      onTap: allowTap ? () {
+        final position = songDialogPosition;
+        songDialogPosition = null;
+        song_dialog(context, track, position: position);
+      } : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,

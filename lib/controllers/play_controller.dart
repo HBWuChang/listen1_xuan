@@ -27,6 +27,7 @@ import '../global_settings_animations.dart';
 import '../models/MediaState.dart';
 import '../models/SongReplaceSettings.dart';
 import '../utils/curve_utils.dart';
+import '../utils/play_sheet_offsets.dart';
 import 'lyric_controller.dart';
 import 'routeController.dart';
 import 'settings_controller.dart';
@@ -1040,11 +1041,9 @@ class PlayController extends GetxController
   // Sheet 控制相关
   final SheetController sheetController = SheetController();
   double get sheetMinHeight => 256.0.w;
-  SheetOffset get sheetMinOffset =>
-      SheetOffset(sheetMinHeight / playVMaxHeight);
+  SheetOffset get sheetMinOffset => playSheetMinOffset;
   double get sheetMidHeight => 0.8.sw;
-  SheetOffset get sheetMidOffset =>
-      SheetOffset(sheetMidHeight / playVMaxHeight);
+  SheetOffset get sheetMidOffset => playSheetMidOffset;
   double get playVMaxHeight => _playVMaxHeight ?? 0.8.sh;
   double? _playVMaxHeight;
   SheetOffset get playVMaxOffset => SheetOffset(1);

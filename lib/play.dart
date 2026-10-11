@@ -18,6 +18,7 @@ import 'package:listen1_xuan/pages/lyric/lyric_page.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:listen1_xuan/widgets/motor_progress_indicator_xuan.dart';
 import 'package:media_kit/media_kit.dart' show Player;
+import 'package:motor/motor.dart';
 import 'package:rxdart/rxdart.dart' as rxdart;
 import 'package:flutter/foundation.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
@@ -421,6 +422,7 @@ void _openLyricPage() {
 void _openNowPlayListPage() {
   // 使用路由导航到歌词页面
   if (Get.find<RouteController>().inNowPlayListPage.value) {
+    if (Get.find<PlayController>().tryCollapseSheet()) return;
     Get.back(id: 1);
   } else {
     Get.toNamed(RouteName.nowPlayingPage, id: 1);
@@ -825,6 +827,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     _sessionIdle = true;
     _publishStateNow();
   }
+
   // void change_playbackstate(PlaybackState _playbackState) {
   void change_playbackstate(MediaItem _item) {
     // All options shown:
@@ -875,9 +878,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         ];
       case browseCurrentPlayingId:
       case browseRecentId:
-        return _playController.current_playing
-            .map(_trackToMediaItem)
-            .toList();
+        return _playController.current_playing.map(_trackToMediaItem).toList();
       default:
         return const [];
     }

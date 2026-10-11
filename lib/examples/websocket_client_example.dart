@@ -358,6 +358,7 @@ class _WebSocketClientControlContentState
           Obx(() {
             final ctrl = Get.find<WebSocketClientController>();
             final playStatus = ctrl.lastPlayStatus;
+            Offset? songDialogPosition;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,11 +368,19 @@ class _WebSocketClientControlContentState
                   Card(
                     clipBehavior: Clip.hardEdge,
                     child: InkWell(
+                      onTapDown: (details) {
+                        songDialogPosition = details.globalPosition;
+                      },
+                      onTapCancel: () {
+                        songDialogPosition = null;
+                      },
                       onTap: () {
+                        final position = songDialogPosition;
+                        songDialogPosition = null;
                         Track? track = playStatus.currentTrack;
                         if (track != null) {
                           try {
-                            song_dialog(Get.context!, track);
+                            song_dialog(context, track, position: position);
                           } catch (e) {
                             debugPrint(e.toString());
                           }

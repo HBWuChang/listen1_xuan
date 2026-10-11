@@ -1,38 +1,42 @@
 part of '../../main.dart';
 
-String _searchHintText(String? tip) =>
-    startupTipsService.searchHintText(
-      showTips: Get.find<SettingsController>().showSomeTips,
-      tip: tip,
-    );
+String _searchHintText(String? tip) => startupTipsService.searchHintText(
+  showTips: Get.find<SettingsController>().showSomeTips,
+  tip: tip,
+);
+
+Widget _leftBarTitleDragArea(Widget child) =>
+    isWindows || isMacOS ? DragToMoveArea(child: child) : child;
 
 Widget get _leftBar => Scaffold(
   body: Column(
     children: [
       10.sbh,
       isDesktop
-          ? Listener(
-              onPointerDown: (event) {
-                if (event.kind == PointerDeviceKind.mouse &&
-                    event.buttons == kSecondaryMouseButton) {
-                  windowManager.hide();
-                  windowManager.setSkipTaskbar(true);
-                }
-                if (event.kind == PointerDeviceKind.mouse &&
-                    event.buttons == kMiddleMouseButton) {
-                  closeApp();
-                }
-              },
-              child: Tooltip(
-                message: '右键以最小化,中键以关闭',
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Listen1', style: TextStyle(fontSize: 24)),
-                    );
-                  },
-                ).sbwh(double.infinity, 34),
+          ? _leftBarTitleDragArea(
+              Listener(
+                onPointerDown: (event) {
+                  if (event.kind == PointerDeviceKind.mouse &&
+                      event.buttons == kSecondaryMouseButton) {
+                    windowManager.hide();
+                    windowManager.setSkipTaskbar(true);
+                  }
+                  if (event.kind == PointerDeviceKind.mouse &&
+                      event.buttons == kMiddleMouseButton) {
+                    closeApp();
+                  }
+                },
+                child: Tooltip(
+                  message: '右键以最小化,中键以关闭',
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Listen1', style: TextStyle(fontSize: 24)),
+                      );
+                    },
+                  ).sbwh(double.infinity, 34),
+                ),
               ),
             )
           : LayoutBuilder(
@@ -347,7 +351,8 @@ Listener _mainContent() => Listener(
                               10.sbw,
                               Expanded(
                                 child: ValueListenableBuilder<String?>(
-                                  valueListenable: startupTipsService.searchHint,
+                                  valueListenable:
+                                      startupTipsService.searchHint,
                                   builder: (context, tip, _) => Obx(
                                     () => TextField(
                                       decoration: InputDecoration(
@@ -357,7 +362,10 @@ Listener _mainContent() => Listener(
                                       controller: input_text_Controller,
                                       readOnly: true,
                                       onTap: () async {
-                                        Get.toNamed(RouteName.searchPage, id: 1);
+                                        Get.toNamed(
+                                          RouteName.searchPage,
+                                          id: 1,
+                                        );
                                       },
                                     ),
                                   ),

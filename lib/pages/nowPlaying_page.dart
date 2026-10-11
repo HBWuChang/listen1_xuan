@@ -668,13 +668,22 @@ class _TrackTileState extends State<_TrackTile> {
 
   Widget _buildActions(ThemeData theme) {
     final track = widget.track;
+    Offset? songDialogPosition;
     return Row(
       mainAxisSize: MainAxisSize.min, // 确保按钮在行内对齐
       children: [
         _TrackActionIcon(
           icon: Icons.list,
+          onTapDown: (details) {
+            songDialogPosition = details.globalPosition;
+          },
+          onTapCancel: () {
+            songDialogPosition = null;
+          },
           onTap: () {
-            song_dialog(Get.context!, track);
+            final position = songDialogPosition;
+            songDialogPosition = null;
+            song_dialog(context, track, position: position);
           },
         ),
         _TrackActionIcon(
@@ -693,10 +702,18 @@ class _TrackTileState extends State<_TrackTile> {
 
 /// 轻量的行内操作按钮：InkResponse + Icon，替换昂贵的 IconButton。
 class _TrackActionIcon extends StatelessWidget {
-  const _TrackActionIcon({required this.icon, this.onTap, this.color});
+  const _TrackActionIcon({
+    required this.icon,
+    this.onTap,
+    this.onTapDown,
+    this.onTapCancel,
+    this.color,
+  });
 
   final IconData icon;
   final VoidCallback? onTap;
+  final ValueChanged<TapDownDetails>? onTapDown;
+  final VoidCallback? onTapCancel;
   final Color? color;
 
   @override
@@ -706,6 +723,8 @@ class _TrackActionIcon extends StatelessWidget {
       cursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
       child: InkResponse(
         onTap: onTap,
+        onTapDown: enabled ? onTapDown : null,
+        onTapCancel: enabled ? onTapCancel : null,
         radius: 20,
         child: Padding(
           padding: const EdgeInsets.all(10),

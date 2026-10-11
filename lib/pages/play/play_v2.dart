@@ -1,6 +1,9 @@
 part of '../../play.dart';
 
 double lyricBorderRadius = Get.find<SettingsController>().lyricBorderRadius;
+const imageMotion = CupertinoMotion.smooth(
+  duration: Duration(milliseconds: 200),
+);
 
 Widget get playV2 => LayoutBuilder(
   builder: (context, boxConstraints) {
@@ -30,19 +33,11 @@ Widget get playV2 => LayoutBuilder(
           child: SheetViewport(
             child: Sheet(
               controller: _playController.sheetController,
-              initialOffset: SheetOffset(
-                _playController.sheetMinHeight / _playController.playVMaxHeight,
-              ),
+              initialOffset: _playController.sheetMinOffset,
               snapGrid: SheetSnapGrid(
                 snaps: [
-                  SheetOffset(
-                    _playController.sheetMinHeight /
-                        _playController.playVMaxHeight,
-                  ),
-                  SheetOffset(
-                    _playController.sheetMidHeight /
-                        _playController.playVMaxHeight,
-                  ),
+                  _playController.sheetMinOffset,
+                  _playController.sheetMidOffset,
                   SheetOffset(1.0),
                 ],
               ),
@@ -330,16 +325,23 @@ Widget get playV2 => LayoutBuilder(
                                                 .clamp(0.0, 1.0);
                                         // ==================== 阶段2封面透明度配置结束 ====================
 
-                                        return Positioned(
-                                          left: coverLeft,
-                                          top: handleMinHeight,
-                                          child: Opacity(
-                                            opacity: coverOpacity,
-                                            child: buildCoverImage(
-                                              coverSize,
-                                              borderRadius: coverBorderRadius,
-                                            ),
-                                          ),
+                                        return SingleMotionBuilder(
+                                          motion: imageMotion,
+                                          value: coverLeft,
+                                          builder: (context, left, child) {
+                                            return Positioned(
+                                              left: left,
+                                              top: handleMinHeight,
+                                              child: Opacity(
+                                                opacity: coverOpacity,
+                                                child: buildCoverImage(
+                                                  coverSize,
+                                                  borderRadius:
+                                                      coverBorderRadius,
+                                                ),
+                                              ),
+                                            );
+                                          },
                                         );
                                       },
                                     ),
@@ -364,8 +366,8 @@ Widget get playV2 => LayoutBuilder(
                                       left: controlLeft,
                                       top: controlTop,
                                       width: controlWidth,
-                                      child: withDragDetector(
-                                        isCollapsed: expandProgress < 0.5,
+                                      child: Listener(
+                                        onPointerDown: onMainPointerDown,
                                         child: Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceEvenly,

@@ -679,9 +679,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   },
                                   children: [
                                     // required
-                                    isWindows || isMacOS
-                                        ? DragToMoveArea(child: _leftBar)
-                                        : _leftBar,
+                                    _leftBar,
                                     _mainContent(),
                                   ],
                                 )
