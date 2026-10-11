@@ -2,7 +2,7 @@
 
 `scripts/release_notes.py` 从 Release 已上传资产生成下载表，使用 API 返回的真实链接和文件大小；不会修改安装包名称、构建 hash 或应用内更新逻辑。
 
-推荐无 FFmpeg 精简版。Android 的 ARM64 设备推荐 ARM64 + 内置 Cronet（无需 Google Play 服务），使用粗体和 ⭐ 高亮。说明明确提醒 GitHub 相关功能可能出现问题，并不推荐多架构通用包。所有安装包均列出下载体积（MiB）和各自的提交 hash。
+推荐无 FFmpeg 精简版。Android 的 ARM64 设备推荐 ARM64 + 不内置 Cronet（需要可用的 Google Play 服务），使用粗体高亮，不使用 emoji。说明明确提醒 GitHub 相关功能可能出现问题，并不推荐多架构通用包。所有安装包均列出下载体积（MiB）和各自的提交 hash。
 
 ## 自动刷新
 

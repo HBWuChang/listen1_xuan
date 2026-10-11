@@ -78,7 +78,7 @@ def size_label(size):
 
 def download(asset, recommended=False):
     info = classify(asset["name"])
-    label = "⭐ 推荐下载" if recommended else "下载"
+    label = "推荐下载" if recommended else "下载"
     value = f"[{label}]({asset['browser_download_url']}) · {size_label(asset['size'])} · `{info['hash']}`"
     return f"**{value}**" if recommended else value
 
@@ -90,13 +90,13 @@ def generate_guide(assets):
     lines = [
         "## 安装包选择",
         "",
-        "> **⭐ 优先推荐：无 FFmpeg 精简版。Android 的 ARM64 设备优先选择 ARM64 + 内置 Cronet（无需 Google Play 服务）。**",
-        "> **⚠️ GitHub 相关功能可能出现问题；内置 Cronet 不保证 GitHub 在当前网络环境下可访问。**",
+        "> **优先推荐：无 FFmpeg 精简版。Android 的 ARM64 设备优先选择 ARM64 + 不内置 Cronet 版（需要可用的 Google Play 服务）。**",
+        "> **GitHub 相关功能可能出现问题；推荐的不内置 Cronet 版在 Google Play 服务缺失或不可用时可能请求失败，任何版本均不保证 GitHub 在当前网络环境下可访问。**",
         "",
         "- **精简版（推荐）**：体积更小，仍可缓存；Bilibili 缓存保留原始格式，不转 MP3、不写入歌曲元数据。",
         "- **含 FFmpeg**：适合需要 Bilibili 缓存转 MP3、缓存写入歌曲元数据的用户，体积较大。",
-        "- **内置 Cronet（Android 推荐）**：无需 Google Play 服务；文件名不含 `without.embedded.Cronet`。",
-        "- **Google Play 服务版**：需要可用的 Google Play 服务；文件名含 `without.embedded.Cronet`（本地构建名可能使用空格）。",
+        "- **内置 Cronet**：无需 Google Play 服务，适合服务缺失或不可用的设备；文件名不含 `without.embedded.Cronet`。",
+        "- **不内置 Cronet（Android 推荐）**：需要可用的 Google Play 服务；文件名含 `without.embedded.Cronet`（本地构建名可能使用空格）。",
         "- ARM64 适用于大多数近年 ARM 手机；32 位 ARM 设备请选择 ARM32；x86_64 仅适用于对应设备或模拟器。",
         "- **不推荐通用包**：包含多种架构、体积较大。请优先确认设备架构并选择对应的单架构包。",
         "",
@@ -104,20 +104,20 @@ def generate_guide(assets):
         "",
         "### Android",
         "",
-        "| 设备架构 | 内置 Cronet · 精简版 ⭐ | 内置 Cronet · 含 FFmpeg | Google Play 服务 · 精简版 | Google Play 服务 · 含 FFmpeg |",
+        "| 设备架构 | 不内置 Cronet · 精简版（推荐） | 不内置 Cronet · 含 FFmpeg | 内置 Cronet · 精简版 | 内置 Cronet · 含 FFmpeg |",
         "|---|---|---|---|---|",
     ]
     for arch in ARCHES:
         cells = []
-        for embedded, ffmpeg in ((True, False), (True, True), (False, False), (False, True)):
+        for embedded, ffmpeg in ((False, False), (False, True), (True, False), (True, True)):
             matches = [a for a in packages if (i := classify(a["name"]))["platform"] == "Android" and i["arch"] == arch and i["embedded"] == embedded and i["ffmpeg"] == ffmpeg]
-            cells.append("<br>".join(download(a, arch == "arm64-v8a" and embedded and not ffmpeg) for a in matches) or "暂未发布")
+            cells.append("<br>".join(download(a, arch == "arm64-v8a" and not embedded and not ffmpeg) for a in matches) or "暂未发布")
         lines.append(f"| {ARCH_LABELS[arch]} | " + " | ".join(cells) + " |")
     lines += [
         "",
         "### Windows / macOS / iOS",
         "",
-        "| 平台 | 精简版 ⭐ 推荐 | 含 FFmpeg | 安装说明 |",
+        "| 平台 | 精简版（推荐） | 含 FFmpeg | 安装说明 |",
         "|---|---|---|---|",
     ]
     instructions = {

@@ -15,7 +15,7 @@ def asset(name, size=1048576):
 class ReleaseNotesTests(unittest.TestCase):
     def test_mixed_hashes_and_actual_urls(self):
         assets = [
-            asset("app-arm64-v8a-release-a123456.apk", 2621440),
+            asset("app-arm64-v8a-release-without.embedded.Cronet-a123456.apk", 2621440),
             asset("windows-build-artifact-b234567.zip"),
             asset("listen1_xuan-2.7.1+51-macos-c345678.zip"),
             asset("listen1_xuan-ios-d456789.app.zip"),
@@ -24,7 +24,7 @@ class ReleaseNotesTests(unittest.TestCase):
         for package in assets:
             self.assertIn(package["browser_download_url"], guide)
             self.assertIn(f"`{notes.classify(package['name'])['hash']}`", guide)
-        self.assertIn("**[⭐ 推荐下载](https://example.com/app-arm64-v8a-release-a123456.apk) · 2.50 MiB · `a123456`**", guide)
+        self.assertIn("**[推荐下载](https://example.com/app-arm64-v8a-release-without.embedded.Cronet-a123456.apk) · 2.50 MiB · `a123456`**", guide)
 
     def test_android_matrix_and_recommendation(self):
         assets = []
@@ -38,10 +38,14 @@ class ReleaseNotesTests(unittest.TestCase):
                     info = notes.classify(name)
                     self.assertEqual((info["arch"], info["embedded"], info["ffmpeg"]), (arch, embedded, ffmpeg))
         guide = notes.generate_guide(assets)
-        self.assertEqual(guide.count("[⭐ 推荐下载]"), 1)
+        self.assertEqual(guide.count("[推荐下载]"), 1)
         self.assertEqual(guide.count("https://example.com/"), 16)
         self.assertIn("通用包 · 不推荐", guide)
         self.assertIn("GitHub 相关功能可能出现问题", guide)
+        self.assertIn("**[推荐下载](https://example.com/app-arm64-v8a-release-without.embedded.Cronet-a123456.apk)", guide)
+        self.assertNotIn("**[推荐下载](https://example.com/app-arm64-v8a-release-a123456.apk)", guide)
+        self.assertNotIn("\u2b50", guide)
+        self.assertNotIn("\u26a0", guide)
         self.assertFalse(notes.classify("app-release-without embedded Cronet-a123456.apk")["embedded"])
 
     def test_idempotence_and_preservation_of_manual_notes(self):
