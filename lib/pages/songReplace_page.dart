@@ -9,30 +9,11 @@ import 'package:listen1_xuan/models/Track.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
-import 'package:listen1_xuan/global_settings_animations.dart' show isMobile;
+import 'package:listen1_xuan/widgets/track_scrollbar.dart';
 import '../constants/const.dart';
 import '../controllers/myPlaylist_controller.dart';
 import '../funcs.dart';
 import '../settings.dart';
-
-class _SongReplaceScrollbarBehavior extends MaterialScrollBehavior {
-  const _SongReplaceScrollbarBehavior();
-
-  @override
-  Widget buildScrollbar(
-    BuildContext context,
-    Widget child,
-    ScrollableDetails details,
-  ) {
-    switch (axisDirectionToAxis(details.direction)) {
-      case Axis.horizontal:
-        return child;
-      case Axis.vertical:
-        assert(details.controller != null);
-        return Scrollbar(controller: details.controller, child: child);
-    }
-  }
-}
 
 /// 歌曲替换设置页面
 class SongReplacePage extends StatefulWidget {
@@ -157,22 +138,10 @@ class _SongReplacePageState extends State<SongReplacePage> {
   }
 
   Widget _withSongReplaceScrollbar(Widget list) {
-    final styledList = ScrollbarTheme(
-      data: ScrollbarTheme.of(context).copyWith(
-        thickness: const WidgetStatePropertyAll(16),
-        radius: const Radius.circular(8),
-        crossAxisMargin: 2,
-        interactive: true,
-      ),
+    return TrackScrollbar(
+      controller: _songReplaceScrollController,
       child: list,
     );
-    if (isMobile) {
-      return ScrollConfiguration(
-        behavior: const _SongReplaceScrollbarBehavior(),
-        child: styledList,
-      );
-    }
-    return styledList;
   }
 
   /// 构建固定标题行

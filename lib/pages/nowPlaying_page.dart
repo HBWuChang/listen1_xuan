@@ -11,39 +11,13 @@ import '../bodys.dart';
 import '../controllers/play_controller.dart';
 import '../controllers/nowplaying_controller.dart';
 import 'package:listen1_xuan/global_settings_animations.dart'
-    show isDesktop, isMobile;
+    show isDesktop;
 import 'package:listen1_xuan/models/Track.dart';
+import 'package:listen1_xuan/widgets/track_scrollbar.dart';
 
 /// 播放列表行高（与 [ListTile.minTileHeight] 保持一致）。
 /// 固定行高可以让 super_sliver_list 精确估算 extent，并支持用初始滚动偏移直接定位。
 const double _kTrackRowHeight = 40;
-
-/// 移动端滚动条行为。
-///
-/// Flutter 默认只在桌面平台（linux/macOS/windows）的
-/// [MaterialScrollBehavior.buildScrollbar] 中自动添加 [Scrollbar]，
-/// 移动端不会展示滚动条。这里复用桌面端的同一套逻辑，让移动端的
-/// 垂直滚动列表也显示滚动条。
-class _AlwaysScrollbarBehavior extends MaterialScrollBehavior {
-  const _AlwaysScrollbarBehavior();
-
-  @override
-  Widget buildScrollbar(
-    BuildContext context,
-    Widget child,
-    ScrollableDetails details,
-  ) {
-    // 与桌面端 MaterialScrollBehavior 保持一致：
-    // 仅垂直方向添加滚动条，且必须提供 controller。
-    switch (axisDirectionToAxis(details.direction)) {
-      case Axis.horizontal:
-        return child;
-      case Axis.vertical:
-        assert(details.controller != null);
-        return Scrollbar(controller: details.controller, child: child);
-    }
-  }
-}
 
 class NowPlayingPage extends StatefulWidget {
   @override
@@ -349,7 +323,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     BuildContext context,
     NowPlayingPageController controller,
   ) {
-    final list = Obx(() {
+    return Obx(() {
       final playingList = controller.filteredPlayingList; // 使用过滤后的列表
       final currentTrackId = controller.currentTrackId;
       // 在这里统一订阅搜索状态，替代原先每个列表项内部的 Obx
@@ -391,83 +365,67 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       final canReorder = useReorderableList.value && !isSearching;
 
       if (canReorder) {
-        return AnimatedReorderableListView(
-          onReorder: (oldIndex, newIndex) {
-            controller.reorderPlaylist(oldIndex, newIndex);
-          },
-          isSameItem: (trackA, trackB) => trackA.id == trackB.id,
+        return TrackScrollbar(
           controller: scrollController,
-          items: playingList,
-          longPressDraggable: true,
-          buildDefaultDragHandles: false,
-          enterTransition: [SlideInDown()],
-          exitTransition: [SlideInUp()],
-          insertDuration: const Duration(milliseconds: 250),
-          removeDuration: const Duration(milliseconds: 250),
-          dragStartDelay: const Duration(milliseconds: 200),
+          child: AnimatedReorderableListView(
+            onReorder: (oldIndex, newIndex) {
+              controller.reorderPlaylist(oldIndex, newIndex);
+            },
+            isSameItem: (trackA, trackB) => trackA.id == trackB.id,
+            controller: scrollController,
+            items: playingList,
+            longPressDraggable: true,
+            buildDefaultDragHandles: false,
+            enterTransition: [SlideInDown()],
+            exitTransition: [SlideInUp()],
+            insertDuration: const Duration(milliseconds: 250),
+            removeDuration: const Duration(milliseconds: 250),
+            dragStartDelay: const Duration(milliseconds: 200),
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            itemBuilder: (context, index) {
+              final track = playingList[index];
+              return _TrackTile(
+                key: ValueKey(track.id),
+                track: track,
+                isCurrentTrack: track.id == currentTrackId,
+                reorderEnabled: true,
+                isSearching: isSearching,
+                query: query,
+                controller: controller,
+              );
+            },
+          ),
+        );
+      }
+
+      return TrackScrollbar(
+        controller: scrollController,
+        child: SuperListView.builder(
+          controller: scrollController,
+          listController: _listController,
+          itemCount: playingList.length,
           padding: EdgeInsets.symmetric(horizontal: 16),
+          // 行内容没有需要保活的状态，去掉每项的 AutomaticKeepAlive 包装
+          addAutomaticKeepAlives: false,
+          // 行高固定：让 jumpToItem / 初始偏移的估算精确
+          extentEstimation: (_, __) => _kTrackRowHeight,
+          // cache 区的子项延迟到后续帧填充，避免首帧一次性物化过多列表项
+          delayPopulatingCacheArea: true,
           itemBuilder: (context, index) {
             final track = playingList[index];
             return _TrackTile(
               key: ValueKey(track.id),
               track: track,
               isCurrentTrack: track.id == currentTrackId,
-              reorderEnabled: true,
+              reorderEnabled: false,
               isSearching: isSearching,
               query: query,
               controller: controller,
             );
           },
-        );
-      }
-
-      return SuperListView.builder(
-        controller: scrollController,
-        listController: _listController,
-        itemCount: playingList.length,
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        // 行内容没有需要保活的状态，去掉每项的 AutomaticKeepAlive 包装
-        addAutomaticKeepAlives: false,
-        // 行高固定：让 jumpToItem / 初始偏移的估算精确
-        extentEstimation: (_, __) => _kTrackRowHeight,
-        // cache 区的子项延迟到后续帧填充，避免首帧一次性物化过多列表项
-        delayPopulatingCacheArea: true,
-        itemBuilder: (context, index) {
-          final track = playingList[index];
-          return _TrackTile(
-            key: ValueKey(track.id),
-            track: track,
-            isCurrentTrack: track.id == currentTrackId,
-            reorderEnabled: false,
-            isSearching: isSearching,
-            query: query,
-            controller: controller,
-          );
-        },
+        ),
       );
     });
-
-    // 移动端默认不显示滚动条，这里复用桌面端的展示逻辑。
-    // 桌面端由 MaterialScrollBehavior 自动添加滚动条，因此无需额外包裹。
-    // 通过 ScrollbarTheme 统一加粗滚动条、两端圆角（胶囊形），
-    // 并开启 interactive 以支持拖动滑块控制列表。
-    final styledList = ScrollbarTheme(
-      data: ScrollbarTheme.of(context).copyWith(
-        thickness: const WidgetStatePropertyAll(16),
-        radius: const Radius.circular(8),
-        crossAxisMargin: 2,
-        interactive: true,
-      ),
-      child: list,
-    );
-
-    if (isMobile) {
-      return ScrollConfiguration(
-        behavior: const _AlwaysScrollbarBehavior(),
-        child: styledList,
-      );
-    }
-    return styledList;
   }
 
   void _showClearDialog(

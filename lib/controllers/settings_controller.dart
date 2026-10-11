@@ -233,6 +233,7 @@ class SettingsController extends GetxController {
   }
 
   static const String supabaseUseBackupUrlKey = 'supabaseUseBackupUrl';
+
   /// 是否使用备用地址连接 Supabase
   ///
   /// 备用地址是自建的 Cloudflare Worker 透明反代，见
@@ -475,13 +476,7 @@ class SettingsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    debounce(settings, (callback) {
-      saveSettings();
-    });
-    debounce(
-      showTimeInNotifyRx,
-      (enable) => Get.find<PlayController>().showTimeInAlbum(enable),
-    );
+
     ever<Map<String, dynamic>>(settings, (_) {
       final nextMini = settings[songReplaceFabMiniKey] as bool? ?? true;
       final nextLocationIndex =
@@ -579,6 +574,13 @@ class SettingsController extends GetxController {
       }
       _lastSettingsPageExpansion = Set<int>.from(callback); // 创建新的 Set 副本
     });
+    debounce(settings, (callback) {
+      saveSettings();
+    });
+    debounce(
+      showTimeInNotifyRx,
+      (enable) => Get.find<PlayController>().showTimeInAlbum(enable),
+    );
   }
 
   Future<void> init() async {
