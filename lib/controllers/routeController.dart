@@ -150,7 +150,9 @@ Future<void> closeApp() async {
   }
 
   Get.dialog(
-    Obx(() {
+    PopScope(
+      canPop: false,
+      child: Obx(() {
       // 当两个任务都完成时，自动关闭
       // 或者超时且 saveSettings 完成时，自动关闭
       if ((settingsSaved.value && continuePlaysaved.value) ||
@@ -201,7 +203,8 @@ Future<void> closeApp() async {
             ),
         ],
       );
-    }),
+      }),
+    ),
     barrierDismissible: false,
   );
 

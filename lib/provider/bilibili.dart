@@ -1,5 +1,11 @@
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
@@ -270,7 +276,7 @@ class Bilibili extends BaseProvider {
   // #region 登录 / 用户
 
   @override
-  String get loginButtonText => '设置bilibili cookie';
+  String get loginButtonText => '登录哔哩哔哩 / 设置Cookie';
 
   @override
   Future<void> login(BuildContext context) async {
@@ -1013,6 +1019,231 @@ class Bilibili extends BaseProvider {
   // #endregion
 }
 
+/// 使用独立的无 Cookie 请求，避免已有登录状态干扰二维码授权。
+class BilibiliQrLoginApi {
+  BilibiliQrLoginApi({Dio? client}) : _client = client;
+  final Dio? _client;
+  Dio get _dio => _client ?? dioWithProxyAdapter;
+  static const _passport = 'https://passport.bilibili.com/x/passport-login/web/qrcode';
+
+  Future<({String url, String key})> generate(CancelToken cancelToken) async {
+    final response = await _dio.get('$_passport/generate', cancelToken: cancelToken,
+      options: Options(sendTimeout: const Duration(seconds: 10), receiveTimeout: const Duration(seconds: 10)),
+    );
+    final body = response.data;
+    if (body['code'] != 0) throw StateError('获取二维码失败');
+    final url = body['data']['url'] as String;
+    final key = body['data']['qrcode_key'] as String;
+    final uri = Uri.parse(url);
+    if (key.isEmpty || uri.scheme != 'https' ||
+        !(uri.host == 'bilibili.com' || uri.host.endsWith('.bilibili.com'))) {
+      throw StateError('二维码登录链接无效');
+    }
+    return (url: url, key: key);
+  }
+
+  Future<({int code, List<Cookie> cookies})> poll(String key, CancelToken cancelToken) async {
+    final response = await _dio.get('$_passport/poll',
+      queryParameters: {'qrcode_key': key},
+      cancelToken: cancelToken,
+      options: Options(sendTimeout: const Duration(seconds: 10), receiveTimeout: const Duration(seconds: 10), headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 BiliApp/6.66.0',
+      }),
+    );
+    final body = response.data;
+    if (body['code'] != 0) throw StateError('查询二维码登录状态失败');
+    final code = body['data']['code'] as int;
+    final cookies = <Cookie>[];
+    if (code == 0) {
+      for (final header in response.headers['set-cookie'] ?? <String>[]) {
+        // 部分适配器合并 Set-Cookie；仅在下一个 name=value 前切分，保留 Expires 中的逗号。
+        for (final value in header.split(RegExp(r',(?=\s*[^\s;,=]+\s*=)'))) {
+          cookies.add(Cookie.fromSetCookieValue(value.trim()));
+        }
+      }
+      if (!cookies.any((cookie) => cookie.name == 'SESSDATA' && cookie.value.isNotEmpty)) {
+        throw StateError('登录成功但未获取到登录Cookie，请刷新二维码重试');
+      }
+    }
+    return (code: code, cookies: cookies);
+  }
+}
+
+class BilibiliQrLoginPage extends StatefulWidget {
+  const BilibiliQrLoginPage({super.key, required this.provider, this.api});
+  final Bilibili provider;
+  final BilibiliQrLoginApi? api;
+
+  @override
+  State<BilibiliQrLoginPage> createState() => _BilibiliQrLoginPageState();
+}
+
+class _BilibiliQrLoginPageState extends State<BilibiliQrLoginPage> with WidgetsBindingObserver {
+  late final BilibiliQrLoginApi _api;
+  CancelToken _cancelToken = CancelToken();
+  Timer? _timer;
+  int _generation = 0;
+  bool _generating = true;
+  bool _polling = false;
+  bool _finished = false;
+  bool _opening = false;
+  bool _active = true;
+  String _url = '';
+  String _key = '';
+  String _status = '正在生成二维码…';
+
+  @override
+  void initState() {
+    super.initState();
+    _api = widget.api ?? BilibiliQrLoginApi();
+    WidgetsBinding.instance.addObserver(this);
+    _generate();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _generation++;
+    _timer?.cancel();
+    _cancelToken.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _active = state == AppLifecycleState.resumed;
+    _timer?.cancel();
+    if (_active) _poll();
+  }
+
+  Future<void> _generate() async {
+    final generation = ++_generation;
+    _timer?.cancel();
+    _cancelToken.cancel();
+    _cancelToken = CancelToken();
+    setState(() {
+      _generating = true;
+      _finished = false;
+      _polling = false;
+      _url = '';
+      _key = '';
+      _status = '正在生成二维码…';
+    });
+    try {
+      final qr = await _api.generate(_cancelToken);
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        _url = qr.url;
+        _key = qr.key;
+        _generating = false;
+        _status = '等待扫码或在哔哩哔哩客户端确认';
+      });
+      _poll();
+    } catch (_) {
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        _generating = false;
+        _status = '获取二维码失败，请刷新重试';
+      });
+    }
+  }
+
+  Future<void> _poll() async {
+    if (!_active || _polling || _finished || _key.isEmpty) return;
+    _timer?.cancel();
+    _polling = true;
+    final generation = _generation;
+    try {
+      final result = await _api.poll(_key, _cancelToken);
+      if (!mounted || generation != _generation) return;
+      if (result.code == 0) {
+        setState(() {
+          _finished = true;
+          _status = '正在保存登录信息…';
+        });
+        await widget.provider.saveToken(result.cookies);
+        if (!mounted) return;
+        showSuccessSnackbar('哔哩哔哩登录成功', null);
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() {
+          switch (result.code) {
+            case 86101: _status = '等待扫码或在哔哩哔哩客户端确认';
+            case 86090: _status = '已扫码，请在哔哩哔哩确认登录';
+            case 86038:
+              _status = '二维码已过期，请刷新';
+              _finished = true;
+            default:
+              _status = '登录状态异常，请刷新重试';
+              _finished = true;
+          }
+        });
+      }
+    } catch (_) {
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        _status = _finished ? '保存登录信息失败，请刷新重试' : '查询登录状态失败，正在重试…';
+      });
+    } finally {
+      if (mounted && generation == _generation) {
+        _polling = false;
+        if (_active && !_finished) _timer = Timer(const Duration(seconds: 2), _poll);
+      }
+    }
+  }
+
+  Future<void> _openClient() async {
+    if (_url.isEmpty || _opening || _finished) return;
+    final url = _url;
+    setState(() => _opening = true);
+    try {
+      final uri = Uri.parse(url);
+      // 与 BBPlayer 一样打开二维码原始链接，由官方页面及系统处理客户端跳转。
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw StateError('无法打开链接');
+      }
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: url));
+      if (mounted) showErrorSnackbar('打开失败', '登录链接已复制，请在浏览器中打开');
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('哔哩哔哩客户端 / 扫码登录')),
+    body: Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (_generating) const CircularProgressIndicator(),
+          if (_url.isNotEmpty && !_finished) GestureDetector(
+            onTap: _openClient,
+            child: Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(12),
+              child: QrImageView(data: _url, size: 200),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(_status, textAlign: TextAlign.center),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: _url.isEmpty || _finished || _opening ? null : _openClient,
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('在哔哩哔哩客户端打开'),
+          ),
+          TextButton(onPressed: _generating || (_finished && _polling) ? null : _generate,
+            child: const Text('刷新二维码')),
+          const Text('同一台手机可点击按钮打开登录链接并确认。\n也可用另一台设备的哔哩哔哩扫描二维码。\n确认后返回本应用，会自动完成登录。',
+            textAlign: TextAlign.center),
+        ]),
+      ),
+    ),
+  );
+}
+
 class _BilibiliLoginForm extends StatefulWidget {
   final Bilibili provider;
   const _BilibiliLoginForm({required this.provider});
@@ -1053,14 +1284,24 @@ class _BilibiliLoginFormState extends State<_BilibiliLoginForm> {
     padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
     child: Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).bottomSheetTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ElevatedButton.icon(
+              icon: const Icon(Icons.qr_code),
+              label: const Text('客户端 / 扫码登录'),
+              onPressed: () async {
+                final loggedIn = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(builder: (_) => BilibiliQrLoginPage(provider: widget.provider)),
+                );
+                if (loggedIn == true && context.mounted) Navigator.of(context).pop();
+              },
+            ),
             ElevatedButton(
               onPressed: () => g_launchURL(
                 Uri.parse('https://mashir0-bilibili-qr-login.hf.space/'),
