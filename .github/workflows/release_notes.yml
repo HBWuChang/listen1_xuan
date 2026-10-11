@@ -1,0 +1,79 @@
+name: Release installation guide
+
+on:
+  workflow_run:
+    workflows: [apk, win, macos, ios]
+    types: [completed]
+    branches: [main, feat/dual-build-ffmpeg]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to refresh (for example 2.7.1+51)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      # Run trusted tooling from the default branch; never execute the build commit.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Resolve the exact release tag
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          MANUAL_TAG: ${{ inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$MANUAL_TAG"
+          else
+            TAG=$(python3 scripts/release_notes.py --repo "$REPOSITORY" --source-sha "$SOURCE_SHA")
+          fi
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+.-][A-Za-z0-9.-]+)*$ ]]; then
+            echo "Invalid release version"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  update:
+    needs: resolve
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Serialize body edits per release. A replacement pending run reads all assets
+    # afresh, so coalescing runs for the same tag does not lose a platform update.
+    concurrency:
+      group: release-install-guide-${{ needs.resolve.outputs.tag }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Update installation guide from uploaded assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.resolve.outputs.tag }}
+        run: python3 scripts/release_notes.py --repo "$REPOSITORY" --tag "$RELEASE_TAG" --publish
