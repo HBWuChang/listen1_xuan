@@ -101,3 +101,13 @@ flutter version 3.41.9
 ![1734596278025](https://github.com/user-attachments/assets/8164b742-068e-4e85-9edc-6884719380a2)
 
 **Full Changelog**: https://github.com/HBWuChang/listen1_xuan/commits/first
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=hbwuchang%2Flisten1_xuan&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=hbwuchang/listen1_xuan&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=hbwuchang/listen1_xuan&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=hbwuchang/listen1_xuan&type=date&legend=top-left" />
+ </picture>
+</a>
