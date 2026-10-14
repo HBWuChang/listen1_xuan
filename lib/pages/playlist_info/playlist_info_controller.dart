@@ -67,8 +67,7 @@ class PlaylistInfoController extends GetxController {
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
 
-  final ScrollController outerScrollController = ScrollController();
-  final ScrollController innerScrollController = ScrollController();
+  final ScrollController scrollController = ScrollController();
 
   // scroll bar state
   OverlayEntry? scrollBarOverlayEntry;
@@ -76,9 +75,6 @@ class PlaylistInfoController extends GetxController {
   double scrollBarPos = 0.5;
   Timer? scrollBarTimer;
   StateSetter? scrollBarSetState;
-  bool lastMoveIsUp = false;
-  bool onDragSlider = false;
-  double lastMove = 0;
 
   @override
   void onInit() {
@@ -86,7 +82,7 @@ class PlaylistInfoController extends GetxController {
     checkFav();
     loadData();
     searchController.addListener(onSearchChanged);
-    innerScrollController.addListener(onInnerScroll);
+    scrollController.addListener(onScroll);
     searchFocusNode.addListener(() {
       if (searchFocusNode.hasFocus) {
         setInAppHotKeyEnable(false);
@@ -176,8 +172,8 @@ class PlaylistInfoController extends GetxController {
     _bumpTracks();
   }
 
-  void onInnerScroll() {
-    final position = innerScrollController.position;
+  void onScroll() {
+    final position = scrollController.position;
     if (position.maxScrollExtent <= 0) {
       hideScrollBar();
       return;
@@ -197,45 +193,14 @@ class PlaylistInfoController extends GetxController {
         scrollBarSetState = null;
       }
     }
-    // 获取滚动信息
-    final move = position.pixels - lastMove;
-    // 判断滚动方向
-    bool nowMoveIsUp = move > 0;
-    if (nowMoveIsUp != lastMoveIsUp && move > 20) {
-      lastMoveIsUp = nowMoveIsUp;
-      return;
-    }
-    lastMoveIsUp = nowMoveIsUp;
-    if (!onDragSlider) {
-      if (move > 0) {
-        if (outerScrollController.position.maxScrollExtent !=
-            outerScrollController.offset) {
-          outerScrollController.jumpTo(
-            (outerScrollController.offset + move) >
-                    outerScrollController.position.maxScrollExtent
-                ? outerScrollController.position.maxScrollExtent
-                : (outerScrollController.offset + move),
-          );
-        }
-      } else {
-        if (outerScrollController.offset != 0) {
-          outerScrollController.jumpTo(
-            (outerScrollController.offset + move) < 0
-                ? 0
-                : (outerScrollController.offset + move),
-          );
-        }
-      }
-    }
-    lastMove = position.pixels;
   }
 
   void showScrollBar() {
-    final max = innerScrollController.position.maxScrollExtent;
+    final max = scrollController.position.maxScrollExtent;
     if (max <= 0) {
       return;
     }
-    scrollBarPos = (innerScrollController.position.pixels / max).clamp(
+    scrollBarPos = (scrollController.position.pixels / max).clamp(
       0.0,
       1.0,
     );
@@ -297,15 +262,11 @@ class PlaylistInfoController extends GetxController {
                         setState(() {
                           scrollBarPos = value;
                         });
-                        innerScrollController.jumpTo(
+                        scrollController.jumpTo(
                           value *
-                              innerScrollController.position.maxScrollExtent,
+                              scrollController.position.maxScrollExtent,
                         );
                         startAutoCloseTimer();
-                      },
-                      onChangeStart: (value) => onDragSlider = true,
-                      onChangeEnd: (value) {
-                        onDragSlider = false;
                       },
                     );
                   },
@@ -323,9 +284,8 @@ class PlaylistInfoController extends GetxController {
     searchController.removeListener(onSearchChanged);
     searchController.dispose();
     searchFocusNode.dispose();
-    innerScrollController.removeListener(onInnerScroll);
-    innerScrollController.dispose();
-    outerScrollController.dispose();
+    scrollController.removeListener(onScroll);
+    scrollController.dispose();
     hideScrollBar();
     super.onClose();
   }

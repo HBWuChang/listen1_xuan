@@ -13,6 +13,7 @@ import 'package:listen1_xuan/play.dart';
 import 'package:listen1_xuan/provider/loweb.dart';
 import 'package:listen1_xuan/widgets/ext/ext_hero.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'package:marquee/marquee.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
@@ -33,145 +34,149 @@ class PlaylistInfoPage extends StatelessWidget {
     );
     return Scaffold(
       body: Center(
-        child: CustomScrollView(
-          controller: controller.outerScrollController,
-          scrollBehavior: ScrollConfiguration.of(
-            context,
-          ).copyWith(scrollbars: false),
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 280.0,
-              pinned: true,
-              leading: IconButton(
-                icon: Icon(Icons.arrow_back),
-                onPressed: () => routerPop(),
-              ),
-              title: Obx(
-                () => Skeletonizer(
-                  enabled: controller.loading.value,
-                  child: SizedBox(
-                    height: 48,
-                    child: Marquee(
-                      text: controller.loadFailed.value
-                          ? '加载失败'
-                          : controller.result.info.title ?? "加载失败",
-                      style: TextStyle(fontSize: 16),
-                      scrollAxis: Axis.horizontal,
-                      blankSpace: 20.0,
-                      velocity: 50.0,
-                      pauseAfterRound: Duration(seconds: 1),
-                      startPadding: 10.0,
-                      accelerationDuration: Duration(seconds: 1),
-                      accelerationCurve: Curves.linear,
-                      decelerationDuration: Duration(milliseconds: 500),
-                      decelerationCurve: Curves.easeOut,
+        child: PageScrollToTop(
+          scrollController: controller.scrollController,
+          builder: (context, scrollController, listController) =>
+              CustomScrollView(
+                controller: scrollController,
+                scrollBehavior: ScrollConfiguration.of(
+                  context,
+                ).copyWith(scrollbars: false),
+                slivers: [
+                  SliverAppBar(
+                    expandedHeight: 280.0,
+                    pinned: true,
+                    leading: IconButton(
+                      icon: Icon(Icons.arrow_back),
+                      onPressed: () => routerPop(),
                     ),
-                  ),
-                ),
-              ),
-              titleSpacing: 0,
-              flexibleSpace: FlexibleSpaceBar(
-                collapseMode: CollapseMode.parallax,
-                background: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Obx(
+                    title: Obx(
                       () => Skeletonizer(
                         enabled: controller.loading.value,
-                        child: ExtendedImage.network(
-                          controller.result.info.cover_img_url ?? '',
-                          width: 150,
-                          height: 150,
-                          fit: BoxFit.cover,
-                          cache: true,
-                          loadStateChanged: (state) {
-                            if (state.extendedImageLoadState ==
-                                LoadState.failed) {
-                              return Icon(Icons.error);
-                            }
-                            if (state.extendedImageLoadState ==
-                                LoadState.loading) {
-                              return globalLoadingAnimeOfExtendedImage;
-                            }
-                            return null;
-                          },
+                        child: SizedBox(
+                          height: 48,
+                          child: Marquee(
+                            text: controller.loadFailed.value
+                                ? '加载失败'
+                                : controller.result.info.title ?? "加载失败",
+                            style: TextStyle(fontSize: 16),
+                            scrollAxis: Axis.horizontal,
+                            blankSpace: 20.0,
+                            velocity: 50.0,
+                            pauseAfterRound: Duration(seconds: 1),
+                            startPadding: 10.0,
+                            accelerationDuration: Duration(seconds: 1),
+                            accelerationCurve: Curves.linear,
+                            decelerationDuration: Duration(milliseconds: 500),
+                            decelerationCurve: Curves.easeOut,
+                          ),
                         ),
                       ),
-                    ).hero4playlistItemImg(args.playListInfo),
-                    8.sbh,
-                    Obx(
-                      () => Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    ),
+                    titleSpacing: 0,
+                    flexibleSpace: FlexibleSpaceBar(
+                      collapseMode: CollapseMode.parallax,
+                      background: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Expanded(
-                            flex: 5,
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                if (controller.tracks.isEmpty) {
-                                  return;
-                                }
-                                List<Track> trackList = List<Track>.from(
-                                  controller.tracks,
-                                );
-                                set_current_playing(trackList);
-                                playsong(controller.tracks[0], isByClick: true);
-                              },
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  '播放全部（共${controller.tracks.length}首）',
-                                  maxLines: 1,
-                                ),
+                          Obx(
+                            () => Skeletonizer(
+                              enabled: controller.loading.value,
+                              child: ExtendedImage.network(
+                                controller.result.info.cover_img_url ?? '',
+                                width: 150,
+                                height: 150,
+                                fit: BoxFit.cover,
+                                cache: true,
+                                loadStateChanged: (state) {
+                                  if (state.extendedImageLoadState ==
+                                      LoadState.failed) {
+                                    return Icon(Icons.error);
+                                  }
+                                  if (state.extendedImageLoadState ==
+                                      LoadState.loading) {
+                                    return globalLoadingAnimeOfExtendedImage;
+                                  }
+                                  return null;
+                                },
                               ),
                             ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: IconButton(
-                              onPressed: () async {
-                                List<Track> trackList = List<Track>.from(
-                                  controller.tracks,
-                                );
-                                add_current_playing(trackList);
-                                showSuccessSnackbar('已添加到当前播放列表', null);
-                              },
-                              icon: Icon(Icons.add_box_outlined),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 4,
-                            child: TextField(
-                              focusNode: controller.searchFocusNode,
-                              controller: controller.searchController,
-                              decoration: InputDecoration(hintText: '搜索'),
+                          ).hero4playlistItemImg(args.playListInfo),
+                          8.sbh,
+                          Obx(
+                            () => Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Expanded(
+                                  flex: 5,
+                                  child: ElevatedButton(
+                                    onPressed: () async {
+                                      if (controller.tracks.isEmpty) {
+                                        return;
+                                      }
+                                      List<Track> trackList = List<Track>.from(
+                                        controller.tracks,
+                                      );
+                                      set_current_playing(trackList);
+                                      playsong(
+                                        controller.tracks[0],
+                                        isByClick: true,
+                                      );
+                                    },
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        '播放全部（共${controller.tracks.length}首）',
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: IconButton(
+                                    onPressed: () async {
+                                      List<Track> trackList = List<Track>.from(
+                                        controller.tracks,
+                                      );
+                                      add_current_playing(trackList);
+                                      showSuccessSnackbar('已添加到当前播放列表', null);
+                                    },
+                                    icon: Icon(Icons.add_box_outlined),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 4,
+                                  child: TextField(
+                                    focusNode: controller.searchFocusNode,
+                                    controller: controller.searchController,
+                                    decoration: InputDecoration(hintText: '搜索'),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                    actions: _buildActions(context, controller),
+                  ),
+                  Obx(() {
+                    if (controller.loading.value ||
+                        controller.loadFailed.value) {
+                      return SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: controller.loading.value
+                            ? globalLoadingAnime.center
+                            : _buildErrorView(context, controller),
+                      );
+                    }
+                    return controller.useReorderableList.value
+                        ? _buildReorderableList(context, controller)
+                        : _buildNormalList(context, controller);
+                  }),
+                ],
               ),
-              actions: _buildActions(context, controller),
-            ),
-            Obx(
-              () => SliverFillRemaining(
-                hasScrollBody: true,
-                child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(
-                    context,
-                  ).copyWith(scrollbars: false),
-                  child: controller.loading.value
-                      ? globalLoadingAnime.center
-                      : controller.loadFailed.value
-                      ? _buildErrorView(context, controller)
-                      : controller.useReorderableList.value
-                      ? _buildReorderableList(context, controller)
-                      : _buildNormalList(context, controller),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -354,7 +359,7 @@ class PlaylistInfoPage extends StatelessWidget {
     PlaylistInfoController controller,
   ) {
     return Center(
-      child: SingleChildScrollView(
+      child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -390,10 +395,10 @@ class PlaylistInfoPage extends StatelessWidget {
     BuildContext context,
     PlaylistInfoController controller,
   ) {
-    return AnimatedReorderableListView(
+    return ReorderableAnimatedListImpl<Track>(
+      scrollDirection: Axis.vertical,
       onReorder: controller.onReorder,
       isSameItem: (trackA, trackB) => trackA.id == trackB.id,
-      controller: controller.innerScrollController,
       items: controller.tracks.toList(),
       enterTransition: [SlideInDown()],
       exitTransition: [SlideInUp()],
@@ -431,10 +436,8 @@ class PlaylistInfoPage extends StatelessWidget {
     BuildContext context,
     PlaylistInfoController controller,
   ) {
-    return SuperListView.builder(
-      controller: controller.innerScrollController,
-      itemCount: controller.tracks.length,
-      itemBuilder: (context, index) {
+    return SuperSliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
         final track = controller.tracks[index];
         final key = ValueKey(track.id);
         return ListTile(
@@ -455,7 +458,7 @@ class PlaylistInfoPage extends StatelessWidget {
             playsong(track, isByClick: true);
           },
         );
-      },
+      }, childCount: controller.tracks.length),
     );
   }
 

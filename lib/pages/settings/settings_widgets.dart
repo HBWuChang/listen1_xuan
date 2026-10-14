@@ -820,7 +820,8 @@ Widget get androidSettingsTiles => Column(
             leading: BackButton(onPressed: routerPop),
           ),
           body: Obx(
-            () => ReorderableListView(
+            () => PageScrollToTop(builder: (context, pageScrollController, pageListController) => ReorderableListView(
+          scrollController: pageScrollController,
               onReorder: (oldIndex, newIndex) {
                 if (newIndex > oldIndex) {
                   newIndex -= 1;
@@ -845,7 +846,7 @@ Widget get androidSettingsTiles => Column(
                     ),
                   )
                   .toList(),
-            ),
+            )),
           ),
         );
       },

@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'dart:convert';
 import 'dart:async';
@@ -1234,7 +1235,8 @@ class _BilibiliQrLoginPageState extends State<BilibiliQrLoginPage> with WidgetsB
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('哔哩哔哩客户端 / 扫码登录')),
     body: Center(
-      child: SingleChildScrollView(
+      child: PageScrollToTop(builder: (context, pageScrollController, pageListController) => SingleChildScrollView(
+          controller: pageScrollController,
         padding: const EdgeInsets.all(24),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           if (_generating) const CircularProgressIndicator(),
@@ -1259,7 +1261,7 @@ class _BilibiliQrLoginPageState extends State<BilibiliQrLoginPage> with WidgetsB
           const Text('同一台手机可点击按钮打开登录链接并确认。\n也可用另一台设备的哔哩哔哩扫描二维码。\n确认后返回本应用，会自动完成登录。',
             textAlign: TextAlign.center),
         ]),
-      ),
+      )),
     ),
   );
 }

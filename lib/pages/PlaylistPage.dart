@@ -201,8 +201,8 @@ class PlaylistPage extends GetView<PlaylistController> {
         );
       }
 
-      return SingleChildScrollView(
-        controller: controller.scrollController,
+      return PageScrollToTop(scrollController: controller.scrollController, builder: (context, pageScrollController, pageListController) => SingleChildScrollView(
+        controller: pageScrollController,
 
         child: Column(
           children: [
@@ -259,14 +259,15 @@ class PlaylistPage extends GetView<PlaylistController> {
               ),
           ],
         ),
-      );
+      ));
     });
   }
 
   /// 首屏加载失败：展示具体原因并提供重试。
   Widget _buildErrorView(BuildContext context) {
     return Center(
-      child: SingleChildScrollView(
+      child: PageScrollToTop(builder: (context, pageScrollController, pageListController) => SingleChildScrollView(
+        controller: pageScrollController,
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -294,7 +295,7 @@ class PlaylistPage extends GetView<PlaylistController> {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 /// 整条轨道都可直接定位和拖动，避免触屏用户必须先抓住滑块。
 class TrackScrollbar extends StatefulWidget {
@@ -10,10 +11,12 @@ class TrackScrollbar extends StatefulWidget {
     super.key,
     required this.controller,
     required this.child,
+    this.excludedHitTestRect,
   });
 
   final ScrollController controller;
   final Widget child;
+  final ValueGetter<Rect?>? excludedHitTestRect;
 
   @override
   State<TrackScrollbar> createState() => _TrackScrollbarState();
@@ -211,7 +214,9 @@ class _TrackScrollbarState extends State<TrackScrollbar>
                           position.pixels - position.viewportDimension * 0.8,
                         ),
                       ),
-                      child: MouseRegion(
+                      child: _TrackHitTestRegion(
+                        excludedRect: widget.excludedHitTestRect,
+                        child: MouseRegion(
                         cursor: _pointer == null
                             ? SystemMouseCursors.grab
                             : SystemMouseCursors.grabbing,
@@ -276,6 +281,7 @@ class _TrackScrollbarState extends State<TrackScrollbar>
                           ),
                         ),
                       ),
+                      ),
                     ),
                   ),
                 ],
@@ -285,5 +291,30 @@ class _TrackScrollbarState extends State<TrackScrollbar>
         ),
       ),
     );
+  }
+}
+
+class _TrackHitTestRegion extends SingleChildRenderObjectWidget {
+  const _TrackHitTestRegion({required this.excludedRect, required super.child});
+  final ValueGetter<Rect?>? excludedRect;
+
+  @override
+  _RenderTrackHitTestRegion createRenderObject(BuildContext context) =>
+      _RenderTrackHitTestRegion(excludedRect);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderTrackHitTestRegion renderObject) {
+    renderObject.excludedRect = excludedRect;
+  }
+}
+
+class _RenderTrackHitTestRegion extends RenderProxyBox {
+  _RenderTrackHitTestRegion(this.excludedRect);
+  ValueGetter<Rect?>? excludedRect;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (excludedRect?.call()?.contains(localToGlobal(position)) == true) return false;
+    return super.hitTest(result, position: position);
   }
 }

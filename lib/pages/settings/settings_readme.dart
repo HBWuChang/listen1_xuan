@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:get/get.dart';
@@ -36,7 +37,8 @@ class SettingsReadmePage extends StatelessWidget {
         if (isEmpty(settingsController.readmeContent.value)) {
           return Center(child: globalLoadingAnime);
         }
-        return Markdown(
+        return PageScrollToTop(builder: (context, pageScrollController, pageListController) => Markdown(
+          controller: pageScrollController,
           onTapLink: (text, href, title) {
             if (href != null) {
               Uri uri = Uri.parse(href);
@@ -50,7 +52,7 @@ class SettingsReadmePage extends StatelessWidget {
           },
           selectable: true,
           data: settingsController.readmeContent.value,
-        );
+        ));
       }),
     );
   }

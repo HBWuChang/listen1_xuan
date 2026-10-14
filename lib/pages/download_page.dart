@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
@@ -37,7 +38,8 @@ class DownloadPage extends StatelessWidget {
         ],
       ),
       body: Obx(
-        () => SingleChildScrollView(
+        () => PageScrollToTop(builder: (context, pageScrollController, pageListController) => SingleChildScrollView(
+          controller: pageScrollController,
           padding: const EdgeInsets.all(16.0),
           child: ExpansionPanelList(
             expansionCallback: (int index, bool isExpanded) {
@@ -80,7 +82,7 @@ class DownloadPage extends StatelessWidget {
               ),
             ],
           ),
-        ),
+        )),
       ),
     );
   }

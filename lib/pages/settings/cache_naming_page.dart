@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/routeController.dart';
@@ -19,7 +20,8 @@ class CacheNamingPage extends StatelessWidget {
         leading: BackButton(onPressed: routerPop),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: PageScrollToTop(builder: (context, pageScrollController, pageListController) => SingleChildScrollView(
+          controller: pageScrollController,
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,7 +46,7 @@ class CacheNamingPage extends StatelessWidget {
             _buildDedupMethodSection(settingsController),
           ],
         ),
-      ),
+      )),
     );
   }
 

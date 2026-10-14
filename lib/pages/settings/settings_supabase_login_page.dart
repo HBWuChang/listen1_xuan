@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -76,7 +77,8 @@ class _SupabaseLoginPageState extends State<SupabaseLoginPage> {
 
   /// 构建邮箱登录标签页
   Widget _buildEmailLoginTab() {
-    return SingleChildScrollView(
+    return PageScrollToTop(builder: (context, pageScrollController, pageListController) => SingleChildScrollView(
+          controller: pageScrollController,
       padding: const EdgeInsets.all(24.0),
       child: Form(
         key: _emailFormKey,
@@ -242,7 +244,7 @@ class _SupabaseLoginPageState extends State<SupabaseLoginPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// 发送邮箱验证码

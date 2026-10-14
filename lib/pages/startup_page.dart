@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -152,7 +153,8 @@ class _StartupPageState extends State<StartupPage> {
                     ),
                     if (failure != null || _tip != null) const SizedBox(height: 28),
                     if (failure != null || _tip != null) Flexible(
-                      child: SingleChildScrollView(
+                      child: PageScrollToTop(builder: (context, pageScrollController, pageListController) => SingleChildScrollView(
+          controller: pageScrollController,
                         child: Column(
                           children: [
                             if (failure != null) ...[
@@ -168,7 +170,7 @@ class _StartupPageState extends State<StartupPage> {
                             ],
                           ],
                         ),
-                      ),
+                      )),
                     ),
                   ],
                 ),

@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'widgets/loudness_gain_input.dart';
 import 'dart:convert';
 import 'dart:ui';
@@ -160,7 +161,8 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
+      body: PageScrollToTop(builder: (context, pageScrollController, pageListController) => CustomScrollView(
+          controller: pageScrollController,
         slivers: [
           SliverAppBar(
             floating: true,
@@ -653,7 +655,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ],
-      ),
+      )),
     );
   }
 }

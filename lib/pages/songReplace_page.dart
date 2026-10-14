@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -26,6 +27,7 @@ class SongReplacePage extends StatefulWidget {
 class _SongReplacePageState extends State<SongReplacePage> {
   final PlayController _playController = Get.find<PlayController>();
   final ScrollController _songReplaceScrollController = ScrollController();
+  final GlobalKey _addAreaKey = GlobalKey();
 
   @override
   void initState() {
@@ -76,60 +78,70 @@ class _SongReplacePageState extends State<SongReplacePage> {
           _buildHeaderRow(),
           // 可滚动内容
           Expanded(
-            child: CustomScrollView(
-              scrollBehavior: ScrollConfiguration.of(
-                context,
-              ).copyWith(scrollbars: false),
-              slivers: [
-                // 解释信息行（可滚动隐藏）
-                SliverToBoxAdapter(child: _buildExplanationRow()),
-                SliverToBoxAdapter(child: _buildAddArea()),
-                SliverFillRemaining(
-                  hasScrollBody: true,
-                  child: Obx(() {
-                    // 监听 songReplaceSettings 变化
-                    final settings = _playController.songReplaceSettings.value;
-                    final mappings = settings.idMappings;
-
-                    if (mappings.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          '暂无歌曲替换设置',
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
+            child: _withSongReplaceScrollbar(
+              PageScrollToTop(
+                scrollController: _songReplaceScrollController,
+                builder: (context, pageScrollController, pageListController) =>
+                    CustomScrollView(
+                      controller: pageScrollController,
+                      scrollBehavior: ScrollConfiguration.of(
+                        context,
+                      ).copyWith(scrollbars: false),
+                      slivers: [
+                        SliverToBoxAdapter(child: _buildExplanationRow()),
+                        PinnedHeaderSliver(
+                          child: ColoredBox(
+                            key: _addAreaKey,
+                            color: Theme.of(context).scaffoldBackgroundColor,
+                            child: _buildAddArea(),
+                          ),
                         ),
-                      );
-                    }
-
-                    final list = SuperListView.builder(
-                      controller: _songReplaceScrollController,
-                      padding: const EdgeInsets.all(8.0),
-                      itemCount: mappings.length,
-
-                      itemBuilder: (context, index) {
-                        final entry = mappings.entries.elementAt(index);
-                        final originalId = entry.key;
-                        final replacementId = entry.value;
-
-                        // 从 trackDetails 获取歌曲信息
-                        final originalTrack = settings.getTrackDetails(
-                          originalId,
-                        );
-                        final replacementTrack = settings.getTrackDetails(
-                          replacementId,
-                        );
-
-                        return _buildSongReplaceItem(
-                          originalId: originalId,
-                          originalTrack: originalTrack,
-                          replacementId: replacementId,
-                          replacementTrack: replacementTrack,
-                        );
-                      },
-                    );
-                    return _withSongReplaceScrollbar(list);
-                  }),
-                ),
-              ],
+                        Obx(() {
+                          final settings =
+                              _playController.songReplaceSettings.value;
+                          final mappings = settings.idMappings;
+                          if (mappings.isEmpty) {
+                            return const SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: Center(
+                                child: Text(
+                                  '暂无歌曲替换设置',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          return SliverPadding(
+                            padding: const EdgeInsets.all(8.0),
+                            sliver: SuperSliverList(
+                              listController: pageListController,
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                final entry = mappings.entries.elementAt(index);
+                                final originalId = entry.key;
+                                final replacementId = entry.value;
+                                return _buildSongReplaceItem(
+                                  originalId: originalId,
+                                  originalTrack: settings.getTrackDetails(
+                                    originalId,
+                                  ),
+                                  replacementId: replacementId,
+                                  replacementTrack: settings.getTrackDetails(
+                                    replacementId,
+                                  ),
+                                );
+                              }, childCount: mappings.length),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+              ),
             ),
           ),
         ],
@@ -140,6 +152,12 @@ class _SongReplacePageState extends State<SongReplacePage> {
   Widget _withSongReplaceScrollbar(Widget list) {
     return TrackScrollbar(
       controller: _songReplaceScrollController,
+      excludedHitTestRect: () {
+        final box = _addAreaKey.currentContext?.findRenderObject();
+        return box is RenderBox && box.attached && box.hasSize
+            ? box.localToGlobal(Offset.zero) & box.size
+            : null;
+      },
       child: list,
     );
   }
@@ -210,161 +228,151 @@ class _SongReplacePageState extends State<SongReplacePage> {
 
   /// 构建添加区域
   Widget _buildAddArea() {
-    return Card(
-      margin: const EdgeInsets.all(8.0),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            // 左侧：源歌曲选择
-            Expanded(
-              child: Obx(() {
-                final sourceTrack =
-                    _playController.songReplaceSourceTrack.value;
-                final isEditing =
-                    _playController.songReplaceAdding.value &&
-                    _playController.isSongReplacingSource.value;
-                Widget t = sourceTrack == null
-                    ? _buildAddButtonContent(
-                        label: '选择源歌曲',
-                        isActive: isEditing,
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: _buildTrackInfo(
-                          track: sourceTrack,
-                          trackId: sourceTrack.id,
-                          allowTap: false,
-                        ),
-                      );
-                return InkWell(
-                  onTap: _selectSourceTrack,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: isEditing
-                          ? null
-                          : Border.all(
-                              color: Theme.of(
-                                context,
-                              ).disabledColor.withOpacity(0.3),
-                              width: 2,
-                            ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: isEditing
-                        ? DottedBorder(
-                            options: RoundedRectDottedBorderOptions(
-                              radius: Radius.circular(8),
-                              color: Get.theme.colorScheme.primary,
-                              strokeWidth: 2,
-                              dashPattern: [6, 4],
-                            ),
-                            child: t,
-                          )
-                        : t,
+    return Container(
+      padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0),
+      decoration: BoxDecoration(color: Get.theme.cardColor.withAlpha(128)),
+      child: Row(
+        children: [
+          // 左侧：源歌曲选择
+          Expanded(
+            child: Obx(() {
+              final sourceTrack = _playController.songReplaceSourceTrack.value;
+              final isEditing =
+                  _playController.songReplaceAdding.value &&
+                  _playController.isSongReplacingSource.value;
+              Widget t = sourceTrack == null
+                  ? _buildAddButtonContent(label: '选择源歌曲', isActive: isEditing)
+                  : Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: _buildTrackInfo(
+                        track: sourceTrack,
+                        trackId: sourceTrack.id,
+                        allowTap: false,
+                      ),
+                    );
+              return InkWell(
+                onTap: _selectSourceTrack,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: isEditing
+                        ? null
+                        : Border.all(
+                            color: Theme.of(
+                              context,
+                            ).disabledColor.withOpacity(0.3),
+                            width: 2,
+                          ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                );
-              }),
-            ),
-            // 中间：分割和箭头
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: const Icon(Icons.arrow_forward, size: 24),
-            ),
-            // 右侧：替换歌曲选择
-            Expanded(
-              child: Obx(() {
-                final targetTrack =
-                    _playController.songReplaceTargetTrack.value;
-                final isEditing =
-                    _playController.songReplaceAdding.value &&
-                    !_playController.isSongReplacingSource.value;
-                Widget t = targetTrack == null
-                    ? _buildAddButtonContent(
-                        label: '选择替换歌曲',
-                        isActive: isEditing,
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: _buildTrackInfo(
-                          track: targetTrack,
-                          trackId: targetTrack.id,
-                          allowTap: false,
-                        ),
-                      );
-                return InkWell(
-                  onTap: _selectTargetTrack,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: isEditing
-                          ? null
-                          : Border.all(
-                              color: Theme.of(
-                                context,
-                              ).disabledColor.withOpacity(0.3),
-                              width: 2,
-                            ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: isEditing
-                        ? DottedBorder(
-                            options: RoundedRectDottedBorderOptions(
-                              radius: Radius.circular(8),
-                              color: Get.theme.colorScheme.primary,
-                              strokeWidth: 2,
-                              dashPattern: [6, 4],
-                            ),
-                            child: t,
-                          )
-                        : t,
-                  ),
-                );
-              }),
-            ),
-            // 操作按钮
-            Obx(() {
-              bool canConfirm =
-                  _playController.songReplaceSourceTrack.value != null &&
-                  _playController.songReplaceTargetTrack.value != null &&
-                  _playController.songReplaceSourceTrack.value!.id !=
-                      _playController.songReplaceTargetTrack.value!.id;
-              return IconButton(
-                icon: Icon(
-                  Icons.recycling_rounded,
-                  color: canConfirm
-                      ? Get.theme.colorScheme.secondary
-                      : Get.theme.disabledColor,
+                  child: isEditing
+                      ? DottedBorder(
+                          options: RoundedRectDottedBorderOptions(
+                            radius: Radius.circular(8),
+                            color: Get.theme.colorScheme.primary,
+                            strokeWidth: 2,
+                            dashPattern: [6, 4],
+                          ),
+                          child: t,
+                        )
+                      : t,
                 ),
-                tooltip: '快捷替换',
-                onPressed: canConfirm
-                    ? () => repTrack(
-                        _playController.songReplaceSourceTrack.value!,
-                        _playController.songReplaceTargetTrack.value!.id,
-                      )
-                    : null,
               );
             }),
-            Obx(() {
-              bool canConfirm =
-                  _playController.songReplaceSourceTrack.value != null &&
-                  _playController.songReplaceTargetTrack.value != null &&
-                  _playController.songReplaceSourceTrack.value!.id !=
-                      _playController.songReplaceTargetTrack.value!.id;
-              return IconButton(
-                icon: Icon(
-                  Icons.check,
-                  color: canConfirm
-                      ? Get.theme.colorScheme.primary
-                      : Get.theme.disabledColor,
+          ),
+          // 中间：分割和箭头
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: const Icon(Icons.arrow_forward, size: 24),
+          ),
+          // 右侧：替换歌曲选择
+          Expanded(
+            child: Obx(() {
+              final targetTrack = _playController.songReplaceTargetTrack.value;
+              final isEditing =
+                  _playController.songReplaceAdding.value &&
+                  !_playController.isSongReplacingSource.value;
+              Widget t = targetTrack == null
+                  ? _buildAddButtonContent(label: '选择替换歌曲', isActive: isEditing)
+                  : Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: _buildTrackInfo(
+                        track: targetTrack,
+                        trackId: targetTrack.id,
+                        allowTap: false,
+                      ),
+                    );
+              return InkWell(
+                onTap: _selectTargetTrack,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: isEditing
+                        ? null
+                        : Border.all(
+                            color: Theme.of(
+                              context,
+                            ).disabledColor.withOpacity(0.3),
+                            width: 2,
+                          ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: isEditing
+                      ? DottedBorder(
+                          options: RoundedRectDottedBorderOptions(
+                            radius: Radius.circular(8),
+                            color: Get.theme.colorScheme.primary,
+                            strokeWidth: 2,
+                            dashPattern: [6, 4],
+                          ),
+                          child: t,
+                        )
+                      : t,
                 ),
-                tooltip: '确认添加',
-                onPressed: canConfirm ? _confirmAddReplacement : null,
               );
             }),
-          ],
-        ),
+          ),
+          // 操作按钮
+          Obx(() {
+            bool canConfirm =
+                _playController.songReplaceSourceTrack.value != null &&
+                _playController.songReplaceTargetTrack.value != null &&
+                _playController.songReplaceSourceTrack.value!.id !=
+                    _playController.songReplaceTargetTrack.value!.id;
+            return IconButton(
+              icon: Icon(
+                Icons.recycling_rounded,
+                color: canConfirm
+                    ? Get.theme.colorScheme.secondary
+                    : Get.theme.disabledColor,
+              ),
+              tooltip: '快捷替换',
+              onPressed: canConfirm
+                  ? () => repTrack(
+                      _playController.songReplaceSourceTrack.value!,
+                      _playController.songReplaceTargetTrack.value!.id,
+                    )
+                  : null,
+            );
+          }),
+          Obx(() {
+            bool canConfirm =
+                _playController.songReplaceSourceTrack.value != null &&
+                _playController.songReplaceTargetTrack.value != null &&
+                _playController.songReplaceSourceTrack.value!.id !=
+                    _playController.songReplaceTargetTrack.value!.id;
+            return IconButton(
+              icon: Icon(
+                Icons.check,
+                color: canConfirm
+                    ? Get.theme.colorScheme.primary
+                    : Get.theme.disabledColor,
+              ),
+              tooltip: '确认添加',
+              onPressed: canConfirm ? _confirmAddReplacement : null,
+            );
+          }),
+        ],
       ),
     );
   }
@@ -484,17 +492,23 @@ class _SongReplacePageState extends State<SongReplacePage> {
 
     Offset? songDialogPosition;
     return InkWell(
-      onTapDown: allowTap ? (details) {
-        songDialogPosition = details.globalPosition;
-      } : null,
-      onTapCancel: allowTap ? () {
-        songDialogPosition = null;
-      } : null,
-      onTap: allowTap ? () {
-        final position = songDialogPosition;
-        songDialogPosition = null;
-        song_dialog(context, track, position: position);
-      } : null,
+      onTapDown: allowTap
+          ? (details) {
+              songDialogPosition = details.globalPosition;
+            }
+          : null,
+      onTapCancel: allowTap
+          ? () {
+              songDialogPosition = null;
+            }
+          : null,
+      onTap: allowTap
+          ? () {
+              final position = songDialogPosition;
+              songDialogPosition = null;
+              song_dialog(context, track, position: position);
+            }
+          : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,

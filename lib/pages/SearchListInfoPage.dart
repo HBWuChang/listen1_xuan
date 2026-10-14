@@ -182,9 +182,10 @@ class _SearchlistinfoState extends State<Searchlistinfo>
 
       return RefreshIndicator(
         onRefresh: () => controller.refreshSongSearch(),
-        child: ListView.builder(
+        child: PageScrollToTop(scrollController: controller.songScrollController, enabled: controller.currentTabIndex.value == 0, superList: true, builder: (context, pageScrollController, pageListController) => SuperListView.builder(
+          listController: pageListController,
           key: const PageStorageKey<String>('songList'),
-          controller: controller.songScrollController,
+          controller: pageScrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           itemCount:
               controller.tracks.length + (controller.loadingMore.value ? 1 : 0),
@@ -226,7 +227,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
               },
             );
           },
-        ),
+        )),
       );
     });
   }
@@ -244,9 +245,10 @@ class _SearchlistinfoState extends State<Searchlistinfo>
       }
       return RefreshIndicator(
         onRefresh: () => controller.refreshPlaylistSearch(),
-        child: ListView.builder(
+        child: PageScrollToTop(scrollController: controller.playlistScrollController, enabled: controller.currentTabIndex.value == 1, superList: true, builder: (context, pageScrollController, pageListController) => SuperListView.builder(
+          listController: pageListController,
           key: const PageStorageKey<String>('playlistList'),
-          controller: controller.playlistScrollController,
+          controller: pageScrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           itemCount:
               controller.playlists.length +
@@ -320,7 +322,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
               },
             );
           },
-        ),
+        )),
       );
     });
   }
@@ -346,9 +348,10 @@ class _SearchlistinfoState extends State<Searchlistinfo>
       }
       return RefreshIndicator(
         onRefresh: () => controller.refreshDjSearch(),
-        child: ListView.builder(
+        child: PageScrollToTop(scrollController: controller.djScrollController, enabled: controller.currentTabIndex.value == 2, superList: true, builder: (context, pageScrollController, pageListController) => SuperListView.builder(
+          listController: pageListController,
           key: const PageStorageKey<String>('djList'),
-          controller: controller.djScrollController,
+          controller: pageScrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           itemCount:
               controller.djs.length + (controller.djLoadingMore.value ? 1 : 0),
@@ -421,7 +424,7 @@ class _SearchlistinfoState extends State<Searchlistinfo>
               },
             );
           },
-        ),
+        )),
       );
     });
   }

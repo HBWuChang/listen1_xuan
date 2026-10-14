@@ -482,7 +482,8 @@ class _MyPlaylistState extends State<MyPlaylist> {
         body: LayoutBuilder(
           builder: (context, constraints) {
             final availableWidth = constraints.maxWidth;
-            return SingleChildScrollView(
+            return PageScrollToTop(builder: (context, pageScrollController, pageListController) => SingleChildScrollView(
+          controller: pageScrollController,
               child: Column(
                 children: [
                   _buildExpandableSection(
@@ -556,7 +557,7 @@ class _MyPlaylistState extends State<MyPlaylist> {
                   ),
                 ],
               ),
-            );
+            ));
           },
         ),
       ),

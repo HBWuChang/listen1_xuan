@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -728,7 +729,9 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
         builder: (context) {
           final eqSetting = _draftEqSetting;
 
-          return SuperListView(
+          return PageScrollToTop(superList: true, topInset: 16, builder: (context, pageScrollController, pageListController) => SuperListView(
+          controller: pageScrollController,
+          listController: pageListController,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             children: [
               Text(
@@ -842,7 +845,7 @@ class _AndroidEqualizerPageState extends State<AndroidEqualizerPage> {
                 ),
               ],
             ],
-          );
+          ));
         },
       ),
     );

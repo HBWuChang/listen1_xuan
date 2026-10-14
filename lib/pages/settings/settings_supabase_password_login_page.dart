@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -94,7 +95,8 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
 
   /// 构建邮箱密码登录标签页
   Widget _buildPasswordLoginTab() {
-    return SingleChildScrollView(
+    return PageScrollToTop(builder: (context, pageScrollController, pageListController) => SingleChildScrollView(
+          controller: pageScrollController,
       padding: const EdgeInsets.all(24.0),
       child: Form(
         key: _formKey,
@@ -268,7 +270,7 @@ class _SupabasePasswordLoginPageState extends State<SupabasePasswordLoginPage> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// 登录

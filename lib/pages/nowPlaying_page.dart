@@ -1,3 +1,4 @@
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -136,6 +137,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           teleport: true,
           teleportThreshold: 1.2,
           approachFactor: 1.2,
+          precalculateTargetItemCount: true,
         );
       } else {
         _listController.jumpToItem(
@@ -367,12 +369,12 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       if (canReorder) {
         return TrackScrollbar(
           controller: scrollController,
-          child: AnimatedReorderableListView(
+          child: PageScrollToTop(scrollController: scrollController, builder: (context, pageScrollController, pageListController) => AnimatedReorderableListView(
             onReorder: (oldIndex, newIndex) {
               controller.reorderPlaylist(oldIndex, newIndex);
             },
             isSameItem: (trackA, trackB) => trackA.id == trackB.id,
-            controller: scrollController,
+            controller: pageScrollController,
             items: playingList,
             longPressDraggable: true,
             buildDefaultDragHandles: false,
@@ -394,15 +396,15 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                 controller: controller,
               );
             },
-          ),
+          )),
         );
       }
 
       return TrackScrollbar(
         controller: scrollController,
-        child: SuperListView.builder(
-          controller: scrollController,
-          listController: _listController,
+        child: PageScrollToTop(scrollController: scrollController, listController: _listController, superList: true, builder: (context, pageScrollController, pageListController) => SuperListView.builder(
+          controller: pageScrollController,
+          listController: pageListController,
           itemCount: playingList.length,
           padding: EdgeInsets.symmetric(horizontal: 16),
           // 行内容没有需要保活的状态，去掉每项的 AutomaticKeepAlive 包装
@@ -423,7 +425,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               controller: controller,
             );
           },
-        ),
+        )),
       );
     });
   }

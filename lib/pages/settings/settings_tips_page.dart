@@ -1,3 +1,5 @@
+import 'package:super_sliver_list/super_sliver_list.dart';
+import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'package:flutter/material.dart';
 
 import '../../controllers/routeController.dart';
@@ -19,7 +21,9 @@ class SettingsTipsPage extends StatelessWidget {
           if (tips.isEmpty) {
             return const Center(child: Text('暂无Tip'));
           }
-          return ListView.separated(
+          return PageScrollToTop(superList: true, topInset: 16, builder: (context, pageScrollController, pageListController) => SuperListView.separated(
+          controller: pageScrollController,
+          listController: pageListController,
             padding: const EdgeInsets.all(16),
             itemCount: tips.length,
             separatorBuilder: (_, __) => const Divider(),
@@ -27,7 +31,7 @@ class SettingsTipsPage extends StatelessWidget {
               leading: const Icon(Icons.lightbulb_outline),
               title: Text(tips[index]),
             ),
-          );
+          ));
         },
       ),
     );
