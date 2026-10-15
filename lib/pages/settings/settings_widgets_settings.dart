@@ -148,104 +148,38 @@ Widget settingsWidget(BuildContext context) {
   );
 }
 
-/// 显示赞助弹窗
+/// 显示 Pro 申请弹窗
 void _showSponsorDialog(BuildContext context) {
-  final authController = Get.find<SupabaseAuthController>();
-  final userId = authController.currentUser.value?.id ?? '';
+  const markdownContent = '''
+### 由于 Supabase 免费账号的存储空间有限，部分功能需要 Pro 资格。
 
-  final markdownContent = '''
-### 由于免费版 Supabase 账号的500MB 存储空间限制，我决定对部分占用空间较大功能进行限制。
-### 目前实现的会进行限制的功能：
-- **Supabase 歌单管理**：可以将您的歌单保存到 Supabase 中,但限制最多3条记录；这实际上与使用Github Gist完全相同，唯一的优点只有受国内网络影响较小，速度通常较快。
-### 预计实现的会进行限制的功能：
-- **自动歌单同步**：未来计划实现自动在多设备间同步歌单功能。
+### 目前受限制的功能
+- **Supabase 歌单管理**：普通用户最多保存 3 条记录，获得 Pro 资格后可解锁此限制。
 
-## 如果您想使用受限制功能请：
+### 预计实现的功能
+- **自动歌单同步**：未来计划支持在多设备间自动同步歌单。
 
-### 1️⃣ 复制您的用户 ID
+## 申请 Pro 资格
+点击下方“发送申请”，将进入“在线反馈”中的申请问题，并自动提及超级管理员、填入“申请成为Pro用户”。您可以补充说明后发送，无需复制用户 ID 或发送邮件。
 
-您的用户 ID：
+申请消息和问题中的讨论均公开可见，请勿填写隐私信息。管理员审核后会手动授予 Pro 资格，还请耐心等待。
 
-''';
-
-  final markdownContent2 = '''
-
-### 2️⃣ 向我发送邮件
-### 发送邮件至：**[bian_xie@qq.com](mailto:bian_xie@qq.com)** 并包含您的用户ID
-
-
-
-在收到您的邮件后，我会手动更改您的账号以解锁受限功能，之后会给您回邮件，还请您耐心等待。
-### 但请注意：
-- 视Supabase 免费账号的存储空间的使用情况，未来可能会调整受限功能的范围，也可能取消您的权限，甚至整个Supabase功能均会被删除。
-- 请勿使用多个账号反复申请解锁，以免造成不必要的麻烦。
-- 若您有任何疑问，请随时通过邮件与我联系。
-- 受限用户的判断是通过users表中的“isPro”字段进行的。虽然本应用开源了全部的代码，但由于限制条件位于Supabase的配置中，您并不能通过fork此项目修改源代码来绕过限制。
-- 如您觉得本应用对您有帮助，请考虑赞助
-💡 感谢您的支持！
+### 请注意
+- 根据 Supabase 存储空间的使用情况，未来可能调整受限功能范围、取消资格或停止 Supabase 功能。
+- 请勿使用多个账号反复申请。
+- Pro 资格由数据库控制，不包含在线反馈的管理权限。
+- 如您觉得本应用对您有帮助，请考虑赞助。感谢您的支持！
 ''';
 
   Get.dialog(
     AlertDialog(
       title: Row(children: [Icon(Icons.lock_open), 8.sbw, Text('解锁受限功能')]),
       content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            MarkdownBody(data: markdownContent),
-            // 用户 ID 展示框
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Get.theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Get.theme.colorScheme.outline.withOpacity(0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SelectableText(
-                      userId,
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Get.theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.copy, size: 20),
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: userId));
-                      showSuccessSnackbar('已复制', '用户ID已复制到剪贴板');
-                    },
-                    tooltip: '复制ID',
-                  ),
-                ],
-              ),
-            ),
-            8.sbh,
-            MarkdownBody(
-              data: markdownContent2,
-              selectable: true,
-              onTapLink: (text, href, title) {
-                if (href != null) {
-                  g_launchURL(Uri.parse(href));
-                }
-              },
-            ),
-          ],
-        ),
+        child: MarkdownBody(data: markdownContent, selectable: true),
       ).sbw(double.maxFinite),
       actions: [
         TextButton(
-          onPressed: () {
-            Get.back();
-          },
+          onPressed: () => Get.back(),
           child: Text('关闭'),
         ),
         TextButton.icon(
@@ -258,11 +192,12 @@ void _showSponsorDialog(BuildContext context) {
         ),
         ElevatedButton.icon(
           onPressed: () {
-            Clipboard.setData(ClipboardData(text: userId));
-            showSuccessSnackbar('已复制', '用户ID已复制到剪贴板');
+            Get.back();
+            final args = FeedbackPageArgs.issues(proApplication: true);
+            Get.toNamed(args.path, arguments: args, id: 1);
           },
-          icon: Icon(Icons.copy),
-          label: Text('复制ID'),
+          icon: Icon(Icons.send),
+          label: Text('发送申请'),
         ),
       ],
     ),

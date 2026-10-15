@@ -451,6 +451,8 @@ class SettingsController extends GetxController {
 
   static const String showTimeInNotifyAblKey = 'showTimeInNotify';
   final RxBool showTimeInNotifyRx = false.obs;
+  Worker? _showTimeInNotifyWorker;
+  int _playbackSettingsBinding = 0;
   bool get showTimeInNotify => showTimeInNotifyRx.value;
   set showTimeInNotify(bool value) {
     settings[showTimeInNotifyAblKey] = value;
@@ -593,10 +595,16 @@ class SettingsController extends GetxController {
     debounce(settings, (callback) {
       saveSettings();
     });
-    debounce(
-      showTimeInNotifyRx,
-      (enable) => Get.find<PlayController>().showTimeInAlbum(enable),
-    );
+  }
+
+  void bindPlaybackSettings(PlayController controller) {
+    final binding = ++_playbackSettingsBinding;
+    _showTimeInNotifyWorker?.dispose();
+    _showTimeInNotifyWorker = debounce<bool>(showTimeInNotifyRx, (enable) {
+      if (binding != _playbackSettingsBinding || isClosed || controller.isClosed) return;
+      unawaited(controller.showTimeInAlbum(enable));
+    });
+    unawaited(controller.showTimeInAlbum(showTimeInNotify));
   }
 
   Future<void> init() async {
@@ -1009,6 +1017,7 @@ class SettingsController extends GetxController {
 
   @override
   void onClose() {
+    _showTimeInNotifyWorker?.dispose();
     unawaited(AudioMetadataStore.instance.close());
     box?.close();
     lyricBox?.close();

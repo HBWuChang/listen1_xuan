@@ -20,6 +20,7 @@ import 'package:listen1_xuan/router/image_toolbox_predictive_transitions.dart';
 import 'package:listen1_xuan/widgets/draggable_toast/toast_overlay_manager.dart';
 import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:listen1_xuan/widgets/native_file_drop_region.dart';
+import 'widgets/keyboard_stable_player.dart';
 import 'package:media_kit/media_kit.dart' show MediaKit;
 import 'package:resizable_widget/resizable_widget.dart';
 import 'controllers/HomeController.dart';
@@ -31,6 +32,8 @@ import 'pages/download_page.dart';
 import 'pages/nowPlaying_page.dart';
 import 'pages/settings/settings_readme.dart';
 import 'pages/settings/settings_tips_page.dart';
+import 'pages/feedback/feedback_routes.dart';
+import 'pages/feedback/feedback_route_observer.dart';
 import 'pages/startup_page.dart';
 import 'services/startup_tips_service.dart';
 import 'pages/settings/settings_supabase_login_page.dart';
@@ -224,7 +227,8 @@ Future<void> _initializeAppForHome(SettingsController settingsController) async 
   await dioController.loadConfig();
   settingsController.completeDioInit();
   CacheController cacheController = Get.put(CacheController(), permanent: true);
-  Get.put(PlayController(), permanent: true);
+  final playController = Get.put(PlayController(), permanent: true);
+  settingsController.bindPlaybackSettings(playController);
   Get.put(Provider(), permanent: true);
   cacheController.loadLocalCacheList();
   Get.find<PlayController>().loadDatas();
@@ -652,6 +656,7 @@ class _MyHomePageState extends State<MyHomePage>
             Widget _play = Play(horizon: globalHorizon);
             Scaffold con() => Scaffold(
               extendBody: true,
+              resizeToAvoidBottomInset: false,
               backgroundColor:
                   createThemeController().playHBackgroundColor.value,
               body: Stack(
@@ -685,10 +690,10 @@ class _MyHomePageState extends State<MyHomePage>
                                 )
                               : _mainContent(),
                         ),
-                        if (!globalHorizon)
-                          SafeArea(top: false, child: 256.wsbh)
-                        else
-                          60.sbh,
+                        KeyboardPlayerSpacer(
+                          height: globalHorizon ? 60 : 256.w,
+                          includeBottomSafeArea: !globalHorizon,
+                        ),
                       ],
                     ),
                   ),
@@ -700,6 +705,7 @@ class _MyHomePageState extends State<MyHomePage>
                   Positioned.fill(
                     child: SafeArea(
                       top: false,
+                      maintainBottomViewPadding: true,
                       child: Align(
                         alignment: Alignment.bottomRight,
                         child: Padding(
@@ -716,9 +722,9 @@ class _MyHomePageState extends State<MyHomePage>
 
                   /// 播放控制栏
                   Positioned.fill(
-                    child: globalHorizon
+                    child: KeyboardStablePlayer(child: globalHorizon
                         ? Align(alignment: Alignment.bottomCenter, child: _play)
-                        : SafeArea(top: false, child: _play),
+                        : SafeArea(top: false, child: _play)),
 
                     // 竖屏状态下添加额外的占位空间
                   ),

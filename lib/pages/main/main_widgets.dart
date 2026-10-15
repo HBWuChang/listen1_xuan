@@ -9,6 +9,7 @@ Widget _leftBarTitleDragArea(Widget child) =>
     isWindows || isMacOS ? DragToMoveArea(child: child) : child;
 
 Widget get _leftBar => Scaffold(
+  resizeToAvoidBottomInset: false,
   body: Column(
     children: [
       10.sbh,
@@ -179,6 +180,7 @@ void Function(PointerDownEvent)? onMainPointerDown(PointerDownEvent event) {
 Listener _mainContent() => Listener(
   onPointerDown: onMainPointerDown,
   child: Scaffold(
+    resizeToAvoidBottomInset: false,
     body: Column(
       children: [
         if (isWindows)
@@ -246,8 +248,10 @@ Listener _mainContent() => Listener(
           child: Navigator(
             key: innerKey,
             initialRoute: RouteName.defaultPage,
-            observers: [heroineController],
+            observers: [heroineController, feedbackRouteObserver],
             onGenerateRoute: (RouteSettings settings) {
+              final feedbackRoute = buildFeedbackRoute(settings);
+              if (feedbackRoute != null) return feedbackRoute;
               WidgetBuilder builder;
               switch (settings.name) {
                 case RouteName.defaultPage:

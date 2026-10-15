@@ -1,5 +1,6 @@
 import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'widgets/loudness_gain_input.dart';
+import 'pages/feedback/feedback_route_args.dart';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:animations/animations.dart';
@@ -634,6 +635,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
 
+                ListTile(
+                  leading: const Icon(Icons.forum_outlined),
+                  title: const Text('在线反馈'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Get.toNamed(RouteName.onlineFeedbackPage, id: 1),
+                ),
                 ListTile(
                   leading: Icon(Icons.lightbulb_outline),
                   title: Text('Tip'),

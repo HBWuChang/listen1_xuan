@@ -64,3 +64,4 @@ dsa_priv.pem
 .vscode/settings.json
 .pi
 .mcp.json
+.codex

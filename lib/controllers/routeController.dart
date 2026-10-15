@@ -273,6 +273,9 @@ class RouteName {
   static const String settingsPage = '/settings';
   static const String settingsReadmePage = '/settings_readme';
   static const String settingsTipsPage = '/settings_tips';
+  static const String onlineFeedbackPage = '/online_feedback';
+  static const String onlineFeedbackIssuePage = '/online_feedback/issue';
+  static const String onlineFeedbackProfilePage = '/online_feedback/profile';
   static const String downloadPage = '/download';
   static const String supabaseLoginPage = '/supabase_login';
   static const String supabasePasswordLoginPage = '/supabase_password_login';

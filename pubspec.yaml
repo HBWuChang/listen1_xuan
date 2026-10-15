@@ -22,6 +22,8 @@ dependencies:
   url_launcher: ^6.0.9
   dio: 5.11.0
   flutter_svg: ^2.0.16
+  characters: 1.4.1
+  uuid: ^4.5.1
   crypto: ^3.0.1
   html: ^0.15.0
   marquee: ^2.3.0

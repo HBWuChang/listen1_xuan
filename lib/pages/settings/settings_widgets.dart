@@ -40,7 +40,7 @@ Widget _buildSupabasePanel() {
                                 vertical: 2.0,
                               ),
                               child: Text(
-                                authController.isPro ? 'unLimited用户' : '普通用户',
+                                authController.isPro ? 'Pro用户' : '普通用户',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: authController.isPro
