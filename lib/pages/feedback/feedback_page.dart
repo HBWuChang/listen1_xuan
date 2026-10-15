@@ -523,6 +523,23 @@ class _FeedbackRoutePageState extends State<_FeedbackRoutePage>
                 : '在线反馈',
           ),
           actions: [
+            if (widget.args.kind == FeedbackPageKind.issues)
+              TextButton.icon(
+                onPressed:
+                    _working ||
+                        (controller.permissions.globalBanned &&
+                            !controller.permissions.isAdmin)
+                    ? null
+                    : () async {
+                        if (controller.permissions.userId == null) {
+                          await _login();
+                          return;
+                        }
+                        await _edit();
+                      },
+                icon: const Icon(Icons.add),
+                label: const Text('创建问题'),
+              ),
             Icon(
               controller.connected
                   ? Icons.cloud_done_outlined
