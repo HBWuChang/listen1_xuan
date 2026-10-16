@@ -49,9 +49,6 @@ import 'widgets.dart';
 import 'widgets/priority_responsive_action_row.dart';
 import 'dart:async';
 import 'dart:io';
-import 'package:cookie_jar/cookie_jar.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:window_manager/window_manager.dart';
@@ -167,16 +164,6 @@ bool _startupWindowConfigured = false;
 
 Future<void> _initializeOptionalServices() async {
   try {
-    final appDocDir = await getApplicationDocumentsDirectory();
-    final cookieDirectory = cookiePath(appDocDir);
-    final cookieDir = Directory(cookieDirectory);
-    if (!await cookieDir.exists()) {
-      await cookieDir.create(recursive: true);
-    }
-    dioWithCookieManager.interceptors.add(CookieManager(PersistCookieJar(
-      storage: FileStorage(cookieDirectory),
-      ignoreExpires: true,
-    )));
     final settingsController = Get.find<SettingsController>();
     if (settingsController.settingsPageExpansion.contains(0)) {
       unawaited(settingsController.refreshLoginData().catchError((Object error) {

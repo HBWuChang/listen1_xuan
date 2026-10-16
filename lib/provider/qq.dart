@@ -112,7 +112,7 @@ class QQ extends BaseProvider {
       final cookies = CookieUtils.parseCookieString(token)
           .where((cookie) => cookie.value.isNotEmpty)
           .toList();
-      for (final manager in dioWithCookieManager.interceptors.whereType<CookieManager>()) {
+      for (final manager in dioWithCookieManager.interceptors.whereType<CookieManager>().toList()) {
         final savedCookies = await manager.cookieJar.loadForRequest(uri);
         final savedNames = savedCookies
             .where((cookie) => cookie.value.isNotEmpty)
