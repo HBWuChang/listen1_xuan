@@ -263,21 +263,23 @@ Widget _buildThirdPartyLoginPanel(BuildContext context) {
           children: [
             provider.loginIcon,
             const SizedBox(width: 12),
-            Expanded(child: Obx(() {
-              switch (provider.loginStatus.value) {
-                case LoginStatus.processing:
-                  return Center(child: globalLoadingAnime);
-                case LoginStatus.loggedIn:
-                  return Text(provider.currentUser.value?.name ?? '未知用户');
-                case LoginStatus.failed:
-                  return Tooltip(
-                    message: provider.loginError.value,
-                    child: const Text('登录状态获取失败'),
-                  );
-                case LoginStatus.noLogin:
-                  return const Text('cookie未设置或失效');
-              }
-            })),
+            Expanded(
+              child: Obx(() {
+                switch (provider.loginStatus.value) {
+                  case LoginStatus.processing:
+                    return Center(child: globalLoadingAnime);
+                  case LoginStatus.loggedIn:
+                    return Text(provider.currentUser.value?.name ?? '未知用户');
+                  case LoginStatus.failed:
+                    return Tooltip(
+                      message: provider.loginError.value,
+                      child: const Text('登录状态获取失败'),
+                    );
+                  case LoginStatus.noLogin:
+                    return const Text('cookie未设置或失效');
+                }
+              }),
+            ),
             ElevatedButton(
               onPressed: () => provider.login(context),
               child: Text(provider.loginButtonText),
@@ -286,15 +288,22 @@ Widget _buildThirdPartyLoginPanel(BuildContext context) {
         ),
       Row(
         children: [
-          Iconify(Mdi.github, color: AdaptiveTheme.of(context).theme.iconTheme.color),
+          Iconify(
+            Mdi.github,
+            color: AdaptiveTheme.of(context).theme.iconTheme.color,
+          ),
           const SizedBox(width: 12),
-          Expanded(child: Obx(() {
-            if (settingsController.loginDataLoading.contains(PlantformCodes.github)) {
-              return Center(child: globalLoadingAnime);
-            }
-            settingsController.loginData[PlantformCodes.github];
-            return Text(Github.getStatusText());
-          })),
+          Expanded(
+            child: Obx(() {
+              if (settingsController.loginDataLoading.contains(
+                PlantformCodes.github,
+              )) {
+                return Center(child: globalLoadingAnime);
+              }
+              settingsController.loginData[PlantformCodes.github];
+              return Text(Github.getStatusText());
+            }),
+          ),
           ElevatedButton(
             onPressed: () => Github.openAuthUrl(),
             child: const Text('登录Github(建议使用魔法'),
@@ -820,33 +829,36 @@ Widget get androidSettingsTiles => Column(
             leading: BackButton(onPressed: routerPop),
           ),
           body: Obx(
-            () => PageScrollToTop(builder: (context, pageScrollController, pageListController) => ReorderableListView(
-          scrollController: pageScrollController,
-              onReorder: (oldIndex, newIndex) {
-                if (newIndex > oldIndex) {
-                  newIndex -= 1;
-                }
-                List<int> items = settingsController.androidActionSort;
-                int item = items.removeAt(oldIndex);
-                items.insert(newIndex, item);
-                settingsController.androidActionSort = items;
-              },
-              children: settingsController.androidActionSort
-                  .asMap()
-                  .entries
-                  .map(
-                    (entry) => ListTile(
-                      key: ValueKey(entry.value),
-                      title: Text(
-                        AudioServiceButtonActions.getDisplayNameByCode(
-                          entry.value,
-                        ),
-                      ),
-                      leading: Icon(Icons.drag_handle),
-                    ),
-                  )
-                  .toList(),
-            )),
+            () => PageScrollToTop(
+              builder: (context, pageScrollController, pageListController) =>
+                  ReorderableListView(
+                    scrollController: pageScrollController,
+                    onReorder: (oldIndex, newIndex) {
+                      if (newIndex > oldIndex) {
+                        newIndex -= 1;
+                      }
+                      List<int> items = settingsController.androidActionSort;
+                      int item = items.removeAt(oldIndex);
+                      items.insert(newIndex, item);
+                      settingsController.androidActionSort = items;
+                    },
+                    children: settingsController.androidActionSort
+                        .asMap()
+                        .entries
+                        .map(
+                          (entry) => ListTile(
+                            key: ValueKey(entry.value),
+                            title: Text(
+                              AudioServiceButtonActions.getDisplayNameByCode(
+                                entry.value,
+                              ),
+                            ),
+                            leading: Icon(Icons.drag_handle),
+                          ),
+                        )
+                        .toList(),
+                  ),
+            ),
           ),
         );
       },
@@ -1025,6 +1037,16 @@ Widget get themeSettingsTiles => Column(
         );
       },
     ),
+    if (isAndroid)
+      Obx(
+        () => SwitchListTile(
+          title: const Text('预测式返回动画始终从左侧开始'),
+          value: Get.find<SettingsController>().predictiveBackAlwaysFromLeft,
+          onChanged: (bool value) =>
+              Get.find<SettingsController>().predictiveBackAlwaysFromLeft =
+                  value,
+        ),
+      ),
   ],
 );
 

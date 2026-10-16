@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../controllers/settings_controller.dart';
+
 const _predictiveBackLogPrefix = '[ImageToolboxPB]';
 final _predictiveBackLogClock = Stopwatch()..start();
 
@@ -168,7 +170,12 @@ class _ImageToolboxGestureState extends ChangeNotifier {
   bool active = false;
   PageRoute<dynamic>? fromRoute;
   _ImageToolboxBackPhase phase = _ImageToolboxBackPhase.idle;
-  SwipeEdge swipeEdge = SwipeEdge.left;
+  SwipeEdge _swipeEdge = SwipeEdge.left;
+  SwipeEdge get swipeEdge =>
+      Get.isRegistered<SettingsController>() &&
+          Get.find<SettingsController>().predictiveBackAlwaysFromLeft
+      ? SwipeEdge.left
+      : _swipeEdge;
 
   double exitProgress = 0;
   double enterProgress = 0;
@@ -196,7 +203,7 @@ class _ImageToolboxGestureState extends ChangeNotifier {
     active = true;
     fromRoute = route;
     phase = _ImageToolboxBackPhase.drag;
-    swipeEdge = event.swipeEdge;
+    _swipeEdge = event.swipeEdge;
     _setDragProgress(event.progress);
     _predictiveBackLog(
       'START accepted route=${_routeDebugLabel(route)} '
@@ -205,7 +212,7 @@ class _ImageToolboxGestureState extends ChangeNotifier {
   }
 
   void update(PredictiveBackEvent event) {
-    swipeEdge = event.swipeEdge;
+    _swipeEdge = event.swipeEdge;
     _setDragProgress(event.progress);
   }
 

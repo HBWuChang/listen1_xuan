@@ -15,7 +15,7 @@ Route<dynamic>? buildFeedbackRoute(RouteSettings settings, {List<GetMiddleware>?
   final route = ThemedGetPageRoute(
     settings: settings,
     binding: FeedbackBinding(args),
-    transition: Transition.rightToLeftWithFade,
+    transition: Transition.rightToLeft,
     middlewares: middlewares ?? [ListenPopMiddleware()],
     page: () => switch (args.kind) {
       FeedbackPageKind.issues => FeedbackPage(args: args),

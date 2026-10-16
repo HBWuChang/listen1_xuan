@@ -38,6 +38,14 @@ import '../models/audio_metadata.dart';
 
 class SettingsController extends GetxController {
   static const String hiveStoreKey = 'hive_store';
+  static const String predictiveBackAlwaysFromLeftKey =
+      'predictiveBackAlwaysFromLeft';
+  bool get predictiveBackAlwaysFromLeft =>
+      settings[predictiveBackAlwaysFromLeftKey] as bool? ?? false;
+  set predictiveBackAlwaysFromLeft(bool value) {
+    settings[predictiveBackAlwaysFromLeftKey] = value;
+  }
+
   static const String loudnessNormalizationKey = 'loudnessNormalization';
   bool get loudnessNormalization => settings[loudnessNormalizationKey] as bool? ?? true;
   set loudnessNormalization(bool value) {
