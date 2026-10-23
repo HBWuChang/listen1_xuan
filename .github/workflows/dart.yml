@@ -9,10 +9,34 @@ on:
       - "pubspec.yaml"
       - "**/dart.yml"
 
+# 同一分支只保留最新一次构建，避免快速连推时旧 run 继续占用 runner。
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # 4 个变体并行构建，每个 job 内串行跑 split-per-abi + universal 两次构建。
+  # artifact 名保持 `app-<abi>-release...` 前缀，应用内 canary 更新
+  # （_selectAndroidArtifact 按 abi 关键字过滤）与 Release 更新逻辑均不受影响。
   build:
     if: "contains(github.event.head_commit.message, 'apk')"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # artifact 名固定不含 hash：同一分支重跑会覆盖同名 artifact，
+    # 这与原 workflow 行为一致，但也意味着并行的两批 run 会互相覆盖，
+    # 因此 concurrency 取消旧 run 是必要的。
+    strategy:
+      fail-fast: false
+      matrix:
+        # infix 为插在 `app-<abi>-release` 与 `-<hash>.apk` 之间的完整字符串
+        # （含前导 `-`，可为空）。artifact 名 = 同一中缀但去掉 `-<hash>`，
+        # 因此只需 infix 一个字段就能同时复刻文件名与 artifact 名。
+        include:
+          - { ffmpeg: with,    cronet: default, infix: "-without embedded Cronet-ffmpeg", extra-define: "" }
+          - { ffmpeg: with,    cronet: noplay,  infix: "-ffmpeg",                          extra-define: "--dart-define=cronetHttpNoPlay=true" }
+          - { ffmpeg: without, cronet: default, infix: "-without embedded Cronet",         extra-define: "" }
+          - { ffmpeg: without, cronet: noplay,  infix: "",                                 extra-define: "--dart-define=cronetHttpNoPlay=true" }
     steps:
       - name: Output Commit Information
         run: |
@@ -22,261 +46,160 @@ jobs:
           GITHASH=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "GITHASH=$GITHASH" >> $GITHUB_ENV
           echo "GITHASH (前7位): $GITHASH"
-      - uses: actions/checkout@v3
+
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "21"
+
+      # cache: true 缓存 Flutter SDK，matrix 并行时每个 job 都能命中。
       - uses: subosito/flutter-action@v2
         with:
           channel: "stable"
           flutter-version: "3.41.9"
+          cache: true
+
+      # 复用 Gradle 依赖缓存（各 job 独立 key，互不阻塞）。
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
       - run: flutter --version
-      - run: flutter pub get 
+
+      - name: Switch FFmpeg config (${{ matrix.ffmpeg }})
+        run: bash scripts/build.sh ${{ matrix.ffmpeg }}
+
+      - run: flutter pub get
 
       - name: 解码生成 jks
         run: echo $KEYSTORE_BASE64 | base64 -di > android/app/xuan.jks
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-      # - run: cat android/app/xuan.jks
 
-      # ============ 轮1: 带 FFmpeg + 默认 Cronet ============
-      - name: Switch to FFmpeg-enabled config
-        run: bash scripts/build.sh with
-
-      - run: flutter pub get
-
-      - name: flutter build apk --split-per-abi (ffmpeg)
-        run: flutter build apk --release --split-per-abi --dart-define=gitHash=${{ env.GITHASH }}
+      # 先编译 AOT，后续二次 build 复用 kernel_snapshot 产物。
+      - name: flutter build apk --split-per-abi (${{ matrix.ffmpeg }}/${{ matrix.cronet }})
+        run: >-
+          flutter build apk --release --split-per-abi
+          ${{ matrix.extra-define }}
+          --dart-define=gitHash=${{ env.GITHASH }}
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      - name: flutter build apk (ffmpeg)
-        run: flutter build apk --release --dart-define=gitHash=${{ env.GITHASH }}
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          
-      - name: Rename APK files (ffmpeg, default cronet)
+
+      - name: Stash split APKs
         run: |
-          # 直接输出到 release_artifacts/，避免被轮3的 flutter clean 清理 build/ 时删除
-          mkdir -p release_artifacts
-          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "release_artifacts/app-arm64-v8a-release-without embedded Cronet-ffmpeg-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "release_artifacts/app-armeabi-v7a-release-without embedded Cronet-ffmpeg-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-x86_64-release.apk "release_artifacts/app-x86_64-release-without embedded Cronet-ffmpeg-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-release.apk "release_artifacts/app-release-without embedded Cronet-ffmpeg-${GITHASH}.apk"
+          mkdir -p out
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            mv "build/app/outputs/flutter-apk/app-$abi-release.apk" \
+               "out/app-$abi-release${{ matrix.infix }}-${GITHASH}.apk"
+          done
         shell: bash
-          
-        # 上传分平台生成的 APK 文件
 
-      - name: Upload arm64-v8a APK (ffmpeg)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-arm64-v8a-release-without embedded Cronet-ffmpeg.apk
-          path: release_artifacts/app-arm64-v8a-release-without embedded Cronet-ffmpeg-${{ env.GITHASH }}.apk
-      - name: Upload armeabi-v7a APK (ffmpeg)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-armeabi-v7a-release-without embedded Cronet-ffmpeg.apk
-          path: release_artifacts/app-armeabi-v7a-release-without embedded Cronet-ffmpeg-${{ env.GITHASH }}.apk
-      - name: Upload x86_64 APK (ffmpeg)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-x86_64-release-without embedded Cronet-ffmpeg.apk
-          path: release_artifacts/app-x86_64-release-without embedded Cronet-ffmpeg-${{ env.GITHASH }}.apk
-
-      - name: Upload APK (ffmpeg)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-without embedded Cronet-ffmpeg.apk
-          path: release_artifacts/app-release-without embedded Cronet-ffmpeg-${{ env.GITHASH }}.apk
-
-      # ============ 轮2: 带 FFmpeg + cronetHttpNoPlay ============
-      - name: flutter build apk --split-per-abi --dart-define=cronetHttpNoPlay=true (ffmpeg)
-        run: flutter build apk --release --split-per-abi --dart-define=cronetHttpNoPlay=true --dart-define=gitHash=${{ env.GITHASH }}
+      - name: flutter build apk (universal, ${{ matrix.ffmpeg }}/${{ matrix.cronet }})
+        run: >-
+          flutter build apk --release
+          ${{ matrix.extra-define }}
+          --dart-define=gitHash=${{ env.GITHASH }}
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: flutter build apk (ffmpeg, cronetHttpNoPlay)
-        run: flutter build apk --release --dart-define=cronetHttpNoPlay=true --dart-define=gitHash=${{ env.GITHASH }}
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      - name: Rename APK files (ffmpeg, cronetHttpNoPlay)
+      - name: Stash universal APK
         run: |
-          mkdir -p release_artifacts
-          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "release_artifacts/app-arm64-v8a-release-ffmpeg-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "release_artifacts/app-armeabi-v7a-release-ffmpeg-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-x86_64-release.apk "release_artifacts/app-x86_64-release-ffmpeg-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-release.apk "release_artifacts/app-release-ffmpeg-${GITHASH}.apk"
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             "out/app-release${{ matrix.infix }}-${GITHASH}.apk"
         shell: bash
-        # 上传分平台生成的 APK 文件
-      - name: Upload arm64-v8a APK (ffmpeg, cronetHttpNoPlay)
+
+      - name: List produced APKs
+        run: ls -l out/
+
+      # 每个变体各传 4 个 artifact，名字与原来完全一致（不带 hash）。
+      - name: Upload arm64-v8a APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-arm64-v8a-release-ffmpeg.apk
-          path: release_artifacts/app-arm64-v8a-release-ffmpeg-${{ env.GITHASH }}.apk
-      - name: Upload armeabi-v7a APK (ffmpeg, cronetHttpNoPlay)
+          name: app-arm64-v8a-release${{ matrix.infix }}.apk
+          path: out/app-arm64-v8a-release${{ matrix.infix }}-${{ env.GITHASH }}.apk
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Upload armeabi-v7a APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-armeabi-v7a-release-ffmpeg.apk
-          path: release_artifacts/app-armeabi-v7a-release-ffmpeg-${{ env.GITHASH }}.apk
-      - name: Upload x86_64 APK (ffmpeg, cronetHttpNoPlay)
+          name: app-armeabi-v7a-release${{ matrix.infix }}.apk
+          path: out/app-armeabi-v7a-release${{ matrix.infix }}-${{ env.GITHASH }}.apk
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Upload x86_64 APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-x86_64-release-ffmpeg.apk
-          path: release_artifacts/app-x86_64-release-ffmpeg-${{ env.GITHASH }}.apk
+          name: app-x86_64-release${{ matrix.infix }}.apk
+          path: out/app-x86_64-release${{ matrix.infix }}-${{ env.GITHASH }}.apk
+          if-no-files-found: error
+          compression-level: 0
 
-      - name: Upload APK (ffmpeg, cronetHttpNoPlay)
+      - name: Upload universal APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-ffmpeg.apk
-          path: release_artifacts/app-release-ffmpeg-${{ env.GITHASH }}.apk
+          name: app-release${{ matrix.infix }}.apk
+          path: out/app-release${{ matrix.infix }}-${{ env.GITHASH }}.apk
+          if-no-files-found: error
+          compression-level: 0
 
-      # ============ 轮3: 无 FFmpeg 精简版 + 默认 Cronet ============
-      - name: Switch to FFmpeg-free config
-        run: bash scripts/build.sh without
+  # 单一上传点：避免多个 job 互相删除/覆盖同一 Release 资产。
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
 
-      - run: flutter clean
-      - run: flutter pub get
+      # pattern 需同时覆盖 `app-<abi>-release...` 与 `app-release...`（universal）。
+      - name: Download all Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: app-*release*.apk
+          merge-multiple: true
+          path: release_artifacts
 
-      - name: flutter build apk --split-per-abi (lite)
-        run: flutter build apk --release --split-per-abi --dart-define=gitHash=${{ env.GITHASH }}
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      - name: flutter build apk (lite)
-        run: flutter build apk --release --dart-define=gitHash=${{ env.GITHASH }}
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          
-      - name: Rename APK files (lite, default cronet)
+      - name: List merged assets
         run: |
-          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "build/app/outputs/flutter-apk/app-arm64-v8a-release-without embedded Cronet-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "build/app/outputs/flutter-apk/app-armeabi-v7a-release-without embedded Cronet-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-x86_64-release.apk "build/app/outputs/flutter-apk/app-x86_64-release-without embedded Cronet-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/app-release-without embedded Cronet-${GITHASH}.apk"
-        shell: bash
-          
-        # 上传分平台生成的 APK 文件
-
-      - name: Upload arm64-v8a APK (lite)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-arm64-v8a-release-without embedded Cronet.apk
-          path: build/app/outputs/flutter-apk/app-arm64-v8a-release-without embedded Cronet-${{ env.GITHASH }}.apk
-      - name: Upload armeabi-v7a APK (lite)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-armeabi-v7a-release-without embedded Cronet.apk
-          path: build/app/outputs/flutter-apk/app-armeabi-v7a-release-without embedded Cronet-${{ env.GITHASH }}.apk
-      - name: Upload x86_64 APK (lite)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-x86_64-release-without embedded Cronet.apk
-          path: build/app/outputs/flutter-apk/app-x86_64-release-without embedded Cronet-${{ env.GITHASH }}.apk
-
-      - name: Upload APK (lite)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-without embedded Cronet.apk
-          path: build/app/outputs/flutter-apk/app-release-without embedded Cronet-${{ env.GITHASH }}.apk
-
-      # ============ 轮4: 无 FFmpeg 精简版 + cronetHttpNoPlay ============
-      - name: flutter build apk --split-per-abi --dart-define=cronetHttpNoPlay=true (lite)
-        run: flutter build apk --release --split-per-abi --dart-define=cronetHttpNoPlay=true --dart-define=gitHash=${{ env.GITHASH }}
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-
-      - name: flutter build apk (lite, cronetHttpNoPlay)
-        run: flutter build apk --release --dart-define=cronetHttpNoPlay=true --dart-define=gitHash=${{ env.GITHASH }}
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      - name: Rename APK files (lite, cronetHttpNoPlay)
-        run: |
-          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "build/app/outputs/flutter-apk/app-arm64-v8a-release-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "build/app/outputs/flutter-apk/app-armeabi-v7a-release-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-x86_64-release.apk "build/app/outputs/flutter-apk/app-x86_64-release-${GITHASH}.apk"
-          mv build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/app-release-${GITHASH}.apk"
-        shell: bash
-        # 上传分平台生成的 APK 文件
-      - name: Upload arm64-v8a APK (lite, cronetHttpNoPlay)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-arm64-v8a-release.apk
-          path: build/app/outputs/flutter-apk/app-arm64-v8a-release-${{ env.GITHASH }}.apk
-      - name: Upload armeabi-v7a APK (lite, cronetHttpNoPlay)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-armeabi-v7a-release.apk
-          path: build/app/outputs/flutter-apk/app-armeabi-v7a-release-${{ env.GITHASH }}.apk
-      - name: Upload x86_64 APK (lite, cronetHttpNoPlay)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-x86_64-release.apk
-          path: build/app/outputs/flutter-apk/app-x86_64-release-${{ env.GITHASH }}.apk
-
-      - name: Upload APK (lite, cronetHttpNoPlay)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release.apk
-          path: build/app/outputs/flutter-apk/app-release-${{ env.GITHASH }}.apk
+          ls -l release_artifacts/
+          echo "共 $(ls -1 release_artifacts/*.apk | wc -l) 个 APK"
 
       # 从 pubspec.yaml 提取版本号
       - name: Extract Version from pubspec.yaml
         id: extract_version
         run: |
-          $version = (Select-String -Path pubspec.yaml -Pattern '^version:' | ForEach-Object { $_.Line -replace 'version:\s*', '' }).Trim()
-          echo "VERSION=$version" >> $env:GITHUB_ENV
-        shell: pwsh
-      - name: Debug Version
-        run: echo "${{ env.VERSION }}"
-      
+          version=$(grep '^version:' pubspec.yaml | sed 's/version: *//')
+          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "VERSION=$version"
+
       # 删除该 Release 下所有旧的 APK 文件
       - name: Delete Old APK Assets from Release
-        run: |
-          gh release view "${{ env.VERSION }}" --json assets --jq '.assets[].name' | grep -E '\.apk$' | while read asset; do
-            echo "Deleting old asset: $asset"
-            gh release delete-asset "${{ env.VERSION }}" "$asset" --yes || true
-          done
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-        
-      # 上传新的资产到最新 Release（ffmpeg 版 + 精简版，各 8 个）
+        run: |
+          gh release view "${{ env.VERSION }}" --json assets --jq '.assets[].name' \
+            | grep -E '\.apk$' \
+            | while read -r asset; do
+                echo "Deleting old asset: $asset"
+                gh release delete-asset "${{ env.VERSION }}" "$asset" --yes || true
+              done
+
+      # 上传新的资产到 Release（ffmpeg 版 + 精简版，各 8 个）
       - name: Upload New Asset to Release
         uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ env.VERSION }}
           prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
-          files: |
-            release_artifacts/app-release-without embedded Cronet-ffmpeg-${{ env.GITHASH }}.apk
-            release_artifacts/app-arm64-v8a-release-without embedded Cronet-ffmpeg-${{ env.GITHASH }}.apk
-            release_artifacts/app-armeabi-v7a-release-without embedded Cronet-ffmpeg-${{ env.GITHASH }}.apk
-            release_artifacts/app-x86_64-release-without embedded Cronet-ffmpeg-${{ env.GITHASH }}.apk
-            release_artifacts/app-release-ffmpeg-${{ env.GITHASH }}.apk
-            release_artifacts/app-arm64-v8a-release-ffmpeg-${{ env.GITHASH }}.apk
-            release_artifacts/app-armeabi-v7a-release-ffmpeg-${{ env.GITHASH }}.apk
-            release_artifacts/app-x86_64-release-ffmpeg-${{ env.GITHASH }}.apk
-            build/app/outputs/flutter-apk/app-release-without embedded Cronet-${{ env.GITHASH }}.apk
-            build/app/outputs/flutter-apk/app-arm64-v8a-release-without embedded Cronet-${{ env.GITHASH }}.apk
-            build/app/outputs/flutter-apk/app-armeabi-v7a-release-without embedded Cronet-${{ env.GITHASH }}.apk
-            build/app/outputs/flutter-apk/app-x86_64-release-without embedded Cronet-${{ env.GITHASH }}.apk
-            build/app/outputs/flutter-apk/app-release-${{ env.GITHASH }}.apk
-            build/app/outputs/flutter-apk/app-arm64-v8a-release-${{ env.GITHASH }}.apk
-            build/app/outputs/flutter-apk/app-armeabi-v7a-release-${{ env.GITHASH }}.apk
-            build/app/outputs/flutter-apk/app-x86_64-release-${{ env.GITHASH }}.apk
+          fail_on_unmatched_files: true
+          files: release_artifacts/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
