@@ -18,6 +18,14 @@ ARCH_LABELS = {
     "universal": "通用包 · 不推荐",
 }
 
+# macOS 拆分为单架构包；旧 Release 仍可能只有 universal 包。
+MACOS_ARCHES = ("arm64", "x86_64")
+MACOS_ARCH_LABELS = {
+    "arm64": "Apple 芯片（M1/M2/M3/M4）",
+    "x86_64": "Intel 芯片",
+    "universal": "通用包（旧版）",
+}
+
 
 def gh_api(endpoint, payload=None, paginate=False):
     command = ["gh", "api", endpoint]
@@ -60,7 +68,11 @@ def classify(name):
     elif normalized.startswith("listen1_xuan-ios-") and normalized.endswith(".app.zip"):
         platform, arch = "iOS", ""
     elif normalized.startswith("listen1_xuan-") and "-macos-" in normalized and normalized.endswith(".zip"):
-        platform, arch = "macOS", ""
+        platform = "macOS"
+        arch = next(
+            (a for a in MACOS_ARCHES if f"-macos-{a}-" in normalized),
+            "universal",  # 拆分前的旧资产
+        )
     else:
         return None
     return {
@@ -98,7 +110,8 @@ def generate_guide(assets):
         "- **内置 Cronet**：无需 Google Play 服务，适合服务缺失或不可用的设备；文件名不含 `without.embedded.Cronet`。",
         "- **不内置 Cronet（Android 推荐）**：需要可用的 Google Play 服务；文件名含 `without.embedded.Cronet`（本地构建名可能使用空格）。",
         "- ARM64 适用于大多数近年 ARM 手机；32 位 ARM 设备请选择 ARM32；x86_64 仅适用于对应设备或模拟器。",
-        "- **不推荐通用包**：包含多种架构、体积较大。请优先确认设备架构并选择对应的单架构包。",
+        "- **Android 不推荐通用包**：包含多种架构、体积较大。请优先确认设备架构并选择对应的单架构包。",
+        "- **macOS 选架构**：Apple 芯片选 `arm64`，Intel 选 `x86_64`；不确定时在终端执行 `uname -m`（或查看「关于本机 → 芯片」）。装错架构会提示应用已损坏。",
         "",
         "每个下载链接旁均列出文件体积和该安装包自己的提交 hash；不同平台的 hash 可能不同。体积为下载文件大小（MiB），不是安装后的占用。",
         "",
@@ -113,16 +126,51 @@ def generate_guide(assets):
             matches = [a for a in packages if (i := classify(a["name"]))["platform"] == "Android" and i["arch"] == arch and i["embedded"] == embedded and i["ffmpeg"] == ffmpeg]
             cells.append("<br>".join(download(a, arch == "arm64-v8a" and not embedded and not ffmpeg) for a in matches) or "暂未发布")
         lines.append(f"| {ARCH_LABELS[arch]} | " + " | ".join(cells) + " |")
+    lines += ["", "### macOS", ""]
+    macos_rows = [
+        arch
+        for arch in (*MACOS_ARCHES, "universal")
+        if any(
+            (i := classify(a["name"]))["platform"] == "macOS" and i["arch"] == arch
+            for a in packages
+        )
+    ]
+    if macos_rows:
+        lines += ["| 芯片 | 精简版（推荐） | 含 FFmpeg |", "|---|---|---|"]
+        macos_notes = []
+        for arch in macos_rows:
+            cells = []
+            for ffmpeg in (False, True):
+                matches = [
+                    a
+                    for a in packages
+                    if (i := classify(a["name"]))["platform"] == "macOS"
+                    and i["arch"] == arch
+                    and i["ffmpeg"] == ffmpeg
+                ]
+                cells.append(
+                    "<br>".join(download(a, arch == "arm64" and not ffmpeg) for a in matches)
+                    or "暂未发布"
+                )
+            lines.append(f"| {MACOS_ARCH_LABELS[arch]} | " + " | ".join(cells) + " |")
+        if "arm64" in macos_rows and "x86_64" not in macos_rows:
+            macos_notes.append("Intel 芯片包暂未发布，Intel 设备可暂用通用包（旧版）。")
+        if "x86_64" in macos_rows and "arm64" not in macos_rows:
+            macos_notes.append("Apple 芯片包暂未发布，M 系列设备可暂用通用包（旧版）。")
+        if macos_notes:
+            lines += [""] + macos_notes
+    else:
+        lines += ["暂未发布"]
+
     lines += [
         "",
-        "### Windows / macOS / iOS",
+        "### Windows / iOS",
         "",
         "| 平台 | 精简版（推荐） | 含 FFmpeg | 安装说明 |",
         "|---|---|---|---|",
     ]
     instructions = {
         "Windows": "x64 包；完整解压后运行 `listen1_xuan.exe`，保留同目录依赖文件。",
-        "macOS": "解压后将应用放入“应用程序”。",
         "iOS": "未签名 `.app.zip`；需要自行签名或适用的侧载流程，不能直接点击安装。",
     }
     for platform in instructions:

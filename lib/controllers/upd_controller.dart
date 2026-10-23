@@ -91,6 +91,28 @@ class UpdController extends GetxController {
     return (enabled ?? isFfmpegEnabled) == name.contains('ffmpeg');
   }
 
+  /// 当前运行的 macOS 二进制架构：`arm64` / `x86_64`。
+  ///
+  /// `SysInfo.kernelArchitecture` 走 `uname -m`：Rosetta 下进程自身报告
+  /// x86_64，即系统为当前进程选中的切片，保证更新包与运行中二进制同架构。
+  String get macosSelfArch {
+    if (!isMacOS) return '';
+    switch (SysInfo.kernelArchitecture.name) {
+      case "ARM64":
+        return 'arm64';
+      case "X86_64":
+        return 'x86_64';
+    }
+    return '';
+  }
+
+  /// 资产名是否对应指定 macOS 架构。
+  /// 命名：`listen1_xuan-<ver>-macos-<arch>[-ffmpeg]-<hash>.zip`。
+  bool _matchesMacosArch(String name, String arch) {
+    final n = name.toLowerCase();
+    return n.contains('-macos-$arch-') || n.contains('-macos-$arch.');
+  }
+
   /// 查找匹配平台和 FFmpeg 变体的 artifact（精确匹配 name）。
   dynamic _findArtifactByPlatform(List<dynamic> artifacts, String platform) {
     for (var artifact in artifacts) {
@@ -481,10 +503,16 @@ class UpdController extends GetxController {
       final filePath = p.join(tempPath, 'canary.zip');
 
       final artifacts = await _fetchArtifacts(token);
-      final art = _findArtifactByPlatform(
-        artifacts,
-        isFfmpegEnabled ? 'macos-app-artifact-ffmpeg' : 'macos-app-artifact',
-      );
+      final artifactBase =
+          isFfmpegEnabled ? 'macos-app-artifact-ffmpeg' : 'macos-app-artifact';
+      final arch = macosSelfArch;
+      final art =
+          _findArtifactByPlatform(
+            artifacts,
+            arch.isEmpty ? artifactBase : '$artifactBase-$arch',
+          ) ??
+          // 兼容拆分前的 universal artifact
+          _findArtifactByPlatform(artifacts, artifactBase);
       if (art == null) {
         showErrorSnackbar('未找到 macOS 版本', null);
         return;
@@ -788,6 +816,10 @@ class UpdController extends GetxController {
               (entity) =>
                   entity is File &&
                   p.basenameWithoutExtension(entity.path).contains('macos') &&
+                  (macosSelfArch.isEmpty ||
+                      _matchesMacosArch(entity.path, macosSelfArch) ||
+                      (!_matchesMacosArch(entity.path, 'arm64') &&
+                          !_matchesMacosArch(entity.path, 'x86_64'))) &&
                   !p
                       .basenameWithoutExtension(entity.path)
                       .contains(latestBuildNumber),
@@ -1185,12 +1217,24 @@ class UpdController extends GetxController {
         }
       }
     } else if (isMacOS) {
-      for (var asset in assets) {
-        if (asset.name.toLowerCase().contains('macos') &&
-            (asset.name.endsWith('.dmg') || asset.name.endsWith('.zip'))) {
-          return asset;
+      final arch = macosSelfArch;
+      ReleaseAsset? universal;
+      for (final asset in assets) {
+        final n = asset.name.toLowerCase();
+        if (!n.contains('macos') ||
+            !(n.endsWith('.dmg') || n.endsWith('.zip'))) {
+          continue;
+        }
+        if (arch.isEmpty) return asset;
+        if (_matchesMacosArch(n, arch)) return asset;
+        // 拆分前的老 Release 只有 universal 包，作为兼容兜底
+        if (universal == null &&
+            !_matchesMacosArch(n, 'arm64') &&
+            !_matchesMacosArch(n, 'x86_64')) {
+          universal = asset;
         }
       }
+      return universal;
     } else if (isAndroid) {
       List<ReleaseAsset> apkAssets = assets
           .where((asset) => asset.name.toLowerCase().endsWith('.apk'))
@@ -1272,12 +1316,26 @@ class UpdController extends GetxController {
           .toList();
     } else if (isMacOS) {
       list = list
-          .where(
-            (asset) =>
-                asset.name.toLowerCase().contains('macos') &&
-                asset.name.toLowerCase().endsWith('.zip'),
-          )
+          .where((asset) {
+            final n = asset.name.toLowerCase();
+            return n.contains('macos') && n.endsWith('.zip');
+          })
           .toList();
+      final arch = macosSelfArch;
+      if (arch.isNotEmpty) {
+        final exact =
+            list.where((a) => _matchesMacosArch(a.name, arch)).toList();
+        // 精确命中本机架构；否则只接受无架构标记的 universal 老包
+        list = exact.isNotEmpty
+            ? exact
+            : list
+                .where(
+                  (a) =>
+                      !_matchesMacosArch(a.name, 'arm64') &&
+                      !_matchesMacosArch(a.name, 'x86_64'),
+                )
+                .toList();
+      }
     } else if (isAndroid) {
       list = list
           .where((asset) => asset.name.toLowerCase().endsWith('.apk'))

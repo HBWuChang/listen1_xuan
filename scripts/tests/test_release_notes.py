@@ -73,6 +73,43 @@ class ReleaseNotesTests(unittest.TestCase):
         self.assertIn("暂未发布", guide)
         self.assertEqual(notes.size_label(1024 * 1024), "1.00 MiB")
 
+    def test_macos_split_arches(self):
+        assets = [
+            asset("listen1_xuan-2.7.3+53-macos-arm64-a123456.zip"),
+            asset("listen1_xuan-2.7.3+53-macos-x86_64-a123456.zip"),
+            asset("listen1_xuan-2.7.3+53-macos-arm64-ffmpeg-a123456.zip"),
+            asset("listen1_xuan-2.7.3+53-macos-x86_64-ffmpeg-a123456.zip"),
+        ]
+        self.assertEqual(notes.classify(assets[0]["name"])["arch"], "arm64")
+        self.assertEqual(notes.classify(assets[1]["name"])["arch"], "x86_64")
+        self.assertFalse(notes.classify(assets[1]["name"])["ffmpeg"])
+        self.assertTrue(notes.classify(assets[2]["name"])["ffmpeg"])
+        guide = notes.generate_guide(assets)
+        self.assertIn("Apple 芯片", guide)
+        self.assertIn("Intel 芯片", guide)
+        self.assertNotIn("通用包（旧版）", guide)
+        self.assertEqual(guide.count("https://example.com/"), 4)
+        self.assertEqual(guide.count("[推荐下载]"), 1)
+        self.assertIn("**[推荐下载](https://example.com/listen1_xuan-2.7.3+53-macos-arm64-a123456.zip)", guide)
+        self.assertIn("macOS 选架构", guide)
+
+    def test_macos_legacy_universal_still_listed(self):
+        assets = [
+            asset("listen1_xuan-2.7.1+51-macos-c345678.zip"),
+            asset("listen1_xuan-2.7.3+53-macos-arm64-a123456.zip"),
+        ]
+        self.assertEqual(notes.classify(assets[0]["name"])["arch"], "universal")
+        guide = notes.generate_guide(assets)
+        self.assertIn("通用包（旧版）", guide)
+        self.assertIn("Apple 芯片", guide)
+        self.assertIn("Intel 芯片包暂未发布", guide)
+        self.assertIn("https://example.com/listen1_xuan-2.7.1+51-macos-c345678.zip", guide)
+
+    def test_macos_missing_assets_shows_placeholder(self):
+        guide = notes.generate_guide([asset("windows-build-artifact-b234567.zip")])
+        self.assertIn("### macOS", guide)
+        self.assertIn("暂未发布", guide)
+
     def test_version_uses_triggering_commit(self):
         import base64
         sha = "a" * 40

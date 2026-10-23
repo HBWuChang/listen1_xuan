@@ -9,9 +9,19 @@ on:
       - '**/dart_macos.yml'
 
 jobs:
+  # 每个矩阵任务只编一种架构（ARCHS 经 FLUTTER_XCODE_ 前缀注入 xcodebuild），
+  # 产物命名带 arch，应用内更新按本机架构挑选。
   build:
     if: "contains(github.event.head_commit.message, 'macos')"
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: arm64,  ffmpeg: with,    variant: ffmpeg, artifact: macos-app-artifact-ffmpeg }
+          - { arch: x86_64, ffmpeg: with,    variant: ffmpeg, artifact: macos-app-artifact-ffmpeg }
+          - { arch: arm64,  ffmpeg: without, variant: lite,   artifact: macos-app-artifact }
+          - { arch: x86_64, ffmpeg: without, variant: lite,   artifact: macos-app-artifact }
     steps:
       - name: Output Commit Information
         run: |
@@ -21,115 +31,119 @@ jobs:
           GITHASH=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "GITHASH=$GITHASH" >> $GITHUB_ENV
           echo "GITHASH (前7位): $GITHASH"
-      - uses: actions/checkout@v3
-      
+
+      - uses: actions/checkout@v4
+
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           flutter-version: '3.41.9'
-          
+
       - run: flutter --version
+
+      - name: Switch FFmpeg config (${{ matrix.ffmpeg }})
+        run: bash scripts/build.sh ${{ matrix.ffmpeg }}
+
       - run: flutter pub get
-      
-      # ============ 第一遍: 带 FFmpeg 版本 ============
-      # 切换为带 FFmpeg 配置（默认，幂等）
-      - name: Switch to FFmpeg-enabled config
-        run: bash scripts/build.sh with
-        
-      - run: flutter pub get
-      
-      # 安装 CocoaPods 依赖
+
       - name: Install CocoaPods dependencies
         run: |
           cd macos
           pod install
-      
-      # 替换distribute_options.yaml中的$GITHASH
+
       - name: Replace GITHASH in distribute_options.yaml
         run: |
           sed -i '' "s/\$GITHASH/${{ env.GITHASH }}/g" distribute_options.yaml
         shell: bash
-        
-      # 构建 macOS app
-      - name: Build macOS app (ffmpeg)
+
+      - name: Build macOS app (${{ matrix.arch }})
+        env:
+          FLUTTER_XCODE_ARCHS: ${{ matrix.arch }}
+          FLUTTER_XCODE_ONLY_ACTIVE_ARCH: 'NO'
         run: |
           dart pub global activate fastforge
           fastforge release --name prod
-        
-      # 从 pubspec.yaml 提取版本号
+
+      - name: Verify single-arch, extract version, rename asset
+        run: |
+          set -euo pipefail
+          APP="build/macos/Build/Products/Release/listen1_xuan.app"
+          WANT="${{ matrix.arch }}"
+          GOT=$(lipo -archs "$APP/Contents/MacOS/listen1_xuan")
+          echo "main exe archs: $GOT"
+          if [ "$GOT" != "$WANT" ]; then
+            echo "::error::expected $WANT, got $GOT"
+            exit 1
+          fi
+          bad=0
+          while IFS= read -r -d '' f; do
+            file -b "$f" | grep -q 'Mach-O' || continue
+            a=$(lipo -archs "$f" 2>/dev/null || true)
+            if [ "$a" != "$WANT" ]; then
+              echo "::error::not single-arch: $f -> $a"
+              bad=1
+            fi
+          done < <(find "$APP" -type f -print0)
+          [ "$bad" -eq 0 ] || exit 1
+
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          if [ "${{ matrix.variant }}" = "ffmpeg" ]; then
+            NEW="listen1_xuan-$VERSION-macos-$WANT-ffmpeg-$GITHASH.zip"
+          else
+            NEW="listen1_xuan-$VERSION-macos-$WANT-$GITHASH.zip"
+          fi
+          mv "dist/$VERSION/listen1_xuan-$VERSION-macos.zip" "dist/$VERSION/$NEW"
+          echo "ASSET_NAME=$NEW" >> $GITHUB_ENV
+          echo "renamed -> $NEW"
+
+      - name: Upload artifact (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-${{ matrix.arch }}
+          path: dist/**/${{ env.ASSET_NAME }}
+          if-no-files-found: error
+
+  # 单一上传点：避免多个矩阵任务互相删除/覆盖同一 Release 资产。
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: macos-app-artifact-*
+          merge-multiple: true
+          path: dist-assets
+
       - name: Extract Version from pubspec.yaml
-        id: extract_version
         run: |
           version=$(grep '^version:' pubspec.yaml | sed 's/version: *//')
           echo "VERSION=$version" >> $GITHUB_ENV
-        shell: bash
-        
-      - name: Debug Version
-        run: echo "${{ env.VERSION }}"
-      
-      # 删除该 Release 下所有旧的 macOS 构建文件
+          echo "VERSION=$version"
+
       - name: Delete Old macOS Assets from Release
-        run: |
-          gh release view "${{ env.VERSION }}" --json assets --jq '.assets[].name' | grep -E 'listen1_xuan-.+-macos-.+\.zip$' | while read asset; do
-            echo "Deleting old asset: $asset"
-            gh release delete-asset "${{ env.VERSION }}" "$asset" --yes || true
-          done
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-      
-      # 重命名文件以包含 GITHASH（ffmpeg 版）
-      - name: Rename macOS artifact (ffmpeg)
         run: |
-          mv "dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos.zip" "dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-ffmpeg-${GITHASH}.zip"
-        shell: bash
-          
-      # 上传 .app 文件
-      - name: Upload .app artifact (ffmpeg)
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-app-artifact-ffmpeg
-          path: dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-ffmpeg-${{ env.GITHASH }}.zip
+          gh release view "${{ env.VERSION }}" --json assets --jq '.assets[].name' \
+            | grep -E 'listen1_xuan-.+-macos-.+\.zip$' \
+            | while read -r asset; do
+                echo "Deleting old asset: $asset"
+                gh release delete-asset "${{ env.VERSION }}" "$asset" --yes || true
+              done
 
-      # ============ 第二遍: 无 FFmpeg 精简版 ============
-      - name: Switch to FFmpeg-free config
-        run: bash scripts/build.sh without
-        
-      - run: flutter clean
-      - run: flutter pub get
-        
-      # 安装 CocoaPods 依赖
-      - name: Install CocoaPods dependencies (lite)
-        run: |
-          cd macos
-          pod install
-      
-      # 构建 macOS app
-      - name: Build macOS app (lite)
-        run: |
-          fastforge release --name prod
-        
-      # 重命名文件以包含 GITHASH（lite 版）
-      - name: Rename macOS artifact (lite)
-        run: |
-          mv "dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos.zip" "dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-${GITHASH}.zip"
-        shell: bash
-          
-      # 上传 .app 文件
-      - name: Upload .app artifact (lite)
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-app-artifact
-          path: dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-${{ env.GITHASH }}.zip
-          
-      # 上传到 Release（带 FFmpeg 版 + 精简版）
-      - name: Upload New Asset to Release
+      - name: Upload New Assets to Release
         uses: softprops/action-gh-release@v2.3.2
         with:
           tag_name: ${{ env.VERSION }}
-          files: |
-            dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-ffmpeg-${{ env.GITHASH }}.zip
-            dist/${{ env.VERSION }}/listen1_xuan-${{ env.VERSION }}-macos-${{ env.GITHASH }}.zip
+          files: dist-assets/*.zip
+          fail_on_unmatched_files: true
           prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
