@@ -10,7 +10,8 @@ on:
 
 jobs:
   # 每个矩阵任务只编一种架构（ARCHS 经 FLUTTER_XCODE_ 前缀注入 xcodebuild），
-  # 产物命名带 arch，应用内更新按本机架构挑选。
+  # 产物命名带芯片标记（apple-silicon / intel）。注意不能用 arm64 / x86_64 命名：
+  # Android 端 artifact 选择按这些子串过滤架构，会把 macOS 包也列出来。
   build:
     if: "contains(github.event.head_commit.message, 'macos')"
     runs-on: macos-latest
@@ -18,10 +19,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: arm64,  ffmpeg: with,    variant: ffmpeg, artifact: macos-app-artifact-ffmpeg }
-          - { arch: x86_64, ffmpeg: with,    variant: ffmpeg, artifact: macos-app-artifact-ffmpeg }
-          - { arch: arm64,  ffmpeg: without, variant: lite,   artifact: macos-app-artifact }
-          - { arch: x86_64, ffmpeg: without, variant: lite,   artifact: macos-app-artifact }
+          - { arch: arm64,  tag: apple-silicon, ffmpeg: with,    variant: ffmpeg, artifact: macos-app-artifact-ffmpeg }
+          - { arch: x86_64, tag: intel,         ffmpeg: with,    variant: ffmpeg, artifact: macos-app-artifact-ffmpeg }
+          - { arch: arm64,  tag: apple-silicon, ffmpeg: without, variant: lite,   artifact: macos-app-artifact }
+          - { arch: x86_64, tag: intel,         ffmpeg: without, variant: lite,   artifact: macos-app-artifact }
     steps:
       - name: Output Commit Information
         run: |
@@ -89,18 +90,18 @@ jobs:
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           if [ "${{ matrix.variant }}" = "ffmpeg" ]; then
-            NEW="listen1_xuan-$VERSION-macos-$WANT-ffmpeg-$GITHASH.zip"
+            NEW="listen1_xuan-$VERSION-macos-${{ matrix.tag }}-ffmpeg-$GITHASH.zip"
           else
-            NEW="listen1_xuan-$VERSION-macos-$WANT-$GITHASH.zip"
+            NEW="listen1_xuan-$VERSION-macos-${{ matrix.tag }}-$GITHASH.zip"
           fi
           mv "dist/$VERSION/listen1_xuan-$VERSION-macos.zip" "dist/$VERSION/$NEW"
           echo "ASSET_NAME=$NEW" >> $GITHUB_ENV
           echo "renamed -> $NEW"
 
-      - name: Upload artifact (${{ matrix.arch }})
+      - name: Upload artifact (${{ matrix.tag }})
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}-${{ matrix.arch }}
+          name: ${{ matrix.artifact }}-${{ matrix.tag }}
           path: dist/**/${{ env.ASSET_NAME }}
           if-no-files-found: error
 

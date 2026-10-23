@@ -75,13 +75,13 @@ class ReleaseNotesTests(unittest.TestCase):
 
     def test_macos_split_arches(self):
         assets = [
-            asset("listen1_xuan-2.7.3+53-macos-arm64-a123456.zip"),
-            asset("listen1_xuan-2.7.3+53-macos-x86_64-a123456.zip"),
-            asset("listen1_xuan-2.7.3+53-macos-arm64-ffmpeg-a123456.zip"),
-            asset("listen1_xuan-2.7.3+53-macos-x86_64-ffmpeg-a123456.zip"),
+            asset("listen1_xuan-2.7.3+53-macos-apple-silicon-a123456.zip"),
+            asset("listen1_xuan-2.7.3+53-macos-intel-a123456.zip"),
+            asset("listen1_xuan-2.7.3+53-macos-apple-silicon-ffmpeg-a123456.zip"),
+            asset("listen1_xuan-2.7.3+53-macos-intel-ffmpeg-a123456.zip"),
         ]
-        self.assertEqual(notes.classify(assets[0]["name"])["arch"], "arm64")
-        self.assertEqual(notes.classify(assets[1]["name"])["arch"], "x86_64")
+        self.assertEqual(notes.classify(assets[0]["name"])["arch"], "apple-silicon")
+        self.assertEqual(notes.classify(assets[1]["name"])["arch"], "intel")
         self.assertFalse(notes.classify(assets[1]["name"])["ffmpeg"])
         self.assertTrue(notes.classify(assets[2]["name"])["ffmpeg"])
         guide = notes.generate_guide(assets)
@@ -90,13 +90,24 @@ class ReleaseNotesTests(unittest.TestCase):
         self.assertNotIn("通用包（旧版）", guide)
         self.assertEqual(guide.count("https://example.com/"), 4)
         self.assertEqual(guide.count("[推荐下载]"), 1)
-        self.assertIn("**[推荐下载](https://example.com/listen1_xuan-2.7.3+53-macos-arm64-a123456.zip)", guide)
-        self.assertIn("macOS 选架构", guide)
+        self.assertIn("**[推荐下载](https://example.com/listen1_xuan-2.7.3+53-macos-apple-silicon-a123456.zip)", guide)
+        self.assertIn("macOS 选芯片", guide)
+
+    def test_macos_names_do_not_collide_with_android_arch_filters(self):
+        names = [
+            "listen1_xuan-2.7.3+53-macos-apple-silicon-a123456.zip",
+            "listen1_xuan-2.7.3+53-macos-intel-a123456.zip",
+            "macos-app-artifact-apple-silicon",
+            "macos-app-artifact-ffmpeg-intel",
+        ]
+        for name in names:
+            for token in ("arm64", "armeabi", "x86_64"):
+                self.assertNotIn(token, name.lower())
 
     def test_macos_legacy_universal_still_listed(self):
         assets = [
             asset("listen1_xuan-2.7.1+51-macos-c345678.zip"),
-            asset("listen1_xuan-2.7.3+53-macos-arm64-a123456.zip"),
+            asset("listen1_xuan-2.7.3+53-macos-apple-silicon-a123456.zip"),
         ]
         self.assertEqual(notes.classify(assets[0]["name"])["arch"], "universal")
         guide = notes.generate_guide(assets)

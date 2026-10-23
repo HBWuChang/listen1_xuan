@@ -106,11 +106,26 @@ class UpdController extends GetxController {
     return '';
   }
 
-  /// 资产名是否对应指定 macOS 架构。
-  /// 命名：`listen1_xuan-<ver>-macos-<arch>[-ffmpeg]-<hash>.zip`。
-  bool _matchesMacosArch(String name, String arch) {
+  /// 当前 macOS 芯片对应的资产标记：`apple-silicon` / `intel`。
+  ///
+  /// 不能用 `arm64` / `x86_64`：Android 端 artifact 选择按这些子串过滤架构，
+  /// 会把 macOS 包一并列出来。
+  String get macosArchTag {
+    switch (macosSelfArch) {
+      case 'arm64':
+        return 'apple-silicon';
+      case 'x86_64':
+        return 'intel';
+    }
+    return '';
+  }
+
+  /// 资产名是否对应指定 macOS 芯片标记。
+  /// 命名：`listen1_xuan-<ver>-macos-<tag>[-ffmpeg]-<hash>.zip`。
+  bool _matchesMacosArch(String name, String tag) {
+    if (tag.isEmpty) return false;
     final n = name.toLowerCase();
-    return n.contains('-macos-$arch-') || n.contains('-macos-$arch.');
+    return n.contains('-macos-$tag-') || n.contains('-macos-$tag.');
   }
 
   /// 查找匹配平台和 FFmpeg 变体的 artifact（精确匹配 name）。
@@ -505,11 +520,11 @@ class UpdController extends GetxController {
       final artifacts = await _fetchArtifacts(token);
       final artifactBase =
           isFfmpegEnabled ? 'macos-app-artifact-ffmpeg' : 'macos-app-artifact';
-      final arch = macosSelfArch;
+      final tag = macosArchTag;
       final art =
           _findArtifactByPlatform(
             artifacts,
-            arch.isEmpty ? artifactBase : '$artifactBase-$arch',
+            tag.isEmpty ? artifactBase : '$artifactBase-$tag',
           ) ??
           // 兼容拆分前的 universal artifact
           _findArtifactByPlatform(artifacts, artifactBase);
@@ -816,10 +831,10 @@ class UpdController extends GetxController {
               (entity) =>
                   entity is File &&
                   p.basenameWithoutExtension(entity.path).contains('macos') &&
-                  (macosSelfArch.isEmpty ||
-                      _matchesMacosArch(entity.path, macosSelfArch) ||
-                      (!_matchesMacosArch(entity.path, 'arm64') &&
-                          !_matchesMacosArch(entity.path, 'x86_64'))) &&
+                  (macosArchTag.isEmpty ||
+                      _matchesMacosArch(entity.path, macosArchTag) ||
+                      (!_matchesMacosArch(entity.path, 'apple-silicon') &&
+                          !_matchesMacosArch(entity.path, 'intel'))) &&
                   !p
                       .basenameWithoutExtension(entity.path)
                       .contains(latestBuildNumber),
@@ -1217,7 +1232,7 @@ class UpdController extends GetxController {
         }
       }
     } else if (isMacOS) {
-      final arch = macosSelfArch;
+      final tag = macosArchTag;
       ReleaseAsset? universal;
       for (final asset in assets) {
         final n = asset.name.toLowerCase();
@@ -1225,12 +1240,12 @@ class UpdController extends GetxController {
             !(n.endsWith('.dmg') || n.endsWith('.zip'))) {
           continue;
         }
-        if (arch.isEmpty) return asset;
-        if (_matchesMacosArch(n, arch)) return asset;
+        if (tag.isEmpty) return asset;
+        if (_matchesMacosArch(n, tag)) return asset;
         // 拆分前的老 Release 只有 universal 包，作为兼容兜底
         if (universal == null &&
-            !_matchesMacosArch(n, 'arm64') &&
-            !_matchesMacosArch(n, 'x86_64')) {
+            !_matchesMacosArch(n, 'apple-silicon') &&
+            !_matchesMacosArch(n, 'intel')) {
           universal = asset;
         }
       }
@@ -1321,18 +1336,18 @@ class UpdController extends GetxController {
             return n.contains('macos') && n.endsWith('.zip');
           })
           .toList();
-      final arch = macosSelfArch;
-      if (arch.isNotEmpty) {
+      final tag = macosArchTag;
+      if (tag.isNotEmpty) {
         final exact =
-            list.where((a) => _matchesMacosArch(a.name, arch)).toList();
-        // 精确命中本机架构；否则只接受无架构标记的 universal 老包
+            list.where((a) => _matchesMacosArch(a.name, tag)).toList();
+        // 精确命中本机芯片；否则只接受无芯片标记的 universal 老包
         list = exact.isNotEmpty
             ? exact
             : list
                 .where(
                   (a) =>
-                      !_matchesMacosArch(a.name, 'arm64') &&
-                      !_matchesMacosArch(a.name, 'x86_64'),
+                      !_matchesMacosArch(a.name, 'apple-silicon') &&
+                      !_matchesMacosArch(a.name, 'intel'),
                 )
                 .toList();
       }

@@ -4,14 +4,14 @@
 
 推荐无 FFmpeg 精简版。Android 的 ARM64 设备推荐 ARM64 + 不内置 Cronet（需要可用的 Google Play 服务），使用粗体高亮，不使用 emoji。说明明确提醒 GitHub 相关功能可能出现问题，并不推荐多架构通用包。所有安装包均列出下载体积（MiB）和各自的提交 hash。
 
-macOS 安装包按架构拆分（`arm64` 对应 Apple 芯片，`x86_64` 对应 Intel），资产名形如 `listen1_xuan-<version>-macos-arm64-<hash>.zip`，含 FFmpeg 版在 hash 前多一段 `-ffmpeg`。表格按架构分行，拆分前上传的 universal 包自动归入“通用包（旧版）”行。
+macOS 安装包按芯片拆分（`apple-silicon` 对应 Apple 芯片，`intel` 对应 Intel），资产名形如 `listen1_xuan-<version>-macos-apple-silicon-<hash>.zip`，含 FFmpeg 版在 hash 前多一段 `-ffmpeg`。Actions artifact 名同理（`macos-app-artifact-apple-silicon` 等）。标记故意不使用 `arm64` / `x86_64`：Android 端 artifact 选择按这两个子串过滤架构，否则会把 macOS 包也列出来。表格按芯片分行，拆分前上传的 universal 包自动归入“通用包（旧版）”行。
 
 ## 自动刷新
 
 将脚本及 `.github/workflows/release_notes.yml` 合入默认分支后，`apk`、`win`、`macos`、`ios` 构建工作流成功完成会触发刷新。无需修改现有构建工作流。
 
 - 从触发工作流的 `head_sha` 对应的 `pubspec.yaml` 读取版本号，定位准确的 Release tag，不使用 latest，也不使用默认分支当前版本。
-- 从目标 Release 分页读取所有已上传资产。各平台可以来自不同提交，每个包显示自己的 hash；未发布的变体显示“暂未发布”。macOS 按 `arm64` / `x86_64` 分行，缺失架构时给出提示。
+- 从目标 Release 分页读取所有已上传资产。各平台可以来自不同提交，每个包显示自己的 hash；未发布的变体显示“暂未发布”。macOS 按 `apple-silicon` / `intel` 分行，缺失芯片时给出提示。
 - 相同 Release 的正文编辑串行执行；每次执行重新读取完整资产列表。多个平台先后完成会逐步补齐表格。
 - 安装说明位于 `<!-- install-guide:start -->` 和 `<!-- install-guide:end -->` 之间；只替换此区域，区域外的手写更新日志保持原样。缺少整个区域时加在正文顶部，标记损坏时终止更新。
 - 工作流使用默认分支的可信脚本，只把构建提交中的 pubspec 作为数据读取。更新任务需要 `contents: write` 权限。

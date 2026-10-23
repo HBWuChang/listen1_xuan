@@ -19,10 +19,11 @@ ARCH_LABELS = {
 }
 
 # macOS 拆分为单架构包；旧 Release 仍可能只有 universal 包。
-MACOS_ARCHES = ("arm64", "x86_64")
+# 标记不能用 arm64 / x86_64：Android 端按这些子串过滤 artifact 架构。
+MACOS_ARCHES = ("apple-silicon", "intel")
 MACOS_ARCH_LABELS = {
-    "arm64": "Apple 芯片（M1/M2/M3/M4）",
-    "x86_64": "Intel 芯片",
+    "apple-silicon": "Apple 芯片（M1/M2/M3/M4）",
+    "intel": "Intel 芯片",
     "universal": "通用包（旧版）",
 }
 
@@ -111,7 +112,7 @@ def generate_guide(assets):
         "- **不内置 Cronet（Android 推荐）**：需要可用的 Google Play 服务；文件名含 `without.embedded.Cronet`（本地构建名可能使用空格）。",
         "- ARM64 适用于大多数近年 ARM 手机；32 位 ARM 设备请选择 ARM32；x86_64 仅适用于对应设备或模拟器。",
         "- **Android 不推荐通用包**：包含多种架构、体积较大。请优先确认设备架构并选择对应的单架构包。",
-        "- **macOS 选架构**：Apple 芯片选 `arm64`，Intel 选 `x86_64`；不确定时在终端执行 `uname -m`（或查看「关于本机 → 芯片」）。装错架构会提示应用已损坏。",
+        "- **macOS 选芯片**：Apple 芯片选 `apple-silicon` 包，Intel 选 `intel` 包；不确定时查看「关于本机 → 芯片」（终端 `uname -m` 输出 `arm64` 对应 Apple 芯片，`x86_64` 对应 Intel）。装错芯片会提示应用已损坏。",
         "",
         "每个下载链接旁均列出文件体积和该安装包自己的提交 hash；不同平台的 hash 可能不同。体积为下载文件大小（MiB），不是安装后的占用。",
         "",
@@ -149,13 +150,13 @@ def generate_guide(assets):
                     and i["ffmpeg"] == ffmpeg
                 ]
                 cells.append(
-                    "<br>".join(download(a, arch == "arm64" and not ffmpeg) for a in matches)
+                    "<br>".join(download(a, arch == "apple-silicon" and not ffmpeg) for a in matches)
                     or "暂未发布"
                 )
             lines.append(f"| {MACOS_ARCH_LABELS[arch]} | " + " | ".join(cells) + " |")
-        if "arm64" in macos_rows and "x86_64" not in macos_rows:
+        if "apple-silicon" in macos_rows and "intel" not in macos_rows:
             macos_notes.append("Intel 芯片包暂未发布，Intel 设备可暂用通用包（旧版）。")
-        if "x86_64" in macos_rows and "arm64" not in macos_rows:
+        if "intel" in macos_rows and "apple-silicon" not in macos_rows:
             macos_notes.append("Apple 芯片包暂未发布，M 系列设备可暂用通用包（旧版）。")
         if macos_notes:
             lines += [""] + macos_notes
