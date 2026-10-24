@@ -1,3 +1,4 @@
+import 'pages/settings/totp_settings.dart';
 import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'widgets/loudness_gain_input.dart';
 import 'pages/feedback/feedback_route_args.dart';
@@ -493,6 +494,18 @@ class _SettingsPageState extends State<SettingsPage> {
                             .contains(8),
                         body: Column(
                           children: [
+                            ListTile(
+                              leading: const Icon(Icons.password),
+                              title: const Text('一次性验证码'),
+                              subtitle: const Text('点击复制一次性验证码'),
+                              onTap: copyTotpCode,
+                              trailing: IconButton(
+                                tooltip: '设置一次性验证码',
+                                icon: const Icon(Icons.settings),
+                                onPressed: () => showTotpSettings(context),
+                              ),
+                            ),
+
                             Obx(
                               () => SwitchListTile(
                                 title: const Text('显示一些tip'),

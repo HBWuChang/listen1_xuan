@@ -1,3 +1,4 @@
+import 'pages/settings/totp_settings.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
@@ -156,6 +157,9 @@ void init_hotkeys() async {
     Get.find<SettingsController>().setSettings(settings);
   }
   enable_hotkey = hotskeys["enable"];
+  if (hotskeys['copy_totp'] != null) {
+    set_hotkey(null, HotKey.fromJson(hotskeys['copy_totp']), 'copy_totp');
+  }
   if (hotskeys["play_pause"] != null) {
     set_hotkey(null, HotKey.fromJson(hotskeys["play_pause"]), "play_pause");
   }
@@ -207,6 +211,11 @@ Future<void> set_hotkey(s_hotkey, hotkey, name) async {
   }
   if (hotkey != null) {
     switch (name) {
+      case 'copy_totp':
+        await hotKeyManager.register(hotkey, keyDownHandler: (_) async {
+          if (enable_hotkey) await copyTotpCode();
+        });
+        break;
       case "play_pause":
         await hotKeyManager.register(
           hotkey,
@@ -261,6 +270,7 @@ List<Widget> create_hotkey_btns(context) {
     {"name": "下一首", "hotkey": "next"},
     {"name": "上一首", "hotkey": "previous"},
     {"name": "显示", "hotkey": "show"},
+    {"name": "复制一次性验证码", "hotkey": "copy_totp"},
   ];
   return <Widget>[
     StatefulBuilder(

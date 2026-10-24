@@ -10,6 +10,8 @@ Future<Map<String, dynamic>> outputAllSettingsToFile([
   final allkeys = await s.getKeys();
   for (var key in allkeys) {
     switch (key) {
+      case SettingsController.totpLocalKey:
+        continue;
       case 'playerlists':
         settings[key] = await s.getStringList(key);
         break;
@@ -78,6 +80,8 @@ Future<void> importSettingsFromFile(
     await Future.wait(
       settings.keys.map((key) async {
         switch (key) {
+          case SettingsController.totpLocalKey:
+            break;
           case 'playerlists':
             await s.setStringList(key, settings[key].cast<String>());
             break;

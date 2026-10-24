@@ -35,8 +35,23 @@ import '../provider/loweb.dart' as music_providers;
 import '../settings.dart';
 import '../services/audio_metadata_store.dart';
 import '../models/audio_metadata.dart';
+import '../utils/totp.dart';
 
 class SettingsController extends GetxController {
+  // Kept outside the settings map so cloud settings never contain the secret.
+  static const String totpLocalKey = 'totp_local_account';
+  Future<TotpAccount?> getTotpAccount() async {
+    final value = await getString(totpLocalKey);
+    return value == null ? null : TotpAccount.decode(value);
+  }
+  Future<void> saveTotpAccount(TotpAccount? account) async {
+    if (account == null) {
+      await remove(key: totpLocalKey);
+    } else {
+      await setString(totpLocalKey, account.encode());
+    }
+  }
+
   static const String hiveStoreKey = 'hive_store';
   static const String predictiveBackAlwaysFromLeftKey =
       'predictiveBackAlwaysFromLeft';
@@ -726,6 +741,7 @@ class SettingsController extends GetxController {
     Set<String> k = await getKeys();
     for (var key in k) {
       switch (key) {
+        case totpLocalKey:
         case 'local-cache-list':
           continue;
         default:

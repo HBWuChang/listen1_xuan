@@ -22,6 +22,8 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSMinimumSystemVersion</key>
 		<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+		<key>NSCameraUsageDescription</key>
+		<string>用于扫描一次性验证码二维码</string>
 		<key>NSHumanReadableCopyright</key>
 		<string>$(PRODUCT_COPYRIGHT)</string>
 		<key>NSMainNibFile</key>
