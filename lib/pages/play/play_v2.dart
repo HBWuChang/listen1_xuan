@@ -7,7 +7,8 @@ const imageMotion = CupertinoMotion.smooth(
 
 Widget get playV2 => LayoutBuilder(
   builder: (context, boxConstraints) {
-    _playController.playVMaxHeight = boxConstraints.maxHeight;
+    final maxHeight = boxConstraints.maxHeight;
+    _playController.playVMaxHeight = maxHeight;
 
     final expandAnimationStage2Rate =
         _playController.playVMaxHeight - _playController.sheetMidHeight;
@@ -454,7 +455,7 @@ Widget get playV2 => LayoutBuilder(
           top: 0,
           left: 0,
           right: 0,
-          height: 1.sh,
+          height: maxHeight,
           child: RepaintBoundary(
             child: Obx(
               () => Visibility(
