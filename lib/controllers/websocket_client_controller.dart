@@ -14,6 +14,7 @@ import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:punycode/punycode.dart';
 
+import '../utils/websocket_address.dart';
 import '../global_settings_animations.dart';
 import '../models/websocket_message.dart';
 import '../settings.dart';
@@ -464,52 +465,16 @@ class WebSocketClientController extends GetxController {
   /// 从地址字符串解析出 host 和 port
   /// 支持格式: "host:port", "[IPv6]:port"
   static (String host, int port) parseAddress(String address) {
-    if (address.startsWith('[')) {
-      // IPv6 格式: [host]:port
-      final closeBracket = address.indexOf(']');
-      if (closeBracket == -1 ||
-          closeBracket + 2 >= address.length ||
-          address[closeBracket + 1] != ':') {
-        throw Exception('IPv6 地址格式错误，应为 "[IPv6地址]:端口"');
-      }
-      final host = address.substring(1, closeBracket);
-      final port = int.tryParse(address.substring(closeBracket + 2));
-      if (port == null || port < 1 || port > 65535) {
-        throw Exception('端口号无效');
-      }
-      return (host, port);
-    } else {
-      // IPv4/hostname 格式: host:port
-      final lastColon = address.lastIndexOf(':');
-      if (lastColon == -1) {
-        throw Exception('地址格式错误，应为 "IP:端口" 或 "[IPv6地址]:端口"');
-      }
-      final host = address.substring(0, lastColon);
-      final port = int.tryParse(address.substring(lastColon + 1));
-      if (port == null || port < 1 || port > 65535) {
-        throw Exception('端口号无效');
-      }
-      return (host, port);
-    }
+    final parsed = WebSocketAddress.parse(address);
+    return (parsed.host, parsed.port);
   }
 
-  /// 格式化 host 和 port 为存储地址格式
-  /// IPv6 地址自动加方括号
-  static String formatAddress(String host, int port) {
-    if (host.contains(':')) {
-      // IPv6 地址需要方括号
-      return '[$host]:$port';
-    }
-    return '$host:$port';
-  }
+  /// IPv6 地址自动加方括号。
+  static String formatAddress(String host, int port) =>
+      WebSocketAddress(host, port).address;
 
-  /// 构建 WebSocket URI（IPv6 自动加方括号）
-  static String _buildWsUri(String host, int port) {
-    if (host.contains(':')) {
-      return 'ws://[$host]:$port';
-    }
-    return 'ws://$host:$port';
-  }
+  static String _buildWsUri(String host, int port) =>
+      WebSocketAddress(host, port).uri().toString();
 
   /// 连接到WebSocket服务器
   Future<void> connect() async {

@@ -10,6 +10,7 @@ import 'package:listen1_xuan/widgets/ext/ext_widget.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../widgets/progress_indicator_xuan.dart';
+import '../utils/websocket_address.dart';
 
 /// WebSocket 服务器卡片组件
 /// 提供简洁的服务器状态显示和快速操作
@@ -273,8 +274,10 @@ class _WebSocketControlContentState extends State<WebSocketControlContent> {
                 ),
                 child: Obx(
                   () => QrImageView(
-                    data:
-                        '${controller.selectBestAvailableAddress.value}:${controller.port}',
+                    data: WebSocketAddress(
+                      controller.selectBestAvailableAddress.value,
+                      controller.port,
+                    ).address,
                     version: QrVersions.auto,
                     size: 200.0,
                     backgroundColor: Colors.white,
@@ -328,8 +331,10 @@ class _WebSocketControlContentState extends State<WebSocketControlContent> {
                       onPressed: () {
                         Clipboard.setData(
                           ClipboardData(
-                            text:
-                                '${controller.selectBestAvailableAddress.value}:${controller.port}',
+                            text: WebSocketAddress(
+                              controller.selectBestAvailableAddress.value,
+                              controller.port,
+                            ).address,
                           ),
                         );
                         showSuccessSnackbar('成功', '地址已复制到剪贴板');
@@ -636,12 +641,12 @@ class WebSocketHelper {
 
   /// 快速启动服务器
   static Future<void> quickStart({
-    String host = '0.0.0.0',
+    String host = '::',
     int port = 8080,
     String tag = 'websocket_card',
   }) async {
     final controller = Get.put(WebSocketCardController());
-    // 不再需要设置host，固定使用0.0.0.0
+    // 不再需要设置 host，默认使用双栈监听
     controller.updatePort(port);
     await controller.startServer();
   }

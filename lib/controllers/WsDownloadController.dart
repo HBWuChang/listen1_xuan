@@ -12,6 +12,7 @@ import 'package:listen1_xuan/controllers/websocket_client_controller.dart';
 import 'package:path/path.dart';
 import '../global_settings_animations.dart';
 import 'settings_controller.dart';
+import '../utils/websocket_address.dart';
 
 class WsDownloadController extends GetxController {
   final Logger _logger = createAppLogger();
@@ -63,12 +64,9 @@ class WsDownloadController extends GetxController {
       if (await partialFile.exists()) await partialFile.delete();
       String serverAddress =
           Get.find<WebSocketClientController>().serverAddress;
-      Uri uri = Uri(
-        scheme: 'http',
-        host: serverAddress.split(':')[0],
-        port: int.parse(serverAddress.split(':')[1]),
-        path: '/downloadById/${entry.key}',
-      );
+      final uri = WebSocketAddress.parse(
+        serverAddress,
+      ).uri(scheme: 'http', path: '/downloadById/${entry.key}');
 
       await Dio().download(
         uri.toString(),

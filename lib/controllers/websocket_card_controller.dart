@@ -10,6 +10,7 @@ import 'package:listen1_xuan/main.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
+import '../utils/websocket_address.dart';
 
 void broadcastWs() {
   try {
@@ -44,7 +45,7 @@ class WebSocketCardController extends GetxController {
   final RxBool _wsServerBtnShow = true.obs;
 
   /// 服务器配置
-  final RxString _host = '0.0.0.0'.obs; // 固定使用0.0.0.0监听所有地址
+  final RxString _host = '::'.obs; // 优先使用 IPv6 双栈监听
   final RxInt _port = 25917.obs;
   final RxInt _pingInterval = 30.obs; // 秒
   final RxInt _pongTimeout = 5.obs; // 秒
@@ -96,8 +97,8 @@ class WebSocketCardController extends GetxController {
           : false;
       final serverPort = settings['wsServerPort'] as int?;
 
-      // 固定使用0.0.0.0地址，不再从设置中读取
-      _host.value = '0.0.0.0';
+      // 使用双栈监听，IPv4-only 系统由服务端回退到 IPv4
+      _host.value = '::';
 
       if (serverPort != null && serverPort >= 1024 && serverPort <= 65535) {
         _port.value = serverPort;
@@ -147,7 +148,7 @@ class WebSocketCardController extends GetxController {
     if (_wsServerAutoStart.value) {
       _logger.i('$_tag 自动启动WebSocket服务器');
 
-      // 直接尝试启动服务器（使用固定的0.0.0.0地址）
+      // 直接尝试启动双栈服务器
       await _tryStartServer();
     }
   }
@@ -173,7 +174,7 @@ class WebSocketCardController extends GetxController {
         type: InternetAddressType.any,
       );
 
-      // 筛选IPv4地址，并按优先级排序
+      // 按优先级排列 IPv4 和可供其他设备连接的 IPv6 地址
       final List<String> localAreaNetworkIps = <String>[];
       final List<String> otherIps = <String>[];
       final List<String> loopbackIps = <String>[];
@@ -200,6 +201,11 @@ class WebSocketCardController extends GetxController {
                 otherIps.add(ip);
               }
             }
+          } else if (address.type == InternetAddressType.IPv6 &&
+              !address.isLinkLocal) {
+            // 链路本地 IPv6 的接口标识不能直接由另一台设备复用。
+            final target = address.isLoopback ? loopbackIps : otherIps;
+            if (!target.contains(address.address)) target.add(address.address);
           }
         }
       }
@@ -340,7 +346,7 @@ class WebSocketCardController extends GetxController {
   Future<void> startServer() async {
     if (isServerRunning || _isStarting.value) return;
 
-    // 直接尝试启动服务器（使用固定的0.0.0.0地址）
+    // 直接尝试启动双栈服务器
     final success = await _tryStartServer();
 
     if (success) {
@@ -423,7 +429,9 @@ class WebSocketCardController extends GetxController {
     try {
       _showInfo('正在测试连接...');
       await WebSocketClientTester.testConnection(
-        host: _host.value == '0.0.0.0' ? 'localhost' : _host.value,
+        host: Uri.parse(wsServerController!.serverUrl).host == '[::]'
+            ? '::1'
+            : '127.0.0.1',
         port: _port.value,
       );
       _showSuccess('测试连接已发起，请查看控制台日志');
@@ -485,7 +493,7 @@ class WebSocketClientTester {
     int port = 8080,
   }) async {
     try {
-      final uri = 'ws://$host:$port';
+      final uri = WebSocketAddress(host, port).uri().toString();
       print('正在连接到: $uri');
 
       final webSocket = await WebSocket.connect(uri);

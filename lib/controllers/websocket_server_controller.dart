@@ -21,6 +21,7 @@ import 'play_controller.dart';
 import '../play.dart';
 import 'settings_controller.dart';
 import 'cache_controller.dart';
+import '../services/websocket_listener.dart';
 
 /// WebSocket 服务器控制器
 /// 支持 IPv4/IPv6 配置，包含 ping/pong 心跳机制和资源释放
@@ -61,8 +62,12 @@ class WebSocketServerController extends GetxController {
   /// Getters
   bool get isRunning => _isRunning.value;
   int get clientCount => _clientCount.value;
-  String get serverUrl =>
-      _host.contains(':') ? 'ws://[$_host]:$_port/ws' : 'ws://$_host:$_port/ws';
+  String get serverUrl => Uri(
+    scheme: 'ws',
+    host: _server?.address.address ?? _host,
+    port: _port,
+    path: '/ws',
+  ).toString();
 
   WebSocketServerController({
     required String host,
@@ -90,7 +95,10 @@ class WebSocketServerController extends GetxController {
 
     try {
       // 创建 HTTP 服务器
-      _server = await HttpServer.bind(_host, _port, shared: true);
+      _server = await bindWebSocketServer(_host, _port);
+      if (_host == '::' && _server!.address.type == InternetAddressType.IPv4) {
+        _logger.w('$_tag IPv6 监听失败，已回退到 IPv4');
+      }
 
       _isRunning.value = true;
       _logger.i('$_tag WebSocket 服务器启动成功: $serverUrl');

@@ -1222,14 +1222,14 @@ class _WebSocketClientControlContentState
               controller: textController,
               decoration: const InputDecoration(
                 labelText: '服务器地址',
-                hintText: '例如: Xiebian.local:25917或192.168.1.100:25917',
+                hintText: '例如: Xiebian.local:25917 或 [::1]:25917',
                 border: OutlineInputBorder(),
               ),
               autofocus: true,
             ),
             8.sbh,
             const Text(
-              '格式: IP地址:端口号 或 域名:端口号',
+              '格式: 主机:端口号 或 [IPv6地址]:端口号',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -1258,14 +1258,14 @@ class _WebSocketClientControlContentState
               controller: textController,
               decoration: const InputDecoration(
                 labelText: '服务器地址',
-                hintText: '例如: 192.168.1.100:8080',
+                hintText: '例如: 192.168.1.100:25917 或 [::1]:25917',
                 border: OutlineInputBorder(),
               ),
               autofocus: true,
             ),
             8.sbh,
             const Text(
-              '格式: IP地址:端口号 或 域名:端口号',
+              '格式: 主机:端口号 或 [IPv6地址]:端口号',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],

@@ -15,6 +15,7 @@ import 'package:share_plus/share_plus.dart';
 import '../funcs.dart';
 import '../global_settings_animations.dart';
 import '../main.dart';
+import '../utils/websocket_address.dart';
 
 /// 全局粘贴控制器
 /// 监听 Ctrl+V / Cmd+V 快捷键，处理剪贴板中的文件、图片或文本
@@ -150,7 +151,9 @@ class PasteController extends GetxController {
     String serverAddress,
   ) async {
     try {
-      final uri = 'http://$serverAddress/onPasteFile';
+      final uri = WebSocketAddress.parse(
+        serverAddress,
+      ).uri(scheme: 'http', path: '/onPasteFile').toString();
       final formData = dio_pkg.FormData();
 
       for (final filePath in files) {
@@ -188,7 +191,9 @@ class PasteController extends GetxController {
     try {
       final wsc = Get.find<WebSocketClientController>();
       final serverAddress = wsc.serverAddress;
-      final uri = 'http://$serverAddress/getPasteFile';
+      final uri = WebSocketAddress.parse(
+        serverAddress,
+      ).uri(scheme: 'http', path: '/getPasteFile').toString();
 
       final dio = dioWithCookieManager;
       final response = await dio.get<List<int>>(
@@ -416,7 +421,9 @@ class PasteController extends GetxController {
     String serverAddress,
   ) async {
     try {
-      final uri = 'http://$serverAddress/onPasteImage';
+      final uri = WebSocketAddress.parse(
+        serverAddress,
+      ).uri(scheme: 'http', path: '/onPasteImage').toString();
       final dio = dioWithCookieManager;
       final response = await dio.post(
         uri,
@@ -446,7 +453,9 @@ class PasteController extends GetxController {
     try {
       final wsc = Get.find<WebSocketClientController>();
       final serverAddress = wsc.serverAddress;
-      final uri = 'http://$serverAddress/getPasteImage';
+      final uri = WebSocketAddress.parse(
+        serverAddress,
+      ).uri(scheme: 'http', path: '/getPasteImage').toString();
 
       final dio = dioWithCookieManager;
       final response = await dio.get<List<int>>(

@@ -10,6 +10,7 @@ import '../controllers/play_controller.dart';
 import '../controllers/cache_controller.dart';
 import '../controllers/websocket_client_controller.dart';
 import '../widgets/progress_indicator_xuan.dart';
+import '../utils/websocket_address.dart';
 
 class DownloadPage extends StatelessWidget {
   const DownloadPage({Key? key}) : super(key: key);
@@ -98,10 +99,8 @@ class DownloadPage extends StatelessWidget {
       final webSocketClientController = Get.find<WebSocketClientController>();
       final serverAddress = webSocketClientController.serverAddress;
 
-      final uri = Uri(
+      final uri = WebSocketAddress.parse(serverAddress).uri(
         scheme: 'http',
-        host: serverAddress.split(':')[0],
-        port: int.parse(serverAddress.split(':')[1]),
         path: '/allCacheList',
       );
 
