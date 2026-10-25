@@ -163,519 +163,556 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PageScrollToTop(builder: (context, pageScrollController, pageListController) => CustomScrollView(
+      body: PageScrollToTop(
+        builder: (context, pageScrollController, pageListController) => CustomScrollView(
           controller: pageScrollController,
-        slivers: [
-          SliverAppBar(
-            floating: true,
-            pinned: true,
-            leading: BackButton(onPressed: routerPop),
-            actions: [
-              WebSocketHelper.buildReactiveButton(tooltip: "WebSocket服务器"),
-              WebSocketClientHelper.buildReactiveButton(
-                tooltip: "WebSocket客户端",
-              ),
-            ],
-            expandedHeight: 120.0,
-            flexibleSpace: FlexibleSpaceBar(title: const Text('Settings')),
-          ),
-          SliverToBoxAdapter(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: <Widget>[
-                Obx(
-                  () => ExpansionPanelList(
-                    expansionCallback: (int index, bool isExpanded) {
-                      if (isExpanded) {
-                        settingsController.settingsPageExpansion.add(index);
-                      } else {
-                        settingsController.settingsPageExpansion.remove(index);
-                      }
-                    },
-                    children: [
-                      // Supabase 登录面板
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: Icon(Icons.person),
-                            title: const Text('Supabase 账号'),
-                            trailing: IconButton(
-                              onPressed: () async {
-                                Get.find<SupabaseAuthController>()
-                                    .refreshUserProfile();
-                              },
-                              icon: Icon(Icons.refresh),
-                            ),
+          slivers: [
+            SliverAppBar(
+              floating: true,
+              pinned: true,
+              leading: BackButton(onPressed: routerPop),
+              actions: [
+                WebSocketHelper.buildReactiveButton(tooltip: "WebSocket服务器"),
+                WebSocketClientHelper.buildReactiveButton(
+                  tooltip: "WebSocket客户端",
+                ),
+              ],
+              expandedHeight: 120.0,
+              flexibleSpace: FlexibleSpaceBar(title: const Text('Settings')),
+            ),
+            SliverToBoxAdapter(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: <Widget>[
+                  Obx(
+                    () => ExpansionPanelList(
+                      expansionCallback: (int index, bool isExpanded) {
+                        if (isExpanded) {
+                          settingsController.settingsPageExpansion.add(index);
+                        } else {
+                          settingsController.settingsPageExpansion.remove(
+                            index,
                           );
-                        },
-                        canTapOnHeader: true,
-                        isExpanded: settingsController.settingsPageExpansion
-                            .contains(0),
-                        body: _buildSupabasePanel(),
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: Icon(Icons.login),
-                            title: const Text('第三方平台登录'),
-                            trailing: IconButton(
-                              onPressed: () async {
-                                settingsController.refreshLoginData();
-                              },
-                              icon: Icon(Icons.refresh),
-                            ),
-                          );
-                        },
-                        canTapOnHeader: true,
-                        isExpanded: settingsController.settingsPageExpansion
-                            .contains(1),
-                        body: _buildThirdPartyLoginPanel(context),
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: Icon(Icons.save),
-                            title: const Text('歌单/配置文件'),
-                          );
-                        },
-                        canTapOnHeader: true,
-                        isExpanded: settingsController.settingsPageExpansion
-                            .contains(2),
-                        body: settingsWidget(context),
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          final theme = Theme.of(context);
-                          final resolvedIconColor =
-                              ListTileTheme.of(context).iconColor ??
-                              theme.listTileTheme.iconColor ??
-                              theme.colorScheme.onSurfaceVariant;
-                          final resolvedIconSize =
-                              IconTheme.of(context).size ?? 24.0;
-                          return ListTile(
-                            leading: Iconify(
-                              Octicon.cache_16,
-                              color: resolvedIconColor,
-                              size: resolvedIconSize,
-                            ),
-                            title: Text('缓存'),
-                          );
-                        },
-                        canTapOnHeader: true,
-                        isExpanded: settingsController.settingsPageExpansion
-                            .contains(3),
-                        body: Wrap(
-                          alignment: WrapAlignment.center,
-                          children: [...cacheSettingsTiles],
-                        ),
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: Icon(
-                              isDesktop
-                                  ? Icons.keyboard_alt
-                                  : isAndroid
-                                  ? Icons.notifications
-                                  : Icons.device_unknown,
-                            ),
-                            title: Text(
-                              isDesktop
-                                  ? '热键、代理及其它Desktop设置'
-                                  : isAndroid
-                                  ? "安卓通知设置"
-                                  : "未知平台设置",
-                            ),
-                          );
-                        },
-                        canTapOnHeader: true,
-                        isExpanded: settingsController.settingsPageExpansion
-                            .contains(4),
-                        body: isDesktop
-                            ? desktopSettingsTiles(
-                                context,
-                                _focusNode2,
-                                _focusNode3,
-                                _windowsProxyAddrController,
-                              )
-                            : isAndroid
-                            ? androidSettingsTiles
-                            : Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: notificationSettingsTiles,
-                              ),
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: Icon(Icons.system_update),
-                            title: Text('更新版本'),
-                            trailing: Text(
-                              '当前构建hash：${UpdController.buildGitHash}\n${isAndroid ? 'cronetHttpNoPlay：${UpdController.cronetHttpNoPlay.toString()}；' : ''}${isFfmpegEnabled ? 'FFmpeg已启用' : '无FFmpeg'}',
-                            ),
-                            onTap: () {
-                              if (settingsController.settingsPageExpansion
-                                  .contains(5)) {
-                                settingsController.settingsPageExpansion.remove(
-                                  5,
-                                );
-                              } else {
-                                settingsController.settingsPageExpansion.add(5);
-                              }
-                            },
-                            onLongPress: () {
-                              showInfoSnackbar(
-                                '@DustDot',
-                                'https://github.com/HBWuChang/listen1_xuan/pull/43',
-                                onTap: () {
-                                  g_launchURL(
-                                    Uri.parse(
-                                      'https://github.com/HBWuChang/listen1_xuan/pull/43',
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        },
-                        canTapOnHeader: true,
-                        isExpanded: settingsController.settingsPageExpansion
-                            .contains(5),
-                        body: updSettingsTile(context),
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          final theme = Theme.of(context);
-                          final resolvedIconColor =
-                              ListTileTheme.of(context).iconColor ??
-                              theme.listTileTheme.iconColor ??
-                              theme.colorScheme.onSurfaceVariant;
-
-                          return ListTile(
-                            leading: Iconify(
-                              FaSolid.tshirt,
-                              color: resolvedIconColor,
-                              size: 18,
-                            ),
-                            title: Text('外观设置'),
-                          );
-                        },
-                        canTapOnHeader: true,
-                        isExpanded: settingsController.settingsPageExpansion
-                            .contains(6),
-                        body: themeSettingsTiles,
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: Icon(Icons.play_circle_fill_rounded),
-                            title: Text('播放设置'),
-                          );
-                        },
-                        canTapOnHeader: true,
-                        isExpanded: settingsController.settingsPageExpansion
-                            .contains(7),
-                        body: Column(
-                          children: [
-                            ListTile(
-                              leading: Icon(Icons.equalizer),
-                              title: const Text('均衡器设置'),
-                              trailing: Icon(Icons.chevron_right),
-                              onTap: () =>
-                                  Get.toNamed(RouteName.equalizerPage, id: 1),
-                            ),
-                            ListTile(
-                              leading: Icon(Icons.audiotrack),
-                              title: const Text('默认音频质量'),
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () => DefaultQualitySettingsSheet.show(),
-                            ),
-                            Obx(
-                              () => SwitchListTile(
-                                title: const Text('响度均衡'),
-                                subtitle: const Text('会降低整体音量；哔哩哔哩按响度均衡，其他平台使用固定音量补偿'),
-                                value: settingsController.loudnessNormalization,
-                                onChanged: (value) async {
-                                  settingsController.loudnessNormalization = value;
-                                  await Get.find<PlayController>().applyPlaybackVolume();
-                                  if (value) {
-                                    unawaited(Get.find<PlayController>().refreshCurrentLoudness());
-                                  }
-                                },
-                              ),
-                            ),
-                            Obx(() => settingsController.loudnessNormalization
-                                ? LoudnessGainInput(
-                                    value: settingsController.otherPlatformLoudnessGain,
-                                    onChanged: (value) {
-                                      settingsController.otherPlatformLoudnessGain = value;
-                                      unawaited(Get.find<PlayController>().applyPlaybackVolume());
+                        }
+                      },
+                      children: [
+                        // Supabase 登录面板
+                        ExpansionPanel(
+                          headerBuilder:
+                              (BuildContext context, bool isExpanded) {
+                                return ListTile(
+                                  leading: Icon(Icons.person),
+                                  title: const Text('Supabase 账号'),
+                                  trailing: IconButton(
+                                    onPressed: () async {
+                                      Get.find<SupabaseAuthController>()
+                                          .refreshUserProfile();
                                     },
-                                  )
-                                : const SizedBox.shrink()),
-                            Obx(
-                              () => SwitchListTile(
-                                title: const Text('音量跟随系统'),
-                                value: Get.find<SettingsController>()
-                                    .volumnFollowSystem,
-                                onChanged:
-                                    Get.find<SettingsController>()
-                                        .volumnFollowSystemChanging
-                                        .value
-                                    ? null
-                                    : (bool value) async {
-                                        Get.find<SettingsController>()
-                                                .volumnFollowSystemChanging
-                                                .value =
-                                            true;
-                                        Get.find<SettingsController>()
-                                                .volumnFollowSystem =
-                                            value;
-                                        await Get.find<PlayController>()
-                                            .updSysVolAndSet();
-                                        Get.find<SettingsController>()
-                                                .volumnFollowSystemChanging
-                                                .value =
-                                            false;
-                                      },
-                              ),
-                            ),
-                            Obx(
-                              () => SwitchListTile(
-                                title: const Text('下一首播放模式'),
-                                subtitle: Obx(
-                                  () => setSubTitleTextAniSwi(
-                                    Text(
-                                      Get.find<SettingsController>()
-                                              .nextTrackQueueOrStackMethod
-                                          ? '队列：先添加的曲目将先播放'
-                                          : '栈：后添加的曲目将先播放',
-                                      key: ValueKey<bool>(
-                                        Get.find<SettingsController>()
-                                            .nextTrackQueueOrStackMethod,
-                                      ),
-                                    ),
+                                    icon: Icon(Icons.refresh),
                                   ),
-                                ),
-                                value: Get.find<SettingsController>()
-                                    .nextTrackQueueOrStackMethod,
-                                onChanged: (bool value) {
-                                  Get.find<SettingsController>()
-                                          .nextTrackQueueOrStackMethod =
-                                      value;
-                                },
-                              ),
-                            ),
-                            Obx(
-                              () => SwitchListTile(
-                                title: const Text('在“循环播放”模式下列表播放完成时停止播放'),
-
-                                value: Get.find<SettingsController>()
-                                    .stopOnPlayListEnd,
-                                onChanged: (bool value) {
-                                  Get.find<SettingsController>()
-                                          .stopOnPlayListEnd =
-                                      value;
-                                },
-                              ),
-                            ),
-                          ],
+                                );
+                              },
+                          canTapOnHeader: true,
+                          isExpanded: settingsController.settingsPageExpansion
+                              .contains(0),
+                          body: _buildSupabasePanel(),
                         ),
-                      ),
-                      ExpansionPanel(
-                        headerBuilder: (BuildContext context, bool isExpanded) {
-                          return ListTile(
-                            leading: Icon(Icons.miscellaneous_services),
-                            title: Text('杂项'),
-                          );
-                        },
-                        canTapOnHeader: true,
-                        isExpanded: settingsController.settingsPageExpansion
-                            .contains(8),
-                        body: Column(
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.password),
-                              title: const Text('一次性验证码'),
-                              subtitle: const Text('点击复制一次性验证码'),
-                              onTap: copyTotpCode,
-                              trailing: IconButton(
-                                tooltip: '设置一次性验证码',
-                                icon: const Icon(Icons.settings),
-                                onPressed: () => showTotpSettings(context),
-                              ),
-                            ),
-
-                            Obx(
-                              () => SwitchListTile(
-                                title: const Text('显示一些tip'),
-                                value: settingsController.showSomeTips,
-                                onChanged: (value) {
-                                  settingsController.showSomeTips = value;
-                                  if (value) startupTipsService.updateSearchHint();
-                                },
-                              ),
-                            ),
-                            ListTile(
-                              leading: Icon(Icons.width_normal),
-                              title: const Text('当左边栏大于一定宽度时隐藏搜索页面的搜索框'),
-                              subtitle: Obx(
-                                () => setSubTitleTextAniSwi(
-                                  Text(
-                                    '当前宽度：${Get.find<XSearchController>().leftBarWidth.value.toStringAsFixed(2)}, 设置宽度：${Get.find<SettingsController>().showSearchAreaWidth.toStringAsFixed(2)}',
-                                    key: ValueKey<double>(
-                                      Get.find<XSearchController>()
-                                          .leftBarWidth
-                                          .value,
-                                    ),
+                        ExpansionPanel(
+                          headerBuilder:
+                              (BuildContext context, bool isExpanded) {
+                                return ListTile(
+                                  leading: Icon(Icons.login),
+                                  title: const Text('第三方平台登录'),
+                                  trailing: IconButton(
+                                    onPressed: () async {
+                                      settingsController.refreshLoginData();
+                                    },
+                                    icon: Icon(Icons.refresh),
                                   ),
+                                );
+                              },
+                          canTapOnHeader: true,
+                          isExpanded: settingsController.settingsPageExpansion
+                              .contains(1),
+                          body: _buildThirdPartyLoginPanel(context),
+                        ),
+                        ExpansionPanel(
+                          headerBuilder:
+                              (BuildContext context, bool isExpanded) {
+                                return ListTile(
+                                  leading: Icon(Icons.save),
+                                  title: const Text('歌单/配置文件'),
+                                );
+                              },
+                          canTapOnHeader: true,
+                          isExpanded: settingsController.settingsPageExpansion
+                              .contains(2),
+                          body: settingsWidget(context),
+                        ),
+                        ExpansionPanel(
+                          headerBuilder:
+                              (BuildContext context, bool isExpanded) {
+                                final theme = Theme.of(context);
+                                final resolvedIconColor =
+                                    ListTileTheme.of(context).iconColor ??
+                                    theme.listTileTheme.iconColor ??
+                                    theme.colorScheme.onSurfaceVariant;
+                                final resolvedIconSize =
+                                    IconTheme.of(context).size ?? 24.0;
+                                return ListTile(
+                                  leading: Iconify(
+                                    Octicon.cache_16,
+                                    color: resolvedIconColor,
+                                    size: resolvedIconSize,
+                                  ),
+                                  title: Text('缓存'),
+                                );
+                              },
+                          canTapOnHeader: true,
+                          isExpanded: settingsController.settingsPageExpansion
+                              .contains(3),
+                          body: Wrap(
+                            alignment: WrapAlignment.center,
+                            children: [...cacheSettingsTiles],
+                          ),
+                        ),
+                        ExpansionPanel(
+                          headerBuilder:
+                              (BuildContext context, bool isExpanded) {
+                                return ListTile(
+                                  leading: Icon(
+                                    isDesktop
+                                        ? Icons.keyboard_alt
+                                        : isAndroid
+                                        ? Icons.notifications
+                                        : Icons.device_unknown,
+                                  ),
+                                  title: Text(
+                                    isDesktop
+                                        ? '热键、代理及其它Desktop设置'
+                                        : isAndroid
+                                        ? "安卓通知设置"
+                                        : "未知平台设置",
+                                  ),
+                                );
+                              },
+                          canTapOnHeader: true,
+                          isExpanded: settingsController.settingsPageExpansion
+                              .contains(4),
+                          body: isDesktop
+                              ? desktopSettingsTiles(
+                                  context,
+                                  _focusNode2,
+                                  _focusNode3,
+                                  _windowsProxyAddrController,
+                                )
+                              : isAndroid
+                              ? androidSettingsTiles
+                              : Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: notificationSettingsTiles,
                                 ),
+                        ),
+                        ExpansionPanel(
+                          headerBuilder: (BuildContext context, bool isExpanded) {
+                            return ListTile(
+                              leading: Icon(Icons.system_update),
+                              title: Text('更新版本'),
+                              trailing: Text(
+                                '当前构建hash：${UpdController.buildGitHash}\n${isAndroid ? 'cronetHttpNoPlay：${UpdController.cronetHttpNoPlay.toString()}；' : ''}${isFfmpegEnabled ? 'FFmpeg已启用' : '无FFmpeg'}',
                               ),
-                              onTap: showShowSearchAreaWidthInputDialog,
-                              onLongPress: () => showInfoSnackbar(
-                                '@zhiquanchi',
-                                'https://github.com/HBWuChang/listen1_xuan/issues/33',
-                              ),
-                            ),
-
-                            Obx(
-                              () => SwitchListTile(
-                                title: const Text('搜索源选择方式'),
-                                subtitle: Obx(
-                                  () => setSubTitleTextAniSwi(
-                                    Text(
-                                      Get.find<SettingsController>()
-                                              .searchUseLastSource
-                                          ? '记忆上次搜索源'
-                                          : '默认搜索源',
-                                      key: ValueKey<bool>(
-                                        Get.find<SettingsController>()
-                                            .searchUseLastSource,
+                              onTap: () {
+                                if (settingsController.settingsPageExpansion
+                                    .contains(5)) {
+                                  settingsController.settingsPageExpansion
+                                      .remove(5);
+                                } else {
+                                  settingsController.settingsPageExpansion.add(
+                                    5,
+                                  );
+                                }
+                              },
+                              onLongPress: () {
+                                showInfoSnackbar(
+                                  '@DustDot',
+                                  'https://github.com/HBWuChang/listen1_xuan/pull/43',
+                                  onTap: () {
+                                    g_launchURL(
+                                      Uri.parse(
+                                        'https://github.com/HBWuChang/listen1_xuan/pull/43',
                                       ),
-                                    ),
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
+                          canTapOnHeader: true,
+                          isExpanded: settingsController.settingsPageExpansion
+                              .contains(5),
+                          body: updSettingsTile(context),
+                        ),
+                        ExpansionPanel(
+                          headerBuilder:
+                              (BuildContext context, bool isExpanded) {
+                                final theme = Theme.of(context);
+                                final resolvedIconColor =
+                                    ListTileTheme.of(context).iconColor ??
+                                    theme.listTileTheme.iconColor ??
+                                    theme.colorScheme.onSurfaceVariant;
+
+                                return ListTile(
+                                  leading: Iconify(
+                                    FaSolid.tshirt,
+                                    color: resolvedIconColor,
+                                    size: 18,
                                   ),
+                                  title: Text('外观设置'),
+                                );
+                              },
+                          canTapOnHeader: true,
+                          isExpanded: settingsController.settingsPageExpansion
+                              .contains(6),
+                          body: themeSettingsTiles,
+                        ),
+                        ExpansionPanel(
+                          headerBuilder:
+                              (BuildContext context, bool isExpanded) {
+                                return ListTile(
+                                  leading: Icon(Icons.play_circle_fill_rounded),
+                                  title: Text('播放设置'),
+                                );
+                              },
+                          canTapOnHeader: true,
+                          isExpanded: settingsController.settingsPageExpansion
+                              .contains(7),
+                          body: Column(
+                            children: [
+                              ListTile(
+                                leading: Icon(Icons.equalizer),
+                                title: const Text('均衡器设置'),
+                                trailing: Icon(Icons.chevron_right),
+                                onTap: () =>
+                                    Get.toNamed(RouteName.equalizerPage, id: 1),
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.audiotrack),
+                                title: const Text('默认音频质量'),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () => DefaultQualitySettingsSheet.show(),
+                              ),
+                              Obx(
+                                () => SwitchListTile(
+                                  title: const Text('响度均衡'),
+                                  subtitle: const Text(
+                                    '会降低整体音量；哔哩哔哩按响度均衡，其他平台使用固定音量补偿',
+                                  ),
+                                  value:
+                                      settingsController.loudnessNormalization,
+                                  onChanged: (value) async {
+                                    settingsController.loudnessNormalization =
+                                        value;
+                                    await Get.find<PlayController>()
+                                        .applyPlaybackVolume();
+                                    if (value) {
+                                      unawaited(
+                                        Get.find<PlayController>()
+                                            .refreshCurrentLoudness(),
+                                      );
+                                    }
+                                  },
                                 ),
-                                value: Get.find<SettingsController>()
-                                    .searchUseLastSource,
-                                onChanged: (bool value) {
-                                  Get.find<SettingsController>()
-                                          .searchUseLastSource =
-                                      value;
-                                },
                               ),
-                            ),
-                            Obx(
-                              () => SwitchListTile(
-                                title: const Text('复制错误信息到剪贴板'),
-                                value: Get.find<SettingsController>()
-                                    .copyErrorMessage,
-                                onChanged: (bool value) {
-                                  Get.find<SettingsController>()
-                                          .copyErrorMessage =
-                                      value;
-                                },
+                              Obx(
+                                () => settingsController.loudnessNormalization
+                                    ? LoudnessGainInput(
+                                        value: settingsController
+                                            .otherPlatformLoudnessGain,
+                                        onChanged: (value) {
+                                          settingsController
+                                                  .otherPlatformLoudnessGain =
+                                              value;
+                                          unawaited(
+                                            Get.find<PlayController>()
+                                                .applyPlaybackVolume(),
+                                          );
+                                        },
+                                      )
+                                    : const SizedBox.shrink(),
                               ),
-                            ),
-                            AnimatedSize(
-                              duration: Duration(milliseconds: 300),
-                              child: Obx(
-                                () =>
-                                    Get.find<SettingsController>()
-                                        .searchUseLastSource
-                                    ? SizedBox.shrink()
-                                    : ListTile(
-                                        leading: Icon(Icons.search),
-                                        title: const Text('选择默认搜索源'),
-                                        trailing: DropdownButton<BaseProvider>(
-                                          value: Get.find<XSearchController>()
-                                              .providerFromNameOrAlias(
-                                                Get.find<SettingsController>()
-                                                    .searchLastSource,
-                                              ),
-                                          icon: Icon(Icons.arrow_downward),
-                                          onChanged: (BaseProvider? newValue) {
-                                            if (newValue == null) return;
-                                            setState(() {
-                                              Get.find<SettingsController>()
-                                                      .searchLastSource =
-                                                  newValue.name;
-                                            });
-                                          },
-                                          items: Get.find<XSearchController>()
-                                              .searchProviders
-                                              .map<DropdownMenuItem<BaseProvider>>((
-                                                BaseProvider provider,
-                                              ) {
-                                                return DropdownMenuItem<
-                                                    BaseProvider>(
-                                                  value: provider,
-                                                  child: Text(
-                                                    provider.shortDisplayName,
-                                                  ),
-                                                );
-                                              })
-                                              .toList(),
+                              Obx(
+                                () => SwitchListTile(
+                                  title: const Text('音量跟随系统'),
+                                  value: Get.find<SettingsController>()
+                                      .volumnFollowSystem,
+                                  onChanged:
+                                      Get.find<SettingsController>()
+                                          .volumnFollowSystemChanging
+                                          .value
+                                      ? null
+                                      : (bool value) async {
+                                          Get.find<SettingsController>()
+                                                  .volumnFollowSystemChanging
+                                                  .value =
+                                              true;
+                                          Get.find<SettingsController>()
+                                                  .volumnFollowSystem =
+                                              value;
+                                          await Get.find<PlayController>()
+                                              .updSysVolAndSet();
+                                          Get.find<SettingsController>()
+                                                  .volumnFollowSystemChanging
+                                                  .value =
+                                              false;
+                                        },
+                                ),
+                              ),
+                              Obx(
+                                () => SwitchListTile(
+                                  title: const Text('下一首播放模式'),
+                                  subtitle: Obx(
+                                    () => setSubTitleTextAniSwi(
+                                      Text(
+                                        Get.find<SettingsController>()
+                                                .nextTrackQueueOrStackMethod
+                                            ? '队列：先添加的曲目将先播放'
+                                            : '栈：后添加的曲目将先播放',
+                                        key: ValueKey<bool>(
+                                          Get.find<SettingsController>()
+                                              .nextTrackQueueOrStackMethod,
                                         ),
                                       ),
+                                    ),
+                                  ),
+                                  value: Get.find<SettingsController>()
+                                      .nextTrackQueueOrStackMethod,
+                                  onChanged: (bool value) {
+                                    Get.find<SettingsController>()
+                                            .nextTrackQueueOrStackMethod =
+                                        value;
+                                  },
+                                ),
                               ),
-                            ),
+                              Obx(
+                                () => SwitchListTile(
+                                  title: const Text('在“循环播放”模式下列表播放完成时停止播放'),
 
-                            Obx(
-                              () => SwitchListTile(
-                                title: const Text('禁用ssl证书验证'),
-                                value: useHttpOverrides.value,
-                                onChanged: (bool value) {
-                                  set_useHttpOverrides(value);
-                                  useHttpOverrides.value = value;
-                                },
+                                  value: Get.find<SettingsController>()
+                                      .stopOnPlayListEnd,
+                                  onChanged: (bool value) {
+                                    Get.find<SettingsController>()
+                                            .stopOnPlayListEnd =
+                                        value;
+                                  },
+                                ),
                               ),
-                            ),
-                            Obx(
-                              () => SwitchListTile(
-                                title: const Text('debugToast'),
-                                value:
-                                    Get.find<SettingsController>().useDebugMode,
-                                onChanged: (bool value) {
-                                  Get.find<SettingsController>().useDebugMode =
-                                      value;
-                                },
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                        ExpansionPanel(
+                          headerBuilder:
+                              (BuildContext context, bool isExpanded) {
+                                return ListTile(
+                                  leading: Icon(Icons.miscellaneous_services),
+                                  title: Text('杂项'),
+                                );
+                              },
+                          canTapOnHeader: true,
+                          isExpanded: settingsController.settingsPageExpansion
+                              .contains(8),
+                          body: Column(
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.password),
+                                title: const Text('一次性验证码'),
+                                subtitle: const Text('点击复制一次性验证码'),
+                                onTap: copyTotpCode,
+                                onLongPress: showTotpHelpDialog(),
+                                trailing: IconButton(
+                                  tooltip: '设置一次性验证码',
+                                  icon: const Icon(Icons.settings),
+                                  onPressed: () => showTotpSettings(context),
+                                ),
+                              ),
 
-                ListTile(
-                  leading: const Icon(Icons.forum_outlined),
-                  title: const Text('在线反馈'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Get.toNamed(RouteName.onlineFeedbackPage, id: 1),
-                ),
-                ListTile(
-                  leading: Icon(Icons.lightbulb_outline),
-                  title: Text('Tip'),
-                  trailing: Icon(Icons.chevron_right),
-                  onTap: () {
-                    Get.toNamed(RouteName.settingsTipsPage, id: 1);
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.book),
-                  title: Text('查看README'),
-                  trailing: Icon(Icons.chevron_right),
-                  onTap: () {
-                    Get.toNamed(RouteName.settingsReadmePage, id: 1);
-                  },
-                ),
-                0.3.sh.sbh,
-              ],
+                              Obx(
+                                () => SwitchListTile(
+                                  title: const Text('显示一些tip'),
+                                  value: settingsController.showSomeTips,
+                                  onChanged: (value) {
+                                    settingsController.showSomeTips = value;
+                                    if (value)
+                                      startupTipsService.updateSearchHint();
+                                  },
+                                ),
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.width_normal),
+                                title: const Text('当左边栏大于一定宽度时隐藏搜索页面的搜索框'),
+                                subtitle: Obx(
+                                  () => setSubTitleTextAniSwi(
+                                    Text(
+                                      '当前宽度：${Get.find<XSearchController>().leftBarWidth.value.toStringAsFixed(2)}, 设置宽度：${Get.find<SettingsController>().showSearchAreaWidth.toStringAsFixed(2)}',
+                                      key: ValueKey<double>(
+                                        Get.find<XSearchController>()
+                                            .leftBarWidth
+                                            .value,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                onTap: showShowSearchAreaWidthInputDialog,
+                                onLongPress: () => showInfoSnackbar(
+                                  '@zhiquanchi',
+                                  'https://github.com/HBWuChang/listen1_xuan/issues/33',
+                                ),
+                              ),
+
+                              Obx(
+                                () => SwitchListTile(
+                                  title: const Text('搜索源选择方式'),
+                                  subtitle: Obx(
+                                    () => setSubTitleTextAniSwi(
+                                      Text(
+                                        Get.find<SettingsController>()
+                                                .searchUseLastSource
+                                            ? '记忆上次搜索源'
+                                            : '默认搜索源',
+                                        key: ValueKey<bool>(
+                                          Get.find<SettingsController>()
+                                              .searchUseLastSource,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  value: Get.find<SettingsController>()
+                                      .searchUseLastSource,
+                                  onChanged: (bool value) {
+                                    Get.find<SettingsController>()
+                                            .searchUseLastSource =
+                                        value;
+                                  },
+                                ),
+                              ),
+                              Obx(
+                                () => SwitchListTile(
+                                  title: const Text('复制错误信息到剪贴板'),
+                                  value: Get.find<SettingsController>()
+                                      .copyErrorMessage,
+                                  onChanged: (bool value) {
+                                    Get.find<SettingsController>()
+                                            .copyErrorMessage =
+                                        value;
+                                  },
+                                ),
+                              ),
+                              AnimatedSize(
+                                duration: Duration(milliseconds: 300),
+                                child: Obx(
+                                  () =>
+                                      Get.find<SettingsController>()
+                                          .searchUseLastSource
+                                      ? SizedBox.shrink()
+                                      : ListTile(
+                                          leading: Icon(Icons.search),
+                                          title: const Text('选择默认搜索源'),
+                                          trailing: DropdownButton<BaseProvider>(
+                                            value: Get.find<XSearchController>()
+                                                .providerFromNameOrAlias(
+                                                  Get.find<SettingsController>()
+                                                      .searchLastSource,
+                                                ),
+                                            icon: Icon(Icons.arrow_downward),
+                                            onChanged:
+                                                (BaseProvider? newValue) {
+                                                  if (newValue == null) return;
+                                                  setState(() {
+                                                    Get.find<
+                                                              SettingsController
+                                                            >()
+                                                            .searchLastSource =
+                                                        newValue.name;
+                                                  });
+                                                },
+                                            items: Get.find<XSearchController>()
+                                                .searchProviders
+                                                .map<
+                                                  DropdownMenuItem<BaseProvider>
+                                                >((BaseProvider provider) {
+                                                  return DropdownMenuItem<
+                                                    BaseProvider
+                                                  >(
+                                                    value: provider,
+                                                    child: Text(
+                                                      provider.shortDisplayName,
+                                                    ),
+                                                  );
+                                                })
+                                                .toList(),
+                                          ),
+                                        ),
+                                ),
+                              ),
+
+                              Obx(
+                                () => SwitchListTile(
+                                  title: const Text('禁用ssl证书验证'),
+                                  value: useHttpOverrides.value,
+                                  onChanged: (bool value) {
+                                    set_useHttpOverrides(value);
+                                    useHttpOverrides.value = value;
+                                  },
+                                ),
+                              ),
+                              Obx(
+                                () => SwitchListTile(
+                                  title: const Text('debugToast'),
+                                  value: Get.find<SettingsController>()
+                                      .useDebugMode,
+                                  onChanged: (bool value) {
+                                    Get.find<SettingsController>()
+                                            .useDebugMode =
+                                        value;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  ListTile(
+                    leading: const Icon(Icons.forum_outlined),
+                    title: const Text('在线反馈'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        Get.toNamed(RouteName.onlineFeedbackPage, id: 1),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.lightbulb_outline),
+                    title: Text('Tip'),
+                    trailing: Icon(Icons.chevron_right),
+                    onTap: () {
+                      Get.toNamed(RouteName.settingsTipsPage, id: 1);
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.book),
+                    title: Text('查看README'),
+                    trailing: Icon(Icons.chevron_right),
+                    onTap: () {
+                      Get.toNamed(RouteName.settingsReadmePage, id: 1);
+                    },
+                  ),
+                  0.3.sh.sbh,
+                ],
+              ),
             ),
-          ),
-        ],
-      )),
+          ],
+        ),
+      ),
     );
   }
 }

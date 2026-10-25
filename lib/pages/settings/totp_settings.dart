@@ -40,6 +40,12 @@ class _TotpDialog extends StatefulWidget {
   State<_TotpDialog> createState() => _TotpDialogState();
 }
 
+VoidCallback showTotpHelpDialog() =>
+    () => showInfoSnackbar(
+      '因为我平时自己需要用,所以就顺手加了这个功能\n如果你有其他需求,可以提issue或通过下方在线反馈告诉我',
+      null,
+    );
+
 class _TotpDialogState extends State<_TotpDialog> {
   final input = TextEditingController();
   String? error;
@@ -89,7 +95,15 @@ class _TotpDialogState extends State<_TotpDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('一次性验证码设置'),
+    title: Row(
+      children: [
+        Expanded(child: Text('一次性验证码设置')),
+        IconButton(
+          icon: Icon(Icons.help_rounded),
+          onPressed: showTotpHelpDialog(),
+        ),
+      ],
+    ),
     content: SizedBox(
       width: 420,
       child: SingleChildScrollView(
