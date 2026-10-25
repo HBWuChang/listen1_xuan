@@ -338,8 +338,15 @@ Widget get sheetHandle => Positioned.fill(
 );
 final materialWaveSliderStateKeyV = GlobalKey<MaterialWaveSliderState>();
 
-Widget get positionSlider => StreamBuilder<MediaState>(
+Widget buildPositionSlider({required bool isCollapsed}) {
+  // Unmount the hidden slider so its animations and stream subscriptions stop.
+  if (isCollapsed) return SizedBox(height: 80.w);
+  return _positionSlider;
+}
+
+Widget get _positionSlider => StreamBuilder<MediaState>(
   stream: _mediaStateStream,
+  initialData: _playController.mediaState.value,
   builder: (context, snapshot) {
     final mediaState = snapshot.data;
 

@@ -435,7 +435,10 @@ Widget get playV2 => LayoutBuilder(
                                       top: sliderTop,
                                       left: 0,
                                       right: 0,
-                                      child: positionSlider,
+                                      child: buildPositionSlider(
+                                        isCollapsed: expandProgress <= 0.0,
+                                        // isCollapsed: expandProgress <= 0.0,
+                                      ),
                                     ),
                                   ],
                                 ).sbwh(availableWidth, totalHeight);
