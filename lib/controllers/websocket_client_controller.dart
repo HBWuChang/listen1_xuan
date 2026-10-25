@@ -10,6 +10,7 @@ import 'package:listen1_xuan/main.dart';
 import 'package:listen1_xuan/widgets/motor_progress_indicator_xuan.dart';
 import 'package:listen1_xuan/widgets/draggable_toast/draggable_toast.dart';
 import 'package:logger/logger.dart';
+import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:punycode/punycode.dart';
 
@@ -23,7 +24,7 @@ import 'controllers.dart';
 /// 管理WebSocket客户端的连接状态和UI交互
 class WebSocketClientController extends GetxController {
   static const String _tag = 'WebSocketClientController';
-  final Logger _logger = Logger();
+  final Logger _logger = createAppLogger();
 
   /// WebSocket 客户端实例
   WebSocket? _webSocket;

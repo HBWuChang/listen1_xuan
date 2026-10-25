@@ -19,7 +19,7 @@ import 'package:listen1_xuan/models/bootStrapTrackRes.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
-import 'package:logger/logger.dart';
+import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart' hide Track;
 import 'package:smooth_sheets/smooth_sheets.dart';
@@ -56,7 +56,7 @@ class PlayController extends GetxController
   final Rx<Track?> songReplaceTargetTrack = Rx<Track?>(null);
   final RxBool songReplaceAdding = false.obs;
   final RxBool isSongReplacingSource = true.obs;
-  final logger = Logger();
+  final logger = createAppLogger();
   final updatePosToAudioServiceNow = 0.obs;
   final needUpdatePosToAudioService = 0.obs; // 新增：触发位置更新的流
   final _next_tracks = RxList<Track>([]);

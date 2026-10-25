@@ -6,6 +6,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
+import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:native_dio_adapter/native_dio_adapter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../global_settings_animations.dart';
@@ -58,7 +59,7 @@ class MyHttpOverrides extends HttpOverrides {
 
 class DioController extends GetxController {
   static const String _tag = 'DioController';
-  Logger _logger = Logger();
+  Logger _logger = createAppLogger();
   late String deviceId;
   final dioWithCookieManager = Dio();
   final dioWithProxyAdapter = Dio();

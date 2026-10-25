@@ -8,7 +8,7 @@
         android:requestLegacyExternalStorage="true"
         android:icon="@mipmap/launcher_icon">
         <activity
-            android:name="com.ryanheise.audioservice.AudioServiceActivity"
+            android:name="com.xiebian.listen1_xuan.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:taskAffinity=""

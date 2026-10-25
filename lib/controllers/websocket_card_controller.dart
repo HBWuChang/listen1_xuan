@@ -8,6 +8,7 @@ import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:listen1_xuan/main.dart';
 import 'package:logger/logger.dart';
+import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 
 void broadcastWs() {
@@ -24,7 +25,7 @@ void broadcastWs() {
 /// 管理WebSocket服务器的状态和UI交互
 class WebSocketCardController extends GetxController {
   static const String _tag = 'WebSocketCardController';
-  final Logger _logger = Logger();
+  final Logger _logger = createAppLogger();
 
   /// WebSocket 服务器控制器实例
   WebSocketServerController? wsServerController;

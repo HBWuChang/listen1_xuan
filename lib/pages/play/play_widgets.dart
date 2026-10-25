@@ -137,7 +137,7 @@ Widget buildSongInfo({
                   mediaItem?.artist ?? '',
                   style: TextStyle(
                     fontSize: artistSize,
-                    color: Get.theme.textTheme.bodySmall?.color,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -148,7 +148,7 @@ Widget buildSongInfo({
                   mediaItem?.artist ?? '',
                   style: TextStyle(
                     fontSize: artistSize,
-                    color: Get.theme.textTheme.bodySmall?.color,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                   onTap: () => _onTap(context),
                   textAlign: TextAlign.center,

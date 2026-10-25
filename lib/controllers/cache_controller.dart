@@ -16,6 +16,7 @@ import 'package:listen1_xuan/services/cache_audio_metadata.dart';
 import 'package:listen1_xuan/services/cache_file_naming.dart';
 import 'package:listen1_xuan/services/ffmpeg_config.dart';
 import 'package:logger/logger.dart';
+import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:path/path.dart' as p;
 import 'dart:io';
 import 'dart:convert';
@@ -31,7 +32,7 @@ import 'package:listen1_xuan/models/Track.dart';
 class CacheController extends GetxController {
   static const int _maxCoverArtBytes = 20 * 1024 * 1024;
 
-  final Logger _logger = Logger();
+  final Logger _logger = createAppLogger();
   final String _localCacheListKey = 'local-cache-list';
   final _localCacheList = <String, String>{}.obs;
   final _onlineCacheList = <String, OnlineCacheItem>{}.obs;

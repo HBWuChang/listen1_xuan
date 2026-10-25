@@ -27,6 +27,13 @@
             "type": "dart",
         },
         {
+            "name": "Flutter Release 日志",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "flutter logs",
+            "cwd": "${workspaceFolder}"
+        },
+        {
             "name": "windows",
             "request": "launch",
             "type": "dart",

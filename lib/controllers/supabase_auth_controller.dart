@@ -9,7 +9,7 @@ import 'dart:async';
 import 'package:listen1_xuan/models/UserProfile.dart';
 import 'package:listen1_xuan/models/SupabasePlaylist.dart';
 import 'package:listen1_xuan/models/SupaContinuePlay.dart';
-import 'package:logger/logger.dart';
+import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:listen1_xuan/settings.dart' as settings;
 import 'package:uuid/uuid.dart';
 import '../widgets/progress_indicator_xuan.dart';
@@ -22,7 +22,7 @@ import '../utils/platform_credentials.dart';
 /// 管理用户登录、登出、会话状态等
 class SupabaseAuthController extends GetxController {
   final _supabase = Supabase.instance.client;
-  final logger = Logger();
+  final logger = createAppLogger();
 
   /// 每个用户最大歌单数量
   static const int maxPlaylistsPerUser = 3;

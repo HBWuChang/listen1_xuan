@@ -4,6 +4,7 @@ import 'package:bonsoir/bonsoir.dart';
 import 'package:get/get.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:logger/logger.dart';
+import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:uuid/uuid.dart';
 import 'BroadcastWsController.dart';
 import 'settings_controller.dart';
@@ -11,7 +12,7 @@ import 'websocket_client_controller.dart';
 
 class ScanBroadcastController extends GetxController {
   // Once defined, we can start the discovery :
-  final Logger _logger = Logger();
+  final Logger _logger = createAppLogger();
   BonsoirDiscovery discovery = BonsoirDiscovery(type: broadcastType);
   @override
   void onInit() {

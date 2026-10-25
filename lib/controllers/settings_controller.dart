@@ -33,11 +33,19 @@ import '../provider/qq.dart';
 import '../provider/loweb.dart' as music_providers;
 import '../settings.dart';
 import '../services/audio_metadata_store.dart';
+import '../services/app_logger.dart';
 import '../services/repository_document.dart';
 import '../models/audio_metadata.dart';
 import '../utils/totp.dart';
 
 class SettingsController extends GetxController {
+  static const String logLevelKey = 'logLevel';
+  AppLogLevel get logLevel => AppLogLevel.fromSetting(settings[logLevelKey]);
+  set logLevel(AppLogLevel value) {
+    appLogLevel = value;
+    settings[logLevelKey] = value.name;
+  }
+
   // Kept outside the settings map so cloud settings never contain the secret.
   static const String totpLocalKey = 'totp_local_account';
   Future<TotpAccount?> getTotpAccount() async {
@@ -518,7 +526,10 @@ class SettingsController extends GetxController {
   void onInit() {
     super.onInit();
 
+    appLogLevel = logLevel;
+
     ever<Map<String, dynamic>>(settings, (_) {
+      appLogLevel = logLevel;
       final nextMini = settings[songReplaceFabMiniKey] as bool? ?? true;
       final nextLocationIndex =
           settings[songReplaceFabLocationKey] as int? ??

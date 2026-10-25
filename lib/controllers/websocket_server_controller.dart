@@ -10,6 +10,7 @@ import 'package:listen1_xuan/controllers/websocket_card_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
 import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:logger/logger.dart';
+import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -25,7 +26,7 @@ import 'cache_controller.dart';
 /// 支持 IPv4/IPv6 配置，包含 ping/pong 心跳机制和资源释放
 class WebSocketServerController extends GetxController {
   static const String _tag = 'WebSocketServerController';
-  final Logger _logger = Logger();
+  final Logger _logger = createAppLogger();
 
   /// 服务器实例
   HttpServer? _server;

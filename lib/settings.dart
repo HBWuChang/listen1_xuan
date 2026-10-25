@@ -13,7 +13,8 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:listen1_xuan/controllers/controllers.dart';
 import 'package:listen1_xuan/play.dart';
-import 'package:logger/logger.dart';
+import 'services/app_logger.dart';
+import 'widgets/app_log_level_tile.dart';
 import 'controllers/search_controller.dart';
 import 'controllers/upd_controller.dart';
 import 'provider/base.dart';
@@ -79,14 +80,7 @@ class SettingsPage extends StatefulWidget {
   _SettingsPageState createState() => _SettingsPageState();
 }
 
-Logger logger = Logger(
-  printer: PrettyPrinter(
-    colors: true,
-    printEmojis: true,
-    dateTimeFormat: DateTimeFormat.dateAndTime,
-  ),
-  level: Level.debug,
-);
+final logger = createAppLogger();
 
 late String apkfile_name;
 Future<void> init_apkfilepath() async {
@@ -536,6 +530,13 @@ class _SettingsPageState extends State<SettingsPage> {
                               .contains(8),
                           body: Column(
                             children: [
+                              Obx(
+                                () => AppLogLevelTile(
+                                  value: settingsController.logLevel,
+                                  onChanged: (level) =>
+                                      settingsController.logLevel = level,
+                                ),
+                              ),
                               ListTile(
                                 leading: const Icon(Icons.password),
                                 title: const Text('一次性验证码'),
