@@ -508,6 +508,15 @@ Listener _mainContent() => Listener(
                   );
                   addAndCleanReapeatRoute(route, RouteName.lyricPage);
                   return route;
+                case RouteName.settingsChangelogPage:
+                  var route = ThemedGetPageRoute(
+                    settings: settings,
+                    transition: Transition.rightToLeftWithFade,
+                    page: () => const SettingsChangelogPage(),
+                    middlewares: [ListenPopMiddleware()],
+                  );
+                  addAndCleanReapeatRoute(route, RouteName.settingsChangelogPage);
+                  return route;
                 case RouteName.settingsReadmePage:
                   var route = ThemedGetPageRoute(
                     settings: settings,

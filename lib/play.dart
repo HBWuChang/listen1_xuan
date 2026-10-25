@@ -405,6 +405,10 @@ bool change_p = false;
 /// 打开歌词页面
 void _openLyricPage() {
   if (!globalHorizon) {
+    if (!_playController.sheetController.hasClient ||
+        _playController.sheetController.metrics == null) {
+      return;
+    }
     _playController.sheetController.animateTo(
       _playController.playVMaxOffset,
       duration: const Duration(milliseconds: 600),

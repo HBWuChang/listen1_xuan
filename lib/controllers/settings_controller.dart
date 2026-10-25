@@ -4,7 +4,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:hive/hive.dart';
 
 import 'package:path/path.dart' as p;
@@ -34,6 +33,7 @@ import '../provider/qq.dart';
 import '../provider/loweb.dart' as music_providers;
 import '../settings.dart';
 import '../services/audio_metadata_store.dart';
+import '../services/repository_document.dart';
 import '../models/audio_metadata.dart';
 import '../utils/totp.dart';
 
@@ -1056,29 +1056,14 @@ class SettingsController extends GetxController {
     settings[key] = value;
   }
 
-  final readmeContent = ''.obs;
-  bool get hasReadmeContent =>
-      readmeContent.value.isNotEmpty && readmeContent.value != '加载失败';
-  Future<void> loadReadme() async {
-    try {
-      readmeContent.value = '';
-      final treadmeContent = await dioWithProxyAdapter.get(
-        'https://api.github.com/repos/HBWuChang/listen1_xuan/readme',
-      );
-      String decodeBase64(String data) {
-        return utf8.decode(base64Decode(data));
-      }
-
-      // 使用base64对content进行解码
-      // _readmeContent_setstate(() {
-      readmeContent.value = decodeBase64(
-        treadmeContent.data['content'].replaceAll("\n", ''),
-      );
-      // });
-    } catch (e) {
-      readmeContent.value = '加载失败';
-    }
-  }
+  late final readmeDocument = RepositoryDocument(
+    dio: dioWithProxyAdapter,
+    filename: 'README.md',
+  );
+  late final changelogDocument = RepositoryDocument(
+    dio: dioWithProxyAdapter,
+    filename: 'CHANGELOG.md',
+  );
 
   // 登陆管理
   final loginData = <String, dynamic>{}.obs;

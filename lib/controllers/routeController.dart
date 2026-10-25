@@ -272,6 +272,7 @@ class RouteName {
   static const String nowPlayingPage = '/now_playing';
   static const String settingsPage = '/settings';
   static const String settingsReadmePage = '/settings_readme';
+  static const String settingsChangelogPage = '/settings_changelog';
   static const String settingsTipsPage = '/settings_tips';
   static const String onlineFeedbackPage = '/online_feedback';
   static const String onlineFeedbackIssuePage = '/online_feedback/issue';

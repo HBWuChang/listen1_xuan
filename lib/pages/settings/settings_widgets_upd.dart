@@ -23,6 +23,10 @@ Widget updSettingsTile(BuildContext context) {
             onPressed: updController.switchFfmpegVariant,
             child: Text(isFfmpegEnabled ? '切换到无 FFmpeg 版' : '切换到有 FFmpeg 版'),
           ),
+        ElevatedButton(
+          onPressed: () => Get.toNamed(RouteName.settingsChangelogPage, id: 1),
+          child: const Text('查看 Changelog'),
+        ),
         if (isAndroid)
           ElevatedButton(
             onPressed: updController.delAndroidApkCache,

@@ -3,8 +3,21 @@ package com.xiebian.listen1_xuan
 import android.os.Bundle
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 class MainActivity: FlutterActivity() {
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "listen1_xuan/build_info")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "getBuildNumber") {
+                    result.success(getString(R.string.app_build_number))
+                } else {
+                    result.notImplemented()
+                }
+            }
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

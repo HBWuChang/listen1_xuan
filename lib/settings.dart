@@ -29,6 +29,7 @@ import 'controllers/play_controller.dart';
 import 'controllers/settings_controller.dart';
 import 'services/startup_tips_service.dart';
 import 'services/ffmpeg_config.dart';
+import 'services/app_version.dart';
 import 'controllers/routeController.dart';
 import 'controllers/supabase_auth_controller.dart';
 import 'controllers/websocket_client_controller.dart';
@@ -114,6 +115,18 @@ class _SettingsPageState extends State<SettingsPage> {
   final FocusNode _focusNode2 = FocusNode();
   final FocusNode _focusNode3 = FocusNode();
   late final TextEditingController _windowsProxyAddrController;
+  String _appVersion = '读取版本中';
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final version = await loadAppVersion();
+      if (mounted) setState(() => _appVersion = version);
+    } catch (error, stackTrace) {
+      logger.w('读取应用版本失败', error: error, stackTrace: stackTrace);
+      if (mounted) setState(() => _appVersion = '版本未知');
+    }
+  }
+
   @override
   void dispose() {
     _focusNode2.dispose(); // 释放 FocusNode
@@ -137,6 +150,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
+    _loadAppVersion();
     _windowsProxyAddrController = TextEditingController(
       text: Get.find<SettingsController>().windowsProxyAddr,
     );
@@ -319,7 +333,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               leading: Icon(Icons.system_update),
                               title: Text('更新版本'),
                               trailing: Text(
-                                '当前构建hash：${UpdController.buildGitHash}\n${isAndroid ? 'cronetHttpNoPlay：${UpdController.cronetHttpNoPlay.toString()}；' : ''}${isFfmpegEnabled ? 'FFmpeg已启用' : '无FFmpeg'}',
+                                '$_appVersion ${isFfmpegEnabled ? '有FFmpeg' : '无FFmpeg'}\n构建hash:${UpdController.buildGitHash}',
                               ),
                               onTap: () {
                                 if (settingsController.settingsPageExpansion

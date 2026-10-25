@@ -1102,7 +1102,11 @@ class PlayController extends GetxController
   RxBool showPlayVInlineLyricVisible = false.obs;
   final sheetExpandRatio = 0.0.obs; // 展开比例 0.0-1.0
   Future<void> expandSheet() async {
-    if (globalHorizon) return;
+    if (globalHorizon ||
+        !sheetController.hasClient ||
+        sheetController.metrics == null) {
+      return;
+    }
     await sheetController.animateTo(
       playVMaxOffset,
       duration: Duration(milliseconds: 300),
@@ -1110,7 +1114,11 @@ class PlayController extends GetxController
   }
 
   Future<void> expandSheetToMid() async {
-    if (globalHorizon) return;
+    if (globalHorizon ||
+        !sheetController.hasClient ||
+        sheetController.metrics == null) {
+      return;
+    }
     await sheetController.animateTo(
       sheetMidOffset,
       duration: Duration(milliseconds: 300),
@@ -1118,7 +1126,11 @@ class PlayController extends GetxController
   }
 
   Future<void> collapseSheet() async {
-    if (globalHorizon) return;
+    if (globalHorizon ||
+        !sheetController.hasClient ||
+        sheetController.metrics == null) {
+      return;
+    }
     await sheetController.animateTo(
       sheetMinOffset,
       duration: Duration(milliseconds: 300),
@@ -1142,7 +1154,11 @@ class PlayController extends GetxController
   }
 
   bool tryCollapseSheet() {
-    if (globalHorizon) return false;
+    if (globalHorizon ||
+        !sheetController.hasClient ||
+        sheetController.metrics == null) {
+      return false;
+    }
     if ((sheetController.metrics?.offset ?? sheetMinHeight) >
         (sheetMidHeight + playVMaxHeight) / 2) {
       expandSheetToMid();

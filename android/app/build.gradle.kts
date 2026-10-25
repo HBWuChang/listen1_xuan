@@ -43,6 +43,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Preserve the base build number before Flutter adds split-APK ABI offsets.
+        resValue("string", "app_build_number", flutter.versionCode.toString())
     }
 
     signingConfigs {
