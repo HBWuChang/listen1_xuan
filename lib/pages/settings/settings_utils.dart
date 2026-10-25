@@ -273,64 +273,6 @@ start "" "$folderA\\listen1_xuan.exe"\r
   }
 }
 
-Future<void> createAndRunMacOSScript(String tempPath, String appPath) async {
-  // 定义路径
-  final newAppPath = p.join(tempPath, 'canary', 'listen1_xuan.app');
-  final scriptPath = p.join(tempPath, 'update_macos.command');
-
-  // 获取当前进程PID
-  final currentPid = pid;
-
-  // 创建更新脚本内容
-  final script =
-      '''#!/bin/bash
-
-# 等待当前应用进程结束
-echo "Waiting for application to quit..."
-while kill -0 $currentPid 2>/dev/null; do
-  sleep 1
-done
-
-# 额外等待2秒确保完全退出
-sleep 2
-
-# 删除旧应用
-echo "Removing old version..."
-rm -rf "$appPath"
-
-# 复制新应用
-echo "Installing new version..."
-cp -R "$newAppPath" "$appPath"
-
-# 设置执行权限
-chmod -R +x "$appPath/Contents/MacOS/"
-xattr -rd com.apple.quarantine "$appPath"
-
-# 启动新应用
-echo "Launching new version..."
-open "$appPath"
-
-''';
-
-  // 写入脚本文件
-  final scriptFile = File(scriptPath);
-  if (await scriptFile.exists()) {
-    await scriptFile.delete();
-  }
-  await scriptFile.writeAsString(script);
-
-  // 设置执行权限
-  await Process.run('chmod', ['+x', scriptPath]);
-
-  // 在Terminal窗口中显示执行脚本（类似Windows的命令窗口）
-  await Process.start('open', [
-    '-a',
-    'Terminal.app',
-    scriptPath,
-  ], mode: ProcessStartMode.detached);
-  debugPrint('macOS update script started successfully in Terminal');
-}
-
 Future<void> outputPlaylistToGithubGist() async {
   if (Github.status != 2) {
     await Github.updateStatus();

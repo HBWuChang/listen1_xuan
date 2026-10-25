@@ -7,6 +7,7 @@ on:
       - '**/*.dart'
       - 'pubspec.yaml'
       - '**/dart_macos.yml'
+      - 'macos/**'
 
 jobs:
   # 每个矩阵任务只编一种架构（ARCHS 经 FLUTTER_XCODE_ 前缀注入 xcodebuild），
@@ -100,6 +101,25 @@ jobs:
           # 用文件级路径上传：archive 根就是该文件名，下载后不会带版本子目录
           echo "asset_path=dist/$VERSION/$NEW" >> $GITHUB_OUTPUT
           echo "renamed -> $NEW"
+
+      - name: Verify packaged app and updater permissions
+        run: |
+          set -euo pipefail
+          CHECK_DIR=$(mktemp -d)
+          trap 'rm -rf "$CHECK_DIR"' EXIT
+          /usr/bin/ditto -x -k "${{ steps.rename.outputs.asset_path }}" "$CHECK_DIR"
+          APP="$CHECK_DIR/listen1_xuan.app"
+          test -L "$APP/Contents/Frameworks/App.framework/Resources"
+          test -f "$APP/Contents/Frameworks/App.framework/App"
+          test -d "$APP/Contents/Frameworks/App.framework/Resources/flutter_assets"
+          test -x "$APP/Contents/MacOS/listen1_xuan"
+          /usr/bin/codesign --verify --deep --strict "$APP"
+          /usr/bin/codesign -d --entitlements :- "$APP" > "$CHECK_DIR/entitlements.plist"
+          SANDBOX=$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "$CHECK_DIR/entitlements.plist" 2>/dev/null || true)
+          if [ "$SANDBOX" = "true" ]; then
+            echo "::error::Direct-distribution updater cannot run inside App Sandbox"
+            exit 1
+          fi
 
       - name: Upload artifact (${{ matrix.tag }})
         uses: actions/upload-artifact@v4

@@ -17,6 +17,7 @@ import 'package:system_info3/system_info3.dart';
 import '../funcs.dart';
 import '../global_settings_animations.dart';
 import '../services/ffmpeg_config.dart';
+import '../services/macos_updater.dart';
 import '../settings.dart';
 import '../models/GitHubRelease.dart';
 import '../models/ReleaseAsset.dart';
@@ -560,9 +561,7 @@ class UpdController extends GetxController {
 
       // 无论是否下载，都进行解压和更新操作
       if (await File(filePath).exists()) {
-        // 先解压 canary.zip，取出内部的实际 zip 文件（如 listen1_xuan-2.5.3+45-macos-260c32f.zip）
-        final actualFilePath = await _extractInnerMacosZip(tempPath, filePath);
-        await _performMacosExtractAndUpdate(tempPath, actualFilePath);
+        await _performMacosExtractAndUpdate(tempPath, filePath);
       } else {
         showErrorSnackbar('安装包文件不存在', null);
       }
@@ -570,47 +569,6 @@ class UpdController extends GetxController {
       _closeProgressDialog();
       showErrorSnackbar('下载失败', e.toString());
     }
-  }
-
-  /// 从 artifact 的 canary.zip 中解压出实际的 macos zip 文件，
-  /// 删除原 canary.zip，并将内部文件重命名为 canary.zip
-  Future<String> _extractInnerMacosZip(String tempPath, String filePath) async {
-    final bytes = File(filePath).readAsBytesSync();
-    final archive = ZipDecoder().decodeBytes(bytes);
-
-    String? innerZipPath;
-    for (final file in archive) {
-      if (file.isFile) {
-        final filename = file.name;
-        final data = file.content as List<int>;
-        final extractPath = p.join(tempPath, filename);
-        File(extractPath)
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(data);
-
-        // 匹配类似 listen1_xuan-2.5.3+45-macos-260c32f.zip 的文件
-        if (filename.endsWith('.zip')) {
-          innerZipPath = extractPath;
-        }
-      }
-    }
-
-    if (innerZipPath == null) {
-      // 没有找到内部 zip，直接返回原文件路径
-      debugPrint('未找到内部 zip 文件，直接使用原 canary.zip');
-      return filePath;
-    }
-
-    // 删除原 canary.zip
-    await File(filePath).delete();
-    debugPrint('已删除原 canary.zip');
-
-    // 将内部 zip 重命名为 canary.zip
-    final newFilePath = p.join(tempPath, 'canary.zip');
-    await File(innerZipPath).rename(newFilePath);
-    debugPrint('已将 ${p.basename(innerZipPath)} 重命名为 canary.zip');
-
-    return newFilePath;
   }
 
   /// macOS 平台的解压和更新
@@ -621,49 +579,10 @@ class UpdController extends GetxController {
     try {
       showSuccessSnackbar('正在解压...', null);
 
-      // 删除canary文件夹
-      final canaryDir = Directory(p.join(tempPath, 'canary'));
-      if (await canaryDir.exists()) {
-        await canaryDir.delete(recursive: true);
-      }
-
-      // release下载
-      if (!p.basename(filePath).contains('artifact')) {
-        await extractFileToDisk(filePath, p.join(tempPath, 'canary'));
-      } else {
-        // 第一次解压 ZIP 文件
-        final bytes = File(filePath).readAsBytesSync();
-        final archive = ZipDecoder().decodeBytes(bytes);
-
-        String innerZipPath = '';
-        for (final file in archive) {
-          final filename = file.name;
-          if (file.isFile) {
-            final data = file.content as List<int>;
-            final extractPath = p.join(tempPath, 'canary', filename);
-            File(extractPath)
-              ..createSync(recursive: true)
-              ..writeAsBytesSync(data);
-
-            if (filename.endsWith('.zip') && filename.contains('macos')) {
-              innerZipPath = extractPath;
-            }
-          } else {
-            final dirPath = p.join(tempPath, 'canary', file.name);
-            Directory(dirPath).create(recursive: true);
-          }
-        }
-
-        // 第二次解压
-        if (innerZipPath.isNotEmpty && await File(innerZipPath).exists()) {
-          debugPrint('找到内部zip文件: $innerZipPath');
-          await extractFileToDisk(innerZipPath, p.join(tempPath, 'canary'));
-          await File(innerZipPath).delete();
-        } else {
-          showErrorSnackbar('未找到 .app.zip 文件', null);
-          return;
-        }
-      }
+      final newAppPath = await MacosUpdater.extract(
+        filePath,
+        p.join(tempPath, 'canary'),
+      );
 
       // 获取当前应用路径
       String executablePath = Platform.resolvedExecutable;
@@ -673,14 +592,18 @@ class UpdController extends GetxController {
       debugPrint('解压路径: ${p.join(tempPath, 'canary')}');
 
       // 显示更新确认对话框
-      await _showMacosUpdateDialog(tempPath, appPath);
+      await _showMacosUpdateDialog(tempPath, appPath, newAppPath);
     } catch (e) {
       showErrorSnackbar('解压或更新失败', e.toString());
     }
   }
 
   /// 显示 macOS 更新确认对话框
-  Future<void> _showMacosUpdateDialog(String tempPath, String appPath) async {
+  Future<void> _showMacosUpdateDialog(
+    String tempPath,
+    String appPath,
+    String newAppPath,
+  ) async {
     await Get.dialog(
       AlertDialog(
         title: Text('准备更新'),
@@ -690,19 +613,9 @@ class UpdController extends GetxController {
           children: [
             Text('应用将自动关闭并更新到最新版本，更新完成后会自动重启。'),
             12.sbh,
-            Text('注意：', style: TextStyle(fontWeight: FontWeight.bold)),
             Text(
-              '1. 如果macOS阻止脚本运行，请前往 系统设置 -> 隐私与安全性 中手动允许运行更新脚本和新版本应用。',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-            4.sbh,
-            Text(
-              '2. 若更新脚本没有自动运行，请前往 下载/Listen1/ 文件夹手动运行 update_macos.command。',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-            4.sbh,
-            Text(
-              '3. 若更新脚本运行后仍无法启动应用,请手动移动并运行 下载/Listen1/canary 文件夹下的 新版应用程序',
+              '更新前会校验安装包并保留旧版本。若安装位置不可写，请手动安装下载包。'
+              '更新日志保存在下载目录的 update_macos.log。',
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
@@ -718,10 +631,11 @@ class UpdController extends GetxController {
             onPressed: () async {
               try {
                 Get.back();
-                await createAndRunMacOSScript(tempPath, appPath);
-                await Process.run('open', [
-                  'x-apple.systempreferences:com.apple.preference.security',
-                ]);
+                await MacosUpdater.start(
+                  tempPath: tempPath,
+                  appPath: appPath,
+                  newAppPath: newAppPath,
+                );
                 closeApp();
               } catch (e) {
                 showErrorSnackbar('更新失败', e.toString());
@@ -1330,26 +1244,25 @@ class UpdController extends GetxController {
           )
           .toList();
     } else if (isMacOS) {
-      list = list
-          .where((asset) {
-            final n = asset.name.toLowerCase();
-            return n.contains('macos') && n.endsWith('.zip');
-          })
-          .toList();
+      list = list.where((asset) {
+        final n = asset.name.toLowerCase();
+        return n.contains('macos') && n.endsWith('.zip');
+      }).toList();
       final tag = macosArchTag;
       if (tag.isNotEmpty) {
-        final exact =
-            list.where((a) => _matchesMacosArch(a.name, tag)).toList();
+        final exact = list
+            .where((a) => _matchesMacosArch(a.name, tag))
+            .toList();
         // 精确命中本机芯片；否则只接受无芯片标记的 universal 老包
         list = exact.isNotEmpty
             ? exact
             : list
-                .where(
-                  (a) =>
-                      !_matchesMacosArch(a.name, 'apple-silicon') &&
-                      !_matchesMacosArch(a.name, 'intel'),
-                )
-                .toList();
+                  .where(
+                    (a) =>
+                        !_matchesMacosArch(a.name, 'apple-silicon') &&
+                        !_matchesMacosArch(a.name, 'intel'),
+                  )
+                  .toList();
       }
     } else if (isAndroid) {
       list = list
