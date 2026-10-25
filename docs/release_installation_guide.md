@@ -6,6 +6,10 @@
 
 macOS 安装包按芯片拆分（`apple-silicon` 对应 Apple 芯片，`intel` 对应 Intel），资产名形如 `listen1_xuan-<version>-macos-apple-silicon-<hash>.zip`，含 FFmpeg 版在 hash 前多一段 `-ffmpeg`。Actions artifact 名同理（`macos-app-artifact-apple-silicon` 等）。标记故意不使用 `arm64` / `x86_64`：Android 端 artifact 选择按这两个子串过滤架构，否则会把 macOS 包也列出来。表格按芯片分行，拆分前上传的 universal 包自动归入“通用包（旧版）”行。
 
+Android 同时发布 `app-…-<hash>.apk` 与同名 `app-…-<hash>.zip`。ZIP 采用 Deflate 压缩，内含原始已签名 APK；下载指南分别列出两种格式的链接及大小，ZIP 需解压后安装。应用内 Release 更新及 FFmpeg 切换优先选择同一构建的 ZIP，旧版仅有 APK 时仍可更新。
+
+Android Actions artifact 使用 `app-…-release….zip` 名称并启用压缩，归档内直接包含 APK，避免嵌套 ZIP。客户端对同一 workflow run 的同名 APK / ZIP artifact 优先显示 ZIP，保留旧构建的兼容性。安装前解压成功即删除 ZIP，APK 留给系统安装器；手动安装包清理和旧 Release 缓存清理均覆盖 APK、ZIP 与未完成的解压文件，不删除其他平台压缩包。
+
 ## 自动刷新
 
 将脚本及 `.github/workflows/release_notes.yml` 合入默认分支后，`apk`、`win`、`macos`、`ios` 构建工作流成功完成会触发刷新。无需修改现有构建工作流。

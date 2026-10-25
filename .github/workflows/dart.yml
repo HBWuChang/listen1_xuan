@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   # 4 个变体并行构建，每个 job 内串行跑 split-per-abi + universal 两次构建。
-  # artifact 名保持 `app-<abi>-release...` 前缀，应用内 canary 更新
+  # artifact 改为 .zip 并启用压缩，内部直接放 APK；保持 `app-<abi>-release...` 前缀，应用内 canary 更新
   # （_selectAndroidArtifact 按 abi 关键字过滤）与 Release 更新逻辑均不受影响。
   build:
     if: "contains(github.event.head_commit.message, 'apk')"
@@ -117,38 +117,38 @@ jobs:
       - name: List produced APKs
         run: ls -l out/
 
-      # 每个变体各传 4 个 artifact，名字与原来完全一致（不带 hash）。
+      # 每个变体上传 4 个压缩 ZIP artifact（不带 hash）。
       - name: Upload arm64-v8a APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-arm64-v8a-release${{ matrix.infix }}.apk
+          name: app-arm64-v8a-release${{ matrix.infix }}.zip
           path: out/app-arm64-v8a-release${{ matrix.infix }}-${{ env.GITHASH }}.apk
           if-no-files-found: error
-          compression-level: 0
+          compression-level: 9
 
       - name: Upload armeabi-v7a APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-armeabi-v7a-release${{ matrix.infix }}.apk
+          name: app-armeabi-v7a-release${{ matrix.infix }}.zip
           path: out/app-armeabi-v7a-release${{ matrix.infix }}-${{ env.GITHASH }}.apk
           if-no-files-found: error
-          compression-level: 0
+          compression-level: 9
 
       - name: Upload x86_64 APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-x86_64-release${{ matrix.infix }}.apk
+          name: app-x86_64-release${{ matrix.infix }}.zip
           path: out/app-x86_64-release${{ matrix.infix }}-${{ env.GITHASH }}.apk
           if-no-files-found: error
-          compression-level: 0
+          compression-level: 9
 
       - name: Upload universal APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release${{ matrix.infix }}.apk
+          name: app-release${{ matrix.infix }}.zip
           path: out/app-release${{ matrix.infix }}-${{ env.GITHASH }}.apk
           if-no-files-found: error
-          compression-level: 0
+          compression-level: 9
 
   # 单一上传点：避免多个 job 互相删除/覆盖同一 Release 资产。
   publish:
@@ -163,7 +163,7 @@ jobs:
       - name: Download all Android artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: app-*release*.apk
+          pattern: app-*release*.zip
           merge-multiple: true
           path: release_artifacts
 
@@ -171,6 +171,17 @@ jobs:
         run: |
           ls -l release_artifacts/
           echo "共 $(ls -1 release_artifacts/*.apk | wc -l) 个 APK"
+
+      # Release ZIP contains the unchanged signed APK, with the same file stem.
+      - name: Compress APKs for Release
+        run: |
+          python3 - <<'PYZIP'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          for apk in Path("release_artifacts").glob("*.apk"):
+              with ZipFile(apk.with_suffix(".zip"), "w", ZIP_DEFLATED, compresslevel=9) as archive:
+                  archive.write(apk, apk.name)
+          PYZIP
 
       # 从 pubspec.yaml 提取版本号
       - name: Extract Version from pubspec.yaml
@@ -180,14 +191,14 @@ jobs:
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "VERSION=$version"
 
-      # 删除该 Release 下所有旧的 APK 文件
+      # 删除该 Release 下旧的 Android APK / ZIP（保留其他平台 ZIP）
       - name: Delete Old APK Assets from Release
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view "${{ env.VERSION }}" --json assets --jq '.assets[].name' \
-            | grep -E '\.apk$' \
+            | grep -E '^app-.*\.(apk|zip)$' \
             | while read -r asset; do
                 echo "Deleting old asset: $asset"
                 gh release delete-asset "${{ env.VERSION }}" "$asset" --yes || true
@@ -200,6 +211,8 @@ jobs:
           tag_name: ${{ env.VERSION }}
           prerelease: ${{ !contains(github.event.head_commit.message, 'sta') }}
           fail_on_unmatched_files: true
-          files: release_artifacts/*.apk
+          files: |
+            release_artifacts/*.apk
+            release_artifacts/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

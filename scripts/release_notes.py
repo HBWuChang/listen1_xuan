@@ -61,7 +61,7 @@ def classify(name):
     match = re.search(r"-([0-9a-fA-F]{7,40})(?:\.app)?\.(?:apk|zip)$", normalized)
     if not match:
         return None
-    if normalized.startswith("app-") and normalized.endswith(".apk"):
+    if normalized.startswith("app-") and normalized.endswith((".apk", ".zip")):
         platform = "Android"
         arch = next((a for a in ARCHES[:-1] if normalized.startswith(f"app-{a}-release-")), "universal")
     elif normalized.startswith("windows-build-artifact-") and normalized.endswith(".zip"):
@@ -89,9 +89,9 @@ def size_label(size):
     return f"{size / (1024 * 1024):.2f} MiB"
 
 
-def download(asset, recommended=False):
+def download(asset, recommended=False, label=None):
     info = classify(asset["name"])
-    label = "推荐下载" if recommended else "下载"
+    label = label or ("推荐下载" if recommended else "下载")
     value = f"[{label}]({asset['browser_download_url']}) · {size_label(asset['size'])} · `{info['hash']}`"
     return f"**{value}**" if recommended else value
 
@@ -118,6 +118,8 @@ def generate_guide(assets):
         "",
         "### Android",
         "",
+        "APK 可直接安装；ZIP 下载后需解压出 APK 再安装，应用内更新优先下载同名 ZIP。两者包含相同的已签名安装包。",
+        "",
         "| 设备架构 | 不内置 Cronet · 精简版（推荐） | 不内置 Cronet · 含 FFmpeg | 内置 Cronet · 精简版 | 内置 Cronet · 含 FFmpeg |",
         "|---|---|---|---|---|",
     ]
@@ -125,7 +127,7 @@ def generate_guide(assets):
         cells = []
         for embedded, ffmpeg in ((False, False), (False, True), (True, False), (True, True)):
             matches = [a for a in packages if (i := classify(a["name"]))["platform"] == "Android" and i["arch"] == arch and i["embedded"] == embedded and i["ffmpeg"] == ffmpeg]
-            cells.append("<br>".join(download(a, arch == "arm64-v8a" and not embedded and not ffmpeg) for a in matches) or "暂未发布")
+            cells.append("<br>".join(download(a, arch == "arm64-v8a" and not embedded and not ffmpeg, "ZIP 下载（需解压）" if a["name"].endswith(".zip") else None) for a in matches) or "暂未发布")
         lines.append(f"| {ARCH_LABELS[arch]} | " + " | ".join(cells) + " |")
     lines += ["", "### macOS", ""]
     macos_rows = [

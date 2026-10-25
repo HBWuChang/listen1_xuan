@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:dio/dio.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide CircularProgressIndicator;
 import 'package:get/get.dart';
@@ -17,11 +18,11 @@ import 'package:system_info3/system_info3.dart';
 import '../funcs.dart';
 import '../global_settings_animations.dart';
 import '../services/ffmpeg_config.dart';
+import '../services/android_update_package.dart';
 import '../services/macos_updater.dart';
 import '../settings.dart';
 import '../models/GitHubRelease.dart';
 import '../models/ReleaseAsset.dart';
-import '../widgets/progress_indicator_xuan.dart';
 import '../widgets/draggable_toast/draggable_toast.dart';
 import 'DioController.dart';
 import 'hyper_download_controller.dart';
@@ -402,6 +403,16 @@ class UpdController extends GetxController {
         .where((i) => _matchesFfmpegVariant(i['name'].toString()))
         .toList();
 
+    filteredArt = filteredArt
+        .where((art) => isAndroidUpdatePackage(art['name'].toString()))
+        .toList();
+    filteredArt = preferAndroidZip(
+      filteredArt,
+      (art) => art['name'].toString(),
+      buildKey: (art) =>
+          art['workflow_run']?['id']?.toString() ?? art['id'].toString(),
+    );
+
     return await Get.dialog(
       AlertDialog(
         title: Text('选择适合您设备的版本'),
@@ -429,81 +440,16 @@ class UpdController extends GetxController {
   }
 
   /// 解压并安装 APK
-  Future<void> _extractAndInstallApk(
-    String tempPath,
-    String filePath, {
-    bool isRelease = false,
-  }) async {
-    if (isRelease) {
-      try {
-        InstallPlugin.installApk(filePath)
-            .then((result) {
-              debugPrint('install apk $result');
-            })
-            .catchError((error) {
-              debugPrint('install apk error: $error');
-            });
-      } catch (e) {
-        debugPrint('安装APK失败: $e');
-        try {
-          InstallPlugin.installApk(filePath)
-              .then((result) {
-                debugPrint('install apk $result');
-              })
-              .catchError((error) {
-                debugPrint('install apk error: $error');
-              });
-        } catch (e) {
-          debugPrint('安装APK失败: $e');
-          try {
-            InstallPlugin.installApk(filePath)
-                .then((result) {
-                  debugPrint('install apk $result');
-                })
-                .catchError((error) {
-                  debugPrint('install apk error: $error');
-                });
-          } catch (e) {
-            debugPrint('安装APK失败: $e');
-          }
-        }
-      }
-      return;
-    }
-    final bytes = File(filePath).readAsBytesSync();
-    final archive = ZipDecoder().decodeBytes(bytes);
-    String apkfilePath = '';
-
-    for (final file in archive) {
-      final filename = file.name;
-      if (file.isFile) {
-        final data = file.content as List<int>;
-        final extractPath = p.join(tempPath, filename);
-        File(extractPath)
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(data);
-        if (p.extension(filename) == '.apk') {
-          apkfilePath = extractPath;
-        }
-      } else {
-        Directory(p.join(tempPath, filename)).create(recursive: true);
-      }
-    }
-
-    if (apkfilePath.isNotEmpty) {
-      try {
-        InstallPlugin.installApk(apkfilePath)
-            .then((result) {
-              debugPrint('install apk $result');
-            })
-            .catchError((error) {
-              debugPrint('install apk error: $error');
-            });
-      } catch (e) {
-        debugPrint('安装APK失败: $e');
-      }
-    } else {
-      showErrorSnackbar('APK 文件未找到', null);
+  Future<void> _extractAndInstallApk(String tempPath, String filePath) async {
+    try {
+      final apkPath = filePath.toLowerCase().endsWith('.apk')
+          ? filePath
+          : await extractAndroidUpdate(filePath, tempPath);
+      final result = await InstallPlugin.installApk(apkPath);
+      debugPrint('install apk $result');
+    } catch (error) {
+      debugPrint('解压或安装 APK 失败: $error');
+      showErrorSnackbar('解压或安装失败', error.toString());
     }
   }
 
@@ -519,8 +465,9 @@ class UpdController extends GetxController {
       final filePath = p.join(tempPath, 'canary.zip');
 
       final artifacts = await _fetchArtifacts(token);
-      final artifactBase =
-          isFfmpegEnabled ? 'macos-app-artifact-ffmpeg' : 'macos-app-artifact';
+      final artifactBase = isFfmpegEnabled
+          ? 'macos-app-artifact-ffmpeg'
+          : 'macos-app-artifact';
       final tag = macosArchTag;
       final art =
           _findArtifactByPlatform(
@@ -690,8 +637,7 @@ class UpdController extends GetxController {
           .where(
             (element) =>
                 element is File &&
-                (p.extension(element.path).endsWith('.apk') ||
-                    p.basename(element.path) == 'canary.zip'),
+                isAndroidUpdateCache(p.basename(element.path)),
           )
           .toList();
       if (filelist.isEmpty) {
@@ -761,7 +707,7 @@ class UpdController extends GetxController {
             .where(
               (entity) =>
                   entity is File &&
-                  p.basename(entity.path).contains('.apk') &&
+                  isAndroidUpdateCache(p.basename(entity.path)) &&
                   !p
                       .basenameWithoutExtension(entity.path)
                       .contains(latestBuildNumber),
@@ -785,6 +731,22 @@ class UpdController extends GetxController {
         for (final asset in release.assets) {
           final fileName = asset.name;
           final filePath = p.join(tempPath, fileName);
+          if (isAndroid &&
+              isAndroidUpdatePackage(fileName) &&
+              fileName.endsWith('.zip')) {
+            for (final suffix in ['.apk', '.apk.extracting']) {
+              final extracted = File(
+                p.join(
+                  tempPath,
+                  '${p.basenameWithoutExtension(fileName)}$suffix',
+                ),
+              );
+              if (await extracted.exists()) {
+                await extracted.delete();
+                deletedCount++;
+              }
+            }
+          }
 
           // 检查文件是否存在并删除
           if (await File(filePath).exists()) {
@@ -848,9 +810,8 @@ class UpdController extends GetxController {
         null,
       );
       // 删除除最新版本外的其他缓存文件
-      if (releases.length > 1) {
-        final oldReleases = releases.sublist(1);
-        await delReleasesCache(oldReleases, latestBuildNumber);
+      if (isAndroid || releases.length > 1) {
+        await delReleasesCache(releases.skip(1).toList(), latestBuildNumber);
       }
 
       if (localBuildNumber != latestBuildNumber &&
@@ -1026,7 +987,7 @@ class UpdController extends GetxController {
       String downloadUrl = latestBuild.browserDownloadUrl;
 
       final tempPath = (await xuanGetdownloadDirectory()).path;
-      final fileName = downloadUrl.split('/').last;
+      final fileName = latestBuild.name;
       final filePath = p.join(tempPath, fileName);
 
       // 检查本地是否已有相同的文件且哈希匹配
@@ -1062,9 +1023,20 @@ class UpdController extends GetxController {
           progressText.value = '${(info.progress * 100).toStringAsFixed(1)}%';
         },
         onComplete: () async {
-          progressText.value = '正在处理';
-          await _processReleaseUpdate(filePath, tempPath);
-          isUpdating.value = false;
+          try {
+            if (isAndroid &&
+                latestBuild.digest?.isNotEmpty == true &&
+                await _checkReleaseFileHash(filePath, latestBuild.digest)) {
+              await File(filePath).delete();
+              throw const FormatException('安装包校验失败，请重新下载');
+            }
+            progressText.value = '正在处理';
+            await _processReleaseUpdate(filePath, tempPath);
+          } catch (error) {
+            showErrorSnackbar('更新失败', error.toString());
+          } finally {
+            isUpdating.value = false;
+          }
         },
         onFailed: (String reason) {
           showErrorSnackbar('下载失败', reason);
@@ -1094,6 +1066,11 @@ class UpdController extends GetxController {
     }
 
     try {
+      if (isAndroid) {
+        final digest = await sha256.bind(File(filePath).openRead()).first;
+        return digest.toString() !=
+            expectedHash.replaceFirst('sha256:', '').trim();
+      }
       List<String> hashCommand;
       if (isWindows) {
         hashCommand = ['certutil', '-hashfile', filePath, 'SHA256'];
@@ -1166,7 +1143,7 @@ class UpdController extends GetxController {
       return universal;
     } else if (isAndroid) {
       List<ReleaseAsset> apkAssets = assets
-          .where((asset) => asset.name.toLowerCase().endsWith('.apk'))
+          .where((asset) => isAndroidUpdatePackage(asset.name))
           .toList();
       if (apkAssets.isNotEmpty) {
         switch (SysInfo.kernelArchitecture.name) {
@@ -1200,6 +1177,7 @@ class UpdController extends GetxController {
             (asset) => !asset.name.contains("without.embedded.Cronet"),
           );
         }
+        apkAssets = preferAndroidZip(apkAssets, (asset) => asset.name);
         return apkAssets.isNotEmpty ? apkAssets.first : null;
       }
     }
@@ -1265,9 +1243,7 @@ class UpdController extends GetxController {
                   .toList();
       }
     } else if (isAndroid) {
-      list = list
-          .where((asset) => asset.name.toLowerCase().endsWith('.apk'))
-          .toList();
+      list = list.where((asset) => isAndroidUpdatePackage(asset.name)).toList();
       switch (SysInfo.kernelArchitecture.name) {
         case "ARM64":
           list = list.where((asset) => asset.name.contains('arm64')).toList();
@@ -1295,7 +1271,7 @@ class UpdController extends GetxController {
     }
 
     list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    return list;
+    return isAndroid ? preferAndroidZip(list, (asset) => asset.name) : list;
   }
 
   /// 查找与当前构建 hash 完全相同、目标 FFmpeg 变体的资产。
@@ -1573,7 +1549,7 @@ class UpdController extends GetxController {
       } else if (isMacOS) {
         await _performMacosExtractAndUpdate(tempPath, filePath);
       } else if (isAndroid) {
-        await _extractAndInstallApk(tempPath, filePath, isRelease: true);
+        await _extractAndInstallApk(tempPath, filePath);
       } else {
         showWarningSnackbar('当前平台暂不支持自动更新', null);
       }
