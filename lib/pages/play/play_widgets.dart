@@ -57,9 +57,6 @@ Widget withHorDragDetector(Widget child) {
 }
 
 Future<void> _onTap(BuildContext context) async {
-  if (!globalHorizon) {
-    showVolumeSlider();
-  }
   final track = await getnowplayingsong();
   var ret = await song_dialog(context, track['track'], position: position);
 }
@@ -178,10 +175,13 @@ ButtonStyle get controlBtnsStyle => ButtonStyle(
   alignment: Alignment.center,
 );
 Widget get showVolumeSliderBtn {
-  return IconButton(
-    style: controlBtnsStyle,
-    icon: Icon(Icons.volume_up, size: 64.w),
-    onPressed: showVolumeSlider,
+  return Listener(
+    onPointerSignal: onVolumePointerSignal,
+    child: IconButton(
+      style: controlBtnsStyle,
+      icon: Icon(Icons.volume_up, size: 64.w),
+      onPressed: showVolumeSlider,
+    ),
   );
 }
 

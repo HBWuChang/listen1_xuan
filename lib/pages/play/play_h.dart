@@ -203,7 +203,6 @@ Widget playH() {
                   (_buttonKey.currentContext!.findRenderObject() as RenderBox)
                       .localToGlobal(Offset.zero),
             );
-           
           },
         ),
         Obx(
@@ -259,44 +258,48 @@ Widget playH() {
           children: [
             // 强行移动的图标
             Positioned(
-              top: 18, // 距离顶部 50 像素
-              left: 0, // 距离左侧 100 像素
+              top: 18,
+              left: 0,
               child: Icon(
                 Icons.volume_up,
                 size: 24, // 图标大小
               ),
             ),
             Listener(
-              onPointerSignal: (pointerSignal) {
-                if (pointerSignal is PointerScrollEvent) {
-                  // 获取滚轮的滚动方向
-                  final scrollDelta = pointerSignal.scrollDelta.dy;
-                  final stepSize = 1; // 每次滚动的音量步长
-
-                  double newVolume = _playController.currentVolume;
-                  if (scrollDelta > 0) {
-                    // 向下滚动，减小音量
-                    newVolume = (newVolume - stepSize);
-                  } else if (scrollDelta < 0) {
-                    // 向上滚动，增大音量
-                    newVolume = (newVolume + stepSize);
-                  }
-                  newVolume = newVolume.clamp(
-                    0.0,
-                    100.0,
-                  ); // 确保音量在 0.0 到 100.0 之间
-                  _playController.currentVolume = newVolume; // 更新音量
-                }
-              },
-              child: Obx(
-                () => Slider(
-                  min: 0,
-                  max: 100,
-                  value: _playController.currentVolume,
-                  onChanged: (value) {
-                    _playController.currentVolume = value;
-                  },
-                ),
+              onPointerSignal: onVolumePointerSignal,
+              child: Stack(
+                children: [
+                  Obx(
+                    () => Slider(
+                      min: 0,
+                      max: 100,
+                      value: _playController.currentVolume,
+                      onChanged: (value) {
+                        _playController.currentVolume = value;
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 20, // 死区
+                    child: GestureDetector(
+                      behavior: .opaque,
+                      onPanDown: (details) => {},
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 20, // 死区
+                    child: GestureDetector(
+                      behavior: .opaque,
+                      onPanDown: (details) => {},
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -304,4 +307,29 @@ Widget playH() {
       ],
     ),
   );
+}
+
+void Function(PointerSignalEvent)? onVolumePointerSignal(
+  PointerSignalEvent pointerSignal,
+) {
+  if (pointerSignal is PointerScrollEvent) {
+    // 获取滚轮的滚动方向
+    final scrollDelta = pointerSignal.scrollDelta.dy;
+    final stepSize = 1; // 每次滚动的音量步长
+
+    double newVolume = _playController.currentVolume;
+    if (scrollDelta > 0) {
+      // 向下滚动，减小音量
+      newVolume = (newVolume - stepSize);
+    } else if (scrollDelta < 0) {
+      // 向上滚动，增大音量
+      newVolume = (newVolume + stepSize);
+    }
+    newVolume = newVolume.clamp(0.0, 100.0); // 确保音量在 0.0 到 100.0 之间
+    _playController.currentVolume = newVolume; // 更新音量
+  }
+  if (!globalHorizon) {
+    continueshowVolumeSlider();
+  }
+  return null;
 }
