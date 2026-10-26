@@ -1,27 +1,25 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:get/get.dart';
 import 'package:listen1_xuan/controllers/paste_controller.dart';
 import 'package:path/path.dart' as p;
-import 'package:listen1_xuan/controllers/websocket_card_controller.dart';
 import 'package:listen1_xuan/funcs.dart';
-import 'package:listen1_xuan/global_settings_animations.dart';
 import 'package:logger/logger.dart';
 import 'package:listen1_xuan/services/app_logger.dart';
 import 'package:listen1_xuan/models/Track.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/websocket_message.dart';
 import '../settings.dart';
 import 'BroadcastWsController.dart';
 import 'play_controller.dart';
 import '../play.dart';
-import 'settings_controller.dart';
 import 'cache_controller.dart';
 import '../services/websocket_listener.dart';
+import '../services/paste_file_transfer.dart';
 
 /// WebSocket 服务器控制器
 /// 支持 IPv4/IPv6 配置，包含 ping/pong 心跳机制和资源释放
@@ -47,11 +45,27 @@ class WebSocketServerController extends GetxController {
   /// 当前粘贴的文件路径列表（供客户端通过 /getPasteFile 下载）
   List<String> nowPasteFiles = [];
 
-  /// 当前粘贴的图片数据（保存在内存中，供客户端通过 /getPasteImage 下载）
-  Uint8List? nowPasteImageData;
+  PasteImageSnapshot? _pasteImage;
+  int _pasteImageGeneration = 0;
+  int _transferGeneration = 0;
 
-  /// 粘贴图片的文件名
-  String? nowPasteImageFileName;
+  /// Persist a new clipboard snapshot and release the old one after its readers.
+  Future<bool> setPasteImage(List<int> bytes, String fileName) async {
+    final generation = ++_pasteImageGeneration;
+    final image = await PasteImageSnapshot.create(
+      await getPasteFileDownloadDir(),
+      bytes,
+      fileName,
+    );
+    if (generation != _pasteImageGeneration || !isRunning) {
+      await image.retire();
+      return false;
+    }
+    final previous = _pasteImage;
+    _pasteImage = image;
+    await previous?.retire();
+    return true;
+  }
 
   /// 服务器配置
   late final String _host;
@@ -139,6 +153,12 @@ class WebSocketServerController extends GetxController {
 
   /// 停止 WebSocket 服务器
   Future<void> stopServer() async {
+    ++_transferGeneration;
+    ++_pasteImageGeneration;
+    final image = _pasteImage;
+    _pasteImage = null;
+    nowPasteFiles = [];
+    await image?.retire();
     try {
       Get.find<BroadcastWsController>().stopBroadcast();
     } catch (e) {
@@ -797,6 +817,7 @@ class WebSocketServerController extends GetxController {
 
   /// 处理 /onPasteFile POST 请求 - 接收客户端粘贴的文件并保存到下载目录
   Future<void> _handleOnPasteFile(HttpRequest request) async {
+    final generation = _transferGeneration;
     try {
       if (request.method != 'POST') {
         request.response
@@ -828,21 +849,13 @@ class WebSocketServerController extends GetxController {
       // 获取下载目录
       final downloadDir = await getPasteFileDownloadDir();
 
-      // 读取整个请求体
-      final bytes = await _collectRequestBytes(request);
-      final parts = PasteController.parseMultipartResponse(bytes, boundary);
-
-      List<String> savedFiles = [];
-      for (final part in parts) {
-        final fileName = part['filename'] as String?;
-        final data = part['data'] as List<int>?;
-        if (fileName != null && data != null) {
-          final savePath = _getUniqueFilePath(downloadDir, fileName);
-          await File(savePath).writeAsBytes(data);
-          savedFiles.add(savePath);
-          _logger.i('$_tag 保存粘贴文件: $savePath');
-        }
-      }
+      final savedFiles = await PasteFileTransfer.receive(
+        stream: request,
+        isCancelled: () => generation != _transferGeneration,
+        saveDir: downloadDir,
+        boundary: boundary,
+        expectedLength: request.contentLength,
+      );
 
       request.response
         ..statusCode = HttpStatus.ok
@@ -878,14 +891,14 @@ class WebSocketServerController extends GetxController {
         return;
       }
 
-      const boundary = '----PasteFileBoundary';
+      final boundary = '----Listen1Paste${const Uuid().v4()}';
       request.response.statusCode = HttpStatus.ok;
       request.response.headers.set(
         HttpHeaders.contentTypeHeader,
         'multipart/mixed; boundary=$boundary',
       );
 
-      for (final filePath in nowPasteFiles) {
+      for (final filePath in List<String>.of(nowPasteFiles)) {
         final file = File(filePath);
         if (!await file.exists()) continue;
 
@@ -903,8 +916,7 @@ class WebSocketServerController extends GetxController {
         request.response.write('\r\n');
 
         // 写文件内容
-        final fileBytes = await file.readAsBytes();
-        request.response.add(fileBytes);
+        await request.response.addStream(file.openRead());
         request.response.write('\r\n');
       }
 
@@ -926,6 +938,7 @@ class WebSocketServerController extends GetxController {
 
   /// 处理 /onPasteImage POST 请求 - 接收客户端粘贴的图片并保存到下载目录
   Future<void> _handleOnPasteImage(HttpRequest request) async {
+    final generation = _transferGeneration;
     try {
       if (request.method != 'POST') {
         request.response
@@ -941,21 +954,14 @@ class WebSocketServerController extends GetxController {
           'paste_image_${DateTime.now().millisecondsSinceEpoch}.png';
       final decodedFileName = Uri.decodeComponent(fileName);
 
-      // 读取整个请求体作为图片数据
-      final bytes = await _collectRequestBytes(request);
-
-      if (bytes.isEmpty) {
-        request.response
-          ..statusCode = HttpStatus.badRequest
-          ..write('Empty body');
-        request.response.close();
-        return;
-      }
-
-      // 保存到下载目录
-      final downloadDir = await getPasteFileDownloadDir();
-      final savePath = _getUniqueFilePath(downloadDir, decodedFileName);
-      await File(savePath).writeAsBytes(bytes);
+      final savedFiles = await PasteFileTransfer.receive(
+        stream: request,
+        isCancelled: () => generation != _transferGeneration,
+        saveDir: await getPasteFileDownloadDir(),
+        fileName: decodedFileName,
+        expectedLength: request.contentLength,
+      );
+      final savePath = savedFiles.single;
 
       request.response
         ..statusCode = HttpStatus.ok
@@ -976,10 +982,11 @@ class WebSocketServerController extends GetxController {
     }
   }
 
-  /// 处理 /getPasteImage GET 请求 - 从内存中返回粘贴的图片数据
+  /// 处理 /getPasteImage GET 请求 - 流式返回磁盘中的图片快照
   Future<void> _handleGetPasteImage(HttpRequest request) async {
     try {
-      if (nowPasteImageData == null || nowPasteImageData!.isEmpty) {
+      final image = _pasteImage;
+      if (image == null) {
         request.response
           ..statusCode = HttpStatus.notFound
           ..headers.contentType = ContentType.json
@@ -988,27 +995,23 @@ class WebSocketServerController extends GetxController {
         return;
       }
 
-      final fileName =
-          nowPasteImageFileName ??
-          'paste_image_${DateTime.now().millisecondsSinceEpoch}.png';
-      final encodedFileName = Uri.encodeComponent(fileName);
-
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..headers.set(HttpHeaders.contentTypeHeader, 'application/octet-stream')
-        ..headers.set(
-          HttpHeaders.contentLengthHeader,
-          nowPasteImageData!.length.toString(),
-        )
-        ..headers.set(
-          'content-disposition',
-          'attachment; filename*=UTF-8\'\'$encodedFileName',
-        );
-
-      request.response.add(nowPasteImageData!);
-      await request.response.close();
-
-      _logger.i('$_tag 返回粘贴图片: $fileName (${nowPasteImageData!.length} bytes)');
+      await image.send((file) async {
+        final encodedFileName = Uri.encodeComponent(image.name);
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.set(
+            HttpHeaders.contentTypeHeader,
+            'application/octet-stream',
+          )
+          ..headers.contentLength = await file.length()
+          ..headers.set(
+            'content-disposition',
+            "attachment; filename*=UTF-8''$encodedFileName",
+          );
+        await request.response.addStream(file.openRead());
+        await request.response.close();
+      });
+      _logger.i('$_tag 返回粘贴图片: ${image.name}');
     } catch (e) {
       _logger.e('$_tag 处理 /getPasteImage 请求失败', error: e);
       try {
@@ -1018,33 +1021,6 @@ class WebSocketServerController extends GetxController {
         request.response.close();
       } catch (_) {}
     }
-  }
-
-  /// 获取不重名的文件路径（若重名则添加后缀）
-  String _getUniqueFilePath(String dirPath, String fileName) {
-    var filePath = p.join(dirPath, fileName);
-    if (!File(filePath).existsSync()) return filePath;
-
-    final nameWithoutExt = p.basenameWithoutExtension(fileName);
-    final ext = p.extension(fileName);
-    int counter = 1;
-    while (File(filePath).existsSync()) {
-      filePath = p.join(dirPath, '$nameWithoutExt($counter)$ext');
-      counter++;
-    }
-    return filePath;
-  }
-
-  /// 收集请求体所有字节
-  Future<List<int>> _collectRequestBytes(HttpRequest request) async {
-    final completer = Completer<List<int>>();
-    final bytes = <int>[];
-    request.listen(
-      bytes.addAll,
-      onDone: () => completer.complete(bytes),
-      onError: completer.completeError,
-    );
-    return completer.future;
   }
 
   /// 处理根据 ID 下载文件的请求
