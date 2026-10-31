@@ -627,7 +627,10 @@ void showLyricStyleSettings(BuildContext context) {
   );
 }
 
-Widget _buildLyricContent(BuildContext context) {
+Widget _buildLyricContent(
+  BuildContext context, {
+  VoidCallback? onLayoutReady,
+}) {
   return Obx(() {
     // 监听翻译开关状态变化，确保UI能够响应
     if (lyricController.isLyricLoading.value) {
@@ -646,6 +649,7 @@ Widget _buildLyricContent(BuildContext context) {
     return LyricView(
       controller: lyricController.lyricController,
       style: _createThemedLyricStyle(context),
+      onLayoutReady: onLayoutReady,
     );
   });
 }

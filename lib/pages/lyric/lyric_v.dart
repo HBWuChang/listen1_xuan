@@ -9,13 +9,41 @@ class LyricVPage extends StatefulWidget {
 
 class _LyricVPageState extends State<LyricVPage>
     with TickerProviderStateMixin, LyricFormattingMixin {
+  /// 歌词布局首次就绪后淡入，避免分帧计算结束后文字硬切。
+  bool _lyricsReady = false;
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
       child: Column(
         children: [
-          Expanded(child: RepaintBoundary(child: _buildLyricContent(context))),
+          Expanded(
+            child: RepaintBoundary(
+              child: Obx(() {
+                // 换歌加载时重新淡入
+                final bool loading = lyricController.isLyricLoading.value;
+                if (loading) _lyricsReady = false;
+                // 加载中 / 无歌词时保持可见，歌词真正可绘制后再淡入。
+                final bool showPlaceholder =
+                    loading || !lyricController.hasLyric.value;
+                return AnimatedOpacity(
+                  opacity: (_lyricsReady || showPlaceholder) ? 1 : 0,
+                  duration: const Duration(milliseconds: 160),
+                  curve: Curves.easeOut,
+                  child: RepaintBoundary(
+                    child: _buildLyricContent(
+                      context,
+                      onLayoutReady: () {
+                        if (!mounted || _lyricsReady) return;
+                        setState(() => _lyricsReady = true);
+                      },
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
           _buildTranslationToggle(context),
           IgnorePointer(child: 500.wsbh),
         ],
