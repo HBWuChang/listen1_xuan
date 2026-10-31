@@ -52,10 +52,19 @@ class _PageScrollToTopState extends State<PageScrollToTop> {
     super.dispose();
   }
 
+  /// During rotation the same controller can briefly be attached to two
+  /// viewports (old + new route). Reading `offset` / calling `jumpTo` would trip
+  /// the "attached to multiple scroll views" assertion, so treat that state as
+  /// "not ready" instead.
+  ScrollPosition? get _singlePosition {
+    if (!scroll.hasClients || scroll.positions.length != 1) return null;
+    return scroll.positions.first;
+  }
+
   Future<bool> _toTop() async {
     if (!mounted ||
         !widget.enabled ||
-        !scroll.hasClients ||
+        _singlePosition == null ||
         Get.isDialogOpen == true ||
         Get.isBottomSheetOpen == true) {
       return false;
@@ -68,7 +77,7 @@ class _PageScrollToTopState extends State<PageScrollToTop> {
       return false;
     }
     final controller = scroll;
-    final position = controller.position;
+    final position = controller.positions.first;
     await list.animateToItem(
       index: () =>
           mounted && list.isAttached && list.numberOfItems > 0 ? 0 : null,
@@ -81,7 +90,7 @@ class _PageScrollToTopState extends State<PageScrollToTop> {
       precalculateTargetItemCount: true,
     );
     return mounted &&
-        controller.positions.contains(position) &&
+        _singlePosition == position &&
         controller.offset <= widget.topInset + 0.5;
   }
 
@@ -94,17 +103,19 @@ class _PageScrollToTopState extends State<PageScrollToTop> {
     return AnimatedBuilder(
       animation: scroll,
       child: content,
-      builder: (context, child) => StatusBarScrollToTop(
-        enabled: widget.enabled,
-        canScrollToTop:
-            scroll.hasClients &&
-            scroll.offset > (widget.superList ? widget.topInset : 0) + 0.5,
-        onScrollToTop: _toTop,
-        onDebugEvent: kDebugMode
-            ? (event) => debugPrint('StatusBarScrollToTop: $event')
-            : null,
-        child: child!,
-      ),
+      builder: (context, child) {
+        final position = _singlePosition;
+        final threshold = (widget.superList ? widget.topInset : 0) + 0.5;
+        return StatusBarScrollToTop(
+          enabled: widget.enabled,
+          canScrollToTop: position != null && position.pixels > threshold,
+          onScrollToTop: _toTop,
+          onDebugEvent: kDebugMode
+              ? (event) => debugPrint('StatusBarScrollToTop: $event')
+              : null,
+          child: child!,
+        );
+      },
     );
   }
 }

@@ -30,6 +30,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   late ScrollController scrollController;
   final ListController _listController = ListController();
   RxBool useReorderableList = false.obs;
+  Worker? _searchQueryWorker;
   @override
   void initState() {
     super.initState();
@@ -41,11 +42,46 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     );
     scrollController.addListener(_onScroll);
     controller.scrollToCurrentTrack = scrollToCurrentTrack;
+    // 搜索条件变化后结果列表会被整体替换，旧偏移量对新列表没有意义：
+    // 一旦偏移量超过新列表的最大可滚动距离，列表会先渲染成空白，再回弹滑入。
+    _searchQueryWorker = ever<String>(controller.searchQuery, (query) {
+      // 清空搜索时列表会变长，旧偏移量仍然有效，不需要回顶。
+      if (!mounted || query.isEmpty) return;
+      _resetScrollToTop();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 此时列表已经在目标位置附近，这里只是精确居中对齐（微调，不会批量新建子项）
       scrollToCurrentTrack(animated: false);
       controller.showScrollButton.value = false; // 初始化时隐藏按钮
     });
+  }
+
+  /// 把列表滚动回顶部。
+  ///
+  /// 需要在查询变化时同步调用一次（此时旧列表还在，jumpTo 不会先按旧偏移量
+  /// 布局出一帧空白），并在帧结束后再调用一次：搜索结果为空时列表会被空状态
+  /// 替换、滚动位置随之销毁，重新出现结果时会按 `initialScrollOffset` 重建。
+  void _resetScrollToTop() {
+    void jumpToTop() {
+      if (!mounted || !scrollController.hasClients) return;
+      final position = scrollController.position;
+      if (position.pixels != position.minScrollExtent) {
+        scrollController.jumpTo(position.minScrollExtent);
+      }
+    }
+
+    jumpToTop();
+    WidgetsBinding.instance.addPostFrameCallback((_) => jumpToTop());
+  }
+
+  /// super_sliver_list 在列表内容变化时会在布局阶段修正滚动偏移，默认的
+  /// [RangeMaintainingScrollPhysics] 会因此跳过边界约束，让越界的偏移量走回弹
+  /// 动画（列表先空白再缓慢滑入）。包内提供的 [SuperRangeMaintainingScrollPhysics]
+  /// 会把修正后的位置立即夹回有效范围。
+  ScrollPhysics _listPhysics(BuildContext context) {
+    return SuperRangeMaintainingScrollPhysics(
+      parent: ScrollConfiguration.of(context).getScrollPhysics(context),
+    );
   }
 
   /// 用固定行高估算当前播放项的位置，作为首帧的初始滚动偏移。
@@ -60,6 +96,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
   @override
   void dispose() {
+    _searchQueryWorker?.dispose();
     scrollController.removeListener(_onScroll);
     scrollController.dispose();
     controller.scrollToCurrentTrack = null;
@@ -87,7 +124,14 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           children: [
             _buildHeader(context, controller),
             _buildSearchBar(context, controller),
-            Expanded(child: _buildPlayingList(context, controller)),
+            Expanded(
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(
+                  context,
+                ).copyWith(physics: _listPhysics(context)),
+                child: _buildPlayingList(context, controller),
+              ),
+            ),
           ],
         ),
       ),
@@ -279,7 +323,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           ),
           child: TextField(
             controller: controller.searchController,
-            autofocus: true,
+            autofocus: false,
             focusNode: controller.searchFocusNode,
             decoration: InputDecoration(
               hintText: '搜索歌曲、艺术家或专辑...',

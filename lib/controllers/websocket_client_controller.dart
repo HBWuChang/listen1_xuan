@@ -65,6 +65,24 @@ class WebSocketClientController extends GetxController {
   /// 连接取消控制
   bool _connectionCancelled = false;
 
+  /// 每次连接尝试的序号，取消/新连接后旧尝试的结果直接丢弃
+  int _connectAttemptId = 0;
+
+  /// 当前连接尝试使用的 HttpClient（取消时强制中断 DNS/TCP/HTTP 升级）
+  HttpClient? _connectingHttpClient;
+
+  /// 让 connect() 立即从等待中返回，不必依赖底层 socket 超时
+  Completer<void>? _connectAbortCompleter;
+
+  /// 已连接 WebSocket 的订阅，断开时取消，避免旧连接回调污染新状态
+  StreamSubscription<dynamic>? _wsSubscription;
+
+  /// 手动断开标记，避免 onDone/onError 触发自动重连
+  bool _manualClosing = false;
+
+  /// 建连超时，避免地址不可达时长时间卡在“连接中”
+  static const Duration _connectTimeout = Duration(seconds: 10);
+
   /// 音量控制
   final RxDouble _volume = 0.5.obs;
   final RxBool _isDraggingVolume = false.obs;
@@ -245,6 +263,19 @@ class WebSocketClientController extends GetxController {
 
   @override
   void onClose() {
+    // 清理进行中的连接尝试
+    _connectionCancelled = true;
+    _connectAttemptId++;
+    final abortCompleter = _connectAbortCompleter;
+    _connectAbortCompleter = null;
+    if (abortCompleter != null && !abortCompleter.isCompleted) {
+      abortCompleter.complete();
+    }
+    _connectingHttpClient?.close(force: true);
+    _connectingHttpClient = null;
+    _wsSubscription?.cancel();
+    _wsSubscription = null;
+
     stopStatusPolling();
     _disconnect(manual: true);
     super.onClose();
@@ -480,9 +511,19 @@ class WebSocketClientController extends GetxController {
   Future<void> connect() async {
     if (isConnected || i_isConnecting.value) return;
 
+    final attemptId = ++_connectAttemptId;
+    bool cancelled() =>
+        _connectionCancelled || attemptId != _connectAttemptId;
+    // 已被新的连接尝试取代（不能覆盖新尝试的状态文案）
+    bool superseded() => attemptId != _connectAttemptId;
+
+    HttpClient? httpClient;
+    Completer<void>? abortCompleter;
+
     try {
       i_isConnecting.value = true;
       _connectionCancelled = false; // 重置取消标志
+      _manualClosing = false;
       _updateStatusMessage('正在连接...');
 
       // 解析服务器地址（支持 IPv4/IPv6）
@@ -502,22 +543,43 @@ class WebSocketClientController extends GetxController {
       _serverUrl.value = uri;
 
       // 检查是否已取消连接
-      if (_connectionCancelled) {
-        _updateStatusMessage('连接已取消');
+      if (cancelled()) {
+        if (!superseded()) _updateStatusMessage('连接已取消');
         return;
       }
 
-      // 创建WebSocket连接
-      _webSocket = await WebSocket.connect(uri);
+      // 自建 HttpClient：可设建连超时，也可在取消时强制中断握手
+      httpClient = HttpClient()..connectionTimeout = _connectTimeout;
+      _connectingHttpClient = httpClient;
+
+      abortCompleter = Completer<void>();
+      _connectAbortCompleter = abortCompleter;
+
+      final connectFuture = WebSocket.connect(uri, customClient: httpClient);
+
+      // 取消后底层握手若仍成功，立即关闭，避免遗留连接
+      connectFuture.then<void>((ws) {
+        if (cancelled()) {
+          unawaited(ws.close().catchError((_) {}));
+        }
+      }, onError: (_) {});
+
+      // 与取消信号赛跑：取消时不必等底层 DNS/TCP 超时
+      final ws = await Future.any<WebSocket?>([
+        connectFuture,
+        abortCompleter.future.then<WebSocket?>((_) => null),
+      ]);
 
       // 再次检查是否已取消连接
-      if (_connectionCancelled) {
-        await _webSocket?.close();
-        _webSocket = null;
-        _updateStatusMessage('连接已取消');
+      if (ws == null || cancelled()) {
+        if (ws != null) {
+          unawaited(ws.close().catchError((_) {}));
+        }
+        if (!superseded()) _updateStatusMessage('连接已取消');
         return;
       }
 
+      _webSocket = ws;
       i_isConnected.value = true;
       _updateStatusMessage('已连接');
       _showSuccess('WebSocket 客户端连接成功');
@@ -539,29 +601,43 @@ class WebSocketClientController extends GetxController {
       }
 
       // 监听消息
-      _webSocket!.listen(
+      _wsSubscription?.cancel();
+      _wsSubscription = _webSocket!.listen(
         _onMessage,
         onDone: _onDisconnected,
         onError: _onError,
       );
     } catch (e) {
+      if (cancelled()) {
+        // 已取消的连接尝试，不再提示错误，也不触发自动重连
+        _logger.i('$_tag 已取消的连接尝试结束: $e');
+        return;
+      }
+
       i_isConnected.value = false;
       _serverUrl.value = '';
+      _updateStatusMessage('连接失败');
+      _showError('连接失败: $e');
+      _logger.e('$_tag 连接失败', error: e);
 
-      if (_connectionCancelled) {
-        _updateStatusMessage('连接已取消');
-      } else {
-        _updateStatusMessage('连接失败');
-        _showError('连接失败: $e');
-        _logger.e('$_tag 连接失败', error: e);
-
-        // 如果启用了自动重连，开始重连
-        if (_autoReconnect.value && !_isReconnecting.value) {
-          _startReconnectTimer();
-        }
+      // 如果启用了自动重连，开始重连
+      if (_autoReconnect.value && !_isReconnecting.value) {
+        _startReconnectTimer();
       }
     } finally {
-      i_isConnecting.value = false;
+      if (identical(_connectingHttpClient, httpClient)) {
+        _connectingHttpClient = null;
+      }
+      if (identical(_connectAbortCompleter, abortCompleter)) {
+        _connectAbortCompleter = null;
+      }
+      // 握手完成后 socket 已 detach，HttpClient 可安全关闭
+      httpClient?.close(force: true);
+
+      // 只清理自己这一次尝试的状态，避免影响后续新连接
+      if (attemptId == _connectAttemptId) {
+        i_isConnecting.value = false;
+      }
     }
   }
 
@@ -570,21 +646,42 @@ class WebSocketClientController extends GetxController {
     await _disconnect(manual: true);
   }
 
-  /// 取消正在进行的连接
+  /// 取消正在进行的连接（立即生效，不等待底层 socket 超时）
   void cancelConnection() {
-    if (i_isConnecting.value) {
-      _connectionCancelled = true;
-      _logger.i('$_tag 用户取消连接');
-      _showInfo('正在取消连接...');
-    }
+    final wasConnecting = i_isConnecting.value;
+    final wasReconnecting = _isReconnecting.value;
+    if (!wasConnecting && !wasReconnecting) return;
 
-    // 如果正在重连，也停止重连
-    if (_isReconnecting.value) {
-      _stopReconnectTimer();
-      _isReconnecting.value = false;
+    _connectionCancelled = true;
+    _connectAttemptId++; // 作废当前尝试的结果
+
+    // 停止重连定时器
+    _stopReconnectTimer();
+    _isReconnecting.value = false;
+
+    if (wasConnecting) {
+      // 立即结束 connect() 中的等待
+      final abortCompleter = _connectAbortCompleter;
+      _connectAbortCompleter = null;
+      if (abortCompleter != null && !abortCompleter.isCompleted) {
+        abortCompleter.complete();
+      }
+
+      // 强制中断进行中的 DNS/TCP/HTTP 升级
+      final httpClient = _connectingHttpClient;
+      _connectingHttpClient = null;
+      httpClient?.close(force: true);
+
+      // 立即恢复 UI 状态
+      i_isConnecting.value = false;
+      _serverUrl.value = '';
+      _updateStatusMessage('已取消连接');
+      _showInfo('已取消连接');
+      _logger.i('$_tag 用户取消连接');
+    } else {
       _updateStatusMessage('重连已取消');
-      _logger.i('$_tag 用户取消重连');
       _showInfo('重连已取消');
+      _logger.i('$_tag 用户取消重连');
     }
   }
 
@@ -593,6 +690,7 @@ class WebSocketClientController extends GetxController {
 
     try {
       _isDisconnecting.value = true;
+      _manualClosing = true;
       _updateStatusMessage('正在断开...');
 
       // 停止定时器
@@ -603,9 +701,14 @@ class WebSocketClientController extends GetxController {
         _isReconnecting.value = false;
       }
 
-      // 关闭WebSocket连接
-      await _webSocket?.close();
+      // 关闭WebSocket连接：不等待关闭握手（对端无响应时 close() 最多卡 5 秒）
+      final ws = _webSocket;
       _webSocket = null;
+      _wsSubscription?.cancel();
+      _wsSubscription = null;
+      if (ws != null) {
+        unawaited(ws.close().catchError((_) {}));
+      }
 
       i_isConnected.value = false;
       _serverUrl.value = '';
@@ -944,6 +1047,10 @@ class WebSocketClientController extends GetxController {
   /// 处理连接断开
   void _onDisconnected() {
     _logger.i('$_tag WebSocket连接已断开');
+    if (_manualClosing) {
+      _logger.i('$_tag 手动断开，忽略断开回调');
+      return;
+    }
     i_isConnected.value = false;
     _serverUrl.value = '';
     _stopHeartbeatTimer();
@@ -960,6 +1067,10 @@ class WebSocketClientController extends GetxController {
   /// 处理连接错误
   void _onError(dynamic error) {
     _logger.e('$_tag WebSocket连接错误', error: error);
+    if (_manualClosing) {
+      _logger.i('$_tag 手动断开，忽略错误回调');
+      return;
+    }
     i_isConnected.value = false;
     _serverUrl.value = '';
     _stopHeartbeatTimer();
