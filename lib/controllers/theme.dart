@@ -309,6 +309,10 @@ class ThemeController extends GetxController {
 
   // 构建主题
   ThemeData _buildTheme(Brightness brightness) {
+    // Android 的状态栏图标亮度应与主题背景亮度相反。
+    final statusBarIconBrightness = brightness == Brightness.light
+        ? Brightness.dark
+        : Brightness.light;
     if (useDynamicColor.value) {
       return ThemeData(
         useMaterial3: true,
@@ -320,7 +324,7 @@ class ThemeController extends GetxController {
         appBarTheme: AppBarTheme(
           systemOverlayStyle: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness: brightness,
+            statusBarIconBrightness: statusBarIconBrightness,
             systemNavigationBarColor: Get.theme.colorScheme.surface,
           ),
         ),
@@ -336,7 +340,7 @@ class ThemeController extends GetxController {
         appBarTheme: AppBarTheme(
           systemOverlayStyle: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness: brightness,
+            statusBarIconBrightness: statusBarIconBrightness,
             systemNavigationBarColor: Get.theme.colorScheme.surface,
           ),
         ),
