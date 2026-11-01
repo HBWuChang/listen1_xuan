@@ -1,6 +1,7 @@
 name: apk
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" , "feat/dual-build-ffmpeg"]
     paths:
@@ -8,6 +9,9 @@ on:
       - "**/AndroidManifest.xml"
       - "pubspec.yaml"
       - "**/dart.yml"
+      - "android/**"
+      - "scripts/build.sh"
+      - "scripts/restore_android_firebase.py"
 
 # 同一分支只保留最新一次构建，避免快速连推时旧 run 继续占用 runner。
 concurrency:
@@ -19,7 +23,7 @@ jobs:
   # artifact 改为 .zip 并启用压缩，内部直接放 APK；保持 `app-<abi>-release...` 前缀，应用内 canary 更新
   # （_selectAndroidArtifact 按 abi 关键字过滤）与 Release 更新逻辑均不受影响。
   build:
-    if: "contains(github.event.head_commit.message, 'apk')"
+    if: "github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'apk')"
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -39,15 +43,24 @@ jobs:
           - { ffmpeg: without, cronet: noplay,  infix: "",                                 extra-define: "--dart-define=cronetHttpNoPlay=true" }
     steps:
       - name: Output Commit Information
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
         run: |
-          echo "触发此次action的提交ID: ${{ github.sha }}"
-          echo "提交信息: ${{ github.event.head_commit.message }}"
-          echo "提交作者: ${{ github.event.head_commit.author.name }}"
-          GITHASH=$(echo "${{ github.sha }}" | cut -c1-7)
-          echo "GITHASH=$GITHASH" >> $GITHUB_ENV
+          echo "触发此次action的提交ID: $COMMIT_SHA"
+          echo "提交信息: $COMMIT_MESSAGE"
+          echo "提交作者: $COMMIT_AUTHOR"
+          GITHASH="${COMMIT_SHA:0:7}"
+          echo "GITHASH=$GITHASH" >> "$GITHUB_ENV"
           echo "GITHASH (前7位): $GITHASH"
 
       - uses: actions/checkout@v4
+
+      - name: Restore Firebase Android configuration
+        run: python3 scripts/restore_android_firebase.py
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
 
       - uses: actions/setup-java@v4
         with:
@@ -74,7 +87,7 @@ jobs:
       - run: flutter pub get
 
       - name: 解码生成 jks
-        run: echo $KEYSTORE_BASE64 | base64 -di > android/app/xuan.jks
+        run: printf '%s' "$KEYSTORE_BASE64" | base64 --decode --ignore-garbage > android/app/xuan.jks
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
@@ -152,6 +165,8 @@ jobs:
 
   # 单一上传点：避免多个 job 互相删除/覆盖同一 Release 资产。
   publish:
+    # Manual CI checks produce artifacts without replacing published releases.
+    if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -170,7 +185,10 @@ jobs:
       - name: List merged assets
         run: |
           ls -l release_artifacts/
-          echo "共 $(ls -1 release_artifacts/*.apk | wc -l) 个 APK"
+          python3 - <<'PYCOUNT'
+          from pathlib import Path
+          print(f"共 {len(list(Path('release_artifacts').glob('*.apk')))} 个 APK")
+          PYCOUNT
 
       # Release ZIP contains the unchanged signed APK, with the same file stem.
       - name: Compress APKs for Release
@@ -188,7 +206,7 @@ jobs:
         id: extract_version
         run: |
           version=$(grep '^version:' pubspec.yaml | sed 's/version: *//')
-          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "VERSION=$version" >> "$GITHUB_ENV"
           echo "VERSION=$version"
 
       # 删除该 Release 下旧的 Android APK / ZIP（保留其他平台 ZIP）

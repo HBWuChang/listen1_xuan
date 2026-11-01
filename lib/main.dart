@@ -1,4 +1,9 @@
 import 'package:animated_digit/animated_digit.dart';
+import 'controllers/feedback_unread_controller.dart';
+import 'services/feedback/feedback_api.dart';
+import 'widgets/feedback_unread_badge.dart';
+import 'pages/feedback/feedback_push_navigation.dart';
+import 'controllers/feedback_push_navigation_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -229,6 +234,8 @@ Future<void> _initializeAppForHome(SettingsController settingsController) async 
   Get.put(WsDownloadController(), permanent: true);
   Get.put(Applinkscontroller(), permanent: true);
   Get.put(SupabaseAuthController(), permanent: true);
+  Get.put(FeedbackUnreadController(FeedbackApi(Supabase.instance.client)), permanent: true);
+  initializeFeedbackPush();
   Get.put(XSearchController(), permanent: true);
   Get.put(UpdController(), permanent: true);
   Get.put(HomeController(), permanent: true);
@@ -476,6 +483,11 @@ class _MyHomePageState extends State<MyHomePage>
 
     draggableToastManager = ToastOverlayManager.instance;
     draggableToastManager.init(navigatorKey.currentContext!);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && Get.isRegistered<FeedbackPushNavigationController>()) {
+        Get.find<FeedbackPushNavigationController>().setReady();
+      }
+    });
   }
 
   @override

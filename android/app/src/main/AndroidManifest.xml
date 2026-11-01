@@ -7,6 +7,11 @@
         android:name="${applicationName}"
         android:requestLegacyExternalStorage="true"
         android:icon="@mipmap/launcher_icon">
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="feedback_messages" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_feedback_notification" />
         <activity
             android:name="com.xiebian.listen1_xuan.MainActivity"
             android:exported="true"

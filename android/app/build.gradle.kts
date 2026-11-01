@@ -8,6 +8,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Optional until the application's Firebase project has been configured.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // 引用 key.properties 文件
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()

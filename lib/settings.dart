@@ -2,6 +2,8 @@ import 'pages/settings/totp_settings.dart';
 import 'package:listen1_xuan/widgets/page_scroll_to_top.dart';
 import 'widgets/loudness_gain_input.dart';
 import 'pages/feedback/feedback_route_args.dart';
+import 'widgets/feedback_unread_badge.dart';
+import 'controllers/feedback_push_controller.dart';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:animations/animations.dart';
@@ -699,12 +701,25 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
 
                   ListTile(
-                    leading: const Icon(Icons.forum_outlined),
+                    leading: const FeedbackUnreadBadge(child: Icon(Icons.forum_outlined)),
                     title: const Text('在线反馈'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () =>
                         Get.toNamed(RouteName.onlineFeedbackPage, id: 1),
                   ),
+                  if (Get.isRegistered<FeedbackPushController>() && Get.find<FeedbackPushController>().supported)
+                    GetBuilder<FeedbackPushController>(
+                      autoRemove: false,
+                      builder: (push) => SwitchListTile(
+                        secondary: const Icon(Icons.notifications_outlined),
+                        title: const Text('反馈消息推送'),
+                        subtitle: Text(push.error ?? (push.enabled
+                            ? '按问题的未读红点设置接收系统通知'
+                            : '开启后可接收关注问题的新消息通知')),
+                        value: push.enabled,
+                        onChanged: push.busy ? null : push.setEnabled,
+                      ),
+                    ),
                   ListTile(
                     leading: Icon(Icons.lightbulb_outline),
                     title: Text('Tip'),

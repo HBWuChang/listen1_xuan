@@ -4,6 +4,34 @@ import 'feedback_models.dart';
 class FeedbackApi {
   FeedbackApi(this.client);
   final SupabaseClient client;
+  String? get currentUserId => client.auth.currentUser?.id;
+
+  Future<void> registerPushDevice(String installation, String secret, String token, String project) async {
+    await client.rpc('feedback_register_push_device', params: {
+      'p_installation': installation, 'p_secret': secret, 'p_token': token, 'p_project': project,
+    });
+  }
+
+  Future<void> unregisterPushDevice(String installation, String secret) async {
+    await client.rpc('feedback_unregister_push_device', params: {'p_installation': installation, 'p_secret': secret});
+  }
+
+  Future<List<FeedbackIssueState>> issueStates(String userId, {String? after}) async {
+    var query = client.from('feedback_issue_states').select().eq('user_id', userId);
+    if (after != null) query = query.gt('issue_id', after);
+    return (await query.order('issue_id').limit(500)).map(FeedbackIssueState.fromJson).toList();
+  }
+
+  Future<FeedbackIssueState> markRead(String issueId, int through) async =>
+      FeedbackIssueState.fromJson(Map<String, dynamic>.from(await client.rpc(
+        'feedback_mark_read', params: {'p_issue': issueId, 'p_through': through},
+      ) as Map));
+
+  Future<FeedbackIssueState> setUnreadPreference(String issueId, String preference) async =>
+      FeedbackIssueState.fromJson(Map<String, dynamic>.from(await client.rpc(
+        'feedback_set_unread_preference', params: {'p_issue': issueId, 'p_preference': preference},
+      ) as Map));
+
   Future<List<Map<String, dynamic>>> rows(String rpc, Map<String, dynamic> params) async =>
       List<Map<String, dynamic>>.from(await client.rpc(rpc, params: params) as List);
 

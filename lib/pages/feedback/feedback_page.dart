@@ -15,6 +15,8 @@ import 'feedback_route_observer.dart';
 import 'feedback_controller.dart';
 import '../../services/feedback/feedback_models.dart';
 import '../../widgets/page_scroll_to_top.dart';
+import '../../controllers/feedback_unread_controller.dart';
+import '../../widgets/feedback_unread_badge.dart';
 
 part 'feedback_issue_view.dart';
 part 'feedback_participant_picker.dart';
@@ -116,12 +118,18 @@ class _FeedbackRoutePageState extends State<_FeedbackRoutePage>
   Timer? _searchTimer;
   bool get _working => controller.working;
   PageRoute<dynamic>? _route;
+  bool _targetIssuePending = false;
 
   @override
   void initState() {
     super.initState();
     searchFocus.addListener(_searchFocusChanged);
-    if (widget.args.proApplication) {
+    _targetIssuePending = widget.args.targetIssueId != null;
+    if (_targetIssuePending) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_openTargetIssue());
+      });
+    } else if (widget.args.proApplication) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_openProApplication());
       });
@@ -160,7 +168,10 @@ class _FeedbackRoutePageState extends State<_FeedbackRoutePage>
         next is FeedbackPageArgs &&
         next.kind == FeedbackPageKind.profile &&
         next.sourceControllerTag == widget.controllerTag;
-    if (!ownProfile) controller.suspend();
+    if (!ownProfile) {
+      if (widget.args.kind == FeedbackPageKind.messages) controller.markIssueReadOnExit();
+      controller.suspend();
+    }
   }
 
   @override
@@ -169,6 +180,7 @@ class _FeedbackRoutePageState extends State<_FeedbackRoutePage>
       if (!controller.isClosed && controller.profileId == widget.args.userId)
         controller.closeProfile();
     } else {
+      if (widget.args.kind == FeedbackPageKind.messages) controller.markIssueReadOnExit();
       controller.suspend();
     }
   }
@@ -185,6 +197,13 @@ class _FeedbackRoutePageState extends State<_FeedbackRoutePage>
   }
 
   void _back() => routerPop();
+
+  Future<void> _openTargetIssue() => _run(() async {
+    final issue = await controller.api.issue(widget.args.targetIssueId!);
+    if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+    _targetIssuePending = false;
+    unawaited(_openIssueRoute(issue));
+  });
 
   Future<void> _openProApplication() => _run(() async {
     // This project's existing application issue and its administrator contact.
@@ -416,7 +435,10 @@ class _FeedbackRoutePageState extends State<_FeedbackRoutePage>
                           '${issue.statusLabel}${issue.locked ? ' · 讨论已锁定' : ''}\n${controller.name(issue.creatorId)} · 最近发言 ${_time(issue.lastMessageAt)}',
                         ),
                         isThreeLine: true,
-                        trailing: const Icon(Icons.chevron_right),
+                        trailing: FeedbackUnreadBadge(
+                          issueId: issue.id,
+                          child: const Icon(Icons.chevron_right),
+                        ),
                         onTap: () {
                           _searchTimer?.cancel();
                           searchFocus.unfocus();
@@ -523,6 +545,30 @@ class _FeedbackRoutePageState extends State<_FeedbackRoutePage>
                 : '在线反馈',
           ),
           actions: [
+            if (inDetail && controller.permissions.userId != null &&
+                Get.isRegistered<FeedbackUnreadController>())
+              GetBuilder<FeedbackUnreadController>(
+                autoRemove: false,
+                builder: (unread) => PopupMenuButton<String>(
+                  tooltip: '未读红点',
+                  enabled: !_working,
+                  icon: Icon(unread.preference(controller.issue!.id) == 'hide'
+                      ? Icons.notifications_off_outlined : Icons.notifications_outlined),
+                  onSelected: (value) => _run(() => unread.setPreference(controller.issue!.id, value)),
+                  itemBuilder: (_) => [
+                    for (final entry in const {
+                      'unset': '未设置（创建或发言后显示）',
+                      'show': '展示未读红点',
+                      'hide': '不展示未读红点',
+                    }.entries)
+                      CheckedPopupMenuItem<String>(
+                        value: entry.key,
+                        checked: unread.preference(controller.issue!.id) == entry.key,
+                        child: Text(entry.value),
+                      ),
+                  ],
+                ),
+              ),
             if (widget.args.kind == FeedbackPageKind.issues)
               TextButton.icon(
                 onPressed:
@@ -572,7 +618,7 @@ class _FeedbackRoutePageState extends State<_FeedbackRoutePage>
                     children: [
                       Expanded(child: Text(controller.error!)),
                       TextButton(
-                        onPressed: () => controller.reload(),
+                        onPressed: () => _targetIssuePending ? _openTargetIssue() : controller.reload(),
                         child: const Text('重试'),
                       ),
                     ],

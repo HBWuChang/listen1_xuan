@@ -1,14 +1,20 @@
 package com.xiebian.listen1_xuan
 
 import android.os.Bundle
+import android.content.Intent
 import android.view.WindowManager
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity: AudioServiceActivity() {
+    private var feedbackChannel: MethodChannel? = null
+    private val feedbackNotifications by lazy { FeedbackPushNotifications(this) }
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        feedbackChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "listen1_xuan/feedback_push").also {
+            it.setMethodCallHandler(feedbackNotifications::handle)
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "listen1_xuan/build_info")
             .setMethodCallHandler { call, result ->
                 if (call.method == "getBuildNumber") {
@@ -17,6 +23,12 @@ class MainActivity: AudioServiceActivity() {
                     result.notImplemented()
                 }
             }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        feedbackNotifications.takeTap(intent)?.let { feedbackChannel?.invokeMethod("notificationTapped", it) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

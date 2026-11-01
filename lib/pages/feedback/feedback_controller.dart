@@ -5,14 +5,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/feedback/feedback_api.dart';
 import '../../services/feedback/feedback_models.dart';
+import '../../controllers/feedback_unread_controller.dart';
 
 /// Each list/issue route owns a tagged Get controller; profiles borrow their issue.
 class FeedbackController extends GetxController with WidgetsBindingObserver {
-  FeedbackController(this.api, {this.enableRealtime = true, FeedbackIssue? initialIssue}) : issue = initialIssue {
+  FeedbackController(this.api, {this.enableRealtime = true, FeedbackIssue? initialIssue, this.unread}) : issue = initialIssue {
     loading = initialIssue != null;
   }
   final bool enableRealtime;
   final FeedbackApi api;
+  final FeedbackUnreadController? unread;
+  String? _entryReadUserId;
+  bool _exitReadMarked = false;
   List<FeedbackIssue> issues = [];
   List<FeedbackMessage> messages = [];
   final profiles = <String, FeedbackProfile>{};
@@ -75,6 +79,8 @@ class FeedbackController extends GetxController with WidgetsBindingObserver {
         final userId = state.session?.user.id;
         if (userId != _authUserId) {
           _authUserId = userId;
+          _entryReadUserId = null;
+          _exitReadMarked = false;
           _scope++;
           recovering = false;
           loadingMore = false;
@@ -330,6 +336,11 @@ class FeedbackController extends GetxController with WidgetsBindingObserver {
       }
       await _loadProfiles([latestIssue.creatorId], scope);
       if (profileId != null) await refreshContext();
+      if (_valid(scope) && !routeCovered && context.userId != null &&
+          context.userId != _entryReadUserId) {
+        _entryReadUserId = context.userId;
+        unawaited(unread?.markRead(id, through: messages.firstOrNull?.id ?? 0));
+      }
     } catch (e) {
       if (_valid(scope)) error = friendlyError(e);
     } finally {
@@ -465,8 +476,23 @@ class FeedbackController extends GetxController with WidgetsBindingObserver {
     if (routeCovered == value) return;
     routeCovered = value; _emit();
   }
-  void suspend() => _setRouteActive(false);
-  void resume() => _setRouteActive(true);
+  void suspend() {
+    _entryReadUserId = null;
+    _setRouteActive(false);
+  }
+  void resume() {
+    _exitReadMarked = false;
+    _setRouteActive(true);
+  }
+
+  void markIssueReadOnExit() {
+    final id = issue?.id;
+    if (_exitReadMarked || id == null || permissions.userId == null || permissions.userId != api.currentUserId) return;
+    _exitReadMarked = true;
+    final loaded = messages.firstOrNull?.id ?? 0;
+    final notified = unread?.states[id]?.lastNotifiedId ?? 0;
+    unawaited(unread?.markRead(id, through: loaded > notified ? loaded : notified));
+  }
 
   void _setRouteActive(bool value) {
     final previous = _foreground;
@@ -614,6 +640,7 @@ class FeedbackController extends GetxController with WidgetsBindingObserver {
 
   void _release() {
     if (!_alive) return;
+    markIssueReadOnExit();
     _alive = false;
     _scope++;
     _watchId++;

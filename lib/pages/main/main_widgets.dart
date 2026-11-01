@@ -113,7 +113,7 @@ Widget get _leftBar => Scaffold(
           ),
           IconButton(
             tooltip: "设置",
-            icon: Icon(Icons.settings),
+            icon: const FeedbackUnreadBadge(child: Icon(Icons.settings)),
             onPressed: () {
               Get.toNamed(RouteName.settingsPage, id: 1);
             },
@@ -385,7 +385,7 @@ Listener _mainContent() => Listener(
                               ),
                               IconButton(
                                 tooltip: "设置",
-                                icon: Icon(Icons.settings),
+                                icon: const FeedbackUnreadBadge(child: Icon(Icons.settings)),
                                 onPressed: () {
                                   Get.toNamed(RouteName.settingsPage, id: 1);
                                 },

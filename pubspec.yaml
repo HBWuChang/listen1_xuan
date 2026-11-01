@@ -23,6 +23,9 @@ dependencies:
   dio: 5.11.0
   flutter_svg: ^2.0.16
   characters: 1.4.1
+  # Firebase 11.x on Apple platforms preserves this project's iOS 14 support.
+  firebase_core: 3.15.2
+  firebase_messaging: 15.2.10
   uuid: ^4.5.1
   crypto: ^3.0.1
   html: ^0.15.0

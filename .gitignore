@@ -65,3 +65,10 @@ dsa_priv.pem
 .pi
 .mcp.json
 .codex
+# Firebase project-specific configuration and server credentials.
+android/app/google-services.json
+**/firebase-service-account*.json
+**/*firebase-adminsdk*.json
+
+# Supabase CLI local state.
+supabase/.temp/

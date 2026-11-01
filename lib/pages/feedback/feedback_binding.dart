@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/feedback/feedback_api.dart';
 import 'feedback_controller.dart';
 import 'feedback_route_args.dart';
+import '../../controllers/feedback_unread_controller.dart';
 
 class FeedbackBinding extends Bindings {
   FeedbackBinding(this.args);
@@ -16,6 +17,7 @@ class FeedbackBinding extends Bindings {
       Get.put(FeedbackController(
         args.api ?? FeedbackApi(Supabase.instance.client),
         enableRealtime: args.enableRealtime, initialIssue: args.issue,
+        unread: Get.isRegistered<FeedbackUnreadController>() ? Get.find<FeedbackUnreadController>() : null,
       ), tag: args.controllerTag);
     }
   }

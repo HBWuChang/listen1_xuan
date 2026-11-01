@@ -2,6 +2,21 @@ import 'package:flutter/foundation.dart';
 
 DateTime feedbackDate(dynamic value) => DateTime.parse(value as String).toLocal();
 
+class FeedbackIssueState {
+  FeedbackIssueState.fromJson(Map<String, dynamic> json)
+      : userId = json['user_id'] as String,
+        issueId = json['issue_id'] as String,
+        preference = json['preference'] as String,
+        participated = json['participated'] == true,
+        lastNotifiedId = (json['last_notified_id'] as num).toInt(),
+        lastReadId = (json['last_read_id'] as num).toInt(),
+        revision = (json['revision'] as num).toInt();
+  final String userId, issueId, preference;
+  final bool participated;
+  final int lastNotifiedId, lastReadId, revision;
+  bool get unread => preference != 'hide' && lastNotifiedId > lastReadId;
+}
+
 class FeedbackProfile {
   FeedbackProfile.fromJson(Map<String, dynamic> json)
       : id = json['user_id'] as String,
