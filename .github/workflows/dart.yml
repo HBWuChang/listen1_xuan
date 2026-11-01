@@ -11,6 +11,8 @@ on:
       - "**/dart.yml"
       - "android/**"
       - "scripts/build.sh"
+      - "scripts/configure_build.py"
+      - "scripts/verify_firebase_dependencies.py"
       - "scripts/restore_android_firebase.py"
 
 # 同一分支只保留最新一次构建，避免快速连推时旧 run 继续占用 runner。
@@ -80,11 +82,15 @@ jobs:
           cache-read-only: false
 
       - run: flutter --version
+      - name: Use real Firebase SDKs on Android
+        run: python3 scripts/configure_build.py firebase real
 
       - name: Switch FFmpeg config (${{ matrix.ffmpeg }})
         run: bash scripts/build.sh ${{ matrix.ffmpeg }}
 
       - run: flutter pub get
+      - name: Verify real Android Firebase plugins
+        run: python3 scripts/verify_firebase_dependencies.py real
 
       - name: 解码生成 jks
         run: printf '%s' "$KEYSTORE_BASE64" | base64 --decode --ignore-garbage > android/app/xuan.jks

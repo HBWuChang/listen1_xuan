@@ -8,7 +8,7 @@ Firebase Android 应用包名为 `com.xiebian.listen1_xuan`。客户端下载的
 
 本次已配置 Firebase 项目 `listen1-xuan`，Android 配置与服务端项目一致，Secret 已通过 CLI 写入。Google OAuth 与 FCM V1 测试令牌校验已验证，Vault → pg_net → Edge Function → Google OAuth → 空任务领取也已实际返回 HTTP 200。实际收件需要应用在具备可用 Google Play 服务及相应网络连接的 Android 设备上注册。
 
-在设置中登录 Supabase 后开启“反馈消息推送”，首次开启会申请系统通知权限。默认关闭，问题级接收规则继续使用既有“未设置／展示／不展示”。iOS、macOS、Windows 和 Web 不启用这条通知链路；Firebase Flutter 依赖固定在兼容现有 iOS 14 部署目标的版本，没有提高项目最低系统版本。
+在设置中登录 Supabase 后开启“反馈消息推送”，首次开启会申请系统通知权限。默认关闭，问题级接收规则继续使用既有“未设置／展示／不展示”。iOS、macOS、Windows 和 Web 不启用这条通知链路。Windows、macOS、iOS 的 Action 使用纯 Dart 假依赖，排除 Firebase 原生 SDK；Android 继续使用真实 FlutterFire 依赖。
 
 ## 客户端
 
@@ -71,3 +71,14 @@ Android 工作流 `.github/workflows/dart.yml` 使用仓库 Actions Secret `GOOG
 已向 `HBWuChang/listen1_xuan` 上传并确认 `GOOGLE_SERVICES_JSON_B64`，原有四个 Android 签名 Secrets 均存在。GitHub MCP 连接当时尚未就绪，因此实际通过本机已有 GitHub 认证和 GitHub CLI 完成上传；没有复制服务端私钥，也没有替换既有签名 Secrets。
 
 CI 接入已通过 5 项脚本测试、真实配置还原、FFmpeg 两种模式依赖保留检查及 Actionlint。当前应用 ARM64 Release 构建通过，已确认压缩后的 APK 中保留 `google_app_id`、`gcm_defaultSenderId` 和 `google_api_key` 资源。上述结果不等同于尚未运行的远端 Actions 构建。
+
+
+### 按构建平台排除 Firebase
+
+`python3 scripts/configure_build.py firebase stub` 将 `firebase_core` 和 `firebase_messaging` 替换为 `packages/*_stub` 中的纯 Dart 包。这两个包不声明 Flutter 插件，也不引用 Firebase 间接依赖。仅保留当前推送传输层编译所需的接口；初始化会明确失败，通知权限返回拒绝，不会生成令牌。现有控制器仍仅在 Android 启动推送。
+
+Windows、macOS、iOS Action 在首次 `flutter pub get` 前切换为 `stub`，Android Action 显式切回 `real`。FFmpeg 的 `scripts/build.sh with|without` 和 Windows `scripts/build.bat` 统一调用同一个 Python 3 配置脚本，切换任一功能都保留另一功能的模式。覆盖区块从旧 FFmpeg 标记自动迁移，不覆盖未知的手动 dependency_overrides。Windows runner 显式安装 Python 3；脚本不执行 pub get、构建或格式化。
+
+每次 Action 解析依赖后都运行 `scripts/verify_firebase_dependencies.py`：非安卓模式必须解析到两个本地假包，不允许 Firebase/FlutterFire 间接包或任何平台的 Firebase 插件；Android 模式必须解析到真实包并包含两个 Android 插件。Apple 任务在每次 `pod install` 后进一步检查 Podfile.lock 不含 Firebase。任一检查失败立即阻止后续构建和发布，两个 FFmpeg 变体均执行检查。
+
+本机默认继续使用真实 Firebase；需要手动切换时执行 `python3 scripts/configure_build.py firebase real|stub` 后重新运行 `flutter pub get`。这些检查验证依赖解析和原生构建输入；远端各平台产物仍以实际 Action 运行结果为准。

@@ -1,0 +1,6 @@
+name: firebase_messaging
+description: Dart-only messaging placeholder for builds without feedback push.
+version: 15.2.10
+publish_to: none
+environment:
+  sdk: ^3.10.0

@@ -1,0 +1,6 @@
+name: firebase_core
+description: Dart-only Firebase placeholder for builds without feedback push.
+version: 3.15.2
+publish_to: none
+environment:
+  sdk: ^3.10.0
