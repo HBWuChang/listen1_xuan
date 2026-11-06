@@ -273,16 +273,21 @@ Future<void> change_playback_state(
     }
     if (lyric != null) {
       if (showItem == null) return;
+      // 用原始曲目元数据做基准：_currentShowMediaItem 每次显示歌词都会被覆盖，
+      // 直接复用会把上一句歌词累加进 artist。
+      final base = _currentMediaItem ?? showItem!;
       bool show = Get.find<SettingsController>().tryShowLyricInNotification;
       bool showInTitle =
           Get.find<SettingsController>().tryShowLyricInNotificationInTitle;
       bool showTra = Get.find<SettingsController>().showLyricTranslation.value;
       if (!show && !showInTitle) return;
       if (((isAndroid && show) || !isAndroid) && showInTitle) {
-        MediaItem _item = showItem!.copyWith(
+        MediaItem _item = base.copyWith(
           title:
               '${lyric.text}${!isEmpty(lyric.translation) && showTra ? '\n${lyric.translation}' : ''}',
-          artist: '${showItem!.title} - ${showItem!.artist}',
+          artist: isEmpty(base.artist)
+              ? base.title
+              : '${base.title} - ${base.artist}',
         );
         (Get.find<AudioHandlerController>().audioHandler as AudioPlayerHandler)
             .change_playbackstate(_item);

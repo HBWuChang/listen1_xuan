@@ -258,58 +258,65 @@ Widget _buildThirdPartyLoginPanel(BuildContext context) {
   final settingsController = Get.find<SettingsController>();
   return Column(
     children: <Widget>[
-      for (final provider in music_providers.provider.getLoginProviders())
-        Row(
-          children: [
-            provider.loginIcon,
-            const SizedBox(width: 12),
-            Expanded(
-              child: Obx(() {
-                switch (provider.loginStatus.value) {
-                  case LoginStatus.processing:
-                    return Center(child: globalLoadingAnime);
-                  case LoginStatus.loggedIn:
-                    return Text(provider.currentUser.value?.name ?? '未知用户');
-                  case LoginStatus.failed:
-                    return Tooltip(
-                      message: provider.loginError.value,
-                      child: const Text('登录状态获取失败'),
-                    );
-                  case LoginStatus.noLogin:
-                    return const Text('cookie未设置或失效');
-                }
-              }),
-            ),
-            ElevatedButton(
-              onPressed: () => provider.login(context),
-              child: Text(provider.loginButtonText),
-            ),
-          ],
-        ),
-      Row(
+      Table(
+        columnWidths: const {
+          0: IntrinsicColumnWidth(),
+          1: FlexColumnWidth(),
+          2: IntrinsicColumnWidth(),
+        },
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
         children: [
-          Iconify(
-            Mdi.github,
-            color: AdaptiveTheme.of(context).theme.iconTheme.color,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Obx(() {
-              if (settingsController.loginDataLoading.contains(
-                PlantformCodes.github,
-              )) {
-                return Center(child: globalLoadingAnime);
-              }
-              settingsController.loginData[PlantformCodes.github];
-              return Text(Github.getStatusText());
-            }),
-          ),
-          ElevatedButton(
-            onPressed: () => Github.openAuthUrl(),
-            child: const Text('登录Github(建议使用魔法'),
+          for (final provider in music_providers.provider.getLoginProviders())
+            TableRow(
+              children: [
+                provider.loginIcon.paddingOnly(right: 8.0),
+                Obx(() {
+                  switch (provider.loginStatus.value) {
+                    case LoginStatus.processing:
+                      return Center(child: globalLoadingAnime);
+                    case LoginStatus.loggedIn:
+                      return Text(provider.currentUser.value?.name ?? '未知用户');
+                    case LoginStatus.failed:
+                      return Tooltip(
+                        message: provider.loginError.value,
+                        child: const Text('登录状态获取失败'),
+                      );
+                    case LoginStatus.noLogin:
+                      return const Text('cookie未设置或失效');
+                  }
+                }),
+
+                ElevatedButton(
+                  onPressed: () => provider.login(context),
+                  child: Text(provider.loginButtonText),
+                ),
+              ],
+            ),
+          TableRow(
+            children: [
+              Iconify(
+                Mdi.github,
+                color: AdaptiveTheme.of(context).theme.iconTheme.color,
+              ).paddingOnly(right: 8.0),
+              Obx(() {
+                if (settingsController.loginDataLoading.contains(
+                  PlantformCodes.github,
+                )) {
+                  return Center(child: globalLoadingAnime);
+                }
+                settingsController.loginData[PlantformCodes.github];
+                return Text(Github.getStatusText());
+              }),
+
+              ElevatedButton(
+                onPressed: () => Github.openAuthUrl(),
+                child: const Text('登录Github(建议使用魔法'),
+              ),
+            ],
           ),
         ],
       ),
+
       Wrap(
         spacing: 8.0,
         runSpacing: 8.0,
